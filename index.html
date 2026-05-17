@@ -3,13 +3,11 @@
 
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
 <title>PVLT Tap Game</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 
 <style>
 
@@ -19,37 +17,64 @@ font-family:Arial;
 background:#0b1220;
 color:white;
 text-align:center;
+overflow-x:hidden;
 }
 
+/* NAVBAR */
 .navbar{
 position:fixed;
 top:0;
 left:0;
 right:0;
-height:60px;
+height:55px;
 background:#111827;
 display:flex;
 justify-content:space-between;
 align-items:center;
 padding:0 10px;
 font-size:12px;
+z-index:10;
 }
 
 .val{color:#00ff99;font-weight:bold;}
 
+/* MAIN */
 .container{
 padding-top:80px;
 }
 
+/* TAP BUTTON */
 .tap{
-width:180px;
-height:180px;
+width:170px;
+height:170px;
 border-radius:50%;
 background:#00ff99;
 border:none;
 font-size:26px;
 font-weight:bold;
 color:black;
+box-shadow:0 0 20px #00ff99;
+}
+
+.tap:active{
+transform:scale(0.97);
+}
+
+/* CARDS */
+.card{
+margin:20px;
+background:#111827;
+padding:15px;
+border-radius:12px;
+}
+
+/* INPUT */
+input{
+width:85%;
+padding:10px;
+border-radius:8px;
+border:none;
+margin-top:10px;
 }
 
 button{
@@ -60,36 +85,20 @@ margin-top:10px;
 font-weight:bold;
 }
 
-.card{
-margin:20px;
-background:#111827;
-padding:15px;
-border-radius:10px;
-}
-
-input{
-padding:10px;
-width:80%;
-border-radius:8px;
-border:none;
-}
-
 </style>
 
 </head>
 
 <body>
 
+<!-- NAVBAR -->
 <div class="navbar">
-
-<div>Points: <span id="pointsNav" class="val">0</span></div>
-
-<div>PVLT: <span id="tokenNav" class="val">0</span></div>
-
-<div>ID: <span id="idNav" class="val">---</span></div>
-
+<div>Points: <span id="points">0</span></div>
+<div>PVLT: <span id="tokens">0</span></div>
+<div>ID: <span id="userId">---</span></div>
 </div>
 
+<!-- MAIN -->
 <div class="container">
 
 <h2>PVLT TAP GAME</h2>
@@ -97,13 +106,10 @@ border:none;
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
-
-<h3>Link Wallet</h3>
-
-<input id="walletInput" placeholder="Enter BSC Wallet">
+<h3>Link Wallet (optional)</h3>
+<input id="wallet" placeholder="Enter BSC address">
 <br>
-<button onclick="linkWallet()">LINK WALLET</button>
-
+<button onclick="saveWallet()">SAVE WALLET</button>
 </div>
 
 <div class="card">
@@ -114,75 +120,95 @@ border:none;
 
 <script>
 
-/* TELEGRAM INIT */
-let tg = window.Telegram.WebApp;
-tg.expand();
+let tg = null;
+let userId = "guest";
 
-let user = tg.initDataUnsafe.user;
-let telegramId = user.id;
-
-document.getElementById("idNav").innerText = telegramId;
-
-/* CONTRACT */
-const TAP = "YOUR_TAP_CONTRACT";
-const TOKEN = "YOUR_PVLT_TOKEN";
-
-const provider = new ethers.providers.JsonRpcProvider(
-"https://bsc-dataseed.binance.org/"
-);
-
-const abi = [
-"function tap(uint256,uint256)",
-"function getPoints(uint256) view returns (uint256)",
-"function linkWallet(uint256,address)",
-"function claim(uint256)"
-];
-
-const contract = new ethers.Contract(TAP, abi, provider);
-
-/* TAP */
-async function tap(){
-
-await contract.tap(telegramId,1);
-
-load();
-
-}
-
-/* LOAD POINTS */
-async function load(){
-
-let p = await contract.getPoints(telegramId);
-
-document.getElementById("pointsNav").innerText = p;
-
-}
-
-/* LINK WALLET */
-async function linkWallet(){
-
-let w = document.getElementById("walletInput").value;
-
-if(!w) return alert("Enter wallet");
-
-alert("Wallet linked (call contract in real deploy)");
-
-}
-
-/* CLAIM */
-async function claim(){
+/* SAFE TELEGRAM INIT */
+function initTelegram(){
 
 try{
-await contract.claim(telegramId);
-alert("Claim sent");
-load();
+
+if(window.Telegram && Telegram.WebApp){
+
+tg = Telegram.WebApp;
+tg.expand();
+
+let user = tg.initDataUnsafe?.user;
+
+if(user){
+userId = user.id;
+}
+
+}
+
 }catch(e){
-alert(e.message);
+console.log("Telegram init failed");
 }
+
+document.getElementById("userId").innerText = userId;
 
 }
 
-load();
+/* SAFE STATE */
+let points = 0;
+let tokens = 0;
+let walletAddress = null;
+
+/* SAFE LOAD UI */
+function render(){
+document.getElementById("points").innerText = points;
+document.getElementById("tokens").innerText = tokens;
+}
+
+/* TAP FUNCTION */
+function tap(){
+points += 1;
+render();
+}
+
+/* SAVE WALLET */
+function saveWallet(){
+
+let w = document.getElementById("wallet").value;
+
+if(!w){
+alert("Enter wallet address");
+return;
+}
+
+walletAddress = w;
+
+alert("Wallet saved for later claiming");
+}
+
+/* CLAIM LOGIC (DEMO SAFE) */
+function claim(){
+
+if(points < 100){
+alert("Need at least 100 points");
+return;
+}
+
+if(!walletAddress){
+alert("Please link wallet first");
+return;
+}
+
+/* convert */
+tokens = Math.floor(points / 10000);
+points = points % 10000;
+
+render();
+
+alert("Claim successful (demo mode)");
+
+}
+
+/* SAFE START */
+window.addEventListener("load", () => {
+initTelegram();
+render();
+});
 
 </script>
 
