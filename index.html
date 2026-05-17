@@ -3,13 +3,20 @@
 
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+>
 
 <title>PVLT Tap Game</title>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 
 <style>
 
 /* ================= GLOBAL ================= */
+
 html, body{
 margin:0;
 padding:0;
@@ -29,6 +36,7 @@ text-align:center;
 }
 
 /* ================= NAVBAR ================= */
+
 .navbar{
 height:60px;
 display:flex;
@@ -45,6 +53,7 @@ font-size:12px;
 }
 
 /* ================= MAIN ================= */
+
 .container{
 position:absolute;
 top:60px;
@@ -62,6 +71,7 @@ overflow:hidden;
 }
 
 /* ================= TITLE ================= */
+
 h2{
 margin:5px 0;
 font-size:24px;
@@ -71,7 +81,8 @@ background:linear-gradient(90deg,#00ff99,#00ccff);
 -webkit-text-fill-color:transparent;
 }
 
-/* ================= TAP BUTTON ================= */
+/* ================= TAP ================= */
+
 .tap{
 width:190px;
 height:190px;
@@ -93,12 +104,14 @@ transform:scale(0.96);
 }
 
 /* ================= LIVE ================= */
+
 .live{
 font-size:14px;
 opacity:0.8;
 }
 
 /* ================= CARD ================= */
+
 .card{
 width:90%;
 max-width:360px;
@@ -116,6 +129,7 @@ gap:10px;
 }
 
 /* ================= INPUT ================= */
+
 input{
 width:100%;
 padding:14px;
@@ -133,6 +147,7 @@ font-size:14px;
 }
 
 /* ================= BUTTON ================= */
+
 button{
 width:100%;
 padding:14px;
@@ -148,12 +163,14 @@ color:black;
 }
 
 /* ================= INFO ================= */
+
 .info{
 font-size:11px;
 opacity:0.6;
 }
 
 /* ================= STATUS ================= */
+
 .status{
 font-size:12px;
 color:#00ff99;
@@ -167,6 +184,7 @@ display:none;
 <body>
 
 <!-- ================= NAVBAR ================= -->
+
 <div class="navbar">
 
 <div>
@@ -186,11 +204,15 @@ display:none;
 </div>
 
 <!-- ================= MAIN ================= -->
+
 <div class="container">
 
 <h2>PVLT TAP GAME</h2>
 
-<button class="tap" onclick="tap()">
+<button
+class="tap"
+onclick="tap()"
+>
 TAP
 </button>
 
@@ -199,11 +221,13 @@ TAP
 </div>
 
 <!-- ================= WALLET ================= -->
+
 <div class="card">
 
 <input
 id="wallet"
-placeholder="Paste BSC wallet address"
+placeholder="Connect wallet using MetaMask / TrustWallet"
+readonly
 >
 
 <button
@@ -222,7 +246,8 @@ Wallet connected
 
 </div>
 
-<!-- ================= AUTO PAYOUT ================= -->
+<!-- ================= INFO ================= -->
+
 <div class="card">
 
 <div style="font-size:13px;">
@@ -230,15 +255,24 @@ Wallet connected
 </div>
 
 <div class="info">
+
 Minimum: 100 Tokens
 <br>
+
 Maximum: 500 Tokens
+
 <br><br>
+
 1 Token = 10,000 Points
+
 <br>
+
 1 Token Price = 0.000000001 BNB
+
 <br><br>
+
 Auto payout works once every 24 hours
+
 </div>
 
 </div>
@@ -247,56 +281,38 @@ Auto payout works once every 24 hours
 
 <script>
 
-/* ================= CONFIG ================= */
+/* ================= CONTRACTS ================= */
 
-const POINTS_PER_TOKEN = 10000;
+const TOKEN_ADDRESS =
+"PASTE_TOKEN_CONTRACT";
 
-const MIN_WITHDRAW = 100;
-const MAX_WITHDRAW = 500;
+const TAP_ADDRESS =
+"PASTE_TAP_CONTRACT";
 
-const DAILY_LIMIT = 24 * 60 * 60 * 1000;
+/* ================= ABIS ================= */
+
+const TAP_ABI = [
+
+"function tap() public",
+
+"function points(address user) view returns(uint256)",
+
+"function claim() public",
+
+"function tokenBalance(address user) view returns(uint256)",
+
+"function canClaim(address user) view returns(bool)"
+
+];
 
 /* ================= STATE ================= */
 
+let provider;
+let signer;
+
+let tapContract;
+
 let wallet = "";
-let totalPoints = 0;
-
-let lastWithdraw = 0;
-
-/* ================= STORAGE ================= */
-
-function saveData(){
-
-if(!wallet) return;
-
-localStorage.setItem(wallet, JSON.stringify({
-
-points: totalPoints,
-lastWithdraw: lastWithdraw
-
-}));
-
-}
-
-function loadData(address){
-
-let data = localStorage.getItem(address);
-
-if(data){
-
-let obj = JSON.parse(data);
-
-totalPoints = obj.points || 0;
-lastWithdraw = obj.lastWithdraw || 0;
-
-}else{
-
-totalPoints = 0;
-lastWithdraw = 0;
-
-}
-
-}
 
 /* ================= UI ================= */
 
@@ -304,160 +320,145 @@ function set(id,val){
 
 let el=document.getElementById(id);
 
-if(el) el.innerText=val;
+if(el){
+el.innerText=val;
+}
 
 }
 
-function updateUI(){
+/* ================= UPDATE UI ================= */
+
+async function updateUI(){
 
 if(!wallet){
 
 set("totalPoints",0);
+
 set("totalTokens","0.0000");
+
 set("userId","guest");
 
 return;
 
 }
 
-set("totalPoints", totalPoints);
+try{
+
+let points =
+await tapContract.points(wallet);
+
+let tokens =
+await tapContract.tokenBalance(wallet);
+
+set(
+"totalPoints",
+points.toString()
+);
 
 set(
 "totalTokens",
-(totalPoints / POINTS_PER_TOKEN).toFixed(4)
+ethers.utils.formatEther(tokens)
 );
 
 set(
 "userId",
-wallet.slice(0,6) + "..." + wallet.slice(-4)
+wallet.slice(0,6) +
+"..." +
+wallet.slice(-4)
 );
 
-}
+}catch(err){
 
-/* ================= TAP ================= */
-
-function tap(){
-
-if(!wallet){
-
-alert("Connect wallet first");
-return;
-
-}
-
-totalPoints++;
-
-updateUI();
-
-saveData();
-
-/* ================= AUTO PAYOUT ================= */
-
-let tokens = totalPoints / POINTS_PER_TOKEN;
-
-let now = Date.now();
-
-/* daily cooldown */
-if(now - lastWithdraw < DAILY_LIMIT){
-return;
-}
-
-/* min requirement */
-if(tokens >= MIN_WITHDRAW){
-
-let payout = tokens;
-
-/* max cap */
-if(payout > MAX_WITHDRAW){
-payout = MAX_WITHDRAW;
-}
-
-/* save payout time */
-lastWithdraw = now;
-
-/* reset after payout */
-totalPoints = 0;
-
-updateUI();
-
-saveData();
-
-alert(
-
-"✅ AUTO PAYOUT SUCCESS\n\n" +
-
-"Payout: " +
-payout.toFixed(4) +
-" PVLT\n\n" +
-
-"Wallet:\n" +
-wallet +
-
-"\n\nNext payout available in 24 hours"
-
-);
+console.log(err);
 
 }
 
 }
 
-/* ================= CONNECT/DISCONNECT ================= */
+/* ================= CONNECT ================= */
 
-function toggleWallet(){
+async function toggleWallet(){
 
-let input = document
-.getElementById("wallet");
+let btn =
+document.getElementById("walletBtn");
 
-let btn = document
-.getElementById("walletBtn");
+let status =
+document.getElementById("walletStatus");
 
-let status = document
-.getElementById("walletStatus");
+let input =
+document.getElementById("wallet");
 
 /* CONNECT */
 if(!wallet){
 
-let addr = input.value.trim();
+try{
 
-/* validate */
-if(
-!addr.startsWith("0x") ||
-addr.length !== 42
-){
+if(!window.ethereum){
 
-alert("Invalid BSC wallet");
+alert(
+"Install MetaMask or TrustWallet"
+);
+
 return;
 
 }
 
-wallet = addr;
+await window.ethereum.request({
+method:"eth_requestAccounts"
+});
 
-loadData(wallet);
+provider =
+new ethers.providers.Web3Provider(
+window.ethereum
+);
 
-btn.innerText = "DISCONNECT WALLET";
+signer =
+provider.getSigner();
 
-status.style.display = "block";
+wallet =
+await signer.getAddress();
 
-updateUI();
+tapContract =
+new ethers.Contract(
+TAP_ADDRESS,
+TAP_ABI,
+signer
+);
+
+input.value = wallet;
+
+btn.innerText =
+"DISCONNECT WALLET";
+
+status.style.display =
+"block";
+
+await updateUI();
 
 alert("Wallet connected");
+
+}catch(err){
+
+console.log(err);
+
+alert("Connection failed");
+
+}
 
 }
 
 /* DISCONNECT */
 else{
 
-saveData();
-
 wallet = "";
 
-totalPoints = 0;
-
-btn.innerText = "CONNECT WALLET";
-
-status.style.display = "none";
-
 input.value = "";
+
+btn.innerText =
+"CONNECT WALLET";
+
+status.style.display =
+"none";
 
 updateUI();
 
@@ -467,7 +468,58 @@ alert("Wallet disconnected");
 
 }
 
-/* ================= INIT ================= */
+/* ================= TAP ================= */
+
+async function tap(){
+
+if(!wallet){
+
+alert("Connect wallet first");
+
+return;
+
+}
+
+try{
+
+const tx =
+await tapContract.tap();
+
+await tx.wait();
+
+await updateUI();
+
+/* auto payout */
+
+const canClaim =
+await tapContract.canClaim(wallet);
+
+if(canClaim){
+
+const claimTx =
+await tapContract.claim();
+
+await claimTx.wait();
+
+await updateUI();
+
+alert(
+"✅ Auto payout completed"
+);
+
+}
+
+}catch(err){
+
+console.log(err);
+
+alert("Transaction failed");
+
+}
+
+}
+
+/* ================= START ================= */
 
 window.addEventListener(
 "DOMContentLoaded",
