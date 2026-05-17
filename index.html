@@ -6,7 +6,7 @@
 <meta name="viewport"
 content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
-<title>PVLT Mining</title>
+<title>PVLT Tap Game</title>
 
 <style>
 
@@ -27,17 +27,26 @@ background:#101b2e;
 font-size:12px;
 }
 
+.container{
+padding:20px;
+}
+
 .tap{
 width:220px;
 height:220px;
 border-radius:50%;
 border:none;
-margin-top:40px;
 
-background:linear-gradient(135deg,#00ff99,#00ccff);
 font-size:28px;
 font-weight:bold;
+
+background:linear-gradient(135deg,#00ff99,#00ccff);
 color:black;
+margin-top:30px;
+}
+
+.tap:active{
+transform:scale(0.96);
 }
 
 .card{
@@ -47,17 +56,29 @@ background:rgba(255,255,255,0.05);
 border-radius:14px;
 }
 
-input,button{
+input{
+width:90%;
+padding:14px;
+border:none;
+border-radius:10px;
+background:#111827;
+color:white;
+}
+
+button{
 width:95%;
 padding:14px;
 margin-top:10px;
 border:none;
 border-radius:10px;
+font-weight:bold;
+background:linear-gradient(90deg,#00ff99,#00ccff);
+color:black;
 }
 
-button{
-background:linear-gradient(90deg,#00ff99,#00ccff);
-font-weight:bold;
+.small{
+font-size:12px;
+opacity:0.7;
 }
 
 </style>
@@ -67,71 +88,84 @@ font-weight:bold;
 <body>
 
 <div class="nav">
-<div>⚡ <span id="points">0</span></div>
-<div>💎 <span id="tokens">0.0000</span></div>
+<div>⚡ POINTS: <span id="points">0</span></div>
+<div>💎 TOKENS: <span id="tokens">0.0000</span></div>
 <div>👤 <span id="wallet">guest</span></div>
 </div>
 
+<div class="container">
+
+<h2>PVLT TAP GAME</h2>
+
 <button class="tap" onclick="tap()">TAP</button>
+
+<div class="small">1 Tap = 1 Point</div>
 
 <div class="card">
 
 <input id="walletInput" placeholder="Paste BSC wallet">
 
-<button onclick="connect()">CONNECT</button>
+<button onclick="connectWallet()">CONNECT WALLET</button>
+
+</div>
 
 </div>
 
 <script>
 
-const API = "https://your-backend.onrender.com";
+/* ================= STATE ================= */
 
-let wallet="";
-let signature="";
-let points=0;
+let wallet = "";
+let points = 0;
 
-async function connect(){
+const POINTS_PER_TOKEN = 10000;
 
-wallet=document.getElementById("walletInput").value;
+/* ================= UI ================= */
 
-let r=await fetch(API+"/connect",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({wallet})
-});
+function set(id,val){
+document.getElementById(id).innerText = val;
+}
 
-let d=await r.json();
+/* ================= TAP ================= */
 
-points=d.points;
+function tap(){
 
-update();
+if(!wallet){
+alert("Connect wallet");
+return;
+}
+
+points++;
+
+set("points",points);
+
+set("tokens",(points/POINTS_PER_TOKEN).toFixed(4));
 
 }
 
-async function tap(){
+/* ================= CONNECT ================= */
 
-let r=await fetch(API+"/mine",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({wallet})
-});
+function connectWallet(){
 
-let d=await r.json();
+let w = document.getElementById("walletInput").value.trim();
 
-points=d.points;
-signature=d.signature;
-
-update();
-
+if(!w.startsWith("0x") || w.length !== 42){
+alert("Invalid wallet");
+return;
 }
 
-function update(){
+wallet = w.toLowerCase();
 
-document.getElementById("points").innerText=points;
-document.getElementById("tokens").innerText=(points/10000).toFixed(4);
+set("wallet",
+wallet.slice(0,6)+"..."+wallet.slice(-4)
+);
 
-document.getElementById("wallet").innerText=
-wallet.slice(0,6)+"..."+wallet.slice(-4);
+points = 0;
+
+set("points",0);
+set("tokens","0.0000");
+
+alert("Wallet connected");
 
 }
 
