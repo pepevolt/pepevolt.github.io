@@ -16,7 +16,7 @@ viewport-fit=cover">
 
 <style>
 
-/* ================= RESET (ANTI ZOOM FIX) ================= */
+/* ================= RESET ================= */
 
 *{
 margin:0;
@@ -32,17 +32,14 @@ overflow:hidden;
 background:#08111f;
 font-family:Arial;
 color:white;
-
-/* IMPORTANT FIX */
 touch-action:manipulation;
 -webkit-text-size-adjust:100%;
 overscroll-behavior:none;
 }
 
-/* Prevent iOS double tap zoom */
 button,input{
-touch-action:manipulation;
 font-size:16px;
+touch-action:manipulation;
 }
 
 /* ================= LAYOUT ================= */
@@ -70,17 +67,13 @@ padding:20px;
 overflow:hidden;
 }
 
-/* ================= TAP BUTTON (FIXED PERFECT CIRCLE) ================= */
+/* ================= TAP ================= */
 
 .tap{
 width:220px;
 height:220px;
-min-width:220px;
-min-height:220px;
-
 border-radius:50%;
 border:none;
-outline:none;
 
 margin-top:30px;
 
@@ -93,10 +86,6 @@ color:black;
 display:flex;
 align-items:center;
 justify-content:center;
-
-user-select:none;
--webkit-user-select:none;
-touch-action:manipulation;
 }
 
 .tap:active{
@@ -121,7 +110,6 @@ input{
 width:100%;
 padding:14px;
 border:none;
-outline:none;
 border-radius:10px;
 background:#111827;
 color:white;
@@ -139,7 +127,6 @@ border-radius:10px;
 font-weight:bold;
 background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
-font-size:14px;
 }
 
 /* ================= STATUS ================= */
@@ -170,6 +157,8 @@ opacity:0.7;
 
 <div>💎 <span id="tokens">0.0000</span></div>
 
+<div>🔋 <span id="energy">100</span></div>
+
 <div>👤 <span id="walletView">guest</span></div>
 
 </div>
@@ -183,7 +172,7 @@ TAP
 </button>
 
 <div class="small" style="margin-top:10px;">
-1 Tap = 1 Point
+1 Tap = 1 Point | Energy System Active
 </div>
 
 <!-- ================= WALLET ================= -->
@@ -204,6 +193,22 @@ CONNECTED
 
 </div>
 
+<!-- ================= CLAIM INFO ================= -->
+
+<div class="card">
+
+<div class="small">
+Min Claim: 100 Tokens
+<br>
+Max Claim: 500 Tokens
+<br>
+Energy: Auto regenerates
+</div>
+
+<button onclick="claim()">
+CLAIM TOKENS
+</button>
+
 </div>
 
 <script>
@@ -213,11 +218,26 @@ CONNECTED
 let wallet = "";
 let points = 0;
 
+/* ENERGY SYSTEM */
+let energy = 100;
+const MAX_ENERGY = 100;
+
 /* ================= UPDATE UI ================= */
 
 function set(id,val){
 document.getElementById(id).innerText = val;
 }
+
+/* ================= ENERGY REGEN ================= */
+
+setInterval(()=>{
+
+if(energy < MAX_ENERGY){
+energy += 1;
+set("energy",energy);
+}
+
+},3000); // regen every 3 sec
 
 /* ================= TAP ================= */
 
@@ -228,13 +248,63 @@ alert("Connect wallet first");
 return;
 }
 
-points++;
+/* energy check */
+if(energy <= 0){
+alert("No energy");
+return;
+}
+
+/* consume energy */
+energy -= 1;
+
+points += 1;
 
 set("points",points);
+set("energy",energy);
 
 }
 
-/* ================= WALLET TOGGLE FIX ================= */
+/* ================= CLAIM SYSTEM ================= */
+
+function claim(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+let tokens = points / 10000;
+
+/* MIN MAX RULE */
+if(tokens < 100){
+alert("Minimum 100 tokens required");
+return;
+}
+
+/* hidden fee logic (NOT shown in UI) */
+let fee = 1; // $1 internal fee
+
+if(tokens > 500){
+tokens = 500;
+}
+
+/* RESET SYSTEM */
+points = 0;
+energy = 100;
+
+set("points",0);
+set("energy",energy);
+set("tokens","0.0000");
+
+alert(
+"CLAIM SUCCESS\n" +
+"Tokens: " + tokens.toFixed(4) +
+"\nFee deducted"
+);
+
+}
+
+/* ================= WALLET TOGGLE ================= */
 
 function toggleWallet(){
 
@@ -243,12 +313,11 @@ const btn = document.getElementById("walletBtn");
 const status = document.getElementById("walletStatus");
 const view = document.getElementById("walletView");
 
-/* ================= DISCONNECT ================= */
-
 if(wallet){
 
 wallet = "";
 points = 0;
+energy = 100;
 
 input.value = "";
 
@@ -259,11 +328,10 @@ view.innerText = "guest";
 
 set("points",0);
 set("tokens","0.0000");
+set("energy",100);
 
 return;
 }
-
-/* ================= CONNECT ================= */
 
 let w = input.value.trim();
 
@@ -278,19 +346,9 @@ btn.innerText = "DISCONNECT WALLET";
 status.style.display = "block";
 
 view.innerText =
-wallet.slice(0,6) + "..." + wallet.slice(-4);
+wallet.slice(0,6)+"..."+wallet.slice(-4);
 
 }
-
-/* ================= ANTI ZOOM LOCK ================= */
-
-document.addEventListener("gesturestart", function (e) {
-e.preventDefault();
-});
-
-document.addEventListener("dblclick", function (e) {
-e.preventDefault();
-}, { passive:false });
 
 </script>
 
