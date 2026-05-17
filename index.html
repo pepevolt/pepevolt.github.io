@@ -6,7 +6,7 @@
 <meta name="viewport"
 content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-<title>PVLT Tap Game</title>
+<title>PVLT Universal Tap Game</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 
@@ -49,22 +49,18 @@ background:#00ff99;
 border:none;
 font-size:28px;
 font-weight:bold;
+color:black;
 }
 
-.bar{
-width:80%;
-height:10px;
-background:#1f2937;
-margin:15px auto;
+button{
+padding:12px;
+border:none;
 border-radius:10px;
-overflow:hidden;
+margin-top:10px;
+font-weight:bold;
 }
 
-.fill{
-height:100%;
-width:0%;
-background:#00ff99;
-}
+.connect{background:#38bdf8;}
 
 .card{
 margin:20px;
@@ -72,16 +68,6 @@ background:#111827;
 padding:15px;
 border-radius:10px;
 }
-
-button{
-padding:12px;
-border-radius:10px;
-border:none;
-margin-top:10px;
-font-weight:bold;
-}
-
-.connect{background:#38bdf8;}
 
 </style>
 
@@ -101,23 +87,16 @@ font-weight:bold;
 
 <div class="container">
 
-<h2>PVLT TAP GAME</h2>
+<h2>PVLT UNIVERSAL TAP</h2>
 
-<button class="connect" onclick="connect()">Connect Wallet</button>
-
-<div class="bar"><div class="fill" id="bar"></div></div>
-
-<div id="progress">0 / 10000</div>
+<button class="connect" onclick="connectWallet()">
+Connect Wallet
+</button>
 
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
-<button onclick="claim()">CLAIM (100–500 tokens)</button>
-</div>
-
-<div class="card">
-<h3>Leaderboard</h3>
-<div id="board">Loading...</div>
+<button onclick="claim()">CLAIM</button>
 </div>
 
 </div>
@@ -127,28 +106,54 @@ font-weight:bold;
 let provider, signer, wallet;
 let contract, tokenContract;
 
-let points = 0;
-
+/* CONTRACTS */
 const TAP = "YOUR_TAP_CONTRACT";
 const TOKEN = "YOUR_PVLT_TOKEN";
 
+/* ABI */
 const tapAbi = [
 "function tap(uint256)",
-"function getPoints(address) view returns (uint256)"
+"function getPoints(address) view returns (uint256)",
+"function claim()"
 ];
 
 const tokenAbi = [
 "function balanceOf(address) view returns (uint256)"
 ];
 
-async function connect(){
+/* UNIVERSAL WALLET CONNECT */
+async function connectWallet(){
 
-provider = new ethers.providers.Web3Provider(window.ethereum);
+try{
+
+/* 1. Telegram check */
+if(window.Telegram && Telegram.WebApp){
+Telegram.WebApp.ready();
+Telegram.WebApp.expand();
+}
+
+/* 2. injected wallet */
+if(window.ethereum){
+
+provider = new ethers.providers.Web3Provider(window.ethereum, "any");
 await provider.send("eth_requestAccounts", []);
-
 signer = provider.getSigner();
+
 wallet = await signer.getAddress();
 
+}else{
+
+/* 3. fallback deep link */
+let bscLink =
+"https://metamask.app.link/dapp/" + window.location.href;
+
+alert("Open wallet: " + bscLink);
+window.location.href = bscLink;
+return;
+
+}
+
+/* UI */
 document.getElementById("walletNav").innerText =
 wallet.slice(0,4)+"..."+wallet.slice(-4);
 
@@ -157,62 +162,47 @@ tokenContract = new ethers.Contract(TOKEN, tokenAbi, provider);
 
 load();
 
+}catch(e){
+console.log(e);
+alert("Wallet connection failed");
 }
 
+}
+
+/* TAP */
 async function tap(){
 
-points++;
-
-document.getElementById("pointsNav").innerText = points;
-
-updateBar();
+if(!wallet) return;
 
 await contract.tap(1);
-
 load();
 
 }
 
-function updateBar(){
-
-let p = points % 10000;
-
-document.getElementById("bar").style.width =
-(p / 10000) * 100 + "%";
-
-document.getElementById("progress").innerText =
-p + " / 10000";
-
-}
-
+/* CLAIM */
 async function claim(){
 
 try{
-
-let tx = await contract.claim();
-await tx.wait();
-
-alert("Claim successful!");
-
+await contract.claim();
+alert("Claim success");
 load();
-
 }catch(e){
 alert(e.message);
 }
 
 }
 
+/* LOAD */
 async function load(){
+
+if(!wallet) return;
 
 let p = await contract.getPoints(wallet);
 document.getElementById("pointsNav").innerText = p;
 
-let bal = await tokenContract.balanceOf(wallet);
+let b = await tokenContract.balanceOf(wallet);
 document.getElementById("tokenNav").innerText =
-ethers.utils.formatEther(bal);
-
-document.getElementById("board").innerHTML =
-"1. You - " + p;
+ethers.utils.formatEther(b);
 
 }
 
