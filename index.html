@@ -2,6 +2,7 @@
 <html>
 
 <head>
+
 <meta charset="UTF-8">
 
 <meta
@@ -11,9 +12,9 @@ content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
 
 <title>PVLT Tap Game</title>
 
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
-
 <style>
+
+/* ================= GLOBAL ================= */
 
 html, body{
 margin:0;
@@ -33,6 +34,8 @@ width:100%;
 text-align:center;
 }
 
+/* ================= NAVBAR ================= */
+
 .navbar{
 height:60px;
 display:flex;
@@ -47,6 +50,8 @@ border-bottom:1px solid rgba(255,255,255,0.08);
 
 font-size:12px;
 }
+
+/* ================= MAIN ================= */
 
 .container{
 position:absolute;
@@ -64,6 +69,8 @@ gap:14px;
 overflow:hidden;
 }
 
+/* ================= TITLE ================= */
+
 h2{
 margin:5px 0;
 font-size:24px;
@@ -72,6 +79,8 @@ background:linear-gradient(90deg,#00ff99,#00ccff);
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
 }
+
+/* ================= TAP ================= */
 
 .tap{
 width:190px;
@@ -93,10 +102,14 @@ box-shadow:0 0 30px rgba(0,255,200,0.35);
 transform:scale(0.96);
 }
 
-.live{
-font-size:14px;
-opacity:0.8;
+/* ================= SESSION ================= */
+
+.liveBox{
+font-size:16px;
+font-weight:bold;
 }
+
+/* ================= CARD ================= */
 
 .card{
 width:90%;
@@ -114,6 +127,8 @@ flex-direction:column;
 gap:10px;
 }
 
+/* ================= INPUT ================= */
+
 input{
 width:100%;
 padding:14px;
@@ -130,6 +145,8 @@ color:white;
 font-size:14px;
 }
 
+/* ================= BUTTON ================= */
+
 button{
 width:100%;
 padding:14px;
@@ -144,10 +161,7 @@ background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
 }
 
-.info{
-font-size:11px;
-opacity:0.6;
-}
+/* ================= STATUS ================= */
 
 .status{
 font-size:12px;
@@ -155,9 +169,11 @@ color:#00ff99;
 display:none;
 }
 
-.liveBox{
-font-size:16px;
-font-weight:bold;
+/* ================= INFO ================= */
+
+.info{
+font-size:11px;
+opacity:0.6;
 }
 
 </style>
@@ -171,12 +187,12 @@ font-weight:bold;
 <div class="navbar">
 
 <div>
-⚡ TOTAL:
+⚡ POINTS:
 <span id="totalPoints">0</span>
 </div>
 
 <div>
-💎 TOTAL:
+💎 TOKEN:
 <span id="totalTokens">0.0000</span>
 </div>
 
@@ -199,7 +215,7 @@ onclick="tap()"
 TAP
 </button>
 
-<!-- LIVE SESSION -->
+<!-- ================= LIVE SESSION ================= -->
 
 <div class="liveBox">
 SESSION POINTS:
@@ -211,11 +227,7 @@ SESSION TOKENS:
 <span id="sessionTokens">0.0000</span>
 </div>
 
-<div class="live">
-1 Tap = 1 Point
-</div>
-
-<!-- WALLET -->
+<!-- ================= WALLET ================= -->
 
 <div class="card">
 
@@ -240,7 +252,7 @@ Wallet connected
 
 </div>
 
-<!-- INFO -->
+<!-- ================= INFO ================= -->
 
 <div class="card">
 
@@ -262,6 +274,10 @@ Maximum: 500 Tokens
 <br>
 
 1 Token Price = 0.000000001 BNB
+
+<br><br>
+
+Session resets after 3 seconds inactivity
 
 <br><br>
 
@@ -291,14 +307,14 @@ const DAILY_LIMIT =
 let wallet = "";
 
 let totalPoints = 0;
-
 let totalTokens = 0;
 
 let sessionPoints = 0;
-
 let sessionTokens = 0;
 
 let lastWithdraw = 0;
+
+let tapTimer = null;
 
 /* ================= UI ================= */
 
@@ -313,18 +329,16 @@ el.innerText = val;
 
 }
 
-/* ================= UPDATE ================= */
+/* ================= UPDATE UI ================= */
 
 function updateUI(){
 
 if(!wallet){
 
 set("totalPoints",0);
-
 set("totalTokens","0.0000");
 
 set("sessionPoints",0);
-
 set("sessionTokens","0.0000");
 
 set("userId","guest");
@@ -333,7 +347,8 @@ return;
 
 }
 
-/* total stored assets */
+/* navbar assets */
+
 set(
 "totalPoints",
 totalPoints
@@ -345,6 +360,7 @@ totalTokens.toFixed(4)
 );
 
 /* live session */
+
 set(
 "sessionPoints",
 sessionPoints
@@ -355,7 +371,8 @@ set(
 sessionTokens.toFixed(4)
 );
 
-/* wallet as user id */
+/* wallet id */
+
 set(
 "userId",
 wallet.slice(0,6) +
@@ -387,6 +404,12 @@ lastWithdraw: lastWithdraw
 
 );
 
+/* keep connected */
+localStorage.setItem(
+"pvlt_connected_wallet",
+wallet
+);
+
 }
 
 /* ================= LOAD ================= */
@@ -415,9 +438,7 @@ data.lastWithdraw || 0;
 }else{
 
 totalPoints = 0;
-
 totalTokens = 0;
-
 lastWithdraw = 0;
 
 }
@@ -462,8 +483,11 @@ return;
 
 wallet = addr;
 
-/* detect wallet as user id */
 loadData();
+
+/* reset live session */
+sessionPoints = 0;
+sessionTokens = 0;
 
 btn.innerText =
 "DISCONNECT WALLET";
@@ -471,10 +495,7 @@ btn.innerText =
 status.style.display =
 "block";
 
-/* reset live session */
-sessionPoints = 0;
-
-sessionTokens = 0;
+saveData();
 
 updateUI();
 
@@ -487,14 +508,16 @@ else{
 
 saveData();
 
+localStorage.removeItem(
+"pvlt_connected_wallet"
+);
+
 wallet = "";
 
 sessionPoints = 0;
-
 sessionTokens = 0;
 
 totalPoints = 0;
-
 totalTokens = 0;
 
 input.value = "";
@@ -513,6 +536,30 @@ alert("Wallet disconnected");
 
 }
 
+/* ================= SESSION RESET ================= */
+
+function resetSession(){
+
+/* move session assets to navbar */
+
+totalPoints += sessionPoints;
+
+totalTokens =
+totalPoints /
+POINTS_PER_TOKEN;
+
+/* clear session */
+
+sessionPoints = 0;
+
+sessionTokens = 0;
+
+saveData();
+
+updateUI();
+
+}
+
 /* ================= TAP ================= */
 
 function tap(){
@@ -527,23 +574,33 @@ return;
 
 }
 
+/* stop previous timer */
+
+clearTimeout(tapTimer);
+
 /* live session */
+
 sessionPoints++;
 
 sessionTokens =
 sessionPoints /
 POINTS_PER_TOKEN;
 
-/* background assets */
-totalPoints++;
-
-totalTokens =
-totalPoints /
-POINTS_PER_TOKEN;
-
-saveData();
-
 updateUI();
+
+/* 3 second inactivity */
+
+tapTimer = setTimeout(
+
+function(){
+
+resetSession();
+
+},
+
+3000
+
+);
 
 /* ================= AUTO PAYOUT ================= */
 
@@ -566,13 +623,12 @@ if(payout > MAX_WITHDRAW){
 payout = MAX_WITHDRAW;
 }
 
-/* reset total assets after claim */
-totalPoints = 0;
+/* reset assets after claim */
 
+totalPoints = 0;
 totalTokens = 0;
 
 sessionPoints = 0;
-
 sessionTokens = 0;
 
 lastWithdraw = now;
@@ -604,8 +660,46 @@ wallet +
 /* ================= START ================= */
 
 window.addEventListener(
+
 "DOMContentLoaded",
-updateUI
+
+function(){
+
+/* auto restore connected wallet */
+
+let savedWallet =
+localStorage.getItem(
+"pvlt_connected_wallet"
+);
+
+if(savedWallet){
+
+wallet = savedWallet;
+
+loadData();
+
+document.getElementById(
+"wallet"
+).value = wallet;
+
+document.getElementById(
+"walletBtn"
+).innerText =
+"DISCONNECT WALLET";
+
+document.getElementById(
+"walletStatus"
+).style.display =
+"block";
+
+}
+
+/* ui */
+
+updateUI();
+
+}
+
 );
 
 </script>
