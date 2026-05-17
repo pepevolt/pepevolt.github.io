@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
-<title>PVLT Tap Game</title>
+<title>Tap Volt Game</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
@@ -17,10 +17,8 @@ font-family:Arial;
 background:#0b1220;
 color:white;
 text-align:center;
-overflow-x:hidden;
 }
 
-/* NAVBAR */
 .navbar{
 position:fixed;
 top:0;
@@ -33,17 +31,12 @@ justify-content:space-between;
 align-items:center;
 padding:0 10px;
 font-size:12px;
-z-index:10;
 }
 
 .val{color:#00ff99;font-weight:bold;}
 
-/* MAIN */
-.container{
-padding-top:80px;
-}
+.container{padding-top:80px;}
 
-/* TAP BUTTON */
 .tap{
 width:170px;
 height:170px;
@@ -55,11 +48,6 @@ font-weight:bold;
 color:black;
 }
 
-.tap:active{
-transform:scale(0.97);
-}
-
-/* CARD */
 .card{
 margin:20px;
 background:#111827;
@@ -67,7 +55,6 @@ padding:15px;
 border-radius:12px;
 }
 
-/* INPUT */
 input{
 width:85%;
 padding:10px;
@@ -90,29 +77,30 @@ font-weight:bold;
 
 <body>
 
-<!-- NAVBAR -->
 <div class="navbar">
 <div>Points: <span id="points">0</span></div>
-<div>PVLT: <span id="tokens">0</span></div>
+<div>Tokens: <span id="tokens">0</span></div>
 <div>ID: <span id="userId">---</span></div>
 </div>
 
-<!-- MAIN -->
 <div class="container">
 
-<h2>PVLT TAP GAME</h2>
+<h2>Tap Volt Game</h2>
 
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
-<h3>Wallet (optional)</h3>
+<h3>Wallet</h3>
 <input id="wallet" placeholder="Enter BSC wallet">
 <br>
-<button onclick="saveWallet()">SAVE WALLET</button>
+<button onclick="linkWallet()">LINK</button>
 </div>
 
 <div class="card">
-<button onclick="claim()">CLAIM TOKENS</button>
+<h3>Withdraw</h3>
+<input id="withdrawAmount" placeholder="Tokens (100 - 500)">
+<br>
+<button onclick="withdraw()">WITHDRAW</button>
 </div>
 
 </div>
@@ -120,96 +108,107 @@ font-weight:bold;
 <script>
 
 /* SAFE STATE */
-let tg = null;
 let userId = "guest";
-
 let points = 0;
 let tokens = 0;
 let wallet = null;
+let lastWithdraw = 0;
 
-/* SAFE INIT (NO CRASH EVER) */
+/* TELEGRAM SAFE INIT */
 function init(){
 
 try{
 
 if(window.Telegram && Telegram.WebApp){
 
-tg = Telegram.WebApp;
-tg.ready();
-tg.expand();
+Telegram.WebApp.ready();
+Telegram.WebApp.expand();
 
-userId = tg.initDataUnsafe?.user?.id || "guest";
+userId = Telegram.WebApp.initDataUnsafe?.user?.id || "guest";
 
 }
 
 }catch(e){
-console.log("Telegram init error", e);
+console.log(e);
 }
 
 document.getElementById("userId").innerText = userId;
-
 render();
 
 }
 
-/* RENDER UI */
+/* RENDER */
 function render(){
 document.getElementById("points").innerText = points;
 document.getElementById("tokens").innerText = tokens;
 }
 
-/* TAP SYSTEM */
+/* TAP */
 function tap(){
 points += 1;
 render();
 }
 
-/* SAVE WALLET */
-function saveWallet(){
+/* LINK WALLET */
+function linkWallet(){
 
 let w = document.getElementById("wallet").value;
 
-if(!w){
-alert("Enter wallet");
-return;
-}
+if(!w) return alert("Enter wallet");
 
 wallet = w;
-alert("Wallet saved");
+
+alert("Wallet linked");
+
 }
 
-/* CLAIM SYSTEM (SAFE DEMO LOGIC) */
-function claim(){
+/* WITHDRAW (FRONTEND SIMULATION) */
+function withdraw(){
 
-if(points < 100){
-alert("Need at least 100 points");
+let amount = parseInt(document.getElementById("withdrawAmount").value);
+
+if(!wallet) return alert("Link wallet first");
+
+if(amount < 100 || amount > 500){
+alert("Only 100 - 500 tokens allowed");
 return;
 }
 
-if(!wallet){
-alert("Link wallet first");
+let requiredPoints = amount * 100000;
+
+if(points < requiredPoints){
+alert("Not enough points");
 return;
 }
 
-/* conversion */
-tokens = Math.floor(points / 10000);
-points = points % 10000;
+let now = Date.now();
+
+if(now - lastWithdraw < 86400000){
+alert("Only 1 withdraw per day");
+return;
+}
+
+/* simulate conversion */
+points -= requiredPoints;
+tokens += amount;
+
+lastWithdraw = now;
 
 render();
 
-alert("Claim successful (demo mode)");
+alert("Withdraw request submitted (demo)");
 
 }
 
-/* WHITE SCREEN PROTECTION */
+/* ERROR SAFE */
 window.onerror = function(msg){
-console.log("ERROR:", msg);
+console.log(msg);
 };
 
-/* START APP */
 window.addEventListener("load", init);
 
 </script>
 
 </body>
+
 </html>
