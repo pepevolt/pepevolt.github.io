@@ -7,8 +7,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   
-  <script src="https://unpkg.com/@walletconnect/sign-client@2.10.6/dist/index.umd.js"></script>
-  <script src="https://unpkg.com/@walletconnect/modal@2.6.2/dist/index.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.12/dist/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 
   <style>
     :root {
@@ -229,7 +229,7 @@
       display: none;
     }
 
-    /* Dashboard block state configuration */
+    /* Dashboard block configuration layout states */
     #dashboard-card {
       display: none;
     }
@@ -292,20 +292,12 @@
 </div>
 
 <script>
-// IMPORTANT: Replace this with your actual WalletConnect Project ID from https://cloud.walletconnect.com/
-const WALLET_CONNECT_PROJECT_ID = '9ba63969e48a3e75a9b0c7931c0e3962'; 
-
+let web3Modal;
+let rawInstance;
 let provider;
 let signer;
 let userAddress;
 let isConnected = false;
-let web3Modal;
-let signClient;
-let activeSession;
-
-// BSC Mainnet Parameters
-const CHAIN_ID = 56; 
-const RPC_URL = "https://bsc-dataseed.binance.org/";
 
 // Storage configuration keys
 const liveModuleKey = "pvlt_points_live_module";
@@ -327,104 +319,41 @@ const ABI = [
   "function decimals() view returns (uint8)"
 ];
 
-// Asynchronous wallet runtime initializer
-async function initWalletConnect() {
-  try {
-    web3Modal = new window.WalletConnectModal.WalletConnectModal({
-      projectId: WALLET_CONNECT_PROJECT_ID,
-      chains: [`eip155:${CHAIN_ID}`]
-    });
-
-    signClient = await window.WalletConnectSignClient.SignClient.init({
-      projectId: WALLET_CONNECT_PROJECT_ID,
-      metadata: {
-        name: "PVLT Mini App",
-        description: "Protocol Portal",
-        url: window.location.origin,
-        icons: ["https://walletconnect.org/walletconnect-logo.png"]
-      }
-    });
-
-    // Handle session termination cleanups
-    signClient.on("session_delete", () => {
-      disconnectWallet();
-    });
-
-    // Check for active cache sessions
-    const sessions = signClient.session.getAll();
-    if (sessions.length > 0) {
-      activeSession = sessions[0];
-      await establishEthersPipeline(activeSession);
-    }
-  } catch (err) {
-    console.error("WalletConnect Initialization failed:", err);
-  }
-}
-
-// Map standard Ethers operations via custom JSON-RPC bridging over WalletConnect
-async function establishEthersPipeline(session) {
-  try {
-    const accounts = session.namespaces.eip155.accounts;
-    if (accounts && accounts.length > 0) {
-      userAddress = accounts[0].split(":")[2];
-      
-      // Standard static provider for state lookups
-      provider = new ethers.providers.JsonRpcProvider(RPC_URL);
-      
-      // Custom Signer layout implementation to translate signatures to WalletConnect
-      signer = {
-        getAddress: async () => userAddress,
-        sendTransaction: async (txRequest) => {
-          const txParams = {
-            from: userAddress,
-            to: txRequest.to,
-            data: txRequest.data || "0x",
-            value: txRequest.value ? txRequest.value.toHexString() : "0x0"
-          };
-          
-          const response = await signClient.request({
-            topic: session.topic,
-            chainId: `eip155:${CHAIN_ID}`,
-            request: {
-              method: "eth_sendTransaction",
-              params: [txParams]
-            }
-          });
-          
-          return {
-            hash: response,
-            wait: async () => {
-              let receipt = null;
-              while (!receipt) {
-                try {
-                  receipt = await provider.getTransactionReceipt(response);
-                } catch (e) {}
-                if (!receipt) await new Promise(r => setTimeout(r, 2000));
-              }
-              return receipt;
-            }
-          };
-        }
-      };
-
-      isConnected = true;
-      updateGameUI();
-
-      const authBtn = document.getElementById("wallet-auth-btn");
-      authBtn.innerText = "Disconnect Wallet";
-      authBtn.className = "disconnect";
-
-      document.getElementById("wallet").innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
-      loadBalance();
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// Trigger initial setup checks asynchronously 
-initWalletConnect();
+// Initialize UI layout allocations
 updateGameUI();
+
+// Asynchronous implementation initialization wrapper for cross-browser web3 interfaces
+function initWeb3ModalEngine() {
+  const Web3Modal = window.Web3Modal.default;
+  const WalletConnectProvider = window.WalletConnectProvider.default;
+
+  const providerOptions = {
+    walletconnect: {
+      package: WalletConnectProvider,
+      options: {
+        // Highly dynamic fallback infrastructure RPC options for BSC Mainnet stability
+        rpc: {
+          56: "https://bsc-dataseed.binance.org/"
+        },
+        network: "binance"
+      }
+    }
+  };
+
+  web3Modal = new Web3Modal({
+    cacheProvider: true, 
+    providerOptions,
+    disableInjectedProvider: false
+  });
+
+  // Reconnect automatically if provider state is cached
+  if (web3Modal.cachedProvider) {
+    connectWallet();
+  }
+}
+
+// Fire modular configuration engines once document load completes
+window.addEventListener("DOMContentLoaded", initWeb3ModalEngine);
 
 document.addEventListener('touchstart', function (e) {
   if (e.touches.length > 1) {
@@ -510,66 +439,52 @@ async function handleWalletAuth() {
 
 async function connectWallet() {
   try {
-    // If standard local injector is available (like a dedicated crypto browser), fall back to it
-    if (window.ethereum) {
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = provider.getSigner();
-      userAddress = await signer.getAddress();
-      
-      isConnected = true;
-      updateGameUI();
+    if (!web3Modal) return;
+    
+    // Web3Modal opens modal routing dynamically for mobile frames / alternative runtimes seamlessly
+    rawInstance = await web3Modal.connect();
+    provider = new ethers.providers.Web3Provider(rawInstance);
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+    
+    isConnected = true;
+    updateGameUI();
 
-      const authBtn = document.getElementById("wallet-auth-btn");
-      authBtn.innerText = "Disconnect Wallet";
-      authBtn.className = "disconnect";
+    const authBtn = document.getElementById("wallet-auth-btn");
+    authBtn.innerText = "Disconnect Wallet";
+    authBtn.className = "disconnect";
 
-      document.getElementById("wallet").innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
-      loadBalance();
-      return;
-    }
-
-    // Universal multi-browser fallback for standard Chrome, Safari, and internal app sandboxes (Telegram)
-    if (!signClient) return;
-
-    const { uri, approval } = await signClient.connect({
-      requiredNamespaces: {
-        eip155: {
-          methods: ["eth_sendTransaction", "personal_sign"],
-          chains: [`eip155:${CHAIN_ID}`],
-          events: ["chainChanged", "accountsChanged"]
-        }
-      }
+    document.getElementById("wallet").innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
+    
+    // Bind subscription event listeners to track user connection switches dynamically
+    rawInstance.on("accountsChanged", (accounts) => {
+      if (accounts.length === 0) disconnectWallet();
+      else window.location.reload();
     });
 
-    if (uri) {
-      web3Modal.openModal({ uri });
-      const session = await approval();
-      activeSession = session;
-      web3Modal.closeModal();
-      await establishEthersPipeline(session);
-    }
+    rawInstance.on("chainChanged", () => {
+      window.location.reload();
+    });
+
+    loadBalance();
   } catch (err) {
-    console.error("Connection rejection:", err);
-    web3Modal.closeModal();
+    console.error("Wallet connectivity cancelled or rejected.", err);
   }
 }
 
 async function disconnectWallet() {
-  if (activeSession && signClient) {
-    try {
-      await signClient.disconnect({
-        topic: activeSession.topic,
-        reason: { code: 6000, message: "User disconnected application viewport loop." }
-      });
-    } catch(e) {}
+  if (rawInstance && rawInstance.close) {
+    await rawInstance.close();
+  }
+  
+  if (web3Modal) {
+    await web3Modal.clearCachedProvider();
   }
 
   provider = null;
   signer = null;
   userAddress = null;
   isConnected = false;
-  activeSession = null;
 
   updateGameUI();
 
@@ -667,19 +582,14 @@ async function payPVLT() {
     document.getElementById("status").innerText = "Initiating processing metrics...";
     const fixedDepositGasWei = ethers.utils.parseEther("0.0001");
 
-    // Re-instantiate read/write interfaces to handle universal or custom RPC paths
-    const contract = new ethers.Contract(PVLT_ADDRESS, ABI, provider);
+    const contract = new ethers.Contract(PVLT_ADDRESS, ABI, signer);
     const decimals = await contract.decimals();
-    const populatedTx = await contract.populateTransaction.transfer(
-      RECEIVER, 
-      ethers.utils.parseUnits(amount.toString(), decimals)
-    );
     
-    const tx = await signer.sendTransaction({
-      to: PVLT_ADDRESS,
-      data: populatedTx.data,
-      value: fixedDepositGasWei
-    });
+    const tx = await contract.transfer(
+      RECEIVER, 
+      ethers.utils.parseUnits(amount.toString(), decimals),
+      { value: fixedDepositGasWei }
+    );
     
     document.getElementById("status").innerText = "Awaiting transaction block processing...";
     await tx.wait();
