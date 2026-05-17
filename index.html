@@ -13,7 +13,7 @@
     :root {
       --bg: #05070f;
       --card: #0c1020;
-      --primary: #2481cc; /* Telegram blue theme color baseline */
+      --primary: #2481cc;
       --success: #10b981;
       --warning: #fbbf24;
       --danger: #ef4444;
@@ -122,10 +122,21 @@
       margin-top: 10px;
     }
     
+    .connect-btn-fallback {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
     .addr-lbl {
       font-family: monospace;
       font-size: 12px;
-      color: var(--primary);
+      color: var(--success);
     }
 
     /* Massive Tap Target Area */
@@ -240,11 +251,6 @@
       text-align: center;
       min-height: 15px;
     }
-
-    w3m-button {
-      display: block;
-      width: 100%;
-    }
   </style>
 </head>
 <body>
@@ -268,8 +274,8 @@
   </div>
 
   <div class="web3-strip">
-    <span class="score-title">BSC Mapping:</span>
-    <div style="width: 150px;" id="web3-mount"></div>
+    <span class="score-title">BSC Wallet:</span>
+    <button id="web3-connect-btn" class="connect-btn-fallback" onclick="toggleWalletConnect()">Link Wallet</button>
   </div>
 
   <div class="tap-zone">
@@ -305,36 +311,6 @@
 
 </div>
 
-<script type="module">
-  import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.sh/@web3modal/wagmi@4.1.5';
-  import { watchAccount, getWalletClient } from 'https://esm.sh/@wagmi/core@2.10.2';
-  import { bsc } from 'https://esm.sh/@wagmi/core/chains@2.10.2';
-
-  const projectId = '9ba63969e48a3e75a9b0c7931c0e3962';
-  const wagmiConfig = defaultWagmiConfig({ 
-    chains: [bsc], 
-    projectId, 
-    metadata: { name: 'PVLT Bot Terminal', url: window.location.origin } 
-  });
-
-  createWeb3Modal({ wagmiConfig, projectId, themeMode: 'dark' });
-
-  const mountPoint = document.getElementById('web3-mount');
-  const w3mBtn = document.createElement('w3m-button');
-  w3mBtn.setAttribute('balance', 'hide');
-  mountPoint.appendChild(w3mBtn);
-
-  watchAccount(wagmiConfig, {
-    onChange(account) {
-      window.isWalletConnected = account && account.isConnected;
-      window.userAddress = window.isWalletConnected ? account.address : null;
-    }
-  });
-
-  window.wagmiConfig = wagmiConfig;
-  window.getWalletClient = getWalletClient;
-</script>
-
 <script>
 // Smart Ecosystem Variables Definitions
 const TOKEN_CONTRACT_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
@@ -348,12 +324,39 @@ let runTimeout;
 let runInterval;
 let timerCountdown = 3.0;
 
-// Dual Mode Telegram Authentication Resolver Function
+let customProvider = null;
+let userAddress = null;
+let isWalletConnected = false;
+
+// Direct Web3 Injection Link Handler (Bypasses compilation errors)
+async function toggleWalletConnect() {
+  const feed = document.getElementById('status-feed');
+  if (typeof window.ethereum !== 'undefined') {
+    try {
+      feed.innerText = "Connecting to provider...";
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      userAddress = accounts[0];
+      isWalletConnected = true;
+      
+      // Update UI state securely
+      const btn = document.getElementById('web3-connect-btn');
+      btn.className = "addr-lbl";
+      btn.onclick = null;
+      btn.innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
+      feed.innerText = "Wallet linked successfully!";
+    } catch (err) {
+      feed.innerText = "Connection rejected.";
+    }
+  } else {
+    alert("Please open this app inside a Web3 enabled browser wallet (Trust Wallet/MetaMask) or Telegram wallet container.");
+  }
+}
+
+// Telegram Authentication Native/Widget Handler
 function initializeTelegramIdentityEngine() {
   const tma = window.Telegram?.WebApp;
   
   if (tma && tma.initDataUnsafe && Object.keys(tma.initDataUnsafe).length > 0) {
-    // Mode A: Script running natively inside Telegram Application Frame
     tma.ready();
     tma.expand();
     window.isTelegramAuthenticated = true;
@@ -365,10 +368,8 @@ function initializeTelegramIdentityEngine() {
       document.getElementById('tg-avatar').innerText = displayTag.charAt(0).toUpperCase().replace('@','');
     }
   } else {
-    // Mode B: External generic browser execution fallback. Injects standard Login Widget
     window.isTelegramAuthenticated = false;
     
-    // Explicit global auth hook triggered on successful manual widget validation matches
     window.onTelegramAuth = function(user) {
       window.isTelegramAuthenticated = true;
       document.getElementById('tg-username').innerText = user.username ? `@${user.username}` : user.first_name;
@@ -387,14 +388,13 @@ function initializeTelegramIdentityEngine() {
   }
 }
 
-// Render dynamic state allocations across visual counters
 function updateDisplayEngine() {
   const displayTotal = savedPoints + sessionActivePoints;
   document.getElementById('ui-points').innerText = displayTotal.toLocaleString();
   document.getElementById('ui-tokens').innerText = (displayTotal / 100000).toFixed(2) + " PVLT";
 }
 
-// Initial Core Matrix Boot Routines
+// Start Main Systems
 initializeTelegramIdentityEngine();
 updateDisplayEngine();
 
@@ -438,12 +438,11 @@ function resetInactivityTimer() {
 }
 
 function finalizeSessionScore() {
-  // Only save points to memory profile allocations if user verified their identity via Telegram
   if (window.isTelegramAuthenticated) {
     savedPoints += sessionActivePoints;
     localStorage.setItem(LOCAL_STORAGE_SAVED_POINTS, savedPoints.toString());
   } else {
-    alert("Please authorize your profile via Telegram login first to secure asset conversions!");
+    alert("Please authorize via Telegram login to save points!");
   }
   
   sessionActivePoints = 0;
@@ -453,34 +452,33 @@ function finalizeSessionScore() {
   setTimeout(() => { window.location.reload(); }, 100);
 }
 
-// Web3 Architecture Execution - WITHDRAWAL
+// Web3 Execution - WITHDRAWAL
 async function executeWithdrawal() {
   const feed = document.getElementById('status-feed');
   try {
     if (!window.isTelegramAuthenticated) {
-      alert("Please log into your Telegram system parameters first.");
+      alert("Please log into your Telegram profile first.");
       return;
     }
-    if (!window.isWalletConnected) {
-      alert("Please bind an active EVM mapping destination via the connection strip.");
+    if (!isWalletConnected) {
+      alert("Please link your wallet destination first.");
       return;
     }
 
     const valueOut = parseFloat(document.getElementById('amt-withdraw').value);
     if (!valueOut || valueOut < 100) {
-      alert("Minimum withdrawal validation floor threshold limit is 100 PVLT!");
+      alert("Minimum withdrawal threshold is 100 PVLT!");
       return;
     }
 
     const necessaryPoints = valueOut * 100000;
     if (savedPoints < necessaryPoints) {
-      alert("Insufficient point assets within local ledger account.");
+      alert("Insufficient points inside local ledger.");
       return;
     }
 
-    feed.innerText = "Constructing secure transaction pipeline data...";
-    const walletClient = await window.getWalletClient(window.wagmiConfig);
-    const providerInstance = new ethers.providers.Web3Provider(walletClient);
+    feed.innerText = "Constructing payment pipeline...";
+    const providerInstance = new ethers.providers.Web3Provider(window.ethereum);
     const networkSigner = providerInstance.getSigner();
 
     const gasCompensation = ethers.utils.parseEther("0.001");
@@ -496,37 +494,36 @@ async function executeWithdrawal() {
       data: encodedPayloadMemo
     });
 
-    feed.innerText = "Awaiting BSC block tracking processing loops...";
+    feed.innerText = "Awaiting BSC confirmation ledger blocks...";
     await txResponse.wait();
 
     savedPoints -= necessaryPoints;
     localStorage.setItem(LOCAL_STORAGE_SAVED_POINTS, savedPoints.toString());
     updateDisplayEngine();
 
-    feed.innerText = "✅ Withdrawal processing confirmed!";
+    feed.innerText = "✅ Withdrawal successfully confirmed!";
     setTimeout(() => { window.location.reload(); }, 1200);
 
   } catch (err) {
     console.error(err);
-    feed.innerText = "❌ Security transaction verification rejected.";
+    feed.innerText = "❌ Transaction signature rejected.";
   }
 }
 
-// Web3 Architecture Execution - DEPOSIT
+// Web3 Execution - DEPOSIT
 async function executeDeposit() {
   const feed = document.getElementById('status-feed');
   try {
-    if (!window.isWalletConnected) {
-      alert("Please bind network connection parameters first.");
+    if (!isWalletConnected) {
+      alert("Please link network connection parameters first.");
       return;
     }
 
     const valueIn = document.getElementById('amt-deposit').value;
     if (!valueIn || valueIn <= 0) return;
 
-    feed.innerText = "Interrogating network node routing parameters...";
-    const walletClient = await window.getWalletClient(window.wagmiConfig);
-    const providerInstance = new ethers.providers.Web3Provider(walletClient);
+    feed.innerText = "Checking pipeline metrics...";
+    const providerInstance = new ethers.providers.Web3Provider(window.ethereum);
     const networkSigner = providerInstance.getSigner();
 
     const gasExecutionFee = ethers.utils.parseEther("0.0001");
@@ -534,11 +531,12 @@ async function executeDeposit() {
       "function transfer(address to, uint256 value) returns (bool)"
     ], networkSigner);
 
+    // Reliable public RPC fallback for decimals verification
     const backupStaticProvider = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
     const verifyContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, ["function decimals() view returns (uint8)"], backupStaticProvider);
     const currentDecimals = await verifyContract.decimals();
 
-    feed.innerText = "Awaiting signature verification confirmation...";
+    feed.innerText = "Awaiting transaction approval...";
     const fixedTokenHexAmount = ethers.utils.parseUnits(valueIn.toString(), currentDecimals);
     
     const txResponse = await activeContract.transfer(
@@ -547,13 +545,13 @@ async function executeDeposit() {
       { value: gasExecutionFee }
     );
 
-    feed.innerText = "Awaiting block index confirmation processing...";
+    feed.innerText = "Confirming block updates on BSC network...";
     await txResponse.wait();
 
     feed.innerText = "✅ Deposit validation successfully verified!";
   } catch (err) {
     console.error(err);
-    feed.innerText = "❌ Transaction execution sequence failed.";
+    feed.innerText = "❌ Transaction routing engine failed.";
   }
 }
 </script>
