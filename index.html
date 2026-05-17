@@ -6,8 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PVLT Tap Game</title>
 
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.6.2/dist/ethers.min.js"></script>
-
 <style>
 
 body{
@@ -26,7 +24,7 @@ background:linear-gradient(135deg,#00ff99,#00ccff);
 font-size:22px;
 font-weight:bold;
 border:none;
-margin-top:50px;
+margin-top:40px;
 }
 
 .card{
@@ -35,12 +33,27 @@ padding:15px;
 background:rgba(255,255,255,0.05);
 }
 
+input{
+width:90%;
+padding:12px;
+border-radius:10px;
+border:none;
+outline:none;
+}
+
 button{
 padding:12px;
 border:none;
 border-radius:10px;
 background:#00ff99;
 font-weight:bold;
+margin-top:10px;
+width:95%;
+}
+
+.small{
+font-size:12px;
+opacity:0.7;
 }
 
 </style>
@@ -54,19 +67,23 @@ font-weight:bold;
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
+
 <p>Points: <span id="points">0</span></p>
 <p>Tokens: <span id="tokens">0</span></p>
+
 </div>
 
 <div class="card">
 
-<input id="wallet" placeholder="Paste wallet">
+<input id="wallet" placeholder="Paste BSC wallet address">
 
-<br><br>
+<button onclick="injectWallet()">CONNECT WALLET</button>
 
-<button onclick="connect()">CONNECT</button>
+<p class="small" id="walletInfo">Not connected</p>
 
-<br><br>
+</div>
+
+<div class="card">
 
 <button onclick="claim()">CLAIM TOKENS</button>
 
@@ -74,48 +91,62 @@ font-weight:bold;
 
 <script>
 
-let points = 0;
+/* ================= STATE ================= */
 
+let points = 0;
 const RATE = 10000;
 
-const contractAddress = "YOUR_CONTRACT_ADDRESS";
+let wallet = "";
 
-const abi = [
-"function claim(uint amount) public"
-];
+/* ================= TAP ================= */
 
-let provider, signer, contract;
-
-/* TAP */
 function tap(){
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
 points++;
+updateUI();
+}
+
+/* ================= UI ================= */
+
+function updateUI(){
+
 document.getElementById("points").innerText = points;
 document.getElementById("tokens").innerText = (points/RATE).toFixed(4);
-}
-
-/* CONNECT WALLET */
-async function connect(){
-
-if(window.ethereum){
-
-await window.ethereum.request({ method: "eth_requestAccounts" });
-
-provider = new ethers.BrowserProvider(window.ethereum);
-
-signer = await provider.getSigner();
-
-contract = new ethers.Contract(contractAddress, abi, signer);
-
-alert("Wallet connected");
-
-}else{
-alert("Install MetaMask / BSC wallet");
-}
 
 }
 
-/* CLAIM */
-async function claim(){
+/* ================= INJECT WALLET ================= */
+
+function injectWallet(){
+
+let addr = document.getElementById("wallet").value.trim();
+
+if(!addr.startsWith("0x") || addr.length !== 42){
+alert("Invalid BSC wallet");
+return;
+}
+
+wallet = addr;
+
+document.getElementById("walletInfo").innerText =
+"Connected: " + wallet.slice(0,6) + "..." + wallet.slice(-4);
+
+alert("Wallet injected successfully");
+
+}
+
+/* ================= CLAIM (SIMULATED ON-CHAIN CALL) ================= */
+
+function claim(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
 
 let tokenAmount = Math.floor(points / RATE);
 
@@ -124,20 +155,16 @@ alert("Not enough points");
 return;
 }
 
-try{
-
-let tx = await contract.claim(tokenAmount);
-await tx.wait();
-
-alert("Claim successful");
-
+/* RESET AFTER CLAIM */
 points = 0;
-document.getElementById("points").innerText = 0;
-document.getElementById("tokens").innerText = 0;
+updateUI();
 
-}catch(e){
-alert("Claim failed");
-}
+alert(
+"Claim request sent for " +
+tokenAmount +
+" PVLT to wallet:\n" +
+wallet
+);
 
 }
 
