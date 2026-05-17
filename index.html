@@ -104,7 +104,6 @@ background: linear-gradient(90deg,#ff4d4d,#ff9900);
 
 <body>
 
-<!-- NAVBAR -->
 <div class="navbar">
 <div>⚡ POINTS: <span id="totalPoints">0</span></div>
 <div>💎 TOKENS: <span id="totalTokens">0.0000</span></div>
@@ -147,7 +146,6 @@ points: totalPoints
 }
 }
 
-/* ================= LOAD WALLET DATA ================= */
 function loadData(w){
 let data = localStorage.getItem(w);
 if(data){
@@ -162,27 +160,36 @@ let el=document.getElementById(id);
 if(el) el.innerText=val;
 }
 
-/* ================= INIT ================= */
-function init(){
+/* ================= RESET DISPLAY ================= */
+function resetUI(){
+set("totalPoints",0);
+set("totalTokens","0.0000");
 set("userId","guest");
+}
+
+/* ================= UPDATE UI ================= */
+function updateUI(){
+
+if(!wallet){
+resetUI();
+return;
+}
+
+set("totalPoints", totalPoints);
+set("totalTokens", (totalPoints/POINTS_PER_TOKEN).toFixed(4));
 }
 
 /* ================= TAP ================= */
 function tap(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
 totalPoints++;
 updateUI();
 saveData();
-}
-
-/* ================= TOKEN CALC ================= */
-function getTokens(){
-return totalPoints / POINTS_PER_TOKEN;
-}
-
-/* ================= UI UPDATE ================= */
-function updateUI(){
-set("totalPoints", totalPoints);
-set("totalTokens", getTokens().toFixed(4));
 }
 
 /* ================= WALLET TOGGLE ================= */
@@ -190,7 +197,6 @@ function toggleWallet(){
 
 let input=document.getElementById("wallet");
 let addr=input.value.trim();
-
 let btn=document.getElementById("walletBtn");
 
 /* CONNECT */
@@ -211,7 +217,7 @@ btn.innerText = "DISCONNECT WALLET";
 
 updateUI();
 
-alert("Wallet connected + data loaded");
+alert("Wallet connected");
 
 }
 
@@ -221,15 +227,12 @@ else{
 saveData();
 
 wallet = "";
-userId = "guest";
-
-set("userId","guest");
-
 totalPoints = 0;
+userId = "guest";
 
 btn.innerText = "CONNECT WALLET";
 
-updateUI();
+resetUI();
 
 alert("Wallet disconnected");
 }
@@ -238,9 +241,9 @@ alert("Wallet disconnected");
 /* ================= WITHDRAW ================= */
 function withdraw(){
 
-let amt=parseInt(document.getElementById("withdraw").value);
-
 if(!wallet) return alert("Connect wallet first");
+
+let amt=parseInt(document.getElementById("withdraw").value);
 
 if(amt<100 || amt>500)
 return alert("Only 100–500 tokens");
@@ -259,7 +262,7 @@ alert("Withdrawal success");
 }
 
 /* ================= START ================= */
-window.addEventListener("DOMContentLoaded",init);
+window.addEventListener("DOMContentLoaded",resetUI);
 
 </script>
 
