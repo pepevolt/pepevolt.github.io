@@ -94,13 +94,6 @@ color:black;
 font-weight:bold;
 }
 
-.status{
-margin-top:10px;
-font-size:13px;
-color:#00ff99;
-display:none;
-}
-
 .disconnect{
 background: linear-gradient(90deg,#ff4d4d,#ff9900);
 }
@@ -126,11 +119,7 @@ background: linear-gradient(90deg,#ff4d4d,#ff9900);
 
 <div class="card">
 <input id="wallet" placeholder="Paste BSC wallet address">
-
-<button onclick="connectWallet()">CONNECT WALLET</button>
-<button class="disconnect" onclick="disconnectWallet()">DISCONNECT</button>
-
-<div id="status" class="status">Wallet connected</div>
+<button id="walletBtn" onclick="toggleWallet()">CONNECT WALLET</button>
 </div>
 
 <div class="card">
@@ -143,11 +132,29 @@ background: linear-gradient(90deg,#ff4d4d,#ff9900);
 
 <script>
 
-let totalPoints = 0;
 let wallet = "";
+let totalPoints = 0;
 let userId = "guest";
 
 const POINTS_PER_TOKEN = 10000;
+
+/* ================= STORAGE ================= */
+function saveData(){
+if(wallet){
+localStorage.setItem(wallet, JSON.stringify({
+points: totalPoints
+}));
+}
+}
+
+/* ================= LOAD WALLET DATA ================= */
+function loadData(w){
+let data = localStorage.getItem(w);
+if(data){
+let obj = JSON.parse(data);
+totalPoints = obj.points || 0;
+}
+}
 
 /* ================= UI ================= */
 function set(id,val){
@@ -164,9 +171,10 @@ set("userId","guest");
 function tap(){
 totalPoints++;
 updateUI();
+saveData();
 }
 
-/* ================= TOKENS ================= */
+/* ================= TOKEN CALC ================= */
 function getTokens(){
 return totalPoints / POINTS_PER_TOKEN;
 }
@@ -177,41 +185,54 @@ set("totalPoints", totalPoints);
 set("totalTokens", getTokens().toFixed(4));
 }
 
-/* ================= CONNECT WALLET ================= */
-function connectWallet(){
+/* ================= WALLET TOGGLE ================= */
+function toggleWallet(){
 
-let w=document.getElementById("wallet").value.trim();
+let input=document.getElementById("wallet");
+let addr=input.value.trim();
 
-if(!w.startsWith("0x") || w.length !== 42){
-alert("Invalid BSC wallet address");
+let btn=document.getElementById("walletBtn");
+
+/* CONNECT */
+if(!wallet){
+
+if(!addr.startsWith("0x") || addr.length !== 42){
+alert("Invalid wallet");
 return;
 }
 
-wallet = w;
+wallet = addr;
+loadData(wallet);
 
-let status=document.getElementById("status");
-status.style.display="block";
-
-userId = w.slice(0,6)+"..."+w.slice(-4);
+userId = wallet.slice(0,6)+"..."+wallet.slice(-4);
 set("userId",userId);
 
-alert("Wallet connected");
+btn.innerText = "DISCONNECT WALLET";
+
+updateUI();
+
+alert("Wallet connected + data loaded");
+
 }
 
-/* ================= DISCONNECT ================= */
-function disconnectWallet(){
+/* DISCONNECT */
+else{
+
+saveData();
 
 wallet = "";
 userId = "guest";
 
 set("userId","guest");
 
-let status=document.getElementById("status");
-status.style.display="none";
+totalPoints = 0;
 
-document.getElementById("wallet").value="";
+btn.innerText = "CONNECT WALLET";
+
+updateUI();
 
 alert("Wallet disconnected");
+}
 }
 
 /* ================= WITHDRAW ================= */
@@ -222,7 +243,7 @@ let amt=parseInt(document.getElementById("withdraw").value);
 if(!wallet) return alert("Connect wallet first");
 
 if(amt<100 || amt>500)
-return alert("Only 100–500 tokens allowed");
+return alert("Only 100–500 tokens");
 
 let requiredPoints = amt * POINTS_PER_TOKEN;
 
@@ -232,6 +253,7 @@ return alert("Not enough points");
 totalPoints -= requiredPoints;
 
 updateUI();
+saveData();
 
 alert("Withdrawal success");
 }
