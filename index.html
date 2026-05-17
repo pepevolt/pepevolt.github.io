@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>PVLT Mini App</title>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
@@ -14,12 +14,15 @@
       background: #0b0f1a;
       color: white;
       text-align: center;
+      /* Prevents pull-to-refresh and extra bounce on mobile */
+      overscroll-behavior: none; 
     }
 
     .container {
       padding: 20px;
       max-width: 500px;
       margin: auto;
+      box-sizing: border-box;
     }
 
     .card {
@@ -39,6 +42,8 @@
       width: 100%;
       font-size: 16px;
       font-weight: bold;
+      /* Eliminates the grey highlight box when tapping on mobile */
+      -webkit-tap-highlight-color: transparent; 
     }
 
     .connect {
@@ -56,6 +61,16 @@
       color: white;
       font-size: 18px;
       padding: 20px;
+      /* CRITICAL: Disables double-tap to zoom gestures specifically on the game button */
+      touch-action: manipulation; 
+      /* Prevents user from accidentally selecting the button text while tapping fast */
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Slight push down visual effect when clicked, keeping layout fixed */
+    .game-btn:active {
+      transform: scale(0.98);
     }
 
     .withdraw-btn {
@@ -75,6 +90,7 @@
       border-radius: 8px;
       border: none;
       box-sizing: border-box;
+      font-size: 16px; /* 16px or higher prevents iOS from auto-zooming on input focus */
     }
 
     .status {
