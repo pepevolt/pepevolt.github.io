@@ -17,46 +17,30 @@ margin:0;
 font-family:Arial;
 background:#0b1220;
 color:white;
-overflow-x:hidden;
 }
 
-/* NAVBAR */
 .navbar{
 position:fixed;
 top:0;
 left:0;
 right:0;
 height:60px;
-background:#0f172a;
+background:#111827;
 display:flex;
 justify-content:space-between;
 align-items:center;
 padding:0 10px;
-border-bottom:1px solid #1f2937;
 font-size:12px;
 z-index:10;
 }
 
-.nav{
-color:#94a3b8;
-}
+.val{color:#00ff99;font-weight:bold;}
 
-.val{
-color:#00ff99;
-font-weight:bold;
-}
-
-/* MAIN */
 .container{
 padding-top:80px;
 text-align:center;
 }
 
-h2{
-color:#00ff99;
-}
-
-/* TAP */
 .tap{
 width:200px;
 height:200px;
@@ -65,21 +49,14 @@ background:#00ff99;
 border:none;
 font-size:28px;
 font-weight:bold;
-color:black;
-box-shadow:0 0 20px #00ff99;
 }
 
-.tap:active{
-transform:scale(0.97);
-}
-
-/* PROGRESS */
 .bar{
 width:80%;
 height:10px;
 background:#1f2937;
-border-radius:20px;
 margin:15px auto;
+border-radius:10px;
 overflow:hidden;
 }
 
@@ -87,34 +64,24 @@ overflow:hidden;
 height:100%;
 width:0%;
 background:#00ff99;
-transition:0.2s;
 }
 
-/* LEADERBOARD */
 .card{
-margin:20px 10px;
+margin:20px;
 background:#111827;
 padding:15px;
-border-radius:12px;
-}
-
-.leader{
-text-align:left;
-font-size:13px;
+border-radius:10px;
 }
 
 button{
 padding:12px;
-border:none;
 border-radius:10px;
+border:none;
 margin-top:10px;
 font-weight:bold;
 }
 
-.connect{
-background:#38bdf8;
-color:black;
-}
+.connect{background:#38bdf8;}
 
 </style>
 
@@ -122,7 +89,6 @@ color:black;
 
 <body>
 
-<!-- NAVBAR -->
 <div class="navbar">
 
 <div>Points: <span class="val" id="pointsNav">0</span></div>
@@ -135,25 +101,23 @@ color:black;
 
 <div class="container">
 
-<h2>PVLT TAP ARENA</h2>
+<h2>PVLT TAP GAME</h2>
 
-<button class="connect" onclick="connectWallet()">
-Connect Wallet
-</button>
+<button class="connect" onclick="connect()">Connect Wallet</button>
 
-<!-- PROGRESS -->
-<div class="bar">
-<div class="fill" id="bar"></div>
+<div class="bar"><div class="fill" id="bar"></div></div>
+
+<div id="progress">0 / 10000</div>
+
+<button class="tap" onclick="tap()">TAP</button>
+
+<div class="card">
+<button onclick="claim()">CLAIM (100–500 tokens)</button>
 </div>
 
-<div id="progressText">0 / 10000</div>
-
-<button class="tap" onclick="tap()">⚡ TAP</button>
-
-<!-- LEADERBOARD -->
 <div class="card">
-<h3>🏆 REAL LEADERBOARD</h3>
-<div class="leader" id="board">Loading...</div>
+<h3>Leaderboard</h3>
+<div id="board">Loading...</div>
 </div>
 
 </div>
@@ -165,23 +129,19 @@ let contract, tokenContract;
 
 let points = 0;
 
-/* CONTRACTS */
 const TAP = "YOUR_TAP_CONTRACT";
 const TOKEN = "YOUR_PVLT_TOKEN";
 
-/* ABI */
 const tapAbi = [
 "function tap(uint256)",
-"function getPoints(address) view returns (uint256)",
-"function getTopPlayers() view returns (address[])"
+"function getPoints(address) view returns (uint256)"
 ];
 
 const tokenAbi = [
 "function balanceOf(address) view returns (uint256)"
 ];
 
-/* CONNECT */
-async function connectWallet(){
+async function connect(){
 
 provider = new ethers.providers.Web3Provider(window.ethereum);
 await provider.send("eth_requestAccounts", []);
@@ -199,7 +159,6 @@ load();
 
 }
 
-/* TAP */
 async function tap(){
 
 points++;
@@ -214,45 +173,46 @@ load();
 
 }
 
-/* PROGRESS */
 function updateBar(){
 
-let percent = (points % 10000) / 10000 * 100;
+let p = points % 10000;
 
-document.getElementById("bar").style.width = percent + "%";
+document.getElementById("bar").style.width =
+(p / 10000) * 100 + "%";
 
-document.getElementById("progressText").innerText =
-(points % 10000) + " / 10000";
+document.getElementById("progress").innerText =
+p + " / 10000";
 
 }
 
-/* LOAD */
-async function load(){
+async function claim(){
 
-if(!wallet) return;
+try{
+
+let tx = await contract.claim();
+await tx.wait();
+
+alert("Claim successful!");
+
+load();
+
+}catch(e){
+alert(e.message);
+}
+
+}
+
+async function load(){
 
 let p = await contract.getPoints(wallet);
 document.getElementById("pointsNav").innerText = p;
 
-/* PVLT */
 let bal = await tokenContract.balanceOf(wallet);
 document.getElementById("tokenNav").innerText =
 ethers.utils.formatEther(bal);
 
-/* REAL LEADERBOARD */
-let list = await contract.getTopPlayers();
-
-let html = "";
-
-for(let i=0;i<list.length;i++){
-
-html += (i+1) + ". " +
-list[i].slice(0,6)+"..." +
-list[i].slice(-4) + "<br>";
-
-}
-
-document.getElementById("board").innerHTML = html || "No players yet";
+document.getElementById("board").innerHTML =
+"1. You - " + p;
 
 }
 
