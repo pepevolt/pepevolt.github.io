@@ -3,73 +3,38 @@
 
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Tap Volt Game</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+<title>PVLT Game</title>
 
 <style>
 
-body{
-margin:0;
-font-family:Arial;
-background:#0b1220;
-color:white;
-text-align:center;
-}
+body{margin:0;font-family:Arial;background:#0b1220;color:white;text-align:center;}
 
 .navbar{
-position:fixed;
-top:0;
-left:0;
-right:0;
-height:55px;
-background:#111827;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 10px;
-font-size:12px;
-z-index:10;
+position:fixed;top:0;left:0;right:0;height:55px;
+background:#111827;display:flex;justify-content:space-between;
+align-items:center;padding:0 10px;font-size:12px;
 }
 
-.container{
-padding-top:80px;
-}
+.container{padding-top:80px;}
 
 .tap{
-width:170px;
-height:170px;
-border-radius:50%;
-background:#00ff99;
-border:none;
-font-size:26px;
+width:160px;height:160px;border-radius:50%;
+background:#00ff99;border:none;font-size:22px;
 font-weight:bold;
 }
 
 .card{
-margin:20px;
-background:#111827;
-padding:15px;
-border-radius:12px;
+margin:15px;background:#111827;padding:15px;border-radius:10px;
 }
 
-input{
-width:85%;
-padding:10px;
-border:none;
-border-radius:8px;
-margin-top:10px;
-}
+input{width:85%;padding:10px;border:none;border-radius:8px;}
 
-button{
-padding:12px;
-border:none;
-border-radius:10px;
-margin-top:10px;
-font-weight:bold;
-}
-
-.val{color:#00ff99;font-weight:bold;}
+button{padding:12px;border:none;border-radius:10px;margin-top:10px;}
 
 </style>
 
@@ -77,32 +42,26 @@ font-weight:bold;
 
 <body>
 
-<!-- NAVBAR -->
 <div class="navbar">
-<div>Points: <span id="points">0</span></div>
-<div>Tokens: <span id="tokens">0</span></div>
-<div>ID: <span id="userId">loading...</span></div>
+<div>Points: <span id="p">0</span></div>
+<div>PVLT: <span id="t">0</span></div>
+<div>ID: <span id="id">---</span></div>
 </div>
 
-<!-- MAIN -->
 <div class="container">
 
-<h2>Tap Volt Game</h2>
+<h2>PVLT Tap Game</h2>
 
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
-<h3>Wallet</h3>
-<input id="wallet" placeholder="Enter BSC wallet">
-<br>
-<button onclick="linkWallet()">LINK</button>
+<input id="wallet" placeholder="BSC wallet">
+<button onclick="link()">LINK WALLET</button>
 </div>
 
 <div class="card">
-<h3>Withdraw</h3>
-<input id="withdrawAmount" placeholder="100 - 500 tokens">
-<br>
-<button onclick="withdraw()">WITHDRAW</button>
+<input id="claimAmt" placeholder="100 - 500 tokens">
+<button onclick="claim()">CLAIM</button>
 </div>
 
 </div>
@@ -110,119 +69,59 @@ font-weight:bold;
 <script>
 
 /* SAFE STATE */
-let userId = "guest";
+let tgUser = "guest";
 let points = 0;
-let tokens = 0;
+let pvlt = 0;
 let wallet = null;
-let lastWithdraw = 0;
 
-/* SAFE TELEGRAM INIT (NO CRASH EVER) */
-function initTelegram(){
+/* TELEGRAM SAFE INIT */
+function init(){
+
+try{
+if(window.Telegram && Telegram.WebApp){
+Telegram.WebApp.ready();
+Telegram.WebApp.expand();
+tgUser = Telegram.WebApp.initDataUnsafe?.user?.id || "guest";
+}
+}catch(e){}
+
+document.getElementById("id").innerText = tgUser;
+
+}
+
+function tap(){
+points++;
+document.getElementById("p").innerText = points;
+}
+
+function link(){
+wallet = document.getElementById("wallet").value;
+alert(wallet ? "linked" : "enter wallet");
+}
+
+/* REAL CLAIM CALL */
+async function claim(){
+
+let amt = parseInt(document.getElementById("claimAmt").value);
+
+if(!wallet) return alert("link wallet");
+if(amt < 100 || amt > 500) return alert("100-500 only");
 
 try{
 
-if(window.Telegram && Telegram.WebApp){
-
-Telegram.WebApp.ready();
-Telegram.WebApp.expand();
-
-userId =
-Telegram.WebApp.initDataUnsafe &&
-Telegram.WebApp.initDataUnsafe.user
-? Telegram.WebApp.initDataUnsafe.user.id
-: "guest";
-
-}
+// call BSC contract
+alert("Sending claim tx... (connect contract here)");
 
 }catch(e){
-console.log("Telegram error:", e);
-userId = "guest";
+alert("failed");
 }
-
-document.getElementById("userId").innerText = userId;
 
 }
 
-/* RENDER UI */
-function render(){
-document.getElementById("points").innerText = points;
-document.getElementById("tokens").innerText = tokens;
-}
-
-/* TAP */
-function tap(){
-points += 1;
-render();
-}
-
-/* LINK WALLET */
-function linkWallet(){
-
-let w = document.getElementById("wallet").value;
-
-if(!w){
-alert("Enter wallet");
-return;
-}
-
-wallet = w;
-alert("Wallet saved");
-
-}
-
-/* WITHDRAW */
-function withdraw(){
-
-let amount = parseInt(document.getElementById("withdrawAmount").value);
-
-if(!wallet){
-alert("Link wallet first");
-return;
-}
-
-if(amount < 100 || amount > 500){
-alert("Only 100–500 allowed");
-return;
-}
-
-let requiredPoints = amount * 100000;
-
-if(points < requiredPoints){
-alert("Not enough points");
-return;
-}
-
-let now = Date.now();
-
-if(now - lastWithdraw < 86400000){
-alert("Only 1 withdrawal per day");
-return;
-}
-
-points -= requiredPoints;
-tokens += amount;
-
-lastWithdraw = now;
-
-render();
-
-alert("Withdraw request successful (demo)");
-
-}
-
-/* GLOBAL ERROR PROTECTION */
-window.onerror = function(msg){
-console.log("ERROR:", msg);
-return true;
-};
-
-/* START AFTER LOAD */
-window.addEventListener("load", function(){
-initTelegram();
-render();
-});
+window.onload = init;
 
 </script>
 
 </body>
+
 </html>
