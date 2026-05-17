@@ -4,7 +4,6 @@
 <head>
 
 <meta charset="UTF-8">
-
 <meta name="viewport"
 content="width=device-width,
 initial-scale=1,
@@ -15,8 +14,6 @@ viewport-fit=cover">
 <title>PVLT Tap Game</title>
 
 <style>
-
-/* ================= RESET ================= */
 
 *{
 margin:0;
@@ -33,16 +30,12 @@ background:#08111f;
 font-family:Arial;
 color:white;
 touch-action:manipulation;
--webkit-text-size-adjust:100%;
-overscroll-behavior:none;
 }
 
 button,input{
 font-size:16px;
 touch-action:manipulation;
 }
-
-/* ================= LAYOUT ================= */
 
 body{
 display:flex;
@@ -55,7 +48,6 @@ justify-content:space-between;
 padding:14px;
 background:#101b2e;
 font-size:12px;
-flex-shrink:0;
 }
 
 .container{
@@ -67,14 +59,11 @@ padding:20px;
 overflow:hidden;
 }
 
-/* ================= TAP ================= */
-
 .tap{
 width:220px;
 height:220px;
 border-radius:50%;
 border:none;
-
 margin-top:30px;
 
 font-size:28px;
@@ -82,29 +71,21 @@ font-weight:bold;
 
 background:linear-gradient(135deg,#00ff99,#00ccff);
 color:black;
-
-display:flex;
-align-items:center;
-justify-content:center;
 }
 
 .tap:active{
 transform:scale(0.96);
 }
 
-/* ================= CARD ================= */
-
 .card{
 width:90%;
 max-width:360px;
-margin-top:20px;
+margin-top:15px;
 padding:15px;
 
 background:rgba(255,255,255,0.05);
 border-radius:14px;
 }
-
-/* ================= INPUT ================= */
 
 input{
 width:100%;
@@ -113,10 +94,7 @@ border:none;
 border-radius:10px;
 background:#111827;
 color:white;
-font-size:16px;
 }
-
-/* ================= BUTTON ================= */
 
 button{
 width:100%;
@@ -127,15 +105,6 @@ border-radius:10px;
 font-weight:bold;
 background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
-}
-
-/* ================= STATUS ================= */
-
-.status{
-margin-top:8px;
-font-size:12px;
-color:#00ff99;
-display:none;
 }
 
 .small{
@@ -149,65 +118,42 @@ opacity:0.7;
 
 <body>
 
-<!-- ================= NAV ================= -->
-
+<!-- NAV -->
 <div class="nav">
-
 <div>⚡ <span id="points">0</span></div>
-
 <div>💎 <span id="tokens">0.0000</span></div>
-
-<div>🔋 <span id="energy">100</span></div>
-
+<div>🔋 <span id="energy">50</span></div>
 <div>👤 <span id="walletView">guest</span></div>
-
 </div>
 
-<!-- ================= MAIN ================= -->
-
+<!-- MAIN -->
 <div class="container">
 
-<button class="tap" onclick="tap()">
-TAP
-</button>
+<button class="tap" onclick="tap()">TAP</button>
 
-<div class="small" style="margin-top:10px;">
-1 Tap = 1 Point | Energy System Active
-</div>
-
-<!-- ================= WALLET ================= -->
+<div class="small">Energy capped at 50 (free regen)</div>
 
 <div class="card">
 
-<input id="walletInput"
-placeholder="Paste BSC wallet">
+<input id="walletInput" placeholder="Paste BSC wallet">
 
-<button id="walletBtn"
-onclick="toggleWallet()">
+<button onclick="toggleWallet()">
 CONNECT WALLET
 </button>
 
-<div id="walletStatus" class="status">
-CONNECTED
 </div>
-
-</div>
-
-<!-- ================= CLAIM INFO ================= -->
 
 <div class="card">
 
 <div class="small">
-Min Claim: 100 Tokens
-<br>
-Max Claim: 500 Tokens
-<br>
-Energy: Auto regenerates
+Buy Energy = Paid via PVLT Token Contract
 </div>
 
-<button onclick="claim()">
-CLAIM TOKENS
+<button onclick="buyEnergy()">
+BUY ENERGY (RECHARGE)
 </button>
+
+</div>
 
 </div>
 
@@ -215,18 +161,11 @@ CLAIM TOKENS
 
 /* ================= STATE ================= */
 
-let wallet = "";
-let points = 0;
+let wallet="";
+let points=0;
 
-/* ENERGY SYSTEM */
-let energy = 100;
-const MAX_ENERGY = 100;
-
-/* ================= UPDATE UI ================= */
-
-function set(id,val){
-document.getElementById(id).innerText = val;
-}
+let energy=50;
+const MAX_ENERGY=50;
 
 /* ================= ENERGY REGEN ================= */
 
@@ -234,119 +173,105 @@ setInterval(()=>{
 
 if(energy < MAX_ENERGY){
 energy += 1;
-set("energy",energy);
+document.getElementById("energy").innerText = energy;
 }
 
-},3000); // regen every 3 sec
+},4000);
 
 /* ================= TAP ================= */
 
 function tap(){
 
 if(!wallet){
-alert("Connect wallet first");
+alert("Connect wallet");
 return;
 }
 
-/* energy check */
 if(energy <= 0){
 alert("No energy");
 return;
 }
 
-/* consume energy */
 energy -= 1;
-
 points += 1;
 
-set("points",points);
-set("energy",energy);
+updateUI();
 
 }
 
-/* ================= CLAIM SYSTEM ================= */
+/* ================= BUY ENERGY ================= */
 
-function claim(){
+function buyEnergy(){
 
 if(!wallet){
 alert("Connect wallet first");
 return;
 }
 
-let tokens = points / 10000;
-
-/* MIN MAX RULE */
-if(tokens < 100){
-alert("Minimum 100 tokens required");
-return;
-}
-
-/* hidden fee logic (NOT shown in UI) */
-let fee = 1; // $1 internal fee
-
-if(tokens > 500){
-tokens = 500;
-}
-
-/* RESET SYSTEM */
-points = 0;
-energy = 100;
-
-set("points",0);
-set("energy",energy);
-set("tokens","0.0000");
+/*
+REAL WEB3 PLACEHOLDER:
+Here you will call your token contract:
+- approve()
+- transferFrom()
+- or direct pay function
+*/
 
 alert(
-"CLAIM SUCCESS\n" +
-"Tokens: " + tokens.toFixed(4) +
-"\nFee deducted"
+"Energy purchase initiated\n\n" +
+"Cost: Paid in PVLT Token\n" +
+"Wallet: " + wallet
 );
+
+/* instant refill */
+energy = MAX_ENERGY;
+
+updateUI();
 
 }
 
-/* ================= WALLET TOGGLE ================= */
+/* ================= WALLET ================= */
 
 function toggleWallet(){
 
-const input = document.getElementById("walletInput");
-const btn = document.getElementById("walletBtn");
-const status = document.getElementById("walletStatus");
-const view = document.getElementById("walletView");
+const input=document.getElementById("walletInput");
+const view=document.getElementById("walletView");
 
 if(wallet){
 
-wallet = "";
-points = 0;
-energy = 100;
+wallet="";
+points=0;
+energy=50;
 
-input.value = "";
+input.value="";
 
-btn.innerText = "CONNECT WALLET";
-status.style.display = "none";
+view.innerText="guest";
 
-view.innerText = "guest";
-
-set("points",0);
-set("tokens","0.0000");
-set("energy",100);
+updateUI();
 
 return;
 }
 
-let w = input.value.trim();
+let w=input.value.trim();
 
-if(!w.startsWith("0x") || w.length !== 42){
+if(!w.startsWith("0x")||w.length!==42){
 alert("Invalid wallet");
 return;
 }
 
-wallet = w.toLowerCase();
+wallet=w.toLowerCase();
 
-btn.innerText = "DISCONNECT WALLET";
-status.style.display = "block";
-
-view.innerText =
+view.innerText=
 wallet.slice(0,6)+"..."+wallet.slice(-4);
+
+}
+
+/* ================= UI ================= */
+
+function updateUI(){
+
+document.getElementById("points").innerText=points;
+document.getElementById("tokens").innerText=(points/10000).toFixed(4);
+document.getElementById("energy").innerText=energy;
 
 }
 
