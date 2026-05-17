@@ -53,14 +53,13 @@ border:none;
 font-size:26px;
 font-weight:bold;
 color:black;
-box-shadow:0 0 20px #00ff99;
 }
 
 .tap:active{
 transform:scale(0.97);
 }
 
-/* CARDS */
+/* CARD */
 .card{
 margin:20px;
 background:#111827;
@@ -72,8 +71,8 @@ border-radius:12px;
 input{
 width:85%;
 padding:10px;
-border-radius:8px;
 border:none;
+border-radius:8px;
 margin-top:10px;
 }
 
@@ -106,8 +105,8 @@ font-weight:bold;
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
-<h3>Link Wallet (optional)</h3>
-<input id="wallet" placeholder="Enter BSC address">
+<h3>Wallet (optional)</h3>
+<input id="wallet" placeholder="Enter BSC wallet">
 <br>
 <button onclick="saveWallet()">SAVE WALLET</button>
 </div>
@@ -120,47 +119,46 @@ font-weight:bold;
 
 <script>
 
+/* SAFE STATE */
 let tg = null;
 let userId = "guest";
 
-/* SAFE TELEGRAM INIT */
-function initTelegram(){
+let points = 0;
+let tokens = 0;
+let wallet = null;
+
+/* SAFE INIT (NO CRASH EVER) */
+function init(){
 
 try{
 
 if(window.Telegram && Telegram.WebApp){
 
 tg = Telegram.WebApp;
+tg.ready();
 tg.expand();
 
-let user = tg.initDataUnsafe?.user;
-
-if(user){
-userId = user.id;
-}
+userId = tg.initDataUnsafe?.user?.id || "guest";
 
 }
 
 }catch(e){
-console.log("Telegram init failed");
+console.log("Telegram init error", e);
 }
 
 document.getElementById("userId").innerText = userId;
 
+render();
+
 }
 
-/* SAFE STATE */
-let points = 0;
-let tokens = 0;
-let walletAddress = null;
-
-/* SAFE LOAD UI */
+/* RENDER UI */
 function render(){
 document.getElementById("points").innerText = points;
 document.getElementById("tokens").innerText = tokens;
 }
 
-/* TAP FUNCTION */
+/* TAP SYSTEM */
 function tap(){
 points += 1;
 render();
@@ -172,16 +170,15 @@ function saveWallet(){
 let w = document.getElementById("wallet").value;
 
 if(!w){
-alert("Enter wallet address");
+alert("Enter wallet");
 return;
 }
 
-walletAddress = w;
-
-alert("Wallet saved for later claiming");
+wallet = w;
+alert("Wallet saved");
 }
 
-/* CLAIM LOGIC (DEMO SAFE) */
+/* CLAIM SYSTEM (SAFE DEMO LOGIC) */
 function claim(){
 
 if(points < 100){
@@ -189,12 +186,12 @@ alert("Need at least 100 points");
 return;
 }
 
-if(!walletAddress){
-alert("Please link wallet first");
+if(!wallet){
+alert("Link wallet first");
 return;
 }
 
-/* convert */
+/* conversion */
 tokens = Math.floor(points / 10000);
 points = points % 10000;
 
@@ -204,14 +201,15 @@ alert("Claim successful (demo mode)");
 
 }
 
-/* SAFE START */
-window.addEventListener("load", () => {
-initTelegram();
-render();
-});
+/* WHITE SCREEN PROTECTION */
+window.onerror = function(msg){
+console.log("ERROR:", msg);
+};
+
+/* START APP */
+window.addEventListener("load", init);
 
 </script>
 
 </body>
-
 </html>
