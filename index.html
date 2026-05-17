@@ -2,114 +2,45 @@
 <html>
 
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PVLT Tap Game</title>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.6.2/dist/ethers.min.js"></script>
 
 <style>
 
-html, body{
-margin:0;
-padding:0;
-height:100%;
-overflow:hidden;
-touch-action:none;
--webkit-text-size-adjust:100%;
-}
-
 body{
+margin:0;
 font-family:Arial;
-background:radial-gradient(circle at top,#0b1220,#020617);
+background:#0b1220;
 color:white;
-position:fixed;
-width:100%;
 text-align:center;
 }
 
-.navbar{
-height:60px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 12px;
-background:rgba(255,255,255,0.06);
-backdrop-filter:blur(12px);
-border-bottom:1px solid rgba(255,255,255,0.08);
-font-size:12px;
-display:none;
-}
-
-.container{
-position:absolute;
-top:60px;
-left:0;
-right:0;
-bottom:0;
-display:flex;
-flex-direction:column;
-align-items:center;
-padding:15px;
-gap:14px;
-overflow:hidden;
-}
-
-h2{
-margin:5px 0;
-font-size:24px;
-background:linear-gradient(90deg,#00ff99,#00ccff);
--webkit-background-clip:text;
--webkit-text-fill-color:transparent;
-}
-
 .tap{
-width:190px;
-height:190px;
+width:180px;
+height:180px;
 border-radius:50%;
-border:none;
 background:linear-gradient(135deg,#00ff99,#00ccff);
-font-size:24px;
+font-size:22px;
 font-weight:bold;
-color:black;
-box-shadow:0 0 30px rgba(0,255,200,0.35);
-}
-
-.liveBox{
-font-size:15px;
-font-weight:bold;
+border:none;
+margin-top:50px;
 }
 
 .card{
-width:90%;
-max-width:360px;
-padding:14px;
+margin-top:20px;
+padding:15px;
 background:rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.08);
-border-radius:14px;
-display:flex;
-flex-direction:column;
-gap:10px;
-}
-
-input{
-width:100%;
-padding:14px;
-border:none;
-outline:none;
-border-radius:12px;
-background:rgba(0,0,0,0.35);
-color:white;
 }
 
 button{
-width:100%;
-padding:14px;
+padding:12px;
 border:none;
-border-radius:12px;
+border-radius:10px;
+background:#00ff99;
 font-weight:bold;
-background:linear-gradient(90deg,#00ff99,#00ccff);
-color:black;
 }
 
 </style>
@@ -118,195 +49,97 @@ color:black;
 
 <body>
 
-<!-- NAVBAR -->
-
-<div class="navbar" id="navbar">
-
-<div>⚡ POINTS: <span id="points">0</span></div>
-
-<div>💎 TOKEN: <span id="tokens">0.0000</span></div>
-
-<div>👤 <span id="userId">guest</span></div>
-
-</div>
-
-<!-- MAIN -->
-
-<div class="container">
-
 <h2>PVLT TAP GAME</h2>
 
 <button class="tap" onclick="tap()">TAP</button>
 
-<div class="liveBox">SESSION: <span id="session">0</span></div>
+<div class="card">
+<p>Points: <span id="points">0</span></p>
+<p>Tokens: <span id="tokens">0</span></p>
+</div>
 
 <div class="card">
 
-<input id="wallet" placeholder="Paste BSC wallet address">
+<input id="wallet" placeholder="Paste wallet">
 
-<button onclick="connect()">CONNECT WALLET</button>
+<br><br>
 
-</div>
+<button onclick="connect()">CONNECT</button>
+
+<br><br>
+
+<button onclick="claim()">CLAIM TOKENS</button>
 
 </div>
 
 <script>
 
-/* ================= CONFIG ================= */
-
-const P2T = 10000;
-
-/* ================= STATE ================= */
-
-let wallet = "";
-
 let points = 0;
-let tokens = 0;
 
-let session = 0;
+const RATE = 10000;
 
-let timer = null;
+const contractAddress = "YOUR_CONTRACT_ADDRESS";
 
-/* ================= HASH KEY (FIX UNIVERSAL) ================= */
+const abi = [
+"function claim(uint amount) public"
+];
 
-function key(addr){
+let provider, signer, contract;
 
-/* deterministic identity */
-let clean = addr.toLowerCase();
-
-/* simple hash */
-let hash = 0;
-for(let i=0;i<clean.length;i++){
-hash = ((hash << 5) - hash) + clean.charCodeAt(i);
-hash |= 0;
+/* TAP */
+function tap(){
+points++;
+document.getElementById("points").innerText = points;
+document.getElementById("tokens").innerText = (points/RATE).toFixed(4);
 }
 
-return "PVLT_" + hash;
+/* CONNECT WALLET */
+async function connect(){
 
-}
+if(window.ethereum){
 
-/* ================= LOAD ================= */
+await window.ethereum.request({ method: "eth_requestAccounts" });
 
-function load(addr){
+provider = new ethers.BrowserProvider(window.ethereum);
 
-let k = key(addr);
+signer = await provider.getSigner();
 
-let data = localStorage.getItem(k);
+contract = new ethers.Contract(contractAddress, abi, signer);
 
-if(data){
-
-let obj = JSON.parse(data);
-
-points = obj.points || 0;
-tokens = obj.tokens || 0;
+alert("Wallet connected");
 
 }else{
+alert("Install MetaMask / BSC wallet");
+}
+
+}
+
+/* CLAIM */
+async function claim(){
+
+let tokenAmount = Math.floor(points / RATE);
+
+if(tokenAmount <= 0){
+alert("Not enough points");
+return;
+}
+
+try{
+
+let tx = await contract.claim(tokenAmount);
+await tx.wait();
+
+alert("Claim successful");
 
 points = 0;
-tokens = 0;
+document.getElementById("points").innerText = 0;
+document.getElementById("tokens").innerText = 0;
 
+}catch(e){
+alert("Claim failed");
 }
 
 }
-
-/* ================= SAVE ================= */
-
-function save(){
-
-if(!wallet) return;
-
-localStorage.setItem(key(wallet), JSON.stringify({
-points,
-tokens
-}));
-
-}
-
-/* ================= UI ================= */
-
-function set(id,val){
-document.getElementById(id).innerText = val;
-}
-
-function update(){
-
-if(!wallet){
-
-document.getElementById("navbar").style.display = "none";
-return;
-
-}
-
-document.getElementById("navbar").style.display = "flex";
-
-set("points", points);
-set("tokens", tokens.toFixed(4));
-
-set("session", session);
-
-set("userId", wallet.slice(0,6)+"..."+wallet.slice(-4));
-
-}
-
-/* ================= CONNECT ================= */
-
-function connect(){
-
-let addr = document.getElementById("wallet").value.trim();
-
-if(!addr.startsWith("0x") || addr.length !== 42){
-alert("Invalid wallet");
-return;
-}
-
-wallet = addr.toLowerCase();
-
-load(wallet);
-
-session = 0;
-
-update();
-
-}
-
-/* ================= TAP ================= */
-
-function tap(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
-clearTimeout(timer);
-
-session++;
-
-set("session", session);
-
-timer = setTimeout(()=>{
-
-points += session;
-
-tokens = points / P2T;
-
-session = 0;
-
-save();
-
-update();
-
-},3000);
-
-}
-
-/* ================= INIT ================= */
-
-window.onload = ()=>{
-
-update();
-
-};
 
 </script>
 
