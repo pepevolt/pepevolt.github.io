@@ -124,11 +124,9 @@ opacity:0.7;
 <!-- MAIN -->
 <div class="container">
 
-<div class="small">
-Free Energy: 50 | Buy for more via PVLT token contract
-</div>
-
 <button class="tap" onclick="tap()">TAP</button>
+
+<div class="small">1 Tap = 1 Point</div>
 
 <!-- WALLET -->
 <div class="card">
@@ -141,11 +139,11 @@ CONNECT WALLET
 
 </div>
 
-<!-- ENERGY BUY -->
+<!-- BUY ENERGY (NOW 2ND) -->
 <div class="card">
 
 <div class="small">
-Buy Energy = Paid via PVLT Token (REAL CONTRACT)
+Buy Energy via PVLT Token Contract
 </div>
 
 <button onclick="buyEnergy()">
@@ -154,8 +152,12 @@ BUY ENERGY (REFILL)
 
 </div>
 
-<!-- CLAIM -->
+<!-- CLAIM (NOW 3RD) -->
 <div class="card">
+
+<div class="small">
+Min 100 | Max 500 Tokens
+</div>
 
 <button onclick="claim()">
 CLAIM TOKENS
@@ -171,22 +173,19 @@ CLAIM TOKENS
 
 let wallet = "";
 let points = 0;
-
-/* FREE ENERGY */
 let energy = 50;
-const MAX_FREE_ENERGY = 50;
 
 /* ================= TAP ================= */
 
 function tap(){
 
 if(!wallet){
-alert("Connect wallet");
+alert("Connect wallet first");
 return;
 }
 
 if(energy <= 0){
-alert("Buy energy");
+alert("No energy");
 return;
 }
 
@@ -197,40 +196,21 @@ updateUI();
 
 }
 
-/* ================= ENERGY BUY (REAL CONTRACT HOOK) ================= */
+/* ================= BUY ENERGY ================= */
 
-async function buyEnergy(){
+function buyEnergy(){
 
 if(!wallet){
 alert("Connect wallet first");
 return;
 }
 
-/*
-🔴 REAL WEB3 LOGIC PLACEHOLDER:
-
-Here you will integrate:
-
-1. PVLT Token Contract (REAL)
-2. approve()
-3. transferFrom()
-4. backend verification OR direct tx
-
-Example flow:
-- user pays PVLT tokens
-- backend confirms tx hash
-- energy is refilled
-*/
-
+/* REAL CONTRACT HOOK PLACEHOLDER */
 alert(
-"🔋 Energy purchase initiated\n\n" +
-"Payment: PVLT Token Contract\n" +
-"Wallet: " + wallet + "\n\n" +
-"After blockchain confirmation → Energy refilled"
+"Energy purchase initiated\nPaid via PVLT Token Contract"
 );
 
-/* simulate instant refill for UI */
-energy = MAX_FREE_ENERGY;
+energy = 50;
 
 updateUI();
 
@@ -255,7 +235,6 @@ points = JSON.parse(data).points || 0;
 }else{
 points = 0;
 }
-
 }
 
 /* ================= UI ================= */
@@ -309,15 +288,14 @@ updateUI();
 function claim(){
 
 if(!wallet){
-alert("Connect wallet");
+alert("Connect wallet first");
 return;
 }
 
 let tokens = points / 10000;
 
-/* RULES */
 if(tokens < 100){
-alert("Min 100 tokens required");
+alert("Minimum 100 tokens required");
 return;
 }
 
@@ -325,21 +303,13 @@ if(tokens > 500){
 tokens = 500;
 }
 
-/* RESET AFTER CLAIM */
 points = 0;
 
 saveData();
 updateUI();
 
-alert(
-"CLAIM SUCCESS\nTokens: " + tokens.toFixed(4)
-);
-
+alert("CLAIM SUCCESS\nTokens: " + tokens.toFixed(4));
 }
-
-/* ================= INIT ================= */
-
-updateUI();
 
 </script>
 
