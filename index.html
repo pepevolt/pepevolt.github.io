@@ -2,81 +2,295 @@
 <html>
 
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PVLT Mining</title>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1,
+maximum-scale=1,
+user-scalable=no,
+viewport-fit=cover">
+
+<title>PVLT Tap Game</title>
+
+<style>
+
+/* ================= RESET (ANTI ZOOM FIX) ================= */
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+background:#08111f;
+font-family:Arial;
+color:white;
+
+/* IMPORTANT FIX */
+touch-action:manipulation;
+-webkit-text-size-adjust:100%;
+overscroll-behavior:none;
+}
+
+/* Prevent iOS double tap zoom */
+button,input{
+touch-action:manipulation;
+font-size:16px;
+}
+
+/* ================= LAYOUT ================= */
+
+body{
+display:flex;
+flex-direction:column;
+}
+
+.nav{
+display:flex;
+justify-content:space-between;
+padding:14px;
+background:#101b2e;
+font-size:12px;
+flex-shrink:0;
+}
+
+.container{
+flex:1;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding:20px;
+overflow:hidden;
+}
+
+/* ================= TAP BUTTON (FIXED PERFECT CIRCLE) ================= */
+
+.tap{
+width:220px;
+height:220px;
+min-width:220px;
+min-height:220px;
+
+border-radius:50%;
+border:none;
+outline:none;
+
+margin-top:30px;
+
+font-size:28px;
+font-weight:bold;
+
+background:linear-gradient(135deg,#00ff99,#00ccff);
+color:black;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+user-select:none;
+-webkit-user-select:none;
+touch-action:manipulation;
+}
+
+.tap:active{
+transform:scale(0.96);
+}
+
+/* ================= CARD ================= */
+
+.card{
+width:90%;
+max-width:360px;
+margin-top:20px;
+padding:15px;
+
+background:rgba(255,255,255,0.05);
+border-radius:14px;
+}
+
+/* ================= INPUT ================= */
+
+input{
+width:100%;
+padding:14px;
+border:none;
+outline:none;
+border-radius:10px;
+background:#111827;
+color:white;
+font-size:16px;
+}
+
+/* ================= BUTTON ================= */
+
+button{
+width:100%;
+padding:14px;
+margin-top:10px;
+border:none;
+border-radius:10px;
+font-weight:bold;
+background:linear-gradient(90deg,#00ff99,#00ccff);
+color:black;
+font-size:14px;
+}
+
+/* ================= STATUS ================= */
+
+.status{
+margin-top:8px;
+font-size:12px;
+color:#00ff99;
+display:none;
+}
+
+.small{
+font-size:12px;
+opacity:0.7;
+}
+
+</style>
+
 </head>
 
-<body style="background:#08111f;color:white;text-align:center;font-family:Arial;">
+<body>
 
-<h2>PVLT MINING</h2>
+<!-- ================= NAV ================= -->
 
-<button onclick="tap()" style="
-width:200px;height:200px;border-radius:50%;
-font-size:30px;background:linear-gradient(90deg,#00ff99,#00ccff);
-border:none;">
+<div class="nav">
+
+<div>⚡ <span id="points">0</span></div>
+
+<div>💎 <span id="tokens">0.0000</span></div>
+
+<div>👤 <span id="walletView">guest</span></div>
+
+</div>
+
+<!-- ================= MAIN ================= -->
+
+<div class="container">
+
+<button class="tap" onclick="tap()">
 TAP
 </button>
 
-<br><br>
+<div class="small" style="margin-top:10px;">
+1 Tap = 1 Point
+</div>
 
-<input id="wallet" placeholder="wallet" style="padding:10px;width:80%">
+<!-- ================= WALLET ================= -->
 
-<button onclick="connect()">CONNECT</button>
+<div class="card">
 
-<p>Points: <span id="p">0</span></p>
+<input id="walletInput"
+placeholder="Paste BSC wallet">
+
+<button id="walletBtn"
+onclick="toggleWallet()">
+CONNECT WALLET
+</button>
+
+<div id="walletStatus" class="status">
+CONNECTED
+</div>
+
+</div>
+
+</div>
 
 <script>
 
-const API = "https://YOUR-RENDER.onrender.com";
+/* ================= STATE ================= */
 
 let wallet = "";
-let signature = "";
+let points = 0;
 
-async function connect(){
+/* ================= UPDATE UI ================= */
 
-wallet = document.getElementById("wallet").value;
+function set(id,val){
+document.getElementById(id).innerText = val;
+}
 
-let r = await fetch(API+"/connect",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({wallet})
-});
+/* ================= TAP ================= */
 
-let d = await r.json();
+function tap(){
 
-document.getElementById("p").innerText = d.points;
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+points++;
+
+set("points",points);
 
 }
 
-async function tap(){
+/* ================= WALLET TOGGLE FIX ================= */
 
-let r = await fetch(API+"/mine",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({wallet})
-});
+function toggleWallet(){
 
-let d = await r.json();
+const input = document.getElementById("walletInput");
+const btn = document.getElementById("walletBtn");
+const status = document.getElementById("walletStatus");
+const view = document.getElementById("walletView");
 
-signature = d.signature;
+/* ================= DISCONNECT ================= */
 
-document.getElementById("p").innerText = d.points;
+if(wallet){
+
+wallet = "";
+points = 0;
+
+input.value = "";
+
+btn.innerText = "CONNECT WALLET";
+status.style.display = "none";
+
+view.innerText = "guest";
+
+set("points",0);
+set("tokens","0.0000");
+
+return;
+}
+
+/* ================= CONNECT ================= */
+
+let w = input.value.trim();
+
+if(!w.startsWith("0x") || w.length !== 42){
+alert("Invalid wallet");
+return;
+}
+
+wallet = w.toLowerCase();
+
+btn.innerText = "DISCONNECT WALLET";
+status.style.display = "block";
+
+view.innerText =
+wallet.slice(0,6) + "..." + wallet.slice(-4);
 
 }
 
-async function claim(){
+/* ================= ANTI ZOOM LOCK ================= */
 
-await fetch(API+"/claim",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-wallet,
-signature
-})
+document.addEventListener("gesturestart", function (e) {
+e.preventDefault();
 });
 
-alert("Claim sent");
-}
+document.addEventListener("dblclick", function (e) {
+e.preventDefault();
+}, { passive:false });
 
 </script>
 
