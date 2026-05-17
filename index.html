@@ -16,6 +16,7 @@
       --accent-purple: #8b5cf6;
       --accent-green: #10b981;
       --accent-orange: #f97316;
+      --accent-red: #ef4444;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       -webkit-text-size-adjust: none;
@@ -135,6 +136,12 @@
     }
     .connect:active { background: #2563eb; }
 
+    .disconnect {
+      background: var(--accent-red);
+      color: white;
+    }
+    .disconnect:active { background: #dc2626; }
+
     .pay {
       background: var(--accent-green);
       color: white;
@@ -220,7 +227,7 @@
 
   <div class="card">
     <h3>🌐 Identity & Network</h3>
-    <button class="connect" onclick="connectWallet()">Connect Web3 Wallet</button>
+    <button id="wallet-auth-btn" class="connect" onclick="handleWalletAuth()">Connect Web3 Wallet</button>
     <div class="wallet-info-row">
       <div class="stat-text">Account Status: <span id="wallet" class="address-box">Not connected</span></div>
       <div class="stat-text">Available Assets: <strong id="balance" style="color: var(--accent-blue)">-</strong></div>
@@ -243,9 +250,10 @@
       • 100,000 game points ➔ 1.00 Network Token Base<br>
       • 1.00 Token Unit Equivalency Value ➔ 0.00000001 BNB Pool<br>
       • Floor Request Minimum Value ➔ 100 Tokens<br>
+      • Action Penalty ➔ Successful settlement resets all point architectures to 0.<br>
       • Frequency Limit ➔ Maximum 1 Cycle Allocation / 24 Hours
     </div>
-    <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token allocation allocation value" oninput="calculateBnbValue()" />
+    <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token allocation value" oninput="calculateBnbValue()" />
     <p id="bnb-estimation" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Required Outbound Payload Fee: 0 BNB</p>
     <button class="withdraw-btn" onclick="withdrawTokens()">Process Settlement Request</button>
     <p class="status" id="withdraw-status">Awaiting core validation engine trigger...</p>
@@ -263,6 +271,7 @@
 let provider;
 let signer;
 let userAddress;
+let isConnected = false;
 
 // Point Loop Setup Initialization
 let points = parseInt(localStorage.getItem('pvlt_points')) || 0;
@@ -277,9 +286,7 @@ const ABI = [
   "function decimals() view returns (uint8)"
 ];
 
-/* CRITICAL FIX: DIRECT EVENT LISTENER INTERCEPTION FOR TELEGRAM MINI APP INTERACTION
-  Bypasses the default Webview click stack to drop visual scale jitters entirely.
-*/
+/* CRITICAL FIX: DIRECT EVENT LISTENER INTERCEPTION FOR TELEGRAM MINI APP INTERACTION */
 document.addEventListener('touchstart', function (e) {
   if (e.touches.length > 1) {
     e.preventDefault(); 
@@ -288,7 +295,6 @@ document.addEventListener('touchstart', function (e) {
 
 const targetEngineButton = document.getElementById('tap-target-btn');
 
-// Uses 'pointerdown' directly inside low-level rendering context to execute logic prior to zoom window calls
 targetEngineButton.addEventListener('pointerdown', function (e) {
   e.preventDefault();
   playGame();
@@ -312,6 +318,15 @@ function calculateBnbValue() {
   document.getElementById("bnb-estimation").innerText = `Required Outbound Payload Fee: ${bnbValue.toFixed(10)} BNB`;
 }
 
+// Master Toggle Router for Auth State
+async function handleWalletAuth() {
+  if (!isConnected) {
+    await connectWallet();
+  } else {
+    disconnectWallet();
+  }
+}
+
 async function connectWallet() {
   try {
     if (!window.ethereum) {
@@ -322,11 +337,33 @@ async function connectWallet() {
     await provider.send("eth_requestAccounts", []);
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
+    
+    // Toggle Button Styles and Text State
+    isConnected = true;
+    const authBtn = document.getElementById("wallet-auth-btn");
+    authBtn.innerText = "Disconnect Wallet";
+    authBtn.className = "disconnect";
+
     document.getElementById("wallet").innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
     loadBalance();
   } catch (err) {
     console.log(err);
   }
+}
+
+function disconnectWallet() {
+  provider = null;
+  signer = null;
+  userAddress = null;
+  isConnected = false;
+
+  // Revert Button Interface Styles
+  const authBtn = document.getElementById("wallet-auth-btn");
+  authBtn.innerText = "Connect Web3 Wallet";
+  authBtn.className = "connect";
+
+  document.getElementById("wallet").innerText = "Not connected";
+  document.getElementById("balance").innerText = "-";
 }
 
 async function loadBalance() {
@@ -381,12 +418,19 @@ async function withdrawTokens() {
     document.getElementById("withdraw-status").innerText = "Awaiting block confirmation context...";
     await tx.wait();
 
-    points -= requiredPoints;
-    localStorage.setItem('pvlt_points', points);
+    // STRICT RULE TRIGGER: Reset everything to 0 upon transaction confirmation
+    points = 0;
+    localStorage.setItem('pvlt_points', '0');
     localStorage.setItem('pvlt_last_withdraw', now.toString());
     
     updateGameUI();
-    document.getElementById("withdraw-status").innerText = "✅ Settlement processed! Balance distributed.";
+    document.getElementById("withdraw-status").innerText = "✅ Settlement processed! Reloading terminal...";
+    
+    // Refresh screen once to clear runtime dependencies 
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+
   } catch (err) {
     document.getElementById("withdraw-status").innerText = "❌ Session signature rejected.";
   }
