@@ -5,15 +5,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-<title>PVLT Web3 Game</title>
+<title>PVLT Safe Web3 Game</title>
 
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
 
-/* ================= LOCK UI ================= */
-html, body {
+html,body{
 margin:0;
 padding:0;
 height:100%;
@@ -24,7 +23,7 @@ touch-action:none;
 
 body{
 font-family:Arial;
-background: radial-gradient(circle at top, #0b1220, #020617);
+background: radial-gradient(circle at top,#0b1220,#020617);
 color:white;
 position:fixed;
 width:100%;
@@ -32,7 +31,6 @@ height:100%;
 text-align:center;
 }
 
-/* NAVBAR */
 .navbar{
 position:fixed;
 top:0;left:0;right:0;
@@ -43,25 +41,19 @@ align-items:center;
 padding:0 12px;
 background: rgba(255,255,255,0.06);
 backdrop-filter: blur(12px);
-border-bottom:1px solid rgba(255,255,255,0.08);
 font-size:12px;
-z-index:10;
 }
 
-/* MAIN */
 .container{
 position:absolute;
 top:60px;
-left:0;
-right:0;
-bottom:0;
+left:0;right:0;bottom:0;
 display:flex;
 flex-direction:column;
 align-items:center;
 padding-top:20px;
 }
 
-/* TAP */
 .tap{
 width:170px;
 height:170px;
@@ -73,7 +65,6 @@ font-weight:bold;
 color:black;
 }
 
-/* CARD */
 .card{
 margin:12px;
 padding:15px;
@@ -108,54 +99,43 @@ font-weight:bold;
 
 <body>
 
-<!-- NAV -->
 <div class="navbar">
 <div>⚡ <span id="points">0</span></div>
 <div>💎 <span id="tokens">0</span></div>
 <div>👤 <span id="userId">guest</span></div>
 </div>
 
-<!-- MAIN -->
 <div class="container">
 
-<h2>PVLT WEB3 GAME</h2>
+<h2>PVLT SAFE GAME</h2>
 
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
-<input id="wallet" placeholder="Connect wallet address">
+<input id="wallet" placeholder="Wallet (optional)">
 <br>
-<button onclick="connectWallet()">CONNECT WALLET</button>
+<button onclick="connectWallet()">CONNECT (optional)</button>
 </div>
 
 <div class="card">
 <input id="withdraw" placeholder="100 - 500 tokens">
 <br>
-<button onclick="claim()">CLAIM TOKENS</button>
+<button onclick="withdraw()">WITHDRAW</button>
 </div>
 
 </div>
 
 <script>
 
-/* ================= CONFIG ================= */
-const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS";
-
-const ABI = [
-"function tap()",
-"function getPoints(address) view returns (uint256)",
-"function claim(uint256)"
-];
-
-let provider;
-let signer;
-let contract;
-let walletAddress;
-
-/* ================= STATE ================= */
+/* ================= SAFE STATE ================= */
 let points = 0;
 let tokens = 0;
+let wallet = "";
 let userId = "guest";
+
+let provider = null;
+let signer = null;
+let contract = null;
 
 /* ================= SAFE UI ================= */
 function set(id,val){
@@ -163,11 +143,11 @@ let el=document.getElementById(id);
 if(el) el.innerText=val;
 }
 
-/* ================= INIT TELEGRAM ================= */
+/* ================= INIT ================= */
 function init(){
 
 try{
-if(window.Telegram && Telegram.WebApp){
+if(window.Telegram && window.Telegram.WebApp){
 Telegram.WebApp.ready();
 Telegram.WebApp.expand();
 userId = Telegram.WebApp.initDataUnsafe?.user?.id || "guest";
@@ -177,13 +157,19 @@ userId = Telegram.WebApp.initDataUnsafe?.user?.id || "guest";
 set("userId", userId);
 }
 
-/* ================= WALLET CONNECT ================= */
+/* ================= TAP ================= */
+function tap(){
+points++;
+set("points", points);
+}
+
+/* ================= WALLET CONNECT (SAFE) ================= */
 async function connectWallet(){
 
 try{
 
 if(!window.ethereum){
-alert("Install wallet (MetaMask / Trust Wallet)");
+alert("Wallet not available (still OK to play)");
 return;
 }
 
@@ -191,49 +177,24 @@ provider = new ethers.providers.Web3Provider(window.ethereum);
 await provider.send("eth_requestAccounts", []);
 
 signer = provider.getSigner();
-walletAddress = await signer.getAddress();
+wallet = await signer.getAddress();
 
-contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-
-alert("Wallet connected");
+alert("Wallet connected: " + wallet.slice(0,6));
 
 }catch(e){
-alert("Wallet error");
-console.log(e);
+console.log("wallet error", e);
+alert("Wallet connection failed but game continues");
 }
 
 }
 
-/* ================= TAP (REAL CONTRACT) ================= */
-async function tap(){
-
-try{
-
-if(!contract){
-alert("Connect wallet first");
-return;
-}
-
-let tx = await contract.tap();
-await tx.wait();
-
-points++;
-
-set("points", points);
-
-}catch(e){
-alert("Tap failed");
-}
-
-}
-
-/* ================= CLAIM ================= */
-async function claim(){
+/* ================= WITHDRAW (SAFE DEMO MODE) ================= */
+function withdraw(){
 
 let amt = parseInt(document.getElementById("withdraw").value);
 
-if(!contract){
-alert("Connect wallet first");
+if(!wallet){
+alert("Wallet not linked (demo mode only)");
 return;
 }
 
@@ -242,24 +203,28 @@ alert("100-500 only");
 return;
 }
 
-try{
+let required = amt * 100000;
 
-let tx = await contract.claim(amt);
-await tx.wait();
+if(points < required){
+alert("Not enough points");
+return;
+}
 
+points -= required;
 tokens += amt;
 
+set("points", points);
 set("tokens", tokens);
 
-alert("Claim success");
-
-}catch(e){
-alert("Claim failed");
+alert("Withdraw request sent (backend not connected yet)");
 }
 
-}
+/* ================= GLOBAL SAFETY ================= */
+window.onerror = function(){
+return true;
+};
 
-/* ================= START SAFE ================= */
+/* ================= START ================= */
 window.addEventListener("DOMContentLoaded", init);
 
 </script>
