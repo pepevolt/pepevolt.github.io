@@ -7,8 +7,6 @@
 
 <title>Tap Volt Game</title>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
 <style>
 
 body{
@@ -31,11 +29,12 @@ justify-content:space-between;
 align-items:center;
 padding:0 10px;
 font-size:12px;
+z-index:10;
 }
 
-.val{color:#00ff99;font-weight:bold;}
-
-.container{padding-top:80px;}
+.container{
+padding-top:80px;
+}
 
 .tap{
 width:170px;
@@ -45,7 +44,6 @@ background:#00ff99;
 border:none;
 font-size:26px;
 font-weight:bold;
-color:black;
 }
 
 .card{
@@ -71,18 +69,22 @@ margin-top:10px;
 font-weight:bold;
 }
 
+.val{color:#00ff99;font-weight:bold;}
+
 </style>
 
 </head>
 
 <body>
 
+<!-- NAVBAR -->
 <div class="navbar">
 <div>Points: <span id="points">0</span></div>
 <div>Tokens: <span id="tokens">0</span></div>
-<div>ID: <span id="userId">---</span></div>
+<div>ID: <span id="userId">loading...</span></div>
 </div>
 
+<!-- MAIN -->
 <div class="container">
 
 <h2>Tap Volt Game</h2>
@@ -98,7 +100,7 @@ font-weight:bold;
 
 <div class="card">
 <h3>Withdraw</h3>
-<input id="withdrawAmount" placeholder="Tokens (100 - 500)">
+<input id="withdrawAmount" placeholder="100 - 500 tokens">
 <br>
 <button onclick="withdraw()">WITHDRAW</button>
 </div>
@@ -114,8 +116,8 @@ let tokens = 0;
 let wallet = null;
 let lastWithdraw = 0;
 
-/* TELEGRAM SAFE INIT */
-function init(){
+/* SAFE TELEGRAM INIT (NO CRASH EVER) */
+function initTelegram(){
 
 try{
 
@@ -124,20 +126,24 @@ if(window.Telegram && Telegram.WebApp){
 Telegram.WebApp.ready();
 Telegram.WebApp.expand();
 
-userId = Telegram.WebApp.initDataUnsafe?.user?.id || "guest";
+userId =
+Telegram.WebApp.initDataUnsafe &&
+Telegram.WebApp.initDataUnsafe.user
+? Telegram.WebApp.initDataUnsafe.user.id
+: "guest";
 
 }
 
 }catch(e){
-console.log(e);
+console.log("Telegram error:", e);
+userId = "guest";
 }
 
 document.getElementById("userId").innerText = userId;
-render();
 
 }
 
-/* RENDER */
+/* RENDER UI */
 function render(){
 document.getElementById("points").innerText = points;
 document.getElementById("tokens").innerText = tokens;
@@ -154,23 +160,28 @@ function linkWallet(){
 
 let w = document.getElementById("wallet").value;
 
-if(!w) return alert("Enter wallet");
+if(!w){
+alert("Enter wallet");
+return;
+}
 
 wallet = w;
-
-alert("Wallet linked");
+alert("Wallet saved");
 
 }
 
-/* WITHDRAW (FRONTEND SIMULATION) */
+/* WITHDRAW */
 function withdraw(){
 
 let amount = parseInt(document.getElementById("withdrawAmount").value);
 
-if(!wallet) return alert("Link wallet first");
+if(!wallet){
+alert("Link wallet first");
+return;
+}
 
 if(amount < 100 || amount > 500){
-alert("Only 100 - 500 tokens allowed");
+alert("Only 100–500 allowed");
 return;
 }
 
@@ -184,11 +195,10 @@ return;
 let now = Date.now();
 
 if(now - lastWithdraw < 86400000){
-alert("Only 1 withdraw per day");
+alert("Only 1 withdrawal per day");
 return;
 }
 
-/* simulate conversion */
 points -= requiredPoints;
 tokens += amount;
 
@@ -196,19 +206,23 @@ lastWithdraw = now;
 
 render();
 
-alert("Withdraw request submitted (demo)");
+alert("Withdraw request successful (demo)");
 
 }
 
-/* ERROR SAFE */
+/* GLOBAL ERROR PROTECTION */
 window.onerror = function(msg){
-console.log(msg);
+console.log("ERROR:", msg);
+return true;
 };
 
-window.addEventListener("load", init);
+/* START AFTER LOAD */
+window.addEventListener("load", function(){
+initTelegram();
+render();
+});
 
 </script>
 
 </body>
-
 </html>
