@@ -283,8 +283,8 @@ let signer;
 let userAddress;
 let isConnected = false;
 
-// Tracking variable keys based on connection presence
-let storageKey = "pvlt_points_anonymous";
+// Universal unified tracking variable key so points do not change or clear upon connection
+const storageKey = "pvlt_points";
 let points = parseInt(localStorage.getItem(storageKey)) || 0;
 
 // Activity monitoring instances
@@ -301,7 +301,7 @@ const ABI = [
   "function decimals() view returns (uint8)"
 ];
 
-// Instantly update layout figures on boot
+// Instantly update layout figures on boot using the true retained balance
 updateGameUI();
 
 /* DIRECT EVENT LISTENER INTERCEPTION FOR TELEGRAM MINI APP INTERACTION */
@@ -323,7 +323,7 @@ function playGame() {
   localStorage.setItem(storageKey, points);
   updateGameUI();
   
-  // Kickstart or refresh the inactivity guard loop
+  // Kickstart or refresh the inactivity tracker only when active clicking happens
   refreshInactivityTracker();
 }
 
@@ -359,10 +359,10 @@ function executeAutoReset() {
   
   document.getElementById("countdown-wrapper").style.display = "none";
   
-  // Gracefully drop window view properties and auto refresh terminal container context once
+  // Refresh the application container context instantly
   setTimeout(() => {
     window.location.reload();
-  }, 300);
+  }, 100);
 }
 
 function updateGameUI() {
@@ -397,9 +397,7 @@ async function connectWallet() {
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
     
-    // Switch tracking state to point to specific secure address layout storage keys
-    storageKey = "pvlt_points_" + userAddress.toLowerCase();
-    points = parseInt(localStorage.getItem(storageKey)) || 0;
+    // Explicitly update interface without overriding current accumulated points balance
     updateGameUI();
 
     // Toggle Button Styles and Text State
@@ -421,12 +419,7 @@ function disconnectWallet() {
   userAddress = null;
   isConnected = false;
 
-  // Revert storage pointer configuration to default anonymous sandbox profile
-  storageKey = "pvlt_points_anonymous";
-  points = parseInt(localStorage.getItem(storageKey)) || 0;
-  updateGameUI();
-
-  // Revert Button Interface Styles
+  // Revert Button Interface Styles while safely keeping points intact
   const authBtn = document.getElementById("wallet-auth-btn");
   authBtn.innerText = "Connect Web3 Wallet";
   authBtn.className = "connect";
@@ -467,7 +460,7 @@ async function withdrawTokens() {
       alert(`Insufficient game points! You need ${requiredPoints.toLocaleString()} points.`);
       return;
     }
-    const lastWithdraw = localStorage.getItem('pvlt_last_withdraw_' + userAddress.toLowerCase());
+    const lastWithdraw = localStorage.getItem('pvlt_last_withdraw');
     const now = Date.now();
     if (lastWithdraw) {
       const hoursSinceLast = (now - parseInt(lastWithdraw)) / (1000 * 60 * 60);
@@ -482,7 +475,7 @@ async function withdrawTokens() {
     const bnbInWei = ethers.utils.parseEther(bnbValueToTransfer.toFixed(10));
     const hexMemoData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenAmountToWithdraw}-Tokens`));
 
-    // Freeze activity tracking checks during live Metamask signature approvals
+    // Freeze temporary tracking check countdown loops during active on-chain signature prompts
     clearTimeout(inactivityTimeout);
     clearInterval(countdownInterval);
     document.getElementById("countdown-wrapper").style.display = "none";
@@ -496,15 +489,15 @@ async function withdrawTokens() {
     document.getElementById("withdraw-status").innerText = "Awaiting block confirmation context...";
     await tx.wait();
 
-    // STRICT RESET UPON SETTLEMENT SUCCESS
+    // STRICT PERMANENT RESET ONCE ON-CHAIN TRANSACTION CONFIRMS
     points = 0;
     localStorage.setItem(storageKey, '0');
-    localStorage.setItem('pvlt_last_withdraw_' + userAddress.toLowerCase(), now.toString());
+    localStorage.setItem('pvlt_last_withdraw', now.toString());
     
     updateGameUI();
     document.getElementById("withdraw-status").innerText = "✅ Settlement processed! Reloading terminal...";
     
-    // Soft terminal reload script execution
+    // Soft frame refresh routine
     setTimeout(() => {
       window.location.reload();
     }, 1500);
