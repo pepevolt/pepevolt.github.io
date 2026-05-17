@@ -1,41 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 
 <meta charset="UTF-8">
 
 <meta
 name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
->
+content="width=device-width,initial-scale=1,user-scalable=no"
+/>
 
 <title>PEPE VOLT</title>
 
 <style>
 
-*{
+body{
     margin:0;
-    padding:0;
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
-}
-
-html,body{
-    width:100%;
-    height:100%;
     background:#0f172a;
-    font-family:Arial,sans-serif;
     color:white;
-    overflow-x:hidden;
-    touch-action:manipulation;
+    font-family:Arial;
+    text-align:center;
 }
 
 .container{
-    width:100%;
-    max-width:420px;
-    margin:auto;
     padding:20px;
-    text-align:center;
 }
 
 .logo{
@@ -47,39 +34,24 @@ html,body{
 }
 
 h1{
-    margin-top:15px;
     color:#00ff99;
-}
-
-.contract{
-    margin-top:15px;
-    font-size:12px;
-    color:#94a3b8;
-    word-break:break-all;
 }
 
 .card{
     background:#111827;
     padding:20px;
-    border-radius:18px;
+    border-radius:20px;
     margin-top:20px;
 }
 
 .points{
-    font-size:48px;
+    font-size:50px;
     color:#00ff99;
-    margin-top:15px;
     font-weight:bold;
-}
-
-.small{
     margin-top:10px;
-    color:#94a3b8;
-    font-size:13px;
-    line-height:1.6;
 }
 
-.tap-btn{
+.tap{
 
     width:220px;
     height:220px;
@@ -87,50 +59,27 @@ h1{
     border:none;
     border-radius:50%;
 
-    margin-top:25px;
-
     background:#00ff99;
     color:black;
 
-    font-size:34px;
+    font-size:35px;
     font-weight:bold;
 
-    cursor:pointer;
-
-    user-select:none;
+    margin-top:20px;
 }
 
-.tap-btn:active{
-    transform:scale(0.96);
+.tap:active{
+    transform:scale(0.95);
 }
 
-button{
-
-    width:100%;
-    padding:15px;
-
-    border:none;
-    border-radius:14px;
-
+.info{
     margin-top:15px;
-
-    font-size:16px;
-    font-weight:bold;
-
-    cursor:pointer;
+    color:#94a3b8;
+    font-size:13px;
+    line-height:1.5;
 }
 
-.connect{
-    background:#00ff99;
-    color:black;
-}
-
-.withdraw{
-    background:#facc15;
-    color:black;
-}
-
-.dashboard{
+.row{
     display:flex;
     gap:10px;
     margin-top:20px;
@@ -143,22 +92,14 @@ button{
     border-radius:15px;
 }
 
-.box h3{
+.green{
     color:#00ff99;
-    margin-bottom:8px;
-}
-
-.reward{
-    margin-top:10px;
-    color:#00ff99;
-    font-size:20px;
 }
 
 .footer{
     margin-top:20px;
     color:#64748b;
     font-size:12px;
-    padding-bottom:40px;
 }
 
 </style>
@@ -176,16 +117,9 @@ src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
 
 <h1>PEPE VOLT</h1>
 
-<div class="contract">
+<div style="font-size:12px;color:#94a3b8;">
 0xa263d765b897b4777f0ad4a938d12d79e789ffff
 </div>
-
-<button
-class="connect"
-id="connectBtn"
->
-Connect Wallet
-</button>
 
 <div class="card">
 
@@ -198,44 +132,46 @@ id="points"
 0
 </div>
 
-<div class="small">
-1 Tap = 1 Point
-<br>
-1000 Points = 1 PVLT
-<br>
-1 PVLT = 0.000000001 BNB
-<br><br>
-Stop tapping for 3 seconds and session points reset.
-</div>
-
 <button
-class="tap-btn"
+class="tap"
 id="tapBtn"
 >
 ⚡ TAP
 </button>
 
+<div class="info">
+1 Tap = 1 Point
+<br>
+1000 Points = 1 PVLT
+<br>
+3 Seconds Inactive = Reset Current Points
 </div>
-
-<div class="dashboard">
-
-<div class="box">
-
-<h3>Wallet</h3>
-
-<p id="wallet">
-Not Connected
-</p>
 
 </div>
 
+<div class="row">
+
 <div class="box">
 
-<h3>Global</h3>
+<h3 class="green">
+Global
+</h3>
 
-<p id="globalPoints">
+<div id="globalPoints">
 0
-</p>
+</div>
+
+</div>
+
+<div class="box">
+
+<h3 class="green">
+PVLT
+</h3>
+
+<div id="tokenBalance">
+0
+</div>
 
 </div>
 
@@ -243,28 +179,15 @@ Not Connected
 
 <div class="card">
 
-<h2>Rewards</h2>
+<h2>BNB Value</h2>
 
 <div
-class="reward"
-id="tokenBalance"
->
-0 PVLT
-</div>
-
-<div
-class="reward"
+class="points"
+style="font-size:28px;"
 id="bnbValue"
 >
-0 BNB
+0
 </div>
-
-<button
-class="withdraw"
-id="withdrawBtn"
->
-Withdraw
-</button>
 
 </div>
 
@@ -276,100 +199,56 @@ PEPE VOLT Telegram Mini App
 
 <script>
 
-let points = 0;
+var points = 0;
 
-let globalPoints = 0;
+var globalPoints = 0;
 
-let wallet = null;
+var timer;
 
-let inactiveTimer = null;
+function loadData(){
+
+    var saved =
+    localStorage.getItem("pvlt_global");
+
+    if(saved){
+
+        globalPoints =
+        parseInt(saved);
+
+    }
+
+    updateUI();
+}
 
 function updateUI(){
 
     document.getElementById("points")
-    .innerText = points;
+    .innerHTML = points;
 
     document.getElementById("globalPoints")
-    .innerText = globalPoints;
+    .innerHTML = globalPoints;
 
-    const tokens =
+    var tokens =
     globalPoints / 1000;
 
-    const bnb =
+    document.getElementById("tokenBalance")
+    .innerHTML =
+    tokens.toFixed(4);
+
+    var bnb =
     tokens * 0.000000001;
 
-    document.getElementById("tokenBalance")
-    .innerText =
-    tokens.toFixed(4) + " PVLT";
-
     document.getElementById("bnbValue")
-    .innerText =
+    .innerHTML =
     bnb.toFixed(12) + " BNB";
 
-    if(wallet){
-
-        localStorage.setItem(
-            wallet+"_global",
-            globalPoints
-        );
-
-    }
+    localStorage.setItem(
+        "pvlt_global",
+        globalPoints
+    );
 }
 
-function connectWallet(){
-
-    if(typeof window.ethereum === "undefined"){
-
-        alert(
-            "Open in MetaMask or Trust Wallet browser"
-        );
-
-        return;
-    }
-
-    window.ethereum.request({
-        method:"eth_requestAccounts"
-    })
-
-    .then(accounts=>{
-
-        wallet = accounts[0];
-
-        document.getElementById("wallet")
-        .innerText =
-        wallet.substring(0,6)
-        + "..."
-        +
-        wallet.substring(wallet.length-4);
-
-        document.getElementById("connectBtn")
-        .innerText =
-        "Connected";
-
-        const saved =
-        localStorage.getItem(
-            wallet+"_global"
-        );
-
-        if(saved){
-
-            globalPoints =
-            parseInt(saved);
-
-        }
-
-        updateUI();
-
-    })
-
-    .catch(()=>{
-
-        alert("Wallet connection failed");
-
-    });
-}
-
-function tapCoin(){
+function tapGame(){
 
     points++;
 
@@ -377,9 +256,9 @@ function tapCoin(){
 
     updateUI();
 
-    clearTimeout(inactiveTimer);
+    clearTimeout(timer);
 
-    inactiveTimer = setTimeout(function(){
+    timer = setTimeout(function(){
 
         points = 0;
 
@@ -388,40 +267,14 @@ function tapCoin(){
     },3000);
 }
 
-function withdrawReward(){
-
-    const tokens =
-    globalPoints / 1000;
-
-    if(tokens < 1){
-
-        alert(
-            "Minimum 1 PVLT required"
-        );
-
-        return;
-    }
-
-    alert(
-        "Withdraw request submitted for "
-        + tokens.toFixed(4)
-        + " PVLT"
-    );
-}
-
-document
-.getElementById("connectBtn")
-.onclick = connectWallet;
-
 document
 .getElementById("tapBtn")
-.onclick = tapCoin;
+.addEventListener(
+"click",
+tapGame
+);
 
-document
-.getElementById("withdrawBtn")
-.onclick = withdrawReward;
-
-updateUI();
+loadData();
 
 </script>
 
