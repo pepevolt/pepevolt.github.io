@@ -1,84 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PVLT Mini App</title>
 
-<title>PEPE VOLT</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
-<link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0f1a;
+      color: white;
+      text-align: center;
+    }
 
-<style>
-body{
-    margin:0;
-    background:#111;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-}
+    .container {
+      padding: 20px;
+      max-width: 500px;
+      margin: auto;
+    }
 
-.container{
-    padding-top:60px;
-}
+    .card {
+      background: #151c2e;
+      padding: 20px;
+      border-radius: 15px;
+      margin-top: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
 
-button{
-    width:220px;
-    padding:15px;
-    margin:10px;
-    border:none;
-    border-radius:12px;
-    background:#ffe600;
-    font-size:18px;
-    font-weight:bold;
-}
+    button {
+      padding: 12px 15px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 10px;
+      width: 100%;
+      font-size: 16px;
+    }
 
-.logo{
-    width:120px;
-    border-radius:50%;
-}
-</style>
+    .connect {
+      background: #4c7dff;
+      color: white;
+    }
 
+    .pay {
+      background: #00c853;
+      color: white;
+    }
+
+    .danger {
+      background: #ff5252;
+      color: white;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #aaa;
+    }
+  </style>
 </head>
+
 <body>
 
 <div class="container">
+  <h2>⚡ PVLT Mini App</h2>
 
-<img class="logo"
-src="https://upload.wikimedia.org/wikipedia/en/5/5f/Original_Frog_Pepe.png">
+  <div class="card">
+    <button class="connect" onclick="connectWallet()">Connect Wallet</button>
 
-<h1>PEPE VOLT</h1>
+    <p id="wallet">Not connected</p>
+    <p id="balance">Balance: -</p>
+  </div>
 
-<p>Token Symbol: PVLT</p>
+  <div class="card">
+    <h3>Pay with PVLT</h3>
 
-<button id="tapBtn">
-⚡ TAP TO EARN
-</button>
+    <input id="amount" type="number" placeholder="Enter PVLT amount" />
 
-<h2 id="score">0</h2>
+    <button class="pay" onclick="payPVLT()">Send Payment</button>
 
-<a target="_blank"
-href="https://pancakeswap.finance/swap?outputCurrency=0xa263d765b897b4777f0ad4a938d12d79e789ffff">
-
-<button>
-BUY PVLT
-</button>
-
-</a>
-
+    <p class="status" id="status">Waiting...</p>
+  </div>
 </div>
 
 <script>
+let provider;
+let signer;
+let userAddress;
 
-let score = 0;
+// 🔥 CHANGE THIS TO YOUR PVLT TOKEN ADDRESS
+const PVLT_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
 
-document.getElementById("tapBtn").onclick = function(){
+// 🔥 YOUR TREASURY WALLET
+const RECEIVER = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
 
-    score++;
+// ERC20 minimal ABI
+const ABI = [
+  "function balanceOf(address) view returns (uint)",
+  "function transfer(address to, uint amount) returns (bool)",
+  "function decimals() view returns (uint8)"
+];
 
-    document.getElementById("score").innerText = score;
+async function connectWallet() {
+  try {
+    if (!window.ethereum) {
+      alert("Install MetaMask or use Trust Wallet browser");
+      return;
+    }
 
-};
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
 
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+
+    document.getElementById("wallet").innerText =
+      "Wallet: " + userAddress;
+
+    loadBalance();
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function loadBalance() {
+  try {
+    const contract = new ethers.Contract(PVLT_ADDRESS, ABI, provider);
+    const bal = await contract.balanceOf(userAddress);
+    const decimals = await contract.decimals();
+
+    document.getElementById("balance").innerText =
+      "Balance: " + ethers.utils.formatUnits(bal, decimals) + " PVLT";
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+async function payPVLT() {
+  try {
+    const amount = document.getElementById("amount").value;
+
+    if (!amount || amount <= 0) {
+      alert("Enter valid amount");
+      return;
+    }
+
+    const contract = new ethers.Contract(PVLT_ADDRESS, ABI, signer);
+    const decimals = await contract.decimals();
+
+    const tx = await contract.transfer(
+      RECEIVER,
+      ethers.utils.parseUnits(amount.toString(), decimals)
+    );
+
+    document.getElementById("status").innerText = "Transaction sent...";
+
+    await tx.wait();
+
+    document.getElementById("status").innerText = "✅ Payment successful!";
+
+    loadBalance();
+  } catch (err) {
+    console.log(err);
+    document.getElementById("status").innerText = "❌ Payment failed";
+  }
+}
 </script>
 
 </body>
