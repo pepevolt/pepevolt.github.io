@@ -113,7 +113,7 @@ opacity:0.7;
 
 <body>
 
-<!-- NAVBAR -->
+<!-- NAV -->
 <div class="nav">
 
 <div>⚡ <span id="points">0</span></div>
@@ -156,36 +156,28 @@ CLAIM TOKENS
 let wallet = "";
 let points = 0;
 
-const RATE = 10000; // 10000 points = 1 token
+const RATE = 10000;
 
 /* ================= STORAGE ================= */
 
-function saveWalletData(){
-
+function saveData(){
 if(!wallet) return;
 
 localStorage.setItem(wallet, JSON.stringify({
 points: points
 }));
-
 }
 
-function loadWalletData(addr){
+function loadData(addr){
 
 let data = localStorage.getItem(addr);
 
 if(data){
-
 let obj = JSON.parse(data);
-
 points = obj.points || 0;
-
 }else{
-
 points = 0;
-
 }
-
 }
 
 /* ================= UI ================= */
@@ -193,12 +185,10 @@ points = 0;
 function updateUI(){
 
 if(!wallet){
-
 document.getElementById("points").innerText = 0;
 document.getElementById("tokens").innerText = "0.0000";
 document.getElementById("walletView").innerText = "guest";
 return;
-
 }
 
 document.getElementById("points").innerText = points;
@@ -208,7 +198,6 @@ document.getElementById("tokens").innerText =
 
 document.getElementById("walletView").innerText =
 wallet.slice(0,6)+"..."+wallet.slice(-4);
-
 }
 
 /* ================= TAP ================= */
@@ -222,12 +211,12 @@ return;
 
 points++;
 
+saveData();
 updateUI();
-saveWalletData();
 
 }
 
-/* ================= WALLET CONNECT ================= */
+/* ================= CONNECT / DISCONNECT ================= */
 
 function toggleWallet(){
 
@@ -235,7 +224,6 @@ const input = document.getElementById("walletInput");
 
 if(wallet){
 
-/* DISCONNECT */
 wallet = "";
 points = 0;
 
@@ -254,14 +242,13 @@ return;
 
 wallet = w.toLowerCase();
 
-/* LOAD OLD DATA */
-loadWalletData(wallet);
+loadData(wallet);
 
 updateUI();
 
 }
 
-/* ================= CLAIM SYSTEM ================= */
+/* ================= CLAIM ================= */
 
 function claim(){
 
@@ -272,7 +259,7 @@ return;
 
 let tokens = points / RATE;
 
-/* MIN MAX RULE */
+/* RULES */
 if(tokens < 100){
 alert("Minimum 100 tokens required");
 return;
@@ -285,12 +272,11 @@ tokens = 500;
 /* RESET AFTER CLAIM */
 points = 0;
 
-saveWalletData();
+saveData();
 updateUI();
 
 alert(
-"CLAIM SUCCESS\n" +
-"Tokens: " + tokens.toFixed(4)
+"CLAIM SUCCESS\nTokens: " + tokens.toFixed(4)
 );
 
 }
