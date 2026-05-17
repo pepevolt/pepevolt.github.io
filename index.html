@@ -1,244 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tap Game</title>
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<title>PEPE VOLT</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 
 <style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial;
-}
-
 body{
 background:#0f172a;
 color:white;
-overflow:hidden;
-}
-
-.navbar{
-position:fixed;
-top:0;
-left:0;
-right:0;
-height:60px;
-background:#111827;
-display:flex;
-align-items:center;
-justify-content:space-between;
-padding:0 15px;
-z-index:10;
-border-bottom:1px solid #1f2937;
-}
-
-.nav-left{
-font-size:14px;
-color:#94a3b8;
-}
-
-.nav-right{
-color:#00ff99;
-font-weight:bold;
-font-size:14px;
-}
-
-.container{
-padding-top:70px;
-height:100vh;
-overflow-y:auto;
 text-align:center;
+font-family:Arial;
 }
-
-.logo{
-width:110px;
-height:110px;
-border-radius:50%;
-border:3px solid #00ff99;
-margin-top:20px;
-}
-
-h1{
-color:#00ff99;
+button{
+padding:15px;
+border:none;
+border-radius:10px;
 margin-top:10px;
 }
-
-.contract{
-font-size:11px;
-color:#64748b;
-margin-top:10px;
-padding:0 10px;
-word-break:break-all;
-}
-
-.tap-card{
-margin-top:20px;
-background:#111827;
-padding:20px;
-border-radius:18px;
-margin-left:15px;
-margin-right:15px;
-}
-
-.points{
-font-size:48px;
-color:#00ff99;
-font-weight:bold;
-margin:10px 0;
-}
-
-.tap-btn{
+.tap{
 width:200px;
 height:200px;
 border-radius:50%;
-border:none;
 background:#00ff99;
-color:black;
-font-size:32px;
+font-size:30px;
 font-weight:bold;
-margin-top:10px;
 }
-
-.tap-btn:active{
-transform:scale(0.96);
-}
-
-.info{
-font-size:12px;
-color:#94a3b8;
-margin-top:10px;
-line-height:1.5;
-}
-
-.stats{
-display:flex;
-gap:10px;
-margin:20px 15px;
-}
-
-.box{
-flex:1;
-background:#111827;
-padding:15px;
-border-radius:12px;
-}
-
-.green{
-color:#00ff99;
-font-size:13px;
-}
-
-.value{
-margin-top:8px;
-font-size:16px;
-}
-
 </style>
-
 </head>
 
 <body>
 
-<!-- TOP NAV -->
-<div class="navbar">
+<h2>Tap To Earn</h2>
 
-<div class="nav-left">
-Wallet: <span id="wallet">Not Connected</span>
-</div>
+<div>Wallet: <span id="wallet">Not Connected</span></div>
 
-<div class="nav-right">
-Balance: <span id="balance">0</span> PVLT
-</div>
+<div>Points: <span id="points">0</span></div>
 
-</div>
+<button onclick="connect()">Connect Wallet</button>
 
-<div class="container">
-
-<img class="logo"
-src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg">
-
-<h1>PEPE VOLT</h1>
-
-<div class="contract">
-0xa263d765b897b4777f0ad4a938d12d79e789ffff
-</div>
-
-<div class="tap-card">
-
-<div class="points" id="points">0</div>
-
-<button class="tap-btn" id="tapBtn">⚡ TAP</button>
-
-<div class="info">
-1 Tap = 1 Point<br>
-1000 Points = 1 PVLT<br>
-3 sec inactive resets session points
-</div>
-
-</div>
-
-<div class="stats">
-
-<div class="box">
-<div class="green">GLOBAL</div>
-<div class="value" id="global">0</div>
-</div>
-
-<div class="box">
-<div class="green">BNB VALUE</div>
-<div class="value" id="bnb">0</div>
-</div>
-
-</div>
-
-</div>
+<button class="tap" onclick="tap()">TAP</button>
 
 <script>
 
+let provider, signer, contract;
+let wallet;
 let points = 0;
-let global = 0;
-let timer;
-let wallet = "Not Connected";
 
-function update(){
+// YOUR CONTRACT ADDRESS
+const contractAddress = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
 
-document.getElementById("points").innerText = points;
-document.getElementById("global").innerText = global;
+// YOU MUST REPLACE THIS WITH YOUR REAL ABI
+const abi = [
+  "function addPoints(uint256 amount) public",
+  "function points(address user) view returns (uint256)"
+];
 
-let pvlt = global / 1000;
-let bnb = pvlt * 0.000000001;
+async function connect(){
 
-document.getElementById("balance").innerText = pvlt.toFixed(4);
-document.getElementById("bnb").innerText = bnb.toFixed(12);
+if(!window.ethereum){
+alert("Install MetaMask");
+return;
+}
+
+provider = new ethers.providers.Web3Provider(window.ethereum);
+await provider.send("eth_requestAccounts", []);
+
+signer = provider.getSigner();
+wallet = await signer.getAddress();
+
+document.getElementById("wallet").innerText =
+wallet.slice(0,6)+"..."+wallet.slice(-4);
+
+contract = new ethers.Contract(contractAddress, abi, signer);
+
+loadPoints();
 
 }
 
-document.getElementById("tapBtn").onclick = function(){
+async function loadPoints(){
+
+try{
+
+let p = await contract.points(wallet);
+points = parseInt(p);
+
+document.getElementById("points").innerText = points;
+
+}catch(e){
+console.log(e);
+}
+
+}
+
+async function tap(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
 
 points++;
-global++;
 
-update();
+document.getElementById("points").innerText = points;
 
-clearTimeout(timer);
+// send to blockchain
+try{
 
-timer = setTimeout(()=>{
+let tx = await contract.addPoints(1);
+await tx.wait();
 
-points = 0;
-update();
+}catch(e){
+console.log(e);
+}
 
-},3000);
-
-};
-
-update();
+}
 
 </script>
 
