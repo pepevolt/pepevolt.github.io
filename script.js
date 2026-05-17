@@ -1,1 +1,1 @@
-fhjjy
+console.log("Website Loaded");
