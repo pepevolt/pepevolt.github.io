@@ -6,7 +6,7 @@
 <meta name="viewport"
 content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
-<title>PVLT Tap Game</title>
+<title>PVLT Mining</title>
 
 <style>
 
@@ -16,6 +16,7 @@ font-family:Arial;
 background:#08111f;
 color:white;
 text-align:center;
+overflow:hidden;
 }
 
 .nav{
@@ -26,24 +27,17 @@ background:#101b2e;
 font-size:12px;
 }
 
-.container{
-padding:20px;
-}
-
 .tap{
 width:220px;
 height:220px;
 border-radius:50%;
 border:none;
+margin-top:40px;
+
+background:linear-gradient(135deg,#00ff99,#00ccff);
 font-size:28px;
 font-weight:bold;
-background:linear-gradient(135deg,#00ff99,#00ccff);
 color:black;
-margin-top:30px;
-}
-
-.tap:active{
-transform:scale(0.95);
 }
 
 .card{
@@ -53,29 +47,17 @@ background:rgba(255,255,255,0.05);
 border-radius:14px;
 }
 
-input{
-width:90%;
-padding:14px;
-border:none;
-border-radius:10px;
-background:#111827;
-color:white;
-}
-
-button{
+input,button{
 width:95%;
 padding:14px;
 margin-top:10px;
 border:none;
 border-radius:10px;
-font-weight:bold;
-background:linear-gradient(90deg,#00ff99,#00ccff);
-color:black;
 }
 
-.small{
-font-size:12px;
-opacity:0.7;
+button{
+background:linear-gradient(90deg,#00ff99,#00ccff);
+font-weight:bold;
 }
 
 </style>
@@ -87,125 +69,73 @@ opacity:0.7;
 <div class="nav">
 <div>⚡ <span id="points">0</span></div>
 <div>💎 <span id="tokens">0.0000</span></div>
-<div>🔋 <span id="energy">1000</span></div>
+<div>👤 <span id="wallet">guest</span></div>
 </div>
-
-<div class="container">
-
-<h2>PVLT TAP GAME</h2>
 
 <button class="tap" onclick="tap()">TAP</button>
 
-<div class="small">1 Tap = 1 Point</div>
-
 <div class="card">
 
-<input id="wallet" placeholder="Paste BSC wallet">
+<input id="walletInput" placeholder="Paste BSC wallet">
 
-<button onclick="connectWallet()">CONNECT WALLET</button>
-
-</div>
-
-<div class="card">
-
-<div class="small">
-MIN: 100 PVLT<br>
-MAX: 500 PVLT<br>
-Fee: $1 (BNB)<br>
-Cooldown: 24h
-</div>
-
-</div>
-
-<button onclick="claim()">
-CLAIM (PAY $1 FEE)
-</button>
+<button onclick="connect()">CONNECT</button>
 
 </div>
 
 <script>
 
-const API = "https://YOUR-RENDER-API.onrender.com";
+const API = "https://your-backend.onrender.com";
 
-let wallet = "";
-let points = 0;
-let energy = 1000;
+let wallet="";
+let signature="";
+let points=0;
 
-function set(id,val){
-document.getElementById(id).innerText = val;
-}
+async function connect(){
 
-function tap(){
-if(!wallet){
-alert("Connect wallet");
-return;
-}
+wallet=document.getElementById("walletInput").value;
 
-points++;
-energy--;
-
-set("points",points);
-set("energy",energy);
-}
-
-/* ================= CONNECT ================= */
-
-async function connectWallet(){
-
-let w = document.getElementById("wallet").value.trim();
-
-if(!w.startsWith("0x") || w.length !== 42){
-alert("Invalid wallet");
-return;
-}
-
-wallet = w.toLowerCase();
-
-let res = await fetch(API+"/connect",{
+let r=await fetch(API+"/connect",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({wallet})
 });
 
-let data = await res.json();
+let d=await r.json();
 
-if(data.success){
-set("points",data.points);
-set("tokens",data.tokens);
-alert("Connected");
-}
-}
+points=d.points;
 
-/* ================= CLAIM ================= */
+update();
 
-async function claim(){
-
-if(!wallet){
-alert("Connect wallet");
-return;
 }
 
-let res = await fetch(API+"/claim",{
+async function tap(){
+
+let r=await fetch(API+"/mine",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-wallet,
-fee:1
-})
+body:JSON.stringify({wallet})
 });
 
-let data = await res.json();
+let d=await r.json();
 
-alert(data.message);
+points=d.points;
+signature=d.signature;
 
-if(data.success){
-set("points",0);
-set("tokens","0.0000");
+update();
+
 }
+
+function update(){
+
+document.getElementById("points").innerText=points;
+document.getElementById("tokens").innerText=(points/10000).toFixed(4);
+
+document.getElementById("wallet").innerText=
+wallet.slice(0,6)+"..."+wallet.slice(-4);
+
 }
 
 </script>
 
 </body>
-
 </html>
