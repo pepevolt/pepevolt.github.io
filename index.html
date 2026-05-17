@@ -2,125 +2,142 @@
 <html lang="en">
 
 <head>
-
 <meta charset="UTF-8">
 
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
->
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <title>PEPE VOLT</title>
 
 <style>
 
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial;
+}
+
 body{
-    margin:0;
-    padding:0;
-    background:#0f172a;
-    color:white;
-    font-family:Arial,sans-serif;
-    text-align:center;
+background:#0f172a;
+color:white;
+overflow:hidden;
+}
+
+.navbar{
+position:fixed;
+top:0;
+left:0;
+right:0;
+height:60px;
+background:#111827;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 15px;
+z-index:10;
+border-bottom:1px solid #1f2937;
+}
+
+.nav-left{
+font-size:14px;
+color:#94a3b8;
+}
+
+.nav-right{
+color:#00ff99;
+font-weight:bold;
+font-size:14px;
 }
 
 .container{
-    max-width:420px;
-    margin:auto;
-    padding:20px;
+padding-top:70px;
+height:100vh;
+overflow-y:auto;
+text-align:center;
 }
 
 .logo{
-    width:120px;
-    height:120px;
-    border-radius:50%;
-    border:4px solid #00ff99;
-    margin-top:20px;
+width:110px;
+height:110px;
+border-radius:50%;
+border:3px solid #00ff99;
+margin-top:20px;
 }
 
 h1{
-    color:#00ff99;
-    margin-top:15px;
+color:#00ff99;
+margin-top:10px;
 }
 
 .contract{
-    margin-top:15px;
-    font-size:12px;
-    color:#94a3b8;
-    word-break:break-all;
+font-size:11px;
+color:#64748b;
+margin-top:10px;
+padding:0 10px;
+word-break:break-all;
 }
 
-.card{
-    background:#111827;
-    margin-top:20px;
-    padding:20px;
-    border-radius:18px;
+.tap-card{
+margin-top:20px;
+background:#111827;
+padding:20px;
+border-radius:18px;
+margin-left:15px;
+margin-right:15px;
 }
 
 .points{
-    font-size:50px;
-    font-weight:bold;
-    color:#00ff99;
-    margin-top:10px;
+font-size:48px;
+color:#00ff99;
+font-weight:bold;
+margin:10px 0;
 }
 
 .tap-btn{
-
-    width:220px;
-    height:220px;
-
-    border:none;
-    border-radius:50%;
-
-    margin-top:20px;
-
-    background:#00ff99;
-    color:black;
-
-    font-size:34px;
-    font-weight:bold;
-
-    cursor:pointer;
+width:200px;
+height:200px;
+border-radius:50%;
+border:none;
+background:#00ff99;
+color:black;
+font-size:32px;
+font-weight:bold;
+margin-top:10px;
 }
 
 .tap-btn:active{
-    transform:scale(0.96);
+transform:scale(0.96);
 }
 
 .info{
-    margin-top:15px;
-    font-size:13px;
-    color:#94a3b8;
-    line-height:1.6;
+font-size:12px;
+color:#94a3b8;
+margin-top:10px;
+line-height:1.5;
 }
 
-.row{
-    display:flex;
-    gap:10px;
-    margin-top:20px;
+.stats{
+display:flex;
+gap:10px;
+margin:20px 15px;
 }
 
 .box{
-    flex:1;
-    background:#111827;
-    padding:15px;
-    border-radius:15px;
+flex:1;
+background:#111827;
+padding:15px;
+border-radius:12px;
 }
 
 .green{
-    color:#00ff99;
+color:#00ff99;
+font-size:13px;
 }
 
-.reward{
-    font-size:24px;
-    color:#00ff99;
-    margin-top:10px;
-}
-
-.footer{
-    margin-top:20px;
-    margin-bottom:40px;
-    color:#64748b;
-    font-size:12px;
+.value{
+margin-top:8px;
+font-size:16px;
 }
 
 </style>
@@ -129,12 +146,23 @@ h1{
 
 <body>
 
+<!-- TOP NAV -->
+<div class="navbar">
+
+<div class="nav-left">
+Wallet: <span id="wallet">Not Connected</span>
+</div>
+
+<div class="nav-right">
+Balance: <span id="balance">0</span> PVLT
+</div>
+
+</div>
+
 <div class="container">
 
-<img
-class="logo"
-src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
->
+<img class="logo"
+src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg">
 
 <h1>PEPE VOLT</h1>
 
@@ -142,79 +170,32 @@ src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
 0xa263d765b897b4777f0ad4a938d12d79e789ffff
 </div>
 
-<div class="card">
+<div class="tap-card">
 
-<h2>Tap To Earn</h2>
+<div class="points" id="points">0</div>
 
-<div
-class="points"
-id="points"
->
-0
-</div>
-
-<button
-class="tap-btn"
-id="tapBtn"
->
-⚡ TAP
-</button>
+<button class="tap-btn" id="tapBtn">⚡ TAP</button>
 
 <div class="info">
-1 Tap = 1 Point
-<br>
-1000 Points = 1 PVLT
-<br>
-1 PVLT = 0.000000001 BNB
-<br><br>
-Inactive for 3 seconds resets current tap points.
+1 Tap = 1 Point<br>
+1000 Points = 1 PVLT<br>
+3 sec inactive resets session points
 </div>
 
 </div>
 
-<div class="row">
+<div class="stats">
 
 <div class="box">
-
-<h3 class="green">
-Global
-</h3>
-
-<div id="globalPoints">
-0
-</div>
-
+<div class="green">GLOBAL</div>
+<div class="value" id="global">0</div>
 </div>
 
 <div class="box">
-
-<h3 class="green">
-PVLT
-</h3>
-
-<div id="tokenBalance">
-0
+<div class="green">BNB VALUE</div>
+<div class="value" id="bnb">0</div>
 </div>
 
-</div>
-
-</div>
-
-<div class="card">
-
-<h2>BNB Value</h2>
-
-<div
-class="reward"
-id="bnbValue"
->
-0 BNB
-</div>
-
-</div>
-
-<div class="footer">
-PEPE VOLT Telegram Mini App
 </div>
 
 </div>
@@ -222,78 +203,42 @@ PEPE VOLT Telegram Mini App
 <script>
 
 let points = 0;
+let global = 0;
+let timer;
+let wallet = "Not Connected";
 
-let globalPoints = 0;
+function update(){
 
-let timer = null;
+document.getElementById("points").innerText = points;
+document.getElementById("global").innerText = global;
 
-function loadData(){
+let pvlt = global / 1000;
+let bnb = pvlt * 0.000000001;
 
-    let saved =
-    localStorage.getItem("pvlt_global");
+document.getElementById("balance").innerText = pvlt.toFixed(4);
+document.getElementById("bnb").innerText = bnb.toFixed(12);
 
-    if(saved){
-
-        globalPoints =
-        parseInt(saved);
-
-    }
-
-    updateUI();
 }
 
-function updateUI(){
+document.getElementById("tapBtn").onclick = function(){
 
-    document.getElementById("points")
-    .innerHTML = points;
+points++;
+global++;
 
-    document.getElementById("globalPoints")
-    .innerHTML = globalPoints;
+update();
 
-    let tokens =
-    globalPoints / 1000;
+clearTimeout(timer);
 
-    document.getElementById("tokenBalance")
-    .innerHTML =
-    tokens.toFixed(4);
+timer = setTimeout(()=>{
 
-    let bnb =
-    tokens * 0.000000001;
+points = 0;
+update();
 
-    document.getElementById("bnbValue")
-    .innerHTML =
-    bnb.toFixed(12) + " BNB";
+},3000);
 
-    localStorage.setItem(
-        "pvlt_global",
-        globalPoints
-    );
-}
+};
 
-function tapGame(){
-
-    points++;
-
-    globalPoints++;
-
-    updateUI();
-
-    clearTimeout(timer);
-
-    timer = setTimeout(function(){
-
-        points = 0;
-
-        updateUI();
-
-    },3000);
-}
-
-document
-.getElementById("tapBtn")
-.onclick = tapGame;
-
-loadData();
+update();
 
 </script>
 
