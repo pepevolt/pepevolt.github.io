@@ -6,7 +6,7 @@
 <meta name="viewport"
 content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-<title>PVLT Universal Tap Game</title>
+<title>PVLT Tap Game</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 
@@ -41,6 +41,14 @@ padding-top:80px;
 text-align:center;
 }
 
+input{
+padding:12px;
+width:80%;
+border-radius:10px;
+border:none;
+margin-top:10px;
+}
+
 .tap{
 width:200px;
 height:200px;
@@ -50,6 +58,7 @@ border:none;
 font-size:28px;
 font-weight:bold;
 color:black;
+margin-top:20px;
 }
 
 button{
@@ -59,8 +68,6 @@ border-radius:10px;
 margin-top:10px;
 font-weight:bold;
 }
-
-.connect{background:#38bdf8;}
 
 .card{
 margin:20px;
@@ -81,17 +88,21 @@ border-radius:10px;
 
 <div>PVLT: <span class="val" id="tokenNav">0</span></div>
 
-<div>Wallet: <span class="val" id="walletNav">---</span></div>
+<div>Address: <span class="val" id="addrNav">---</span></div>
 
 </div>
 
 <div class="container">
 
-<h2>PVLT UNIVERSAL TAP</h2>
+<h2>PVLT TAP GAME</h2>
 
-<button class="connect" onclick="connectWallet()">
-Connect Wallet
-</button>
+<input id="addr" placeholder="Enter BSC Address" />
+
+<br>
+
+<button onclick="start()">START GAME</button>
+
+<br>
 
 <button class="tap" onclick="tap()">TAP</button>
 
@@ -103,78 +114,51 @@ Connect Wallet
 
 <script>
 
-let provider, signer, wallet;
-let contract, tokenContract;
-
-/* CONTRACTS */
 const TAP = "YOUR_TAP_CONTRACT";
 const TOKEN = "YOUR_PVLT_TOKEN";
 
-/* ABI */
 const tapAbi = [
-"function tap(uint256)",
+"function tap(address,uint256)",
 "function getPoints(address) view returns (uint256)",
-"function claim()"
+"function claim(address)"
 ];
 
 const tokenAbi = [
 "function balanceOf(address) view returns (uint256)"
 ];
 
-/* UNIVERSAL WALLET CONNECT */
-async function connectWallet(){
+let user;
 
-try{
+let provider = new ethers.providers.JsonRpcProvider(
+"https://bsc-dataseed.binance.org/"
+);
 
-/* 1. Telegram check */
-if(window.Telegram && Telegram.WebApp){
-Telegram.WebApp.ready();
-Telegram.WebApp.expand();
-}
+let contract = new ethers.Contract(TAP, tapAbi, provider);
+let tokenContract = new ethers.Contract(TOKEN, tokenAbi, provider);
 
-/* 2. injected wallet */
-if(window.ethereum){
+/* START */
+function start(){
 
-provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-await provider.send("eth_requestAccounts", []);
-signer = provider.getSigner();
+user = document.getElementById("addr").value;
 
-wallet = await signer.getAddress();
-
-}else{
-
-/* 3. fallback deep link */
-let bscLink =
-"https://metamask.app.link/dapp/" + window.location.href;
-
-alert("Open wallet: " + bscLink);
-window.location.href = bscLink;
+if(!user || user.length < 10){
+alert("Enter valid BSC address");
 return;
-
 }
 
-/* UI */
-document.getElementById("walletNav").innerText =
-wallet.slice(0,4)+"..."+wallet.slice(-4);
-
-contract = new ethers.Contract(TAP, tapAbi, signer);
-tokenContract = new ethers.Contract(TOKEN, tokenAbi, provider);
+document.getElementById("addrNav").innerText =
+user.slice(0,6)+"...";
 
 load();
-
-}catch(e){
-console.log(e);
-alert("Wallet connection failed");
-}
 
 }
 
 /* TAP */
 async function tap(){
 
-if(!wallet) return;
+if(!user) return;
 
-await contract.tap(1);
+await contract.tap(user,1);
 load();
 
 }
@@ -183,8 +167,8 @@ load();
 async function claim(){
 
 try{
-await contract.claim();
-alert("Claim success");
+await contract.claim(user);
+alert("Claim done");
 load();
 }catch(e){
 alert(e.message);
@@ -195,12 +179,12 @@ alert(e.message);
 /* LOAD */
 async function load(){
 
-if(!wallet) return;
+if(!user) return;
 
-let p = await contract.getPoints(wallet);
+let p = await contract.getPoints(user);
 document.getElementById("pointsNav").innerText = p;
 
-let b = await tokenContract.balanceOf(wallet);
+let b = await tokenContract.balanceOf(user);
 document.getElementById("tokenNav").innerText =
 ethers.utils.formatEther(b);
 
