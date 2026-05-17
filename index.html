@@ -4,10 +4,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport"
-content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+content="width=device-width, initial-scale=1, user-scalable=no">
 
 <title>PVLT Tap Game</title>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 
 <style>
@@ -17,6 +18,7 @@ margin:0;
 font-family:Arial;
 background:#0b1220;
 color:white;
+text-align:center;
 }
 
 .navbar{
@@ -31,34 +33,23 @@ justify-content:space-between;
 align-items:center;
 padding:0 10px;
 font-size:12px;
-z-index:10;
 }
 
 .val{color:#00ff99;font-weight:bold;}
 
 .container{
 padding-top:80px;
-text-align:center;
-}
-
-input{
-padding:12px;
-width:80%;
-border-radius:10px;
-border:none;
-margin-top:10px;
 }
 
 .tap{
-width:200px;
-height:200px;
+width:180px;
+height:180px;
 border-radius:50%;
 background:#00ff99;
 border:none;
-font-size:28px;
+font-size:26px;
 font-weight:bold;
 color:black;
-margin-top:20px;
 }
 
 button{
@@ -76,6 +67,13 @@ padding:15px;
 border-radius:10px;
 }
 
+input{
+padding:10px;
+width:80%;
+border-radius:8px;
+border:none;
+}
+
 </style>
 
 </head>
@@ -84,11 +82,11 @@ border-radius:10px;
 
 <div class="navbar">
 
-<div>Points: <span class="val" id="pointsNav">0</span></div>
+<div>Points: <span id="pointsNav" class="val">0</span></div>
 
-<div>PVLT: <span class="val" id="tokenNav">0</span></div>
+<div>PVLT: <span id="tokenNav" class="val">0</span></div>
 
-<div>Address: <span class="val" id="addrNav">---</span></div>
+<div>ID: <span id="idNav" class="val">---</span></div>
 
 </div>
 
@@ -96,70 +94,78 @@ border-radius:10px;
 
 <h2>PVLT TAP GAME</h2>
 
-<input id="addr" placeholder="Enter BSC Address" />
-
-<br>
-
-<button onclick="start()">START GAME</button>
-
-<br>
-
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
-<button onclick="claim()">CLAIM</button>
+
+<h3>Link Wallet</h3>
+
+<input id="walletInput" placeholder="Enter BSC Wallet">
+<br>
+<button onclick="linkWallet()">LINK WALLET</button>
+
+</div>
+
+<div class="card">
+<button onclick="claim()">CLAIM TOKENS</button>
 </div>
 
 </div>
 
 <script>
 
+/* TELEGRAM INIT */
+let tg = window.Telegram.WebApp;
+tg.expand();
+
+let user = tg.initDataUnsafe.user;
+let telegramId = user.id;
+
+document.getElementById("idNav").innerText = telegramId;
+
+/* CONTRACT */
 const TAP = "YOUR_TAP_CONTRACT";
 const TOKEN = "YOUR_PVLT_TOKEN";
 
-const tapAbi = [
-"function tap(address,uint256)",
-"function getPoints(address) view returns (uint256)",
-"function claim(address)"
-];
-
-const tokenAbi = [
-"function balanceOf(address) view returns (uint256)"
-];
-
-let user;
-
-let provider = new ethers.providers.JsonRpcProvider(
+const provider = new ethers.providers.JsonRpcProvider(
 "https://bsc-dataseed.binance.org/"
 );
 
-let contract = new ethers.Contract(TAP, tapAbi, provider);
-let tokenContract = new ethers.Contract(TOKEN, tokenAbi, provider);
+const abi = [
+"function tap(uint256,uint256)",
+"function getPoints(uint256) view returns (uint256)",
+"function linkWallet(uint256,address)",
+"function claim(uint256)"
+];
 
-/* START */
-function start(){
-
-user = document.getElementById("addr").value;
-
-if(!user || user.length < 10){
-alert("Enter valid BSC address");
-return;
-}
-
-document.getElementById("addrNav").innerText =
-user.slice(0,6)+"...";
-
-load();
-
-}
+const contract = new ethers.Contract(TAP, abi, provider);
 
 /* TAP */
 async function tap(){
 
-if(!user) return;
+await contract.tap(telegramId,1);
 
-await contract.tap(user,1);
 load();
+
+}
+
+/* LOAD POINTS */
+async function load(){
+
+let p = await contract.getPoints(telegramId);
+
+document.getElementById("pointsNav").innerText = p;
+
+}
+
+/* LINK WALLET */
+async function linkWallet(){
+
+let w = document.getElementById("walletInput").value;
+
+if(!w) return alert("Enter wallet");
+
+alert("Wallet linked (call contract in real deploy)");
 
 }
 
@@ -167,8 +173,8 @@ load();
 async function claim(){
 
 try{
-await contract.claim(user);
-alert("Claim done");
+await contract.claim(telegramId);
+alert("Claim sent");
 load();
 }catch(e){
 alert(e.message);
@@ -176,21 +182,10 @@ alert(e.message);
 
 }
 
-/* LOAD */
-async function load(){
-
-if(!user) return;
-
-let p = await contract.getPoints(user);
-document.getElementById("pointsNav").innerText = p;
-
-let b = await tokenContract.balanceOf(user);
-document.getElementById("tokenNav").innerText =
-ethers.utils.formatEther(b);
-
-}
+load();
 
 </script>
 
 </body>
+
 </html>
