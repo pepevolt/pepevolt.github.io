@@ -1,441 +1,286 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-  <title>PVLT Executive Portal</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PEPE VOLT Mini App</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 
-  <style>
-    :root {
-      --bg-main: #050714;
-      --bg-card: #0b1126;
-      --bg-input: #121a3a;
-      --primary: #3b82f6;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --text-main: #ffffff;
-      --text-muted: #64748b;
-      --border: rgba(255, 255, 255, 0.06);
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#0b1020;
+    color:white;
+    font-family:Arial, sans-serif;
+    overflow-x:hidden;
+}
+
+.container{
+    max-width:420px;
+    margin:auto;
+    padding:20px;
+    text-align:center;
+}
+
+.logo{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    margin-top:20px;
+    border:4px solid #00ff99;
+    object-fit:cover;
+    box-shadow:0 0 20px #00ff99;
+}
+
+h1{
+    margin-top:20px;
+    font-size:32px;
+    color:#00ff99;
+}
+
+.subtitle{
+    color:#94a3b8;
+    margin-top:10px;
+    font-size:14px;
+}
+
+.contract{
+    margin-top:15px;
+    background:#111827;
+    padding:12px;
+    border-radius:12px;
+    font-size:12px;
+    word-break:break-all;
+}
+
+.card{
+    background:#111827;
+    margin-top:20px;
+    padding:20px;
+    border-radius:18px;
+    box-shadow:0 0 15px rgba(0,255,153,0.1);
+}
+
+.balance{
+    font-size:28px;
+    margin-top:10px;
+    color:#00ff99;
+    font-weight:bold;
+}
+
+button,
+.buy-btn{
+    width:100%;
+    padding:16px;
+    border:none;
+    border-radius:14px;
+    margin-top:15px;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.connect-btn{
+    background:#00ff99;
+    color:black;
+}
+
+.buy-btn{
+    background:#facc15;
+    color:black;
+    text-decoration:none;
+    display:block;
+}
+
+.footer{
+    margin-top:25px;
+    color:#64748b;
+    font-size:12px;
+}
+
+.stats{
+    display:flex;
+    gap:10px;
+    margin-top:20px;
+}
+
+.stat-box{
+    flex:1;
+    background:#111827;
+    padding:15px;
+    border-radius:15px;
+}
+
+.stat-box h3{
+    color:#00ff99;
+    margin-bottom:8px;
+}
+
+.glow{
+    animation:glow 2s infinite alternate;
+}
+
+@keyframes glow{
+    from{
+        box-shadow:0 0 10px #00ff99;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-      -webkit-user-select: none;
+    to{
+        box-shadow:0 0 25px #00ff99;
     }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg-main);
-      color: var(--text-main);
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .app-container {
-      width: 100%;
-      max-width: 440px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    header {
-      text-align: center;
-      padding: 8px 0;
-    }
-
-    header h1 {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-
-    header p {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .cyber-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px;
-    }
-
-    .card-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .account-strip {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      margin-top: 12px;
-    }
-
-    .metrics-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      font-size: 14px;
-    }
-
-    .metric-val {
-      font-weight: 700;
-    }
-
-    .engine-tap-btn {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: white;
-      border: none;
-      border-radius: 16px;
-      padding: 18px;
-      font-size: 15px;
-      font-weight: 700;
-      text-transform: uppercase;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 10px;
-      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
-    }
-
-    .engine-tap-btn:active {
-      transform: scale(0.98);
-    }
-
-    .input-wrapper {
-      position: relative;
-      margin-top: 10px;
-    }
-
-    input {
-      width: 100%;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      padding: 14px;
-      border-radius: 12px;
-      color: white;
-      font-size: 15px;
-      outline: none;
-    }
-
-    .action-btn {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .btn-withdraw { background: #8b5cf6; color: white; }
-    .btn-deposit { background: var(--success); color: white; }
-
-    .status-log {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 8px;
-      text-align: center;
-      font-family: monospace;
-    }
-
-    #cooldown-bar {
-      display: none;
-      font-size: 12px;
-      color: var(--danger);
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 8px;
-    }
-
-    /* Fixed UI container injection point for AppKit to prevent deadlocks */
-    #walletconnect-mount {
-      width: 100%;
-    }
-  </style>
+}
+</style>
 </head>
+
 <body>
 
-<div class="app-container">
-  <header>
-    <h1>⚡ PVLT Executive Portal</h1>
-    <p>Web3 Protocol Ecosystem Integration</p>
-  </header>
+<div class="container">
 
-  <div class="cyber-card">
-    <div class="card-title">🌐 Identity & Network</div>
-    <div id="walletconnect-mount"></div>
-    
-    <div class="account-strip">
-      <span>Account Status:</span>
-      <span id="ui-wallet-display" style="color: var(--primary); font-family: monospace;">Not connected</span>
-    </div>
-    <div class="account-strip">
-      <span>Available Assets:</span>
-      <span id="ui-assets-display" style="font-weight: 700;">-</span>
-    </div>
-  </div>
+    <img
+        src="https://i.imgur.com/8Km9tLL.png"
+        class="logo glow"
+    >
 
-  <div class="cyber-card">
-    <div class="card-title">📊 Global Dashboard Data</div>
-    <div class="metrics-row">
-      <span>Saved Dashboard Points:</span>
-      <span id="ui-dash-points" class="metric-val" style="color: #3b82f6;">0</span>
-    </div>
-    <div class="metrics-row">
-      <span>Convertible Dashboard Value:</span>
-      <span id="ui-dash-value" class="metric-val" style="color: #10b981;">0.00 PVLT</span>
-    </div>
-  </div>
+    <h1>PEPE VOLT</h1>
 
-  <div class="cyber-card">
-    <div class="card-title">🎰 Mining Module</div>
-    <div class="metrics-row">
-      <span>Accumulated Points:</span>
-      <span id="ui-live-points" class="metric-val" style="color: #f59e0b;">0</span>
-    </div>
-    <div class="metrics-row">
-      <span>Convertible Pool Value:</span>
-      <span id="ui-live-value" class="metric-val" style="color: #3b82f6;">0.00 PVLT</span>
-    </div>
-    
-    <div id="cooldown-bar">⚠️ INACTIVITY COUNTER ACTIVE: <span id="ui-timer">30.0</span>s</div>
-    <button id="mining-action-trigger" class="engine-tap-btn">Execute Compute Tap</button>
-  </div>
+    <p class="subtitle">
+        BSC Meme Token Powered By Telegram
+    </p>
 
-  <div class="cyber-card">
-    <div class="card-title">🎁 Asset Conversion Protocol</div>
-    
-    <div style="font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
-      <span>• 100,000 game points ➔ 1.00 Network Token Base</span>
-      <span>• Floor Request Minimum Value ➔ 100 Tokens</span>
-      <span>• Fixed Settlement Gas Fee Allocation ➔ 0.001 BNB</span>
+    <div class="contract">
+        0xa263d765b897b4777f0ad4a938d12d79e789ffff
     </div>
 
-    <div class="input-wrapper">
-      <input id="input-withdraw-val" type="number" placeholder="Enter Token Amount" />
+    <button class="connect-btn" id="connectBtn">
+        Connect Wallet
+    </button>
+
+    <div class="card">
+        <h2>Your Balance</h2>
+
+        <div class="balance" id="balance">
+            0 PVLT
+        </div>
     </div>
-    <button class="action-btn btn-withdraw" onclick="processWithdrawal()">Claim Protocol Assets</button>
-    <div id="log-withdraw" class="status-log">Standby for ledger initialization...</div>
-  </div>
+
+    <div class="stats">
+
+        <div class="stat-box">
+            <h3>Network</h3>
+            <p>BSC</p>
+        </div>
+
+        <div class="stat-box">
+            <h3>Status</h3>
+            <p>Live</p>
+        </div>
+
+    </div>
+
+    <a
+        class="buy-btn"
+        href="https://pancakeswap.finance/swap?outputCurrency=0xa263d765b897b4777f0ad4a938d12d79e789ffff"
+        target="_blank"
+    >
+        Buy On PancakeSwap
+    </a>
+
+    <div class="footer">
+        Powered by PEPE VOLT • Telegram Mini App
+    </div>
+
 </div>
 
-<script type="module">
-  import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.sh/@web3modal/wagmi@4.1.5';
-  import { watchAccount, getWalletClient, disconnect } from 'https://esm.sh/@wagmi/core@2.10.2';
-  import { bsc } from 'https://esm.sh/@wagmi/core/chains@2.10.2';
-
-  const projectId = '9ba63969e48a3e75a9b0c7931c0e3962';
-
-  const metadata = {
-    name: 'PVLT Executive Portal',
-    description: 'Telegram Compatible Mini App Gateway',
-    url: window.location.origin,
-    icons: ['https://avatars.githubusercontent.com/u/37784886']
-  };
-
-  const wagmiConfig = defaultWagmiConfig({ chains: [bsc], projectId, metadata });
-
-  // Safe parameters to prevent internal iframe deadlocks in mobile apps
-  const modal = createWeb3Modal({
-    wagmiConfig,
-    projectId,
-    enableAnalytics: false,
-    themeMode: 'dark',
-    featuredWalletIds: [
-      'c57ca0a81a4e2ef5110ff413ab455c1b9df36628a005102a4bf622277d3021a3', // Metamask
-      '4622a2b78ac1595833d537f013407173e335277873ab155518ee389d703b602a'  // Trust Wallet
-    ]
-  });
-
-  // Dynamic initialization inside custom container
-  const container = document.getElementById('walletconnect-mount');
-  const customButton = document.createElement('w3m-button');
-  container.appendChild(customButton);
-
-  // Monitor account status changes reactively 
-  watchAccount(wagmiConfig, {
-    onChange(account) {
-      if (account && account.isConnected) {
-        window.userWalletAddress = account.address;
-        window.isWalletLinked = true;
-        document.getElementById('ui-wallet-display').innerText = account.address.substring(0, 6) + '...' + account.address.substring(38);
-        document.getElementById('ui-assets-display').innerText = "0.0 PVLT";
-      } else {
-        window.userWalletAddress = null;
-        window.isWalletLinked = false;
-        document.getElementById('ui-wallet-display').innerText = "Not connected";
-        document.getElementById('ui-assets-display').innerText = "-";
-      }
-      window.refreshInterfaceStateValues();
-    }
-  });
-
-  window.wagmiConfig = wagmiConfig;
-  window.getWalletClient = getWalletClient;
-  window.disconnectWallet = () => disconnect(wagmiConfig);
-</script>
-
 <script>
-const TARGET_COLLECTION_VAULT = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
-const STORAGE_KEY_LIVE_COMPUTE = "pvlt_live_points_v2";
-const STORAGE_KEY_DASHBOARD_SAVED = "pvlt_dash_points_v2";
+Telegram.WebApp.ready();
+Telegram.WebApp.expand();
 
-let pointsLive = parseInt(localStorage.getItem(STORAGE_KEY_LIVE_COMPUTE)) || 0;
-let pointsDashboard = parseInt(localStorage.getItem(STORAGE_KEY_DASHBOARD_SAVED)) || 0;
+const tokenAddress =
+"0xa263d765b897b4777f0ad4a938d12d79e789ffff";
 
-let runTimeout;
-let runInterval;
-let timerCountdown = 30.0;
+const abi = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function decimals() view returns (uint8)"
+];
 
-// Initialize Telegram WebApp properties safely if loaded inside TMA
-if (window.Telegram && window.Telegram.WebApp) {
-  window.Telegram.WebApp.ready();
-  window.Telegram.WebApp.expand();
-}
+let provider;
+let signer;
+let userAddress;
 
-window.refreshInterfaceStateValues = function() {
-  document.getElementById('ui-live-points').innerText = pointsLive.toLocaleString();
-  document.getElementById('ui-live-value').innerText = (pointsLive / 100000).toFixed(2) + " PVLT";
-  
-  document.getElementById('ui-dash-points').innerText = pointsDashboard.toLocaleString();
-  document.getElementById('ui-dash-value').innerText = (pointsDashboard / 100000).toFixed(2) + " PVLT";
-};
+async function connectWallet(){
 
-// Initial state load
-window.refreshInterfaceStateValues();
-
-// Multi-touch zooming preventative layer
-document.addEventListener('touchstart', function (e) {
-  if (e.touches.length > 1) e.preventDefault();
-}, { passive: false });
-
-const actionTapBtn = document.getElementById('mining-action-trigger');
-actionTapBtn.addEventListener('pointerdown', function (e) {
-  e.preventDefault();
-  executeMiningLoopStep();
-});
-
-function executeMiningLoopStep() {
-  pointsLive += 1000;
-  localStorage.setItem(STORAGE_KEY_LIVE_COMPUTE, pointsLive);
-  window.refreshInterfaceStateValues();
-  refreshInactivitySecurityTracker();
-}
-
-function refreshInactivitySecurityTracker() {
-  clearTimeout(runTimeout);
-  clearInterval(runInterval);
-
-  timerCountdown = 30.0;
-  document.getElementById("cooldown-bar").style.display = "block";
-  document.getElementById("ui-timer").innerText = timerCountdown.toFixed(1);
-
-  runInterval = setInterval(() => {
-    timerCountdown -= 0.1;
-    if (timerCountdown <= 0) {
-      clearInterval(runInterval);
-    } else {
-      document.getElementById("ui-timer").innerText = timerCountdown.toFixed(1);
-    }
-  }, 100);
-
-  runTimeout = setTimeout(() => {
-    evaluateInactivityExpirations();
-  }, 30000);
-}
-
-function evaluateInactivityExpirations() {
-  if (window.isWalletLinked) {
-    pointsDashboard += pointsLive;
-    localStorage.setItem(STORAGE_KEY_DASHBOARD_SAVED, pointsDashboard.toString());
-  }
-
-  pointsLive = 0;
-  localStorage.setItem(STORAGE_KEY_LIVE_COMPUTE, "0");
-  window.refreshInterfaceStateValues();
-  document.getElementById("cooldown-bar").style.display = "none";
-}
-
-// Secure Transaction Assembly (Withdrawal Mechanism via AppKit Client Pipeline)
-async function processWithdrawal() {
-  const log = document.getElementById('log-withdraw');
-  try {
-    if (!window.isWalletLinked || !window.userWalletAddress) {
-      alert("Please connect your Web3 wallet profile first.");
-      return;
+    if(typeof window.ethereum === "undefined"){
+        alert("Please install MetaMask or Trust Wallet");
+        return;
     }
 
-    const tokenInput = parseFloat(document.getElementById('input-withdraw-val').value);
-    if (!tokenInput || tokenInput < 100) {
-      alert("Minimum threshold for asset claim is 100 PVLT.");
-      return;
+    try{
+
+        provider =
+        new ethers.providers.Web3Provider(window.ethereum);
+
+        await provider.send("eth_requestAccounts", []);
+
+        signer = provider.getSigner();
+
+        userAddress = await signer.getAddress();
+
+        document.getElementById("connectBtn").innerText =
+        userAddress.substring(0,6)
+        + "..."
+        + userAddress.substring(userAddress.length - 4);
+
+        loadBalance();
+
+    }catch(err){
+
+        console.log(err);
+
+        alert("Wallet connection failed");
+
     }
-
-    const pointsNeeded = tokenInput * 100000;
-    if (pointsDashboard < pointsNeeded) {
-      alert(`Insufficient dashboard allocation. Requires ${pointsNeeded.toLocaleString()} points.`);
-      return;
-    }
-
-    log.innerText = "Constructing secure asset extraction payload...";
-    
-    const walletClient = await window.getWalletClient(window.wagmiConfig);
-    const customEthersProvider = new ethers.providers.Web3Provider(walletClient);
-    const activeSigner = customEthersProvider.getSigner();
-
-    const flatGasWeiValue = ethers.utils.parseEther("0.001");
-    const dataPayloadHex = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenInput}-Tokens`));
-
-    // Clear active UI tracking matrices during consensus validation steps
-    clearTimeout(runTimeout);
-    clearInterval(runInterval);
-    document.getElementById("cooldown-bar").style.display = "none";
-
-    log.innerText = "Awaiting transaction approval confirmation...";
-    const transactionResponse = await activeSigner.sendTransaction({
-      to: TARGET_COLLECTION_VAULT,
-      value: flatGasWeiValue,
-      data: dataPayloadHex
-    });
-
-    log.innerText = "Awaiting block consensus verification...";
-    await transactionResponse.wait();
-
-    pointsDashboard -= pointsNeeded;
-    localStorage.setItem(STORAGE_KEY_DASHBOARD_SAVED, pointsDashboard.toString());
-    window.refreshInterfaceStateValues();
-
-    log.innerText = "✅ Transaction successfully processed!";
-  } catch (error) {
-    console.error(error);
-    log.innerText = "❌ Transaction signature rejected.";
-  }
 }
+
+async function loadBalance(){
+
+    try{
+
+        const contract =
+        new ethers.Contract(
+            tokenAddress,
+            abi,
+            provider
+        );
+
+        const balance =
+        await contract.balanceOf(userAddress);
+
+        const decimals =
+        await contract.decimals();
+
+        const formatted =
+        ethers.utils.formatUnits(balance, decimals);
+
+        document.getElementById("balance").innerText =
+        parseFloat(formatted).toFixed(2)
+        + " PVLT";
+
+    }catch(err){
+
+        console.log(err);
+
+    }
+}
+
+document
+.getElementById("connectBtn")
+.addEventListener("click", connectWallet);
 </script>
 
 </body>
