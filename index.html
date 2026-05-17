@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PEPE VOLT</title>
+<title>PEPE VOLT Tap Game</title>
 
 <style>
 body{
@@ -15,7 +15,7 @@ body{
 }
 
 .container{
-    max-width:400px;
+    max-width:420px;
     margin:auto;
     padding:20px;
 }
@@ -24,8 +24,8 @@ body{
     width:120px;
     height:120px;
     border-radius:50%;
-    margin-top:30px;
-    border:3px solid #00ff99;
+    margin-top:20px;
+    border:4px solid #00ff99;
 }
 
 h1{
@@ -36,43 +36,90 @@ h1{
 .card{
     background:#1e293b;
     padding:20px;
-    border-radius:15px;
+    border-radius:18px;
     margin-top:20px;
 }
 
-button,a{
+.points{
+    font-size:40px;
+    color:#00ff99;
+    font-weight:bold;
+    margin-top:10px;
+}
+
+.small{
+    color:#94a3b8;
+    margin-top:8px;
+    font-size:13px;
+}
+
+.tap-btn{
+    width:220px;
+    height:220px;
+    border-radius:50%;
+    border:none;
+    background:#00ff99;
+    color:black;
+    font-size:32px;
+    font-weight:bold;
+    margin-top:25px;
+    cursor:pointer;
+    transition:0.1s;
+}
+
+.tap-btn:active{
+    transform:scale(0.95);
+}
+
+button{
     width:100%;
     padding:15px;
     border:none;
     border-radius:12px;
     margin-top:15px;
-    display:block;
-    text-decoration:none;
     font-weight:bold;
-    box-sizing:border-box;
+    font-size:16px;
+    cursor:pointer;
 }
 
-button{
+.connect{
     background:#00ff99;
     color:black;
 }
 
-.buy{
+.withdraw{
     background:#facc15;
     color:black;
+}
+
+.deposit{
+    background:#38bdf8;
+    color:black;
+}
+
+.dashboard{
+    display:flex;
+    gap:10px;
+    margin-top:20px;
+}
+
+.box{
+    flex:1;
+    background:#111827;
+    padding:15px;
+    border-radius:15px;
+}
+
+.box h3{
+    color:#00ff99;
+    margin-bottom:8px;
 }
 
 .contract{
     word-break:break-all;
     font-size:12px;
     margin-top:15px;
-    opacity:0.8;
-}
-
-.balance{
-    font-size:28px;
-    color:#00ff99;
-    margin-top:10px;
+    color:#94a3b8;
 }
 </style>
 </head>
@@ -92,93 +139,203 @@ src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
 0xa263d765b897b4777f0ad4a938d12d79e789ffff
 </div>
 
-<button onclick="connectWallet()">
+<button class="connect" onclick="connectWallet()">
 Connect Wallet
 </button>
 
 <div class="card">
-<h2>Balance</h2>
 
-<div id="balance" class="balance">
+<h2>Tap To Earn</h2>
+
+<div class="points" id="points">
+0
+</div>
+
+<div class="small">
+1 Tap = 1 Point
+<br>
+1000 Points = 1 PVLT
+<br>
+1 PVLT = 0.000000001 BNB
+</div>
+
+<button class="tap-btn" onclick="tapCoin()">
+⚡ TAP
+</button>
+
+</div>
+
+<div class="dashboard">
+
+<div class="box">
+<h3>Wallet</h3>
+<p id="wallet">Not Connected</p>
+</div>
+
+<div class="box">
+<h3>Global</h3>
+<p id="globalPoints">0</p>
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Rewards</h2>
+
+<p id="tokenBalance">
 0 PVLT
-</div>
+</p>
+
+<p id="bnbValue">
+0 BNB
+</p>
+
+<button class="deposit" onclick="depositFake()">
+Deposit
+</button>
+
+<button class="withdraw" onclick="withdrawReward()">
+Withdraw
+</button>
+
 </div>
 
-<a
-class="buy"
-href="https://pancakeswap.finance/swap?outputCurrency=0xa263d765b897b4777f0ad4a938d12d79e789ffff"
-target="_blank"
->
-Buy Token
-</a>
-
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
 
 <script>
-const tokenAddress =
-"0xa263d765b897b4777f0ad4a938d12d79e789ffff";
+let points = 0;
+let globalPoints = 0;
+let wallet = null;
+let inactiveTimer;
 
-const abi = [
-{
-"constant":true,
-"inputs":[{"name":"owner","type":"address"}],
-"name":"balanceOf",
-"outputs":[{"name":"","type":"uint256"}],
-"type":"function"
-},
-{
-"constant":true,
-"inputs":[],
-"name":"decimals",
-"outputs":[{"name":"","type":"uint8"}],
-"type":"function"
+function loadStorage(){
+
+    if(wallet){
+
+        const savedGlobal =
+        localStorage.getItem(wallet+"_global");
+
+        if(savedGlobal){
+            globalPoints = parseInt(savedGlobal);
+        }
+
+        document.getElementById("globalPoints")
+        .innerText = globalPoints;
+
+    }
 }
-];
 
 async function connectWallet(){
 
-if(typeof window.ethereum === 'undefined'){
-alert("Install MetaMask or Trust Wallet");
-return;
+    if(typeof window.ethereum === "undefined"){
+        alert("Install MetaMask or Trust Wallet");
+        return;
+    }
+
+    try{
+
+        const accounts =
+        await window.ethereum.request({
+            method:"eth_requestAccounts"
+        });
+
+        wallet = accounts[0];
+
+        document.getElementById("wallet")
+        .innerText =
+        wallet.substring(0,6)
+        +"..."
+        +
+        wallet.substring(wallet.length-4);
+
+        loadStorage();
+
+    }catch(e){
+
+        alert("Wallet connection failed");
+
+    }
 }
 
-try{
+function updateUI(){
 
-await window.ethereum.request({
-method:'eth_requestAccounts'
-});
+    document.getElementById("points")
+    .innerText = points;
 
-const web3 = new Web3(window.ethereum);
+    document.getElementById("globalPoints")
+    .innerText = globalPoints;
 
-const accounts = await web3.eth.getAccounts();
+    const tokens =
+    (globalPoints / 1000).toFixed(4);
 
-const user = accounts[0];
+    const bnb =
+    (tokens * 0.000000001).toFixed(12);
 
-const contract =
-new web3.eth.Contract(abi, tokenAddress);
+    document.getElementById("tokenBalance")
+    .innerText =
+    tokens + " PVLT";
 
-const decimals =
-await contract.methods.decimals().call();
+    document.getElementById("bnbValue")
+    .innerText =
+    bnb + " BNB";
 
-const balance =
-await contract.methods.balanceOf(user).call();
+    if(wallet){
 
-const finalBalance =
-balance / (10 ** decimals);
+        localStorage.setItem(
+            wallet+"_global",
+            globalPoints
+        );
 
-document.getElementById("balance").innerHTML =
-Number(finalBalance).toFixed(2) + " PVLT";
-
-}catch(e){
-
-console.log(e);
-
-alert("Connection Failed");
-
+    }
 }
+
+function tapCoin(){
+
+    points += 1;
+    globalPoints += 1;
+
+    updateUI();
+
+    clearTimeout(inactiveTimer);
+
+    inactiveTimer = setTimeout(()=>{
+
+        points = 0;
+
+        updateUI();
+
+        alert("Inactive for 3 seconds. Current tap points reset to 0.");
+
+    },3000);
 }
+
+function depositFake(){
+
+    alert(
+        "Deposit system placeholder connected."
+    );
+}
+
+function withdrawReward(){
+
+    const tokens = globalPoints / 1000;
+
+    if(tokens < 1){
+
+        alert("Minimum 1 PVLT required");
+
+        return;
+    }
+
+    alert(
+        "Withdraw request submitted for "
+        + tokens.toFixed(2)
+        + " PVLT"
+    );
+}
+
+updateUI();
 </script>
 
 </body>
