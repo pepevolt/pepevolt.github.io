@@ -6,10 +6,12 @@
 
 <meta
 name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
->
+content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
+/>
 
-<title>PEPE VOLT Tap Game</title>
+<title>PEPE VOLT</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 
@@ -17,33 +19,29 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
     margin:0;
     padding:0;
     box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
 }
 
 html,body{
     width:100%;
     height:100%;
+    background:#0f172a;
+    color:white;
+    font-family:Arial,sans-serif;
     overflow:hidden;
     touch-action:manipulation;
-    overscroll-behavior:none;
-    -webkit-user-select:none;
-    user-select:none;
-    -webkit-tap-highlight-color:transparent;
-    background:#0f172a;
-    font-family:Arial,sans-serif;
-    color:white;
 }
 
 body{
-    position:fixed;
-    inset:0;
+    overscroll-behavior:none;
 }
 
 .container{
     width:100%;
     max-width:420px;
+    margin:auto;
     height:100vh;
     overflow-y:auto;
-    margin:auto;
     padding:20px;
     text-align:center;
 }
@@ -52,10 +50,9 @@ body{
     width:120px;
     height:120px;
     border-radius:50%;
-    margin-top:20px;
     border:4px solid #00ff99;
-    object-fit:cover;
-    box-shadow:0 0 25px #00ff99;
+    margin-top:10px;
+    box-shadow:0 0 20px #00ff99;
 }
 
 h1{
@@ -66,49 +63,56 @@ h1{
 
 .contract{
     margin-top:15px;
-    color:#94a3b8;
     font-size:12px;
+    color:#94a3b8;
     word-break:break-all;
 }
 
 .card{
-    background:#111827;
     margin-top:20px;
+    background:#111827;
     padding:20px;
     border-radius:18px;
 }
 
 .points{
-    font-size:42px;
-    color:#00ff99;
     margin-top:15px;
+    font-size:48px;
+    color:#00ff99;
     font-weight:bold;
 }
 
 .small{
+    margin-top:12px;
     color:#94a3b8;
-    margin-top:10px;
     font-size:13px;
     line-height:1.6;
 }
 
 .tap-btn{
+
     width:220px;
     height:220px;
-    border-radius:50%;
+
     border:none;
+    border-radius:50%;
+
     margin-top:25px;
+
     background:#00ff99;
     color:black;
+
     font-size:34px;
     font-weight:bold;
-    cursor:pointer;
 
     touch-action:manipulation;
-    -webkit-user-select:none;
+
     user-select:none;
-    -webkit-touch-callout:none;
-    -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;
+
+    cursor:pointer;
+
+    transition:transform 0.05s ease;
 }
 
 .tap-btn:active{
@@ -124,17 +128,10 @@ button{
     font-size:16px;
     font-weight:bold;
     cursor:pointer;
-
-    touch-action:manipulation;
 }
 
 .connect{
     background:#00ff99;
-    color:black;
-}
-
-.deposit{
-    background:#38bdf8;
     color:black;
 }
 
@@ -162,16 +159,16 @@ button{
 }
 
 .reward{
-    font-size:20px;
     margin-top:10px;
     color:#00ff99;
+    font-size:20px;
 }
 
 .footer{
     margin-top:20px;
+    margin-bottom:40px;
     color:#64748b;
     font-size:12px;
-    padding-bottom:40px;
 }
 
 </style>
@@ -184,7 +181,7 @@ button{
 <img
 class="logo"
 src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
->
+/>
 
 <h1>PEPE VOLT</h1>
 
@@ -194,7 +191,6 @@ src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
 
 <button
 class="connect"
-onclick="connectWallet()"
 id="connectBtn"
 >
 Connect Wallet
@@ -218,12 +214,12 @@ id="points"
 <br>
 1 PVLT = 0.000000001 BNB
 <br><br>
-Stop tapping for 3 seconds and current points reset to zero.
+Stop tapping for 3 seconds and current session resets.
 </div>
 
 <button
 class="tap-btn"
-onclick="tapCoin()"
+id="tapBtn"
 >
 ⚡ TAP
 </button>
@@ -271,15 +267,8 @@ id="bnbValue"
 </div>
 
 <button
-class="deposit"
-onclick="depositFake()"
->
-Deposit
-</button>
-
-<button
 class="withdraw"
-onclick="withdrawReward()"
+id="withdrawBtn"
 >
 Withdraw
 </button>
@@ -294,37 +283,53 @@ PEPE VOLT Telegram Mini App
 
 <script>
 
+if(window.Telegram && Telegram.WebApp){
+
+    Telegram.WebApp.ready();
+
+    Telegram.WebApp.expand();
+
+}
+
 let points = 0;
 let globalPoints = 0;
 let wallet = null;
-let inactiveTimer;
+let inactiveTimer = null;
+
+const pointsEl =
+document.getElementById("points");
+
+const globalEl =
+document.getElementById("globalPoints");
+
+const tokenEl =
+document.getElementById("tokenBalance");
+
+const bnbEl =
+document.getElementById("bnbValue");
 
 function updateUI(){
 
-    document.getElementById("points")
-    .innerText = points;
+    pointsEl.innerText = points;
 
-    document.getElementById("globalPoints")
-    .innerText = globalPoints;
+    globalEl.innerText = globalPoints;
 
     const tokens =
-    (globalPoints / 1000);
+    globalPoints / 1000;
 
     const bnb =
-    (tokens * 0.000000001);
+    tokens * 0.000000001;
 
-    document.getElementById("tokenBalance")
-    .innerText =
+    tokenEl.innerText =
     tokens.toFixed(4) + " PVLT";
 
-    document.getElementById("bnbValue")
-    .innerText =
+    bnbEl.innerText =
     bnb.toFixed(12) + " BNB";
 
     if(wallet){
 
         localStorage.setItem(
-            wallet + "_global",
+            wallet+"_global",
             globalPoints
         );
 
@@ -335,7 +340,9 @@ async function connectWallet(){
 
     if(typeof window.ethereum === "undefined"){
 
-        alert("Install MetaMask or Trust Wallet");
+        alert(
+            "Open inside MetaMask or Trust Wallet browser"
+        );
 
         return;
     }
@@ -361,15 +368,14 @@ async function connectWallet(){
         "Connected";
 
         const saved =
-        localStorage.getItem(wallet + "_global");
+        localStorage.getItem(
+            wallet+"_global"
+        );
 
         if(saved){
 
-            globalPoints = parseInt(saved);
-
-        }else{
-
-            globalPoints = 0;
+            globalPoints =
+            parseInt(saved);
 
         }
 
@@ -384,13 +390,17 @@ async function connectWallet(){
 
 function tapCoin(){
 
-    points += 1;
+    points++;
 
-    globalPoints += 1;
+    globalPoints++;
 
     updateUI();
 
-    clearTimeout(inactiveTimer);
+    if(inactiveTimer){
+
+        clearTimeout(inactiveTimer);
+
+    }
 
     inactiveTimer = setTimeout(()=>{
 
@@ -398,18 +408,7 @@ function tapCoin(){
 
         updateUI();
 
-        alert(
-            "Inactive for 3 seconds. Current tap points reset."
-        );
-
     },3000);
-}
-
-function depositFake(){
-
-    alert(
-        "Deposit system coming soon."
-    );
 }
 
 function withdrawReward(){
@@ -420,7 +419,7 @@ function withdrawReward(){
     if(tokens < 1){
 
         alert(
-            "Minimum 1 PVLT required."
+            "Minimum 1 PVLT required"
         );
 
         return;
@@ -433,8 +432,44 @@ function withdrawReward(){
     );
 }
 
+document
+.getElementById("connectBtn")
+.addEventListener(
+"touchstart",
+connectWallet,
+{passive:true}
+);
+
+document
+.getElementById("tapBtn")
+.addEventListener(
+"touchstart",
+function(e){
+
+    e.preventDefault();
+
+    tapCoin();
+
+},
+{passive:false}
+);
+
+document
+.getElementById("withdrawBtn")
+.addEventListener(
+"touchstart",
+function(e){
+
+    e.preventDefault();
+
+    withdrawReward();
+
+},
+{passive:false}
+);
+
 document.addEventListener(
-'gesturestart',
+"gesturestart",
 function(e){
     e.preventDefault();
 }
@@ -443,7 +478,7 @@ function(e){
 let lastTouchEnd = 0;
 
 document.addEventListener(
-'touchend',
+"touchend",
 function(event){
 
     const now =
