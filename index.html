@@ -5,22 +5,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-<title>PVLT Safe Tap</title>
+<title>PVLT Web3 Game</title>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 
-/* ================= GLOBAL LOCK ================= */
+/* ================= LOCK UI ================= */
 html, body {
 margin:0;
 padding:0;
 height:100%;
 overflow:hidden;
 touch-action:none;
-overscroll-behavior:none;
 -webkit-text-size-adjust:100%;
 }
 
-/* ================= BACKGROUND ================= */
 body{
 font-family:Arial;
 background: radial-gradient(circle at top, #0b1220, #020617);
@@ -31,108 +32,75 @@ height:100%;
 text-align:center;
 }
 
-/* ================= NAVBAR ================= */
+/* NAVBAR */
 .navbar{
 position:fixed;
 top:0;left:0;right:0;
 height:60px;
-
 display:flex;
 justify-content:space-between;
 align-items:center;
 padding:0 12px;
-
 background: rgba(255,255,255,0.06);
 backdrop-filter: blur(12px);
 border-bottom:1px solid rgba(255,255,255,0.08);
-
 font-size:12px;
 z-index:10;
 }
 
-/* ================= MAIN ================= */
+/* MAIN */
 .container{
 position:absolute;
 top:60px;
 left:0;
 right:0;
 bottom:0;
-
 display:flex;
 flex-direction:column;
 align-items:center;
-
 padding-top:20px;
-overflow:hidden;
 }
 
-/* ================= TITLE ================= */
-h2{
-margin:10px 0;
-font-size:20px;
-background: linear-gradient(90deg,#00ff99,#00ccff);
--webkit-background-clip:text;
--webkit-text-fill-color:transparent;
-}
-
-/* ================= TAP ================= */
+/* TAP */
 .tap{
 width:170px;
 height:170px;
 border-radius:50%;
-
 background: linear-gradient(135deg,#00ff99,#00ccff);
 border:none;
-
 font-size:22px;
 font-weight:bold;
 color:black;
-
-box-shadow:0 0 25px rgba(0,255,200,0.3);
 }
 
-.tap:active{
-transform:scale(0.96);
-}
-
-/* ================= CARD ================= */
+/* CARD */
 .card{
 margin:12px;
 padding:15px;
 width:85%;
-
 background: rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.08);
 border-radius:14px;
+border:1px solid rgba(255,255,255,0.08);
 }
 
-/* ================= INPUT ================= */
 input{
 width:100%;
 padding:12px;
-
 border-radius:10px;
-border:1px solid rgba(255,255,255,0.1);
-
+border:none;
 background: rgba(0,0,0,0.3);
 color:white;
-outline:none;
 }
 
-/* ================= BUTTON ================= */
 button{
 padding:12px 18px;
 border:none;
 border-radius:10px;
 margin-top:10px;
-
 background: linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
 font-weight:bold;
 }
-
-/* ================= SMALL TEXT ================= */
-small{opacity:0.7;}
 
 </style>
 
@@ -140,7 +108,7 @@ small{opacity:0.7;}
 
 <body>
 
-<!-- NAVBAR -->
+<!-- NAV -->
 <div class="navbar">
 <div>⚡ <span id="points">0</span></div>
 <div>💎 <span id="tokens">0</span></div>
@@ -150,126 +118,148 @@ small{opacity:0.7;}
 <!-- MAIN -->
 <div class="container">
 
-<h2>PVLT TAP GAME</h2>
-<small>Locked Safe Web3 UI</small>
-
-<br><br>
+<h2>PVLT WEB3 GAME</h2>
 
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
-<input id="wallet" placeholder="Enter wallet">
+<input id="wallet" placeholder="Connect wallet address">
 <br>
-<button onclick="saveWallet()">LINK WALLET</button>
+<button onclick="connectWallet()">CONNECT WALLET</button>
 </div>
 
 <div class="card">
 <input id="withdraw" placeholder="100 - 500 tokens">
 <br>
-<button onclick="withdraw()">WITHDRAW</button>
+<button onclick="claim()">CLAIM TOKENS</button>
 </div>
 
 </div>
 
 <script>
 
-/* ================= SAFE STATE ================= */
+/* ================= CONFIG ================= */
+const CONTRACT_ADDRESS = "YOUR_CONTRACT_ADDRESS";
+
+const ABI = [
+"function tap()",
+"function getPoints(address) view returns (uint256)",
+"function claim(uint256)"
+];
+
+let provider;
+let signer;
+let contract;
+let walletAddress;
+
+/* ================= STATE ================= */
 let points = 0;
 let tokens = 0;
-let wallet = "";
 let userId = "guest";
 
-/* ================= SAFE UPDATE ================= */
+/* ================= SAFE UI ================= */
 function set(id,val){
-let el = document.getElementById(id);
-if(el) el.innerText = val;
+let el=document.getElementById(id);
+if(el) el.innerText=val;
 }
 
-/* ================= INIT ================= */
+/* ================= INIT TELEGRAM ================= */
 function init(){
 
 try{
-
-if(window.Telegram && window.Telegram.WebApp){
-
-let tg = window.Telegram.WebApp;
-tg.ready();
-tg.expand();
-
-userId = tg.initDataUnsafe?.user?.id || "guest";
-
+if(window.Telegram && Telegram.WebApp){
+Telegram.WebApp.ready();
+Telegram.WebApp.expand();
+userId = Telegram.WebApp.initDataUnsafe?.user?.id || "guest";
 }
-
-}catch(e){
-console.log("Telegram not available");
-}
+}catch(e){}
 
 set("userId", userId);
+}
+
+/* ================= WALLET CONNECT ================= */
+async function connectWallet(){
+
+try{
+
+if(!window.ethereum){
+alert("Install wallet (MetaMask / Trust Wallet)");
+return;
+}
+
+provider = new ethers.providers.Web3Provider(window.ethereum);
+await provider.send("eth_requestAccounts", []);
+
+signer = provider.getSigner();
+walletAddress = await signer.getAddress();
+
+contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+alert("Wallet connected");
+
+}catch(e){
+alert("Wallet error");
+console.log(e);
+}
 
 }
 
-/* ================= TAP ================= */
-function tap(){
+/* ================= TAP (REAL CONTRACT) ================= */
+async function tap(){
+
+try{
+
+if(!contract){
+alert("Connect wallet first");
+return;
+}
+
+let tx = await contract.tap();
+await tx.wait();
+
 points++;
+
 set("points", points);
+
+}catch(e){
+alert("Tap failed");
 }
-
-/* ================= WALLET ================= */
-function saveWallet(){
-
-let w = document.getElementById("wallet");
-if(!w || !w.value) return alert("Enter wallet");
-
-wallet = w.value;
-alert("Wallet linked");
 
 }
 
-/* ================= WITHDRAW ================= */
-function withdraw(){
+/* ================= CLAIM ================= */
+async function claim(){
 
-let w = document.getElementById("withdraw");
+let amt = parseInt(document.getElementById("withdraw").value);
 
-if(!wallet){
-alert("Link wallet first");
+if(!contract){
+alert("Connect wallet first");
 return;
 }
 
-if(!w || !w.value){
-alert("Enter amount");
+if(!amt || amt < 100 || amt > 500){
+alert("100-500 only");
 return;
 }
 
-let amt = parseInt(w.value);
+try{
 
-if(amt < 100 || amt > 500){
-alert("Only 100-500 tokens");
-return;
-}
+let tx = await contract.claim(amt);
+await tx.wait();
 
-let required = amt * 100000;
-
-if(points < required){
-alert("Not enough points");
-return;
-}
-
-points -= required;
 tokens += amt;
 
-set("points", points);
 set("tokens", tokens);
 
-alert("Withdraw request sent");
+alert("Claim success");
+
+}catch(e){
+alert("Claim failed");
+}
 
 }
 
-/* ================= GLOBAL SAFETY ================= */
-window.onerror = function(){
-return true;
-};
-
-/* ================= START ================= */
+/* ================= START SAFE ================= */
 window.addEventListener("DOMContentLoaded", init);
 
 </script>
