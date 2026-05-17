@@ -6,12 +6,10 @@
 
 <meta
 name="viewport"
-content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
-/>
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
 
 <title>PEPE VOLT</title>
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 
@@ -26,22 +24,16 @@ html,body{
     width:100%;
     height:100%;
     background:#0f172a;
-    color:white;
     font-family:Arial,sans-serif;
-    overflow:hidden;
+    color:white;
+    overflow-x:hidden;
     touch-action:manipulation;
-}
-
-body{
-    overscroll-behavior:none;
 }
 
 .container{
     width:100%;
     max-width:420px;
     margin:auto;
-    height:100vh;
-    overflow-y:auto;
     padding:20px;
     text-align:center;
 }
@@ -51,14 +43,12 @@ body{
     height:120px;
     border-radius:50%;
     border:4px solid #00ff99;
-    margin-top:10px;
-    box-shadow:0 0 20px #00ff99;
+    margin-top:20px;
 }
 
 h1{
     margin-top:15px;
     color:#00ff99;
-    font-size:32px;
 }
 
 .contract{
@@ -69,21 +59,21 @@ h1{
 }
 
 .card{
-    margin-top:20px;
     background:#111827;
     padding:20px;
     border-radius:18px;
+    margin-top:20px;
 }
 
 .points{
-    margin-top:15px;
     font-size:48px;
     color:#00ff99;
+    margin-top:15px;
     font-weight:bold;
 }
 
 .small{
-    margin-top:12px;
+    margin-top:10px;
     color:#94a3b8;
     font-size:13px;
     line-height:1.6;
@@ -105,14 +95,9 @@ h1{
     font-size:34px;
     font-weight:bold;
 
-    touch-action:manipulation;
-
-    user-select:none;
-    -webkit-user-select:none;
-
     cursor:pointer;
 
-    transition:transform 0.05s ease;
+    user-select:none;
 }
 
 .tap-btn:active{
@@ -120,13 +105,18 @@ h1{
 }
 
 button{
+
     width:100%;
     padding:15px;
+
     border:none;
     border-radius:14px;
+
     margin-top:15px;
+
     font-size:16px;
     font-weight:bold;
+
     cursor:pointer;
 }
 
@@ -166,12 +156,13 @@ button{
 
 .footer{
     margin-top:20px;
-    margin-bottom:40px;
     color:#64748b;
     font-size:12px;
+    padding-bottom:40px;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -181,7 +172,7 @@ button{
 <img
 class="logo"
 src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
-/>
+>
 
 <h1>PEPE VOLT</h1>
 
@@ -214,7 +205,7 @@ id="points"
 <br>
 1 PVLT = 0.000000001 BNB
 <br><br>
-Stop tapping for 3 seconds and current session resets.
+Stop tapping for 3 seconds and session points reset.
 </div>
 
 <button
@@ -229,6 +220,7 @@ id="tapBtn"
 <div class="dashboard">
 
 <div class="box">
+
 <h3>Wallet</h3>
 
 <p id="wallet">
@@ -238,6 +230,7 @@ Not Connected
 </div>
 
 <div class="box">
+
 <h3>Global</h3>
 
 <p id="globalPoints">
@@ -283,36 +276,21 @@ PEPE VOLT Telegram Mini App
 
 <script>
 
-if(window.Telegram && Telegram.WebApp){
-
-    Telegram.WebApp.ready();
-
-    Telegram.WebApp.expand();
-
-}
-
 let points = 0;
+
 let globalPoints = 0;
+
 let wallet = null;
+
 let inactiveTimer = null;
-
-const pointsEl =
-document.getElementById("points");
-
-const globalEl =
-document.getElementById("globalPoints");
-
-const tokenEl =
-document.getElementById("tokenBalance");
-
-const bnbEl =
-document.getElementById("bnbValue");
 
 function updateUI(){
 
-    pointsEl.innerText = points;
+    document.getElementById("points")
+    .innerText = points;
 
-    globalEl.innerText = globalPoints;
+    document.getElementById("globalPoints")
+    .innerText = globalPoints;
 
     const tokens =
     globalPoints / 1000;
@@ -320,10 +298,12 @@ function updateUI(){
     const bnb =
     tokens * 0.000000001;
 
-    tokenEl.innerText =
+    document.getElementById("tokenBalance")
+    .innerText =
     tokens.toFixed(4) + " PVLT";
 
-    bnbEl.innerText =
+    document.getElementById("bnbValue")
+    .innerText =
     bnb.toFixed(12) + " BNB";
 
     if(wallet){
@@ -336,23 +316,22 @@ function updateUI(){
     }
 }
 
-async function connectWallet(){
+function connectWallet(){
 
     if(typeof window.ethereum === "undefined"){
 
         alert(
-            "Open inside MetaMask or Trust Wallet browser"
+            "Open in MetaMask or Trust Wallet browser"
         );
 
         return;
     }
 
-    try{
+    window.ethereum.request({
+        method:"eth_requestAccounts"
+    })
 
-        const accounts =
-        await window.ethereum.request({
-            method:"eth_requestAccounts"
-        });
+    .then(accounts=>{
 
         wallet = accounts[0];
 
@@ -381,11 +360,13 @@ async function connectWallet(){
 
         updateUI();
 
-    }catch(e){
+    })
+
+    .catch(()=>{
 
         alert("Wallet connection failed");
 
-    }
+    });
 }
 
 function tapCoin(){
@@ -396,13 +377,9 @@ function tapCoin(){
 
     updateUI();
 
-    if(inactiveTimer){
+    clearTimeout(inactiveTimer);
 
-        clearTimeout(inactiveTimer);
-
-    }
-
-    inactiveTimer = setTimeout(()=>{
+    inactiveTimer = setTimeout(function(){
 
         points = 0;
 
@@ -434,67 +411,15 @@ function withdrawReward(){
 
 document
 .getElementById("connectBtn")
-.addEventListener(
-"touchstart",
-connectWallet,
-{passive:true}
-);
+.onclick = connectWallet;
 
 document
 .getElementById("tapBtn")
-.addEventListener(
-"touchstart",
-function(e){
-
-    e.preventDefault();
-
-    tapCoin();
-
-},
-{passive:false}
-);
+.onclick = tapCoin;
 
 document
 .getElementById("withdrawBtn")
-.addEventListener(
-"touchstart",
-function(e){
-
-    e.preventDefault();
-
-    withdrawReward();
-
-},
-{passive:false}
-);
-
-document.addEventListener(
-"gesturestart",
-function(e){
-    e.preventDefault();
-}
-);
-
-let lastTouchEnd = 0;
-
-document.addEventListener(
-"touchend",
-function(event){
-
-    const now =
-    (new Date()).getTime();
-
-    if(now - lastTouchEnd <= 300){
-
-        event.preventDefault();
-
-    }
-
-    lastTouchEnd = now;
-
-},
-false
-);
+.onclick = withdrawReward;
 
 updateUI();
 
