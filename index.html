@@ -9,7 +9,6 @@
 
 <style>
 
-/* ================= GLOBAL LOCK ================= */
 html, body {
 margin:0;
 padding:0;
@@ -19,7 +18,6 @@ touch-action:none;
 -webkit-text-size-adjust:100%;
 }
 
-/* ================= BACKGROUND ================= */
 body{
 font-family:Arial;
 background: radial-gradient(circle at top, #0b1220, #020617);
@@ -30,71 +28,56 @@ height:100%;
 text-align:center;
 }
 
-/* ================= NAVBAR ================= */
 .navbar{
 position:relative;
 height:60px;
-
 display:flex;
 justify-content:space-between;
 align-items:center;
 padding:0 12px;
-
 background: rgba(255,255,255,0.06);
 backdrop-filter: blur(12px);
 border-bottom:1px solid rgba(255,255,255,0.08);
-
 font-size:12px;
 }
 
-/* ================= MAIN ================= */
 .container{
 position:absolute;
 top:60px;
 left:0;
 right:0;
 bottom:0;
-
 display:flex;
 flex-direction:column;
 align-items:center;
-
 padding-top:20px;
 overflow:hidden;
 }
 
-/* ================= TAP ================= */
 .tap{
 width:180px;
 height:180px;
 border-radius:50%;
-
 background: linear-gradient(135deg,#00ff99,#00ccff);
 border:none;
-
 font-size:22px;
 font-weight:bold;
 color:black;
 box-shadow:0 0 25px rgba(0,255,200,0.3);
 }
 
-.tap:active{
-transform:scale(0.96);
-}
+.tap:active{transform:scale(0.96);}
 
-/* ================= LIVE ================= */
 .live{
 margin-top:20px;
 font-size:14px;
 opacity:0.9;
 }
 
-/* ================= CARD ================= */
 .card{
 margin:12px;
 padding:15px;
 width:85%;
-
 background: rgba(255,255,255,0.05);
 border:1px solid rgba(255,255,255,0.08);
 border-radius:14px;
@@ -125,14 +108,12 @@ font-weight:bold;
 
 <body>
 
-<!-- NAVBAR (AUTO CONVERTED TOKENS) -->
 <div class="navbar">
-<div>⚡ TOTAL POINTS: <span id="totalPoints">0</span></div>
+<div>⚡ POINTS: <span id="totalPoints">0</span></div>
 <div>💎 TOKENS: <span id="totalTokens">0.0000</span></div>
 <div>👤 <span id="userId">guest</span></div>
 </div>
 
-<!-- MAIN -->
 <div class="container">
 
 <h2>PVLT TAP GAME</h2>
@@ -168,11 +149,9 @@ let userId = "guest";
 
 let lastTap = Date.now();
 
-/* ================= CONFIG ================= */
-const POINTS_PER_TOKEN = 10000; // 1 token = 10000 points
-const RESET_TIME = 3000;
+const POINTS_PER_TOKEN = 10000;
 
-/* ================= SAFE UI ================= */
+/* ================= UI ================= */
 function set(id,val){
 let el=document.getElementById(id);
 if(el) el.innerText=val;
@@ -193,32 +172,26 @@ set("userId",userId);
 
 /* ================= TAP ================= */
 function tap(){
-
 livePoints++;
 totalPoints++;
-
-lastTap = Date.now();
-
+lastTap=Date.now();
 updateUI();
 }
 
-/* ================= AUTO CONVERT ================= */
-function getTokens(points){
-return (points / POINTS_PER_TOKEN).toFixed(4);
+/* ================= TOKEN CALC ================= */
+function getTokens(){
+return totalPoints / POINTS_PER_TOKEN;
 }
 
 /* ================= UI UPDATE ================= */
 function updateUI(){
-
 set("livePoints", livePoints);
 set("totalPoints", totalPoints);
-set("totalTokens", getTokens(totalPoints));
-
+set("totalTokens", getTokens().toFixed(4));
 }
 
 /* ================= WALLET ================= */
 function saveWallet(){
-
 let w=document.getElementById("wallet");
 if(!w || !w.value) return alert("Enter wallet");
 
@@ -226,7 +199,6 @@ wallet=w.value;
 userId=w.value.slice(0,6)+"..."+w.value.slice(-4);
 
 set("userId",userId);
-
 alert("Wallet linked");
 }
 
@@ -237,26 +209,32 @@ let amt=parseInt(document.getElementById("withdraw").value);
 
 if(!wallet) return alert("Connect wallet first");
 
-if(amt<100 || amt>500) return alert("100-500 only");
+if(amt<100 || amt>500)
+return alert("Only 100–500 tokens allowed");
 
-let required=amt*POINTS_PER_TOKEN;
+/* required points */
+let requiredPoints = amt * POINTS_PER_TOKEN;
 
-if(totalPoints<required) return alert("Not enough points");
+if(totalPoints < requiredPoints)
+return alert("Not enough points");
 
-totalPoints-=required;
+/* ================= SUCCESS CLAIM ================= */
+totalPoints -= requiredPoints;
+
+/* 🔥 FULL RESET AFTER SUCCESS WITHDRAW */
+totalPoints = 0;
+livePoints = 0;
 
 updateUI();
 
-alert("Claim success");
+alert("Withdrawal successful — all data reset");
 }
 
-/* ================= INACTIVITY RESET ================= */
+/* ================= AUTO RESET LIVE ================= */
 setInterval(()=>{
 
-let now=Date.now();
-
-if(now-lastTap>RESET_TIME){
-livePoints=0;
+if(Date.now() - lastTap > 3000){
+livePoints = 0;
 updateUI();
 }
 
