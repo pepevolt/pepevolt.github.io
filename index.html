@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
 
 <meta
 name="viewport"
-content="width=device-width,initial-scale=1,user-scalable=no"
-/>
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
 
 <title>PEPE VOLT</title>
 
@@ -15,13 +16,16 @@ content="width=device-width,initial-scale=1,user-scalable=no"
 
 body{
     margin:0;
+    padding:0;
     background:#0f172a;
     color:white;
-    font-family:Arial;
+    font-family:Arial,sans-serif;
     text-align:center;
 }
 
 .container{
+    max-width:420px;
+    margin:auto;
     padding:20px;
 }
 
@@ -35,23 +39,31 @@ body{
 
 h1{
     color:#00ff99;
+    margin-top:15px;
+}
+
+.contract{
+    margin-top:15px;
+    font-size:12px;
+    color:#94a3b8;
+    word-break:break-all;
 }
 
 .card{
     background:#111827;
-    padding:20px;
-    border-radius:20px;
     margin-top:20px;
+    padding:20px;
+    border-radius:18px;
 }
 
 .points{
     font-size:50px;
-    color:#00ff99;
     font-weight:bold;
+    color:#00ff99;
     margin-top:10px;
 }
 
-.tap{
+.tap-btn{
 
     width:220px;
     height:220px;
@@ -59,24 +71,26 @@ h1{
     border:none;
     border-radius:50%;
 
+    margin-top:20px;
+
     background:#00ff99;
     color:black;
 
-    font-size:35px;
+    font-size:34px;
     font-weight:bold;
 
-    margin-top:20px;
+    cursor:pointer;
 }
 
-.tap:active{
-    transform:scale(0.95);
+.tap-btn:active{
+    transform:scale(0.96);
 }
 
 .info{
     margin-top:15px;
-    color:#94a3b8;
     font-size:13px;
-    line-height:1.5;
+    color:#94a3b8;
+    line-height:1.6;
 }
 
 .row{
@@ -96,8 +110,15 @@ h1{
     color:#00ff99;
 }
 
+.reward{
+    font-size:24px;
+    color:#00ff99;
+    margin-top:10px;
+}
+
 .footer{
     margin-top:20px;
+    margin-bottom:40px;
     color:#64748b;
     font-size:12px;
 }
@@ -117,7 +138,7 @@ src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
 
 <h1>PEPE VOLT</h1>
 
-<div style="font-size:12px;color:#94a3b8;">
+<div class="contract">
 0xa263d765b897b4777f0ad4a938d12d79e789ffff
 </div>
 
@@ -133,7 +154,7 @@ id="points"
 </div>
 
 <button
-class="tap"
+class="tap-btn"
 id="tapBtn"
 >
 ⚡ TAP
@@ -144,7 +165,9 @@ id="tapBtn"
 <br>
 1000 Points = 1 PVLT
 <br>
-3 Seconds Inactive = Reset Current Points
+1 PVLT = 0.000000001 BNB
+<br><br>
+Inactive for 3 seconds resets current tap points.
 </div>
 
 </div>
@@ -182,11 +205,10 @@ PVLT
 <h2>BNB Value</h2>
 
 <div
-class="points"
-style="font-size:28px;"
+class="reward"
 id="bnbValue"
 >
-0
+0 BNB
 </div>
 
 </div>
@@ -199,15 +221,15 @@ PEPE VOLT Telegram Mini App
 
 <script>
 
-var points = 0;
+let points = 0;
 
-var globalPoints = 0;
+let globalPoints = 0;
 
-var timer;
+let timer = null;
 
 function loadData(){
 
-    var saved =
+    let saved =
     localStorage.getItem("pvlt_global");
 
     if(saved){
@@ -228,14 +250,14 @@ function updateUI(){
     document.getElementById("globalPoints")
     .innerHTML = globalPoints;
 
-    var tokens =
+    let tokens =
     globalPoints / 1000;
 
     document.getElementById("tokenBalance")
     .innerHTML =
     tokens.toFixed(4);
 
-    var bnb =
+    let bnb =
     tokens * 0.000000001;
 
     document.getElementById("bnbValue")
@@ -269,10 +291,7 @@ function tapGame(){
 
 document
 .getElementById("tapBtn")
-.addEventListener(
-"click",
-tapGame
-);
+.onclick = tapGame;
 
 loadData();
 
