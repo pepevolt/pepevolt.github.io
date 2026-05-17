@@ -3,137 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PEPE VOLT Mini App</title>
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+<title>PEPE VOLT</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
 body{
-    background:#0b1020;
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#0f172a;
     color:white;
-    font-family:Arial, sans-serif;
-    overflow-x:hidden;
+    text-align:center;
 }
 
 .container{
-    max-width:420px;
+    max-width:400px;
     margin:auto;
     padding:20px;
-    text-align:center;
 }
 
 .logo{
     width:120px;
     height:120px;
     border-radius:50%;
-    margin-top:20px;
-    border:4px solid #00ff99;
-    object-fit:cover;
-    box-shadow:0 0 20px #00ff99;
+    margin-top:30px;
+    border:3px solid #00ff99;
 }
 
 h1{
-    margin-top:20px;
-    font-size:32px;
     color:#00ff99;
-}
-
-.subtitle{
-    color:#94a3b8;
-    margin-top:10px;
-    font-size:14px;
-}
-
-.contract{
     margin-top:15px;
-    background:#111827;
-    padding:12px;
-    border-radius:12px;
-    font-size:12px;
-    word-break:break-all;
 }
 
 .card{
-    background:#111827;
-    margin-top:20px;
+    background:#1e293b;
     padding:20px;
-    border-radius:18px;
-    box-shadow:0 0 15px rgba(0,255,153,0.1);
+    border-radius:15px;
+    margin-top:20px;
 }
 
-.balance{
-    font-size:28px;
-    margin-top:10px;
-    color:#00ff99;
-    font-weight:bold;
-}
-
-button,
-.buy-btn{
+button,a{
     width:100%;
-    padding:16px;
+    padding:15px;
     border:none;
-    border-radius:14px;
+    border-radius:12px;
     margin-top:15px;
-    font-size:16px;
+    display:block;
+    text-decoration:none;
     font-weight:bold;
-    cursor:pointer;
+    box-sizing:border-box;
 }
 
-.connect-btn{
+button{
     background:#00ff99;
     color:black;
 }
 
-.buy-btn{
+.buy{
     background:#facc15;
     color:black;
-    text-decoration:none;
-    display:block;
 }
 
-.footer{
-    margin-top:25px;
-    color:#64748b;
+.contract{
+    word-break:break-all;
     font-size:12px;
+    margin-top:15px;
+    opacity:0.8;
 }
 
-.stats{
-    display:flex;
-    gap:10px;
-    margin-top:20px;
-}
-
-.stat-box{
-    flex:1;
-    background:#111827;
-    padding:15px;
-    border-radius:15px;
-}
-
-.stat-box h3{
+.balance{
+    font-size:28px;
     color:#00ff99;
-    margin-bottom:8px;
-}
-
-.glow{
-    animation:glow 2s infinite alternate;
-}
-
-@keyframes glow{
-    from{
-        box-shadow:0 0 10px #00ff99;
-    }
-    to{
-        box-shadow:0 0 25px #00ff99;
-    }
+    margin-top:10px;
 }
 </style>
 </head>
@@ -142,145 +81,104 @@ button,
 
 <div class="container">
 
-    <img
-        src="https://i.imgur.com/8Km9tLL.png"
-        class="logo glow"
-    >
+<img
+class="logo"
+src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
+>
 
-    <h1>PEPE VOLT</h1>
+<h1>PEPE VOLT</h1>
 
-    <p class="subtitle">
-        BSC Meme Token Powered By Telegram
-    </p>
+<div class="contract">
+0xa263d765b897b4777f0ad4a938d12d79e789ffff
+</div>
 
-    <div class="contract">
-        0xa263d765b897b4777f0ad4a938d12d79e789ffff
-    </div>
+<button onclick="connectWallet()">
+Connect Wallet
+</button>
 
-    <button class="connect-btn" id="connectBtn">
-        Connect Wallet
-    </button>
+<div class="card">
+<h2>Balance</h2>
 
-    <div class="card">
-        <h2>Your Balance</h2>
+<div id="balance" class="balance">
+0 PVLT
+</div>
+</div>
 
-        <div class="balance" id="balance">
-            0 PVLT
-        </div>
-    </div>
-
-    <div class="stats">
-
-        <div class="stat-box">
-            <h3>Network</h3>
-            <p>BSC</p>
-        </div>
-
-        <div class="stat-box">
-            <h3>Status</h3>
-            <p>Live</p>
-        </div>
-
-    </div>
-
-    <a
-        class="buy-btn"
-        href="https://pancakeswap.finance/swap?outputCurrency=0xa263d765b897b4777f0ad4a938d12d79e789ffff"
-        target="_blank"
-    >
-        Buy On PancakeSwap
-    </a>
-
-    <div class="footer">
-        Powered by PEPE VOLT • Telegram Mini App
-    </div>
+<a
+class="buy"
+href="https://pancakeswap.finance/swap?outputCurrency=0xa263d765b897b4777f0ad4a938d12d79e789ffff"
+target="_blank"
+>
+Buy Token
+</a>
 
 </div>
 
-<script>
-Telegram.WebApp.ready();
-Telegram.WebApp.expand();
+<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
 
+<script>
 const tokenAddress =
 "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
 
 const abi = [
-    "function balanceOf(address owner) view returns (uint256)",
-    "function decimals() view returns (uint8)"
+{
+"constant":true,
+"inputs":[{"name":"owner","type":"address"}],
+"name":"balanceOf",
+"outputs":[{"name":"","type":"uint256"}],
+"type":"function"
+},
+{
+"constant":true,
+"inputs":[],
+"name":"decimals",
+"outputs":[{"name":"","type":"uint8"}],
+"type":"function"
+}
 ];
-
-let provider;
-let signer;
-let userAddress;
 
 async function connectWallet(){
 
-    if(typeof window.ethereum === "undefined"){
-        alert("Please install MetaMask or Trust Wallet");
-        return;
-    }
-
-    try{
-
-        provider =
-        new ethers.providers.Web3Provider(window.ethereum);
-
-        await provider.send("eth_requestAccounts", []);
-
-        signer = provider.getSigner();
-
-        userAddress = await signer.getAddress();
-
-        document.getElementById("connectBtn").innerText =
-        userAddress.substring(0,6)
-        + "..."
-        + userAddress.substring(userAddress.length - 4);
-
-        loadBalance();
-
-    }catch(err){
-
-        console.log(err);
-
-        alert("Wallet connection failed");
-
-    }
+if(typeof window.ethereum === 'undefined'){
+alert("Install MetaMask or Trust Wallet");
+return;
 }
 
-async function loadBalance(){
+try{
 
-    try{
+await window.ethereum.request({
+method:'eth_requestAccounts'
+});
 
-        const contract =
-        new ethers.Contract(
-            tokenAddress,
-            abi,
-            provider
-        );
+const web3 = new Web3(window.ethereum);
 
-        const balance =
-        await contract.balanceOf(userAddress);
+const accounts = await web3.eth.getAccounts();
 
-        const decimals =
-        await contract.decimals();
+const user = accounts[0];
 
-        const formatted =
-        ethers.utils.formatUnits(balance, decimals);
+const contract =
+new web3.eth.Contract(abi, tokenAddress);
 
-        document.getElementById("balance").innerText =
-        parseFloat(formatted).toFixed(2)
-        + " PVLT";
+const decimals =
+await contract.methods.decimals().call();
 
-    }catch(err){
+const balance =
+await contract.methods.balanceOf(user).call();
 
-        console.log(err);
+const finalBalance =
+balance / (10 ** decimals);
 
-    }
+document.getElementById("balance").innerHTML =
+Number(finalBalance).toFixed(2) + " PVLT";
+
+}catch(e){
+
+console.log(e);
+
+alert("Connection Failed");
+
 }
-
-document
-.getElementById("connectBtn")
-.addEventListener("click", connectWallet);
+}
 </script>
 
 </body>
