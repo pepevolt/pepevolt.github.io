@@ -15,8 +15,6 @@ content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
 
 <style>
 
-/* ================= GLOBAL ================= */
-
 html, body{
 margin:0;
 padding:0;
@@ -35,8 +33,6 @@ width:100%;
 text-align:center;
 }
 
-/* ================= NAVBAR ================= */
-
 .navbar{
 height:60px;
 display:flex;
@@ -51,8 +47,6 @@ border-bottom:1px solid rgba(255,255,255,0.08);
 
 font-size:12px;
 }
-
-/* ================= MAIN ================= */
 
 .container{
 position:absolute;
@@ -70,8 +64,6 @@ gap:14px;
 overflow:hidden;
 }
 
-/* ================= TITLE ================= */
-
 h2{
 margin:5px 0;
 font-size:24px;
@@ -80,8 +72,6 @@ background:linear-gradient(90deg,#00ff99,#00ccff);
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
 }
-
-/* ================= TAP ================= */
 
 .tap{
 width:190px;
@@ -103,14 +93,10 @@ box-shadow:0 0 30px rgba(0,255,200,0.35);
 transform:scale(0.96);
 }
 
-/* ================= LIVE ================= */
-
 .live{
 font-size:14px;
 opacity:0.8;
 }
-
-/* ================= CARD ================= */
 
 .card{
 width:90%;
@@ -128,8 +114,6 @@ flex-direction:column;
 gap:10px;
 }
 
-/* ================= INPUT ================= */
-
 input{
 width:100%;
 padding:14px;
@@ -146,8 +130,6 @@ color:white;
 font-size:14px;
 }
 
-/* ================= BUTTON ================= */
-
 button{
 width:100%;
 padding:14px;
@@ -162,14 +144,10 @@ background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
 }
 
-/* ================= INFO ================= */
-
 .info{
 font-size:11px;
 opacity:0.6;
 }
-
-/* ================= STATUS ================= */
 
 .status{
 font-size:12px;
@@ -182,8 +160,6 @@ display:none;
 </head>
 
 <body>
-
-<!-- ================= NAVBAR ================= -->
 
 <div class="navbar">
 
@@ -203,8 +179,6 @@ display:none;
 
 </div>
 
-<!-- ================= MAIN ================= -->
-
 <div class="container">
 
 <h2>PVLT TAP GAME</h2>
@@ -220,14 +194,11 @@ TAP
 1 Tap = 1 Point
 </div>
 
-<!-- ================= WALLET ================= -->
-
 <div class="card">
 
 <input
 id="wallet"
-placeholder="Connect wallet using MetaMask / TrustWallet"
-readonly
+placeholder="Paste BSC wallet address"
 >
 
 <button
@@ -245,8 +216,6 @@ Wallet connected
 </div>
 
 </div>
-
-<!-- ================= INFO ================= -->
 
 <div class="card">
 
@@ -281,54 +250,56 @@ Auto payout works once every 24 hours
 
 <script>
 
-/* ================= CONTRACTS ================= */
-
-const TOKEN_ADDRESS =
-"PASTE_TOKEN_CONTRACT";
+/* ================= CONTRACT ================= */
 
 const TAP_ADDRESS =
 "PASTE_TAP_CONTRACT";
 
-/* ================= ABIS ================= */
-
 const TAP_ABI = [
 
-"function tap() public",
+"function tap(address user) public",
 
-"function points(address user) view returns(uint256)",
-
-"function claim() public",
-
-"function tokenBalance(address user) view returns(uint256)",
-
-"function canClaim(address user) view returns(bool)"
+"function points(address user) view returns(uint256)"
 
 ];
+
+/* ================= CONFIG ================= */
+
+const POINTS_PER_TOKEN = 10000;
+
+const MIN_WITHDRAW = 100;
+
+const MAX_WITHDRAW = 500;
+
+const DAILY_LIMIT =
+24 * 60 * 60 * 1000;
 
 /* ================= STATE ================= */
 
 let provider;
-let signer;
 
 let tapContract;
 
 let wallet = "";
 
+let totalPoints = 0;
+
+let lastWithdraw = 0;
+
 /* ================= UI ================= */
 
 function set(id,val){
 
-let el=document.getElementById(id);
+let el =
+document.getElementById(id);
 
 if(el){
-el.innerText=val;
+el.innerText = val;
 }
 
 }
 
-/* ================= UPDATE UI ================= */
-
-async function updateUI(){
+function updateUI(){
 
 if(!wallet){
 
@@ -342,22 +313,33 @@ return;
 
 }
 
-try{
+let saved =
+localStorage.getItem(
+"pvlt_" + wallet
+);
 
-let points =
-await tapContract.points(wallet);
+if(saved){
 
-let tokens =
-await tapContract.tokenBalance(wallet);
+let data =
+JSON.parse(saved);
+
+totalPoints =
+data.points || 0;
+
+lastWithdraw =
+data.lastWithdraw || 0;
+
+}
 
 set(
 "totalPoints",
-points.toString()
+totalPoints
 );
 
 set(
 "totalTokens",
-ethers.utils.formatEther(tokens)
+(totalPoints / POINTS_PER_TOKEN)
+.toFixed(4)
 );
 
 set(
@@ -367,11 +349,27 @@ wallet.slice(0,6) +
 wallet.slice(-4)
 );
 
-}catch(err){
-
-console.log(err);
-
 }
+
+/* ================= SAVE ================= */
+
+function saveData(){
+
+if(!wallet) return;
+
+localStorage.setItem(
+
+"pvlt_" + wallet,
+
+JSON.stringify({
+
+points: totalPoints,
+
+lastWithdraw: lastWithdraw
+
+})
+
+);
 
 }
 
@@ -380,52 +378,50 @@ console.log(err);
 async function toggleWallet(){
 
 let btn =
-document.getElementById("walletBtn");
+document.getElementById(
+"walletBtn"
+);
 
 let status =
-document.getElementById("walletStatus");
+document.getElementById(
+"walletStatus"
+);
 
 let input =
-document.getElementById("wallet");
+document.getElementById(
+"wallet"
+);
 
 /* CONNECT */
 if(!wallet){
 
-try{
+let addr =
+input.value.trim();
 
-if(!window.ethereum){
+if(
+!addr.startsWith("0x") ||
+addr.length !== 42
+){
 
-alert(
-"Install MetaMask or TrustWallet"
-);
+alert("Invalid wallet");
 
 return;
 
 }
 
-await window.ethereum.request({
-method:"eth_requestAccounts"
-});
+wallet = addr;
 
 provider =
-new ethers.providers.Web3Provider(
-window.ethereum
+new ethers.providers.JsonRpcProvider(
+"https://bsc-dataseed.binance.org/"
 );
-
-signer =
-provider.getSigner();
-
-wallet =
-await signer.getAddress();
 
 tapContract =
 new ethers.Contract(
 TAP_ADDRESS,
 TAP_ABI,
-signer
+provider
 );
-
-input.value = wallet;
 
 btn.innerText =
 "DISCONNECT WALLET";
@@ -433,17 +429,9 @@ btn.innerText =
 status.style.display =
 "block";
 
-await updateUI();
+updateUI();
 
 alert("Wallet connected");
-
-}catch(err){
-
-console.log(err);
-
-alert("Connection failed");
-
-}
 
 }
 
@@ -451,6 +439,8 @@ alert("Connection failed");
 else{
 
 wallet = "";
+
+totalPoints = 0;
 
 input.value = "";
 
@@ -474,7 +464,9 @@ async function tap(){
 
 if(!wallet){
 
-alert("Connect wallet first");
+alert(
+"Connect wallet first"
+);
 
 return;
 
@@ -482,29 +474,62 @@ return;
 
 try{
 
-const tx =
-await tapContract.tap();
+totalPoints++;
 
-await tx.wait();
+saveData();
 
-await updateUI();
+updateUI();
+
+/* blockchain tap */
+await tapContract.tap(wallet);
 
 /* auto payout */
 
-const canClaim =
-await tapContract.canClaim(wallet);
+let tokens =
+totalPoints /
+POINTS_PER_TOKEN;
 
-if(canClaim){
+let now =
+Date.now();
 
-const claimTx =
-await tapContract.claim();
+if(
+now - lastWithdraw <
+DAILY_LIMIT
+){
+return;
+}
 
-await claimTx.wait();
+if(tokens >= MIN_WITHDRAW){
 
-await updateUI();
+let payout =
+tokens;
+
+if(payout > MAX_WITHDRAW){
+payout = MAX_WITHDRAW;
+}
+
+lastWithdraw = now;
+
+totalPoints = 0;
+
+saveData();
+
+updateUI();
 
 alert(
-"✅ Auto payout completed"
+
+"✅ AUTO PAYOUT SUCCESS\n\n" +
+
+"Payout: " +
+
+payout.toFixed(4) +
+
+" PVLT\n\nWallet:\n" +
+
+wallet +
+
+"\n\nNext payout in 24 hours"
+
 );
 
 }
@@ -513,13 +538,9 @@ alert(
 
 console.log(err);
 
-alert("Transaction failed");
-
 }
 
 }
-
-/* ================= START ================= */
 
 window.addEventListener(
 "DOMContentLoaded",
