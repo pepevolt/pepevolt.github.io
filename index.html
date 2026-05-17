@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>PVLT Tap Game</title>
+<title>PVLT Game</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 
@@ -16,18 +16,59 @@ margin:0;
 font-family:Arial;
 background:#0f172a;
 color:white;
+overflow-x:hidden;
+}
+
+/* NAVBAR */
+.navbar{
+position:fixed;
+top:0;
+left:0;
+right:0;
+height:60px;
+background:#111827;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:0 12px;
+border-bottom:1px solid #1f2937;
+font-size:13px;
+z-index:10;
+}
+
+.nav-item{
+color:#94a3b8;
+}
+
+.nav-value{
+color:#00ff99;
+font-weight:bold;
+}
+
+/* MAIN */
+.container{
+padding-top:80px;
 text-align:center;
 }
 
-.tap{
+.tap-btn{
 width:200px;
 height:200px;
 border-radius:50%;
 background:#00ff99;
+border:none;
 font-size:30px;
 font-weight:bold;
-border:none;
 margin-top:20px;
+}
+
+.card{
+margin-top:20px;
+background:#111827;
+padding:15px;
+border-radius:15px;
+margin-left:15px;
+margin-right:15px;
 }
 
 button{
@@ -38,15 +79,8 @@ margin-top:10px;
 font-weight:bold;
 }
 
-.card{
-margin-top:20px;
-background:#111827;
-padding:20px;
-border-radius:15px;
-}
-
-.green{
-color:#00ff99;
+.connect{
+background:#38bdf8;
 }
 
 </style>
@@ -55,78 +89,126 @@ color:#00ff99;
 
 <body>
 
+<!-- NAVBAR -->
+<div class="navbar">
+
+<div class="nav-item">
+Points: <span class="nav-value" id="pointsNav">0</span>
+</div>
+
+<div class="nav-item">
+PVLT: <span class="nav-value" id="tokenNav">0</span>
+</div>
+
+<div class="nav-item">
+Wallet: <span class="nav-value" id="walletNav">Not</span>
+</div>
+
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
 <h2>PEPE VOLT TAP GAME</h2>
 
-<div>Wallet: <span id="wallet">Not Connected</span></div>
+<button class="connect" onclick="connectWallet()">
+Connect BSC Wallet
+</button>
 
-<div>Points: <span id="points">0</span></div>
+<div class="card">
+<h3>Tap Zone</h3>
 
-<div>PVLT Balance: <span id="balance">0</span></div>
+<div style="font-size:40px;color:#00ff99" id="pointsMain">0</div>
 
-<button onclick="connect()">Connect Wallet</button>
+<button class="tap-btn" onclick="tap()">TAP</button>
 
-<button class="tap" onclick="tap()">TAP</button>
+</div>
 
-<button onclick="claim()">CLAIM TOKENS</button>
+</div>
 
 <script>
 
-const tapContract = "YOUR_TAP_CONTRACT";
-const tokenContract = "YOUR_PVLT_TOKEN";
+let provider, signer, wallet;
 
-const tapAbi = [
+let points = 0;
+
+// ---- CONTRACT SETTINGS ----
+const contractAddress = "YOUR_TAP_CONTRACT";
+
+const abi = [
 "function tap(uint256)",
-"function getPoints(address) view returns (uint256)",
-"function claimTokens()"
+"function getPoints(address) view returns (uint256)"
 ];
 
-const tokenAbi = [
-"function balanceOf(address) view returns (uint256)"
-];
+let contract;
 
-let provider, signer, tap, token, wallet;
+// ---- CONNECT WALLET ----
+async function connectWallet(){
 
-async function connect(){
+if(!window.ethereum){
+alert("Install MetaMask / BSC wallet");
+return;
+}
 
 provider = new ethers.providers.Web3Provider(window.ethereum);
+
 await provider.send("eth_requestAccounts", []);
 
 signer = provider.getSigner();
+
 wallet = await signer.getAddress();
 
-document.getElementById("wallet").innerText =
-wallet.slice(0,6)+"..."+wallet.slice(-4);
+document.getElementById("walletNav").innerText =
+wallet.slice(0,4)+"..."+wallet.slice(-4);
 
-tap = new ethers.Contract(tapContract, tapAbi, signer);
-token = new ethers.Contract(tokenContract, tokenAbi, signer);
+contract = new ethers.Contract(contractAddress, abi, signer);
 
-load();
-
-}
-
-function tapGame(){
-tap.tap(1);
-load();
-}
-
-async function load(){
-
-let p = await tap.getPoints(wallet);
-let b = await token.balanceOf(wallet);
-
-document.getElementById("points").innerText = p;
-document.getElementById("balance").innerText =
-ethers.utils.formatEther(b);
+loadData();
 
 }
 
+// ---- TAP ----
 async function tap(){
-await tapGame();
+
+points++;
+
+document.getElementById("pointsMain").innerText = points;
+
+document.getElementById("pointsNav").innerText = points;
+
+// send to chain (batched style)
+await contract.tap(1);
+
+loadData();
+
 }
 
-async function claim(){
-await tap.claimTokens();
-load();
+// ---- LOAD ON-CHAIN DATA ----
+async function loadData(){
+
+if(!wallet) return;
+
+let p = await contract.getPoints(wallet);
+
+document.getElementById("pointsNav").innerText = p;
+document.getElementById("pointsMain").innerText = p;
+
+// PVLT token balance (separate contract)
+let tokenAbi = [
+"function balanceOf(address) view returns (uint256)"
+];
+
+let tokenContract = new ethers.Contract(
+"YOUR_PVLT_TOKEN",
+tokenAbi,
+provider
+);
+
+let bal = await tokenContract.balanceOf(wallet);
+
+document.getElementById("tokenNav").innerText =
+ethers.utils.formatEther(bal);
+
 }
 
 </script>
