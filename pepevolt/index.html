@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pepe Volt ($PVLT) Dashboard</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+</head>
+<body class="bg-[#1c241a] text-white font-sans flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="text-center mb-6">
+        <h1 class="text-3xl font-black text-[#e0e815] tracking-wide">PEPE VOLT</h1>
+        <p class="text-xs text-green-400 mt-1">Official Mini App Portal</p>
+    </div>
+
+    <div class="bg-[#243021] border-2 border-green-500 rounded-3xl p-6 w-full max-w-sm shadow-xl">
+        
+        <button id="connectWallet" class="w-full bg-[#e0e815] text-black font-bold py-3 px-4 rounded-xl hover:bg-yellow-400 transition mb-6">
+            Connect Web3 Wallet
+        </button>
+        <p id="walletAddress" class="text-center text-xs text-gray-400 truncate hidden mb-4"></p>
+
+        <div class="space-y-4">
+            <h2 class="text-lg font-bold text-center border-b border-gray-700 pb-2">Join $PVLT Presale</h2>
+            
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">You Pay (ETH/BNB):</label>
+                <input type="number" id="buyAmount" placeholder="0.1" class="w-full bg-[#172116] border border-gray-600 rounded-xl p-3 text-white focus:outline-none focus:border-yellow-400">
+            </div>
+
+            <button id="buyTokens" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-green-500 transition">
+                Buy $PVLT
+            </button>
+        </div>
+
+    </div>
+
+    <div class="mt-6 text-center max-w-xs">
+        <p class="text-[10px] text-gray-500 break-all">CA: 0xa263d765b897b4777f0ad4a938d12d79e789ffff</p>
+    </div>
+
+    <script>
+        // Initialize Telegram Mini App
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.expand(); // Forces full screen inside Telegram
+        }
+
+        const TOKEN_CONTRACT = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
+        let provider, signer, userAddress;
+
+        // Connect Wallet Logic
+        document.getElementById('connectWallet').addEventListener('click', async () => {
+            if (window.ethereum) {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    userAddress = await signer.getAddress();
+
+                    document.getElementById('walletAddress').innerText = `Connected: ${userAddress.substring(0,6)}...${userAddress.substring(38)}`;
+                    document.getElementById('walletAddress').classList.remove('hidden');
+                    document.getElementById('connectWallet').innerText = "Wallet Connected ✅";
+                    document.getElementById('connectWallet').disabled = true;
+                } catch (error) {
+                    console.error("User denied wallet access", error);
+                    alert("Connection failed.");
+                }
+            } else {
+                alert("No Web3 wallet detected. Please open this link using a Web3-supported browser/app.");
+            }
+        });
+
+        // Buy Transaction Logic
+        document.getElementById('buyTokens').addEventListener('click', async () => {
+            const amount = document.getElementById('buyAmount').value;
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid amount.");
+                return;
+            }
+            if (!signer) {
+                alert("Please connect your wallet first!");
+                return;
+            }
+
+            try {
+                const tx = await signer.sendTransaction({
+                    to: TOKEN_CONTRACT, 
+                    value: ethers.utils.parseEther(amount)
+                });
+                alert(`Transaction submitted! Hash: ${tx.hash}`);
+            } catch (error) {
+                console.error("Transaction failed", error);
+                alert("Transaction failed.");
+            }
+        });
+    </script>
+</body>
+</html>
