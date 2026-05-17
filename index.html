@@ -1,46 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>PEPE VOLT</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PEPE VOLT</title>
 
-  <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css">
 
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+body{
+    margin:0;
+    background:#111;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+}
+
+.container{
+    padding-top:60px;
+}
+
+button{
+    width:220px;
+    padding:15px;
+    margin:10px;
+    border:none;
+    border-radius:12px;
+    background:#ffe600;
+    font-size:18px;
+    font-weight:bold;
+}
+
+.logo{
+    width:120px;
+    border-radius:50%;
+}
+</style>
 
 </head>
 <body>
 
 <div class="container">
 
-<img src="https://i.imgur.com/4AiXzf8.jpeg" class="logo">
+<img class="logo"
+src="https://upload.wikimedia.org/wikipedia/en/5/5f/Original_Frog_Pepe.png">
 
 <h1>PEPE VOLT</h1>
 
-<p>Token: PVLT</p>
+<p>Token Symbol: PVLT</p>
 
-<p id="wallet">Wallet Not Connected</p>
-
-<button onclick="connectWallet()">
-Connect Wallet
-</button>
-
-<a href="https://pancakeswap.finance/swap?outputCurrency=0xa263d765b897b4777f0ad4a938d12d79e789ffff">
-<button>
-Buy PVLT
-</button>
-</a>
-
-<button id="tap">
+<button id="tapBtn">
 ⚡ TAP TO EARN
 </button>
 
 <h2 id="score">0</h2>
 
+<a target="_blank"
+href="https://pancakeswap.finance/swap?outputCurrency=0xa263d765b897b4777f0ad4a938d12d79e789ffff">
+
+<button>
+BUY PVLT
+</button>
+
+</a>
+
 </div>
 
-<script src="script.js"></script>
+<script>
+
+let score = 0;
+
+document.getElementById("tapBtn").onclick = function(){
+
+    score++;
+
+    document.getElementById("score").innerText = score;
+
+};
+
+</script>
 
 </body>
 </html>
