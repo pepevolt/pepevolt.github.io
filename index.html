@@ -225,6 +225,11 @@
       font-weight: bold;
       display: none;
     }
+
+    /* Dashboard block state configuration */
+    #dashboard-card {
+      display: none;
+    }
   </style>
 </head>
 
@@ -243,7 +248,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div id="dashboard-card" class="card">
     <h3>📊 Global Dashboard Data</h3>
     <div class="stat-text">Saved Dashboard Points: <strong id="dash-points" style="color: var(--accent-blue);">0</strong></div>
     <div class="stat-text">Convertible Dashboard Value: <strong id="dash-tokens" style="color: var(--accent-green);">0.00 PVLT</strong></div>
@@ -265,7 +270,7 @@
       <strong>System Liquidation Threshold Metrics:</strong><br>
       • 100,000 game points ➔ 1.00 Network Token Base<br>
       • Floor Request Minimum Value ➔ 100 Tokens<br>
-      • <strong>Inactivity Storage Trigger</strong> ➔ Stopping tap actions for 30 seconds instantly secures your active module pool directly into your dashboard metadata allocation.<br>
+      • <strong>Inactivity Storage Trigger</strong> ➔ Stopping tap actions for 30 seconds instantly secures your active module pool directly into your dashboard metadata allocation *ONLY* if your wallet is connected. Unconnected sessions will wipe progress to 0.<br>
       • Fixed Settlement Gas Fee Allocation ➔ 0.001 BNB (~$0.50 USD)
     </div>
     <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token allocation value" />
@@ -289,14 +294,14 @@ let signer;
 let userAddress;
 let isConnected = false;
 
-// Unified tracking storage property keys 
+// Storage configuration keys
 const liveModuleKey = "pvlt_points_live_module";
 const permanentDashKey = "pvlt_points_dashboard_total";
 
 let points = parseInt(localStorage.getItem(liveModuleKey)) || 0;
 let dashboardPoints = parseInt(localStorage.getItem(permanentDashKey)) || 0;
 
-// Activity monitoring tracker variables
+// Activity tracking instances
 let inactivityTimeout;
 let countdownInterval;
 let secondsRemaining = 30.0;
@@ -310,7 +315,7 @@ const ABI = [
   "function decimals() view returns (uint8)"
 ];
 
-// Instantly update layouts on browser initialization 
+// Initialize UI layout on initialization
 updateGameUI();
 
 /* DIRECT EVENT LISTENER INTERCEPTION FOR TELEGRAM MINI APP INTERACTION */
@@ -332,7 +337,7 @@ function playGame() {
   localStorage.setItem(liveModuleKey, points);
   updateGameUI();
   
-  // Refresh tracking system elements
+  // Refresh the inactivity countdown system
   refreshInactivityTracker();
 }
 
@@ -344,7 +349,7 @@ function refreshInactivityTracker() {
   document.getElementById("countdown-wrapper").style.display = "block";
   document.getElementById("reset-timer").innerText = secondsRemaining.toFixed(1);
 
-  // Smooth layout tick tracking loop execution
+  // Countdown timer rendering interval
   countdownInterval = setInterval(() => {
     secondsRemaining -= 0.1;
     if (secondsRemaining <= 0) {
@@ -354,39 +359,48 @@ function refreshInactivityTracker() {
     }
   }, 100);
 
-  // Trigger auto secure logic structure at exactly 30 seconds
+  // Inactivity countdown execution routing at 30 seconds
   inactivityTimeout = setTimeout(() => {
-    saveToDashboardEngine();
+    handleInactivityExpiry();
   }, 30000);
 }
 
-function saveToDashboardEngine() {
-  // Push running stats securely over to dashboard ledger accounts
-  dashboardPoints += points;
-  points = 0;
+function handleInactivityExpiry() {
+  if (isConnected) {
+    // Wallet is linked: Secure points over into global dashboard data structures
+    dashboardPoints += points;
+    localStorage.setItem(permanentDashKey, dashboardPoints.toString());
+  }
   
+  // Reset active collection configurations back down to 0 either way
+  points = 0;
   localStorage.setItem(liveModuleKey, "0");
-  localStorage.setItem(permanentDashKey, dashboardPoints.toString());
   
   updateGameUI();
   document.getElementById("countdown-wrapper").style.display = "none";
   
-  // Core application sandbox refresh routine
+  // Reload viewport tracking properties instantly
   setTimeout(() => {
     window.location.reload();
   }, 100);
 }
 
 function updateGameUI() {
-  // Update mining target visual containers
+  // Update screen parameters for live interactions
   document.getElementById("game-points").innerText = points.toLocaleString();
   const tokensCalculated = points / 100000;
   document.getElementById("est-tokens").innerText = tokensCalculated.toFixed(2) + " PVLT";
 
-  // Update permanent dashboard storage container visuals
-  document.getElementById("dash-points").innerText = dashboardPoints.toLocaleString();
-  const dashTokensCalculated = dashboardPoints / 100000;
-  document.getElementById("dash-tokens").innerText = dashTokensCalculated.toFixed(2) + " PVLT";
+  // Manage visibility states and values for dashboard elements
+  const dashCard = document.getElementById("dashboard-card");
+  if (isConnected) {
+    dashCard.style.display = "block";
+    document.getElementById("dash-points").innerText = dashboardPoints.toLocaleString();
+    const dashTokensCalculated = dashboardPoints / 100000;
+    document.getElementById("dash-tokens").innerText = dashTokensCalculated.toFixed(2) + " PVLT";
+  } else {
+    dashCard.style.display = "none";
+  }
 }
 
 // Master Toggle Router for Auth State
@@ -409,9 +423,9 @@ async function connectWallet() {
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
     
+    isConnected = true;
     updateGameUI();
 
-    isConnected = true;
     const authBtn = document.getElementById("wallet-auth-btn");
     authBtn.innerText = "Disconnect Wallet";
     authBtn.className = "disconnect";
@@ -428,6 +442,8 @@ function disconnectWallet() {
   signer = null;
   userAddress = null;
   isConnected = false;
+
+  updateGameUI();
 
   const authBtn = document.getElementById("wallet-auth-btn");
   authBtn.innerText = "Connect Web3 Wallet";
@@ -465,7 +481,7 @@ async function withdrawTokens() {
       return;
     }
     
-    // Check points specifically against saved Dashboard ledger properties
+    // Check points specifically against saved Dashboard ledger parameters
     const requiredPoints = tokenAmountToWithdraw * 100000;
     if (dashboardPoints < requiredPoints) {
       alert(`Insufficient dashboard balance! You need ${requiredPoints.toLocaleString()} saved dashboard points.`);
@@ -484,7 +500,7 @@ async function withdrawTokens() {
 
     document.getElementById("withdraw-status").innerText = "Preparing settlement layout context...";
     
-    // FIXED FLAT SETTLEMENT GAS FEE: Attaching 0.001 BNB ($0.50 USD flat)
+    // FIXED FLAT WITHDRAW FEE ROUTING: Enforcing exactly 0.001 BNB (~0.50 USD)
     const fixedWithdrawFeeWei = ethers.utils.parseEther("0.001");
     const hexMemoData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenAmountToWithdraw}-Tokens`));
 
@@ -501,7 +517,7 @@ async function withdrawTokens() {
     document.getElementById("withdraw-status").innerText = "Awaiting block confirmation context...";
     await tx.wait();
 
-    // Deduct appropriate target structures securely out of dashboard totals
+    // Deduct processed units off the permanent saved Dashboard structures
     dashboardPoints -= requiredPoints;
     localStorage.setItem(permanentDashKey, dashboardPoints.toString());
     localStorage.setItem('pvlt_last_withdraw', now.toString());
@@ -525,7 +541,7 @@ async function payPVLT() {
     
     document.getElementById("status").innerText = "Initiating processing metrics...";
 
-    // FIXED DEPOSIT SURCHARGE: Attaching 0.0001 BNB ($0.05 USD flat) to transaction payload value
+    // FIXED DEPOSIT FEE ROUTING: Attaching exactly 0.0001 BNB (~0.05 USD) to transaction parameters
     const fixedDepositGasWei = ethers.utils.parseEther("0.0001");
 
     const contract = new ethers.Contract(PVLT_ADDRESS, ABI, signer);
