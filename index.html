@@ -66,8 +66,6 @@ color:black;
 box-shadow:0 0 25px rgba(0,255,200,0.3);
 }
 
-.tap:active{transform:scale(0.96);}
-
 .live{
 margin-top:20px;
 font-size:14px;
@@ -102,6 +100,13 @@ color:black;
 font-weight:bold;
 }
 
+.status{
+margin-top:10px;
+font-size:13px;
+color:#00ff99;
+display:none;
+}
+
 </style>
 
 </head>
@@ -120,14 +125,9 @@ font-weight:bold;
 
 <button class="tap" onclick="tap()">TAP</button>
 
-<div class="live">
-<div>LIVE POINTS: <span id="livePoints">0</span></div>
-</div>
-
 <div class="card">
-<input id="wallet" placeholder="Enter wallet">
-<br>
-<button onclick="saveWallet()">LINK WALLET</button>
+<input id="wallet" placeholder="Paste BSC wallet address" oninput="checkWallet()">
+<div id="status" class="status">Wallet address connected</div>
 </div>
 
 <div class="card">
@@ -140,14 +140,10 @@ font-weight:bold;
 
 <script>
 
-/* ================= STATE ================= */
 let livePoints = 0;
 let totalPoints = 0;
-
 let wallet = "";
 let userId = "guest";
-
-let lastTap = Date.now();
 
 const POINTS_PER_TOKEN = 10000;
 
@@ -172,34 +168,39 @@ set("userId",userId);
 
 /* ================= TAP ================= */
 function tap(){
-livePoints++;
 totalPoints++;
-lastTap=Date.now();
 updateUI();
 }
 
-/* ================= TOKEN CALC ================= */
+/* ================= TOKEN ================= */
 function getTokens(){
 return totalPoints / POINTS_PER_TOKEN;
 }
 
 /* ================= UI UPDATE ================= */
 function updateUI(){
-set("livePoints", livePoints);
 set("totalPoints", totalPoints);
 set("totalTokens", getTokens().toFixed(4));
 }
 
-/* ================= WALLET ================= */
-function saveWallet(){
-let w=document.getElementById("wallet");
-if(!w || !w.value) return alert("Enter wallet");
+/* ================= WALLET CHECK ================= */
+function checkWallet(){
 
-wallet=w.value;
-userId=w.value.slice(0,6)+"..."+w.value.slice(-4);
+let w=document.getElementById("wallet").value.trim();
+let status=document.getElementById("status");
 
+/* basic BSC format check */
+if(w.startsWith("0x") && w.length === 42){
+wallet = w;
+status.style.display="block";
+userId = w.slice(0,6)+"..."+w.slice(-4);
 set("userId",userId);
-alert("Wallet linked");
+} else {
+wallet = "";
+status.style.display="none";
+userId="guest";
+set("userId","guest");
+}
 }
 
 /* ================= WITHDRAW ================= */
@@ -207,38 +208,22 @@ function withdraw(){
 
 let amt=parseInt(document.getElementById("withdraw").value);
 
-if(!wallet) return alert("Connect wallet first");
+if(!wallet) return alert("Paste valid wallet first");
 
 if(amt<100 || amt>500)
 return alert("Only 100–500 tokens allowed");
 
-/* required points */
 let requiredPoints = amt * POINTS_PER_TOKEN;
 
 if(totalPoints < requiredPoints)
 return alert("Not enough points");
 
-/* ================= SUCCESS CLAIM ================= */
 totalPoints -= requiredPoints;
 
-/* 🔥 FULL RESET AFTER SUCCESS WITHDRAW */
-totalPoints = 0;
-livePoints = 0;
-
 updateUI();
 
-alert("Withdrawal successful — all data reset");
+alert("Withdrawal success");
 }
-
-/* ================= AUTO RESET LIVE ================= */
-setInterval(()=>{
-
-if(Date.now() - lastTap > 3000){
-livePoints = 0;
-updateUI();
-}
-
-},500);
 
 /* ================= START ================= */
 window.addEventListener("DOMContentLoaded",init);
