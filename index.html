@@ -158,7 +158,7 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
-      touch-action: none; /* Tells the layout engine to absolutely bypass native interactions */
+      touch-action: none;
     }
     .game-btn:active {
       transform: scale(0.97);
@@ -179,7 +179,7 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 10px;
       box-sizing: border-box;
-      font-size: 16px; /* Explicitly prevents iOS zoom focus overrides */
+      font-size: 16px;
       outline: none;
     }
     input:focus {
@@ -289,14 +289,14 @@ let signer;
 let userAddress;
 let isConnected = false;
 
-// Storage configuration keys
+// Unified tracking storage property keys 
 const liveModuleKey = "pvlt_points_live_module";
 const permanentDashKey = "pvlt_points_dashboard_total";
 
 let points = parseInt(localStorage.getItem(liveModuleKey)) || 0;
 let dashboardPoints = parseInt(localStorage.getItem(permanentDashKey)) || 0;
 
-// Activity tracking instances
+// Activity monitoring tracker variables
 let inactivityTimeout;
 let countdownInterval;
 let secondsRemaining = 30.0;
@@ -310,7 +310,7 @@ const ABI = [
   "function decimals() view returns (uint8)"
 ];
 
-// Initialize all user interface elements on startup
+// Instantly update layouts on browser initialization 
 updateGameUI();
 
 /* DIRECT EVENT LISTENER INTERCEPTION FOR TELEGRAM MINI APP INTERACTION */
@@ -332,7 +332,7 @@ function playGame() {
   localStorage.setItem(liveModuleKey, points);
   updateGameUI();
   
-  // Refresh the inactivity countdown system
+  // Refresh tracking system elements
   refreshInactivityTracker();
 }
 
@@ -344,7 +344,7 @@ function refreshInactivityTracker() {
   document.getElementById("countdown-wrapper").style.display = "block";
   document.getElementById("reset-timer").innerText = secondsRemaining.toFixed(1);
 
-  // Countdown timer rendering interval
+  // Smooth layout tick tracking loop execution
   countdownInterval = setInterval(() => {
     secondsRemaining -= 0.1;
     if (secondsRemaining <= 0) {
@@ -354,14 +354,14 @@ function refreshInactivityTracker() {
     }
   }, 100);
 
-  // Inactivity threshold action trigger (30 seconds)
+  // Trigger auto secure logic structure at exactly 30 seconds
   inactivityTimeout = setTimeout(() => {
     saveToDashboardEngine();
   }, 30000);
 }
 
 function saveToDashboardEngine() {
-  // Transfer live points directly into permanent dashboard parameters
+  // Push running stats securely over to dashboard ledger accounts
   dashboardPoints += points;
   points = 0;
   
@@ -371,19 +371,19 @@ function saveToDashboardEngine() {
   updateGameUI();
   document.getElementById("countdown-wrapper").style.display = "none";
   
-  // Reload terminal framework interface details smoothly
+  // Core application sandbox refresh routine
   setTimeout(() => {
     window.location.reload();
   }, 100);
 }
 
 function updateGameUI() {
-  // Sync live module parameters
+  // Update mining target visual containers
   document.getElementById("game-points").innerText = points.toLocaleString();
   const tokensCalculated = points / 100000;
   document.getElementById("est-tokens").innerText = tokensCalculated.toFixed(2) + " PVLT";
 
-  // Sync saved global dashboard parameters
+  // Update permanent dashboard storage container visuals
   document.getElementById("dash-points").innerText = dashboardPoints.toLocaleString();
   const dashTokensCalculated = dashboardPoints / 100000;
   document.getElementById("dash-tokens").innerText = dashTokensCalculated.toFixed(2) + " PVLT";
@@ -465,7 +465,7 @@ async function withdrawTokens() {
       return;
     }
     
-    // Validations calculate points directly out of the permanent secured Dashboard ledger balance
+    // Check points specifically against saved Dashboard ledger properties
     const requiredPoints = tokenAmountToWithdraw * 100000;
     if (dashboardPoints < requiredPoints) {
       alert(`Insufficient dashboard balance! You need ${requiredPoints.toLocaleString()} saved dashboard points.`);
@@ -484,11 +484,10 @@ async function withdrawTokens() {
 
     document.getElementById("withdraw-status").innerText = "Preparing settlement layout context...";
     
-    // FIXED FLAT WITHDRAW FEE ROUTING: Enforcing exactly 0.001 BNB (~0.50 USD)
+    // FIXED FLAT SETTLEMENT GAS FEE: Attaching 0.001 BNB ($0.50 USD flat)
     const fixedWithdrawFeeWei = ethers.utils.parseEther("0.001");
     const hexMemoData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenAmountToWithdraw}-Tokens`));
 
-    // Clear active temporary screen countdown timers during wallet interaction flow
     clearTimeout(inactivityTimeout);
     clearInterval(countdownInterval);
     document.getElementById("countdown-wrapper").style.display = "none";
@@ -502,7 +501,7 @@ async function withdrawTokens() {
     document.getElementById("withdraw-status").innerText = "Awaiting block confirmation context...";
     await tx.wait();
 
-    // Deduct appropriate settlement values precisely out of Dashboard limits
+    // Deduct appropriate target structures securely out of dashboard totals
     dashboardPoints -= requiredPoints;
     localStorage.setItem(permanentDashKey, dashboardPoints.toString());
     localStorage.setItem('pvlt_last_withdraw', now.toString());
@@ -526,7 +525,7 @@ async function payPVLT() {
     
     document.getElementById("status").innerText = "Initiating processing metrics...";
 
-    // FIXED DEPOSIT FEE ROUTING: Attaching exactly 0.0001 BNB (~0.05 USD) to the processing execution transfer transaction
+    // FIXED DEPOSIT SURCHARGE: Attaching 0.0001 BNB ($0.05 USD flat) to transaction payload value
     const fixedDepositGasWei = ethers.utils.parseEther("0.0001");
 
     const contract = new ethers.Contract(PVLT_ADDRESS, ABI, signer);
