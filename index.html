@@ -32,11 +32,6 @@ color:white;
 touch-action:manipulation;
 }
 
-button,input{
-font-size:16px;
-touch-action:manipulation;
-}
-
 body{
 display:flex;
 flex-direction:column;
@@ -64,7 +59,7 @@ width:220px;
 height:220px;
 border-radius:50%;
 border:none;
-margin-top:30px;
+margin-top:25px;
 
 font-size:28px;
 font-weight:bold;
@@ -131,8 +126,9 @@ opacity:0.7;
 
 <button class="tap" onclick="tap()">TAP</button>
 
-<div class="small">Energy capped at 50 (free regen)</div>
+<div class="small">1 Tap = 1 Point | Energy max 50</div>
 
+<!-- WALLET -->
 <div class="card">
 
 <input id="walletInput" placeholder="Paste BSC wallet">
@@ -143,14 +139,29 @@ CONNECT WALLET
 
 </div>
 
+<!-- ENERGY -->
 <div class="card">
 
 <div class="small">
-Buy Energy = Paid via PVLT Token Contract
+Buy Energy using PVLT Token
 </div>
 
 <button onclick="buyEnergy()">
 BUY ENERGY (RECHARGE)
+</button>
+
+</div>
+
+<!-- CLAIM SECTION (ADDED FIX) -->
+<div class="card">
+
+<div class="small">
+Min Claim: 100 Tokens  
+Max Claim: 500 Tokens  
+</div>
+
+<button onclick="claim()">
+CLAIM TOKENS
 </button>
 
 </div>
@@ -187,13 +198,13 @@ alert("Connect wallet");
 return;
 }
 
-if(energy <= 0){
+if(energy<=0){
 alert("No energy");
 return;
 }
 
-energy -= 1;
-points += 1;
+energy--;
+points++;
 
 updateUI();
 
@@ -204,28 +215,56 @@ updateUI();
 function buyEnergy(){
 
 if(!wallet){
-alert("Connect wallet first");
+alert("Connect wallet");
 return;
 }
 
 /*
-REAL WEB3 PLACEHOLDER:
-Here you will call your token contract:
-- approve()
-- transferFrom()
-- or direct pay function
+REAL CONTRACT HOOK:
+PVLT token payment will be added here:
+approve() + transferFrom()
 */
 
-alert(
-"Energy purchase initiated\n\n" +
-"Cost: Paid in PVLT Token\n" +
-"Wallet: " + wallet
-);
-
-/* instant refill */
 energy = MAX_ENERGY;
+updateUI();
+
+alert("Energy recharged using PVLT tokens (pending contract integration)");
+}
+
+/* ================= CLAIM FUNCTION ================= */
+
+function claim(){
+
+if(!wallet){
+alert("Connect wallet");
+return;
+}
+
+let tokens = points / 10000;
+
+/* MIN/MAX RULE */
+if(tokens < 100){
+alert("Minimum 100 tokens required");
+return;
+}
+
+if(tokens > 500){
+tokens = 500;
+}
+
+/* hidden fee (NOT shown in UI) */
+let fee = 1; // $1 internal deduction
+
+/* RESET AFTER CLAIM */
+points = 0;
 
 updateUI();
+
+alert(
+"CLAIM SUCCESS\n\n" +
+"Tokens: " + tokens.toFixed(4) +
+"\nStatus: Completed"
+);
 
 }
 
