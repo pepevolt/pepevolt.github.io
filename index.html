@@ -1,74 +1,96 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Tap Game</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 
 <style>
+
 body{
+margin:0;
+font-family:Arial;
 background:#0f172a;
 color:white;
 text-align:center;
-font-family:Arial;
 }
+
 button{
 padding:15px;
 border:none;
 border-radius:10px;
 margin-top:10px;
+font-weight:bold;
 }
+
 .tap{
 width:200px;
 height:200px;
 border-radius:50%;
 background:#00ff99;
 font-size:30px;
-font-weight:bold;
 }
+
+.card{
+margin-top:20px;
+background:#111827;
+padding:20px;
+border-radius:15px;
+}
+
 </style>
+
 </head>
 
 <body>
 
-<h2>Tap To Earn</h2>
+<h2>Tap To Earn (BSC)</h2>
 
 <div>Wallet: <span id="wallet">Not Connected</span></div>
 
 <div>Points: <span id="points">0</span></div>
 
-<button onclick="connect()">Connect Wallet</button>
+<button onclick="connect()">Connect</button>
 
 <button class="tap" onclick="tap()">TAP</button>
 
+<button onclick="sendBatch()">SEND TO BSC</button>
+
+<div class="card">
+<h3>Leaderboard</h3>
+<div id="board"></div>
+</div>
+
 <script>
 
-let provider, signer, contract;
-let wallet;
-let points = 0;
+const contractAddress = "YOUR_CONTRACT_ADDRESS";
 
-// YOUR CONTRACT ADDRESS
-const contractAddress = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
-
-// YOU MUST REPLACE THIS WITH YOUR REAL ABI
 const abi = [
-  "function addPoints(uint256 amount) public",
-  "function points(address user) view returns (uint256)"
+"function tap(uint256 amount)",
+"function getPoints(address) view returns (uint256)"
 ];
+
+let provider, signer, contract, wallet;
+
+let localPoints = 0;
 
 async function connect(){
 
 if(!window.ethereum){
-alert("Install MetaMask");
+alert("Install wallet");
 return;
 }
 
 provider = new ethers.providers.Web3Provider(window.ethereum);
+
 await provider.send("eth_requestAccounts", []);
 
 signer = provider.getSigner();
+
 wallet = await signer.getAddress();
 
 document.getElementById("wallet").innerText =
@@ -76,45 +98,47 @@ wallet.slice(0,6)+"..."+wallet.slice(-4);
 
 contract = new ethers.Contract(contractAddress, abi, signer);
 
-loadPoints();
+load();
 
 }
 
-async function loadPoints(){
+function tap(){
+
+localPoints++;
+
+document.getElementById("points").innerText = localPoints;
+
+}
+
+async function sendBatch(){
+
+if(localPoints === 0) return;
 
 try{
 
-let p = await contract.points(wallet);
-points = parseInt(p);
+let tx = await contract.tap(localPoints);
 
-document.getElementById("points").innerText = points;
-
-}catch(e){
-console.log(e);
-}
-
-}
-
-async function tap(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
-points++;
-
-document.getElementById("points").innerText = points;
-
-// send to blockchain
-try{
-
-let tx = await contract.addPoints(1);
 await tx.wait();
 
+localPoints = 0;
+
+document.getElementById("points").innerText = 0;
+
+load();
+
 }catch(e){
+
 console.log(e);
+
 }
+
+}
+
+async function load(){
+
+let p = await contract.getPoints(wallet);
+
+document.getElementById("points").innerText = p;
 
 }
 
