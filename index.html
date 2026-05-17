@@ -1,23 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
+
 <title>PEPE VOLT Tap Game</title>
 
 <style>
-body{
+
+*{
     margin:0;
-    font-family:Arial,sans-serif;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    touch-action:manipulation;
+    overscroll-behavior:none;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
     background:#0f172a;
+    font-family:Arial,sans-serif;
     color:white;
-    text-align:center;
+}
+
+body{
+    position:fixed;
+    inset:0;
 }
 
 .container{
+    width:100%;
     max-width:420px;
+    height:100vh;
+    overflow-y:auto;
     margin:auto;
     padding:20px;
+    text-align:center;
 }
 
 .logo{
@@ -26,31 +54,42 @@ body{
     border-radius:50%;
     margin-top:20px;
     border:4px solid #00ff99;
+    object-fit:cover;
+    box-shadow:0 0 25px #00ff99;
 }
 
 h1{
-    color:#00ff99;
     margin-top:15px;
+    color:#00ff99;
+    font-size:32px;
+}
+
+.contract{
+    margin-top:15px;
+    color:#94a3b8;
+    font-size:12px;
+    word-break:break-all;
 }
 
 .card{
-    background:#1e293b;
+    background:#111827;
+    margin-top:20px;
     padding:20px;
     border-radius:18px;
-    margin-top:20px;
 }
 
 .points{
-    font-size:40px;
+    font-size:42px;
     color:#00ff99;
+    margin-top:15px;
     font-weight:bold;
-    margin-top:10px;
 }
 
 .small{
     color:#94a3b8;
-    margin-top:8px;
+    margin-top:10px;
     font-size:13px;
+    line-height:1.6;
 }
 
 .tap-btn{
@@ -58,28 +97,35 @@ h1{
     height:220px;
     border-radius:50%;
     border:none;
+    margin-top:25px;
     background:#00ff99;
     color:black;
-    font-size:32px;
+    font-size:34px;
     font-weight:bold;
-    margin-top:25px;
     cursor:pointer;
-    transition:0.1s;
+
+    touch-action:manipulation;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+    -webkit-tap-highlight-color:transparent;
 }
 
 .tap-btn:active{
-    transform:scale(0.95);
+    transform:scale(0.96);
 }
 
 button{
     width:100%;
     padding:15px;
     border:none;
-    border-radius:12px;
+    border-radius:14px;
     margin-top:15px;
-    font-weight:bold;
     font-size:16px;
+    font-weight:bold;
     cursor:pointer;
+
+    touch-action:manipulation;
 }
 
 .connect{
@@ -87,13 +133,13 @@ button{
     color:black;
 }
 
-.withdraw{
-    background:#facc15;
+.deposit{
+    background:#38bdf8;
     color:black;
 }
 
-.deposit{
-    background:#38bdf8;
+.withdraw{
+    background:#facc15;
     color:black;
 }
 
@@ -115,12 +161,19 @@ button{
     margin-bottom:8px;
 }
 
-.contract{
-    word-break:break-all;
-    font-size:12px;
-    margin-top:15px;
-    color:#94a3b8;
+.reward{
+    font-size:20px;
+    margin-top:10px;
+    color:#00ff99;
 }
+
+.footer{
+    margin-top:20px;
+    color:#64748b;
+    font-size:12px;
+    padding-bottom:40px;
+}
+
 </style>
 </head>
 
@@ -139,7 +192,11 @@ src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg"
 0xa263d765b897b4777f0ad4a938d12d79e789ffff
 </div>
 
-<button class="connect" onclick="connectWallet()">
+<button
+class="connect"
+onclick="connectWallet()"
+id="connectBtn"
+>
 Connect Wallet
 </button>
 
@@ -147,7 +204,10 @@ Connect Wallet
 
 <h2>Tap To Earn</h2>
 
-<div class="points" id="points">
+<div
+class="points"
+id="points"
+>
 0
 </div>
 
@@ -157,9 +217,14 @@ Connect Wallet
 1000 Points = 1 PVLT
 <br>
 1 PVLT = 0.000000001 BNB
+<br><br>
+Stop tapping for 3 seconds and current points reset to zero.
 </div>
 
-<button class="tap-btn" onclick="tapCoin()">
+<button
+class="tap-btn"
+onclick="tapCoin()"
+>
 ⚡ TAP
 </button>
 
@@ -169,12 +234,20 @@ Connect Wallet
 
 <div class="box">
 <h3>Wallet</h3>
-<p id="wallet">Not Connected</p>
+
+<p id="wallet">
+Not Connected
+</p>
+
 </div>
 
 <div class="box">
 <h3>Global</h3>
-<p id="globalPoints">0</p>
+
+<p id="globalPoints">
+0
+</p>
+
 </div>
 
 </div>
@@ -183,45 +256,77 @@ Connect Wallet
 
 <h2>Rewards</h2>
 
-<p id="tokenBalance">
+<div
+class="reward"
+id="tokenBalance"
+>
 0 PVLT
-</p>
+</div>
 
-<p id="bnbValue">
+<div
+class="reward"
+id="bnbValue"
+>
 0 BNB
-</p>
+</div>
 
-<button class="deposit" onclick="depositFake()">
+<button
+class="deposit"
+onclick="depositFake()"
+>
 Deposit
 </button>
 
-<button class="withdraw" onclick="withdrawReward()">
+<button
+class="withdraw"
+onclick="withdrawReward()"
+>
 Withdraw
 </button>
 
 </div>
 
+<div class="footer">
+PEPE VOLT Telegram Mini App
+</div>
+
 </div>
 
 <script>
+
 let points = 0;
 let globalPoints = 0;
 let wallet = null;
 let inactiveTimer;
 
-function loadStorage(){
+function updateUI(){
+
+    document.getElementById("points")
+    .innerText = points;
+
+    document.getElementById("globalPoints")
+    .innerText = globalPoints;
+
+    const tokens =
+    (globalPoints / 1000);
+
+    const bnb =
+    (tokens * 0.000000001);
+
+    document.getElementById("tokenBalance")
+    .innerText =
+    tokens.toFixed(4) + " PVLT";
+
+    document.getElementById("bnbValue")
+    .innerText =
+    bnb.toFixed(12) + " BNB";
 
     if(wallet){
 
-        const savedGlobal =
-        localStorage.getItem(wallet+"_global");
-
-        if(savedGlobal){
-            globalPoints = parseInt(savedGlobal);
-        }
-
-        document.getElementById("globalPoints")
-        .innerText = globalPoints;
+        localStorage.setItem(
+            wallet + "_global",
+            globalPoints
+        );
 
     }
 }
@@ -229,7 +334,9 @@ function loadStorage(){
 async function connectWallet(){
 
     if(typeof window.ethereum === "undefined"){
+
         alert("Install MetaMask or Trust Wallet");
+
         return;
     }
 
@@ -245,11 +352,28 @@ async function connectWallet(){
         document.getElementById("wallet")
         .innerText =
         wallet.substring(0,6)
-        +"..."
+        + "..."
         +
         wallet.substring(wallet.length-4);
 
-        loadStorage();
+        document.getElementById("connectBtn")
+        .innerText =
+        "Connected";
+
+        const saved =
+        localStorage.getItem(wallet + "_global");
+
+        if(saved){
+
+            globalPoints = parseInt(saved);
+
+        }else{
+
+            globalPoints = 0;
+
+        }
+
+        updateUI();
 
     }catch(e){
 
@@ -258,41 +382,10 @@ async function connectWallet(){
     }
 }
 
-function updateUI(){
-
-    document.getElementById("points")
-    .innerText = points;
-
-    document.getElementById("globalPoints")
-    .innerText = globalPoints;
-
-    const tokens =
-    (globalPoints / 1000).toFixed(4);
-
-    const bnb =
-    (tokens * 0.000000001).toFixed(12);
-
-    document.getElementById("tokenBalance")
-    .innerText =
-    tokens + " PVLT";
-
-    document.getElementById("bnbValue")
-    .innerText =
-    bnb + " BNB";
-
-    if(wallet){
-
-        localStorage.setItem(
-            wallet+"_global",
-            globalPoints
-        );
-
-    }
-}
-
 function tapCoin(){
 
     points += 1;
+
     globalPoints += 1;
 
     updateUI();
@@ -305,7 +398,9 @@ function tapCoin(){
 
         updateUI();
 
-        alert("Inactive for 3 seconds. Current tap points reset to 0.");
+        alert(
+            "Inactive for 3 seconds. Current tap points reset."
+        );
 
     },3000);
 }
@@ -313,29 +408,61 @@ function tapCoin(){
 function depositFake(){
 
     alert(
-        "Deposit system placeholder connected."
+        "Deposit system coming soon."
     );
 }
 
 function withdrawReward(){
 
-    const tokens = globalPoints / 1000;
+    const tokens =
+    globalPoints / 1000;
 
     if(tokens < 1){
 
-        alert("Minimum 1 PVLT required");
+        alert(
+            "Minimum 1 PVLT required."
+        );
 
         return;
     }
 
     alert(
         "Withdraw request submitted for "
-        + tokens.toFixed(2)
+        + tokens.toFixed(4)
         + " PVLT"
     );
 }
 
+document.addEventListener(
+'gesturestart',
+function(e){
+    e.preventDefault();
+}
+);
+
+let lastTouchEnd = 0;
+
+document.addEventListener(
+'touchend',
+function(event){
+
+    const now =
+    (new Date()).getTime();
+
+    if(now - lastTouchEnd <= 300){
+
+        event.preventDefault();
+
+    }
+
+    lastTouchEnd = now;
+
+},
+false
+);
+
 updateUI();
+
 </script>
 
 </body>
