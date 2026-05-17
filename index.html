@@ -8,8 +8,7 @@
 content="width=device-width,
 initial-scale=1,
 maximum-scale=1,
-user-scalable=no,
-viewport-fit=cover">
+user-scalable=no">
 
 <title>PVLT Tap Game</title>
 
@@ -116,19 +115,22 @@ opacity:0.7;
 <!-- NAV -->
 <div class="nav">
 
+<div>🔋 <span id="energy">50</span></div>
 <div>⚡ <span id="points">0</span></div>
 <div>💎 <span id="tokens">0.0000</span></div>
-<div>👤 <span id="walletView">guest</span></div>
 
 </div>
 
 <!-- MAIN -->
 <div class="container">
 
+<div class="small">
+Free Energy: 50 | Buy for more via PVLT token contract
+</div>
+
 <button class="tap" onclick="tap()">TAP</button>
 
-<div class="small">1 Tap = 1 Point</div>
-
+<!-- WALLET -->
 <div class="card">
 
 <input id="walletInput" placeholder="Paste BSC wallet">
@@ -139,6 +141,20 @@ CONNECT WALLET
 
 </div>
 
+<!-- ENERGY BUY -->
+<div class="card">
+
+<div class="small">
+Buy Energy = Paid via PVLT Token (REAL CONTRACT)
+</div>
+
+<button onclick="buyEnergy()">
+BUY ENERGY (REFILL)
+</button>
+
+</div>
+
+<!-- CLAIM -->
 <div class="card">
 
 <button onclick="claim()">
@@ -156,7 +172,69 @@ CLAIM TOKENS
 let wallet = "";
 let points = 0;
 
-const RATE = 10000;
+/* FREE ENERGY */
+let energy = 50;
+const MAX_FREE_ENERGY = 50;
+
+/* ================= TAP ================= */
+
+function tap(){
+
+if(!wallet){
+alert("Connect wallet");
+return;
+}
+
+if(energy <= 0){
+alert("Buy energy");
+return;
+}
+
+energy--;
+points++;
+
+updateUI();
+
+}
+
+/* ================= ENERGY BUY (REAL CONTRACT HOOK) ================= */
+
+async function buyEnergy(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+/*
+🔴 REAL WEB3 LOGIC PLACEHOLDER:
+
+Here you will integrate:
+
+1. PVLT Token Contract (REAL)
+2. approve()
+3. transferFrom()
+4. backend verification OR direct tx
+
+Example flow:
+- user pays PVLT tokens
+- backend confirms tx hash
+- energy is refilled
+*/
+
+alert(
+"🔋 Energy purchase initiated\n\n" +
+"Payment: PVLT Token Contract\n" +
+"Wallet: " + wallet + "\n\n" +
+"After blockchain confirmation → Energy refilled"
+);
+
+/* simulate instant refill for UI */
+energy = MAX_FREE_ENERGY;
+
+updateUI();
+
+}
 
 /* ================= STORAGE ================= */
 
@@ -173,74 +251,52 @@ function loadData(addr){
 let data = localStorage.getItem(addr);
 
 if(data){
-let obj = JSON.parse(data);
-points = obj.points || 0;
+points = JSON.parse(data).points || 0;
 }else{
 points = 0;
 }
+
 }
 
 /* ================= UI ================= */
 
 function updateUI(){
 
-if(!wallet){
-document.getElementById("points").innerText = 0;
-document.getElementById("tokens").innerText = "0.0000";
-document.getElementById("walletView").innerText = "guest";
-return;
-}
-
+document.getElementById("energy").innerText = energy;
 document.getElementById("points").innerText = points;
 
 document.getElementById("tokens").innerText =
-(points / RATE).toFixed(4);
-
-document.getElementById("walletView").innerText =
-wallet.slice(0,6)+"..."+wallet.slice(-4);
-}
-
-/* ================= TAP ================= */
-
-function tap(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
-points++;
-
-saveData();
-updateUI();
+(points / 10000).toFixed(4);
 
 }
 
-/* ================= CONNECT / DISCONNECT ================= */
+/* ================= WALLET ================= */
 
 function toggleWallet(){
 
-const input = document.getElementById("walletInput");
+const input=document.getElementById("walletInput");
 
 if(wallet){
 
-wallet = "";
-points = 0;
+wallet="";
+points=0;
+energy=50;
 
-input.value = "";
+input.value="";
 
 updateUI();
+
 return;
 }
 
-let w = input.value.trim();
+let w=input.value.trim();
 
-if(!w.startsWith("0x") || w.length !== 42){
+if(!w.startsWith("0x")||w.length!==42){
 alert("Invalid wallet");
 return;
 }
 
-wallet = w.toLowerCase();
+wallet=w.toLowerCase();
 
 loadData(wallet);
 
@@ -253,15 +309,15 @@ updateUI();
 function claim(){
 
 if(!wallet){
-alert("Connect wallet first");
+alert("Connect wallet");
 return;
 }
 
-let tokens = points / RATE;
+let tokens = points / 10000;
 
 /* RULES */
 if(tokens < 100){
-alert("Minimum 100 tokens required");
+alert("Min 100 tokens required");
 return;
 }
 
