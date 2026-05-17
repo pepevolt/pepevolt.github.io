@@ -34,11 +34,11 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 padding:0 12px;
-
 background:rgba(255,255,255,0.06);
 backdrop-filter:blur(12px);
 border-bottom:1px solid rgba(255,255,255,0.08);
 font-size:12px;
+display:none;
 }
 
 .container{
@@ -47,11 +47,9 @@ top:60px;
 left:0;
 right:0;
 bottom:0;
-
 display:flex;
 flex-direction:column;
 align-items:center;
-
 padding:15px;
 gap:14px;
 overflow:hidden;
@@ -114,27 +112,25 @@ background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
 }
 
-.status{
-font-size:12px;
-color:#00ff99;
-display:none;
-}
-
 </style>
 
 </head>
 
 <body>
 
-<div class="navbar" id="navbar" style="display:none;">
+<!-- NAVBAR -->
 
-<div>⚡ POINTS: <span id="totalPoints">0</span></div>
+<div class="navbar" id="navbar">
 
-<div>💎 TOKEN: <span id="totalTokens">0.0000</span></div>
+<div>⚡ POINTS: <span id="points">0</span></div>
+
+<div>💎 TOKEN: <span id="tokens">0.0000</span></div>
 
 <div>👤 <span id="userId">guest</span></div>
 
 </div>
+
+<!-- MAIN -->
 
 <div class="container">
 
@@ -142,21 +138,13 @@ display:none;
 
 <button class="tap" onclick="tap()">TAP</button>
 
-<div class="liveBox">
-SESSION POINTS: <span id="sessionPoints">0</span>
-</div>
-
-<div class="liveBox">
-SESSION TOKENS: <span id="sessionTokens">0.0000</span>
-</div>
+<div class="liveBox">SESSION: <span id="session">0</span></div>
 
 <div class="card">
 
 <input id="wallet" placeholder="Paste BSC wallet address">
 
-<button id="walletBtn" onclick="toggleWallet()">CONNECT WALLET</button>
-
-<div id="walletStatus" class="status">Wallet connected</div>
+<button onclick="connect()">CONNECT WALLET</button>
 
 </div>
 
@@ -164,135 +152,125 @@ SESSION TOKENS: <span id="sessionTokens">0.0000</span>
 
 <script>
 
-const POINTS_PER_TOKEN = 10000;
+/* ================= CONFIG ================= */
+
+const P2T = 10000;
+
+/* ================= STATE ================= */
 
 let wallet = "";
 
-let totalPoints = 0;
-let totalTokens = 0;
+let points = 0;
+let tokens = 0;
 
-let sessionPoints = 0;
-let sessionTokens = 0;
+let session = 0;
 
-let tapTimer = null;
+let timer = null;
 
-/* STORAGE KEY PER WALLET */
-function key(){
-return "PVLT_USER_" + wallet.toLowerCase();
+/* ================= HASH KEY (FIX UNIVERSAL) ================= */
+
+function key(addr){
+
+/* deterministic identity */
+let clean = addr.toLowerCase();
+
+/* simple hash */
+let hash = 0;
+for(let i=0;i<clean.length;i++){
+hash = ((hash << 5) - hash) + clean.charCodeAt(i);
+hash |= 0;
 }
 
-/* SAVE */
-function saveData(){
-if(!wallet) return;
-localStorage.setItem(key(), JSON.stringify({
-totalPoints,
-totalTokens
-}));
+return "PVLT_" + hash;
+
 }
 
-/* LOAD */
-function loadData(){
-let raw = localStorage.getItem(key());
-if(raw){
-let d = JSON.parse(raw);
-totalPoints = d.totalPoints || 0;
-totalTokens = d.totalTokens || 0;
+/* ================= LOAD ================= */
+
+function load(addr){
+
+let k = key(addr);
+
+let data = localStorage.getItem(k);
+
+if(data){
+
+let obj = JSON.parse(data);
+
+points = obj.points || 0;
+tokens = obj.tokens || 0;
+
 }else{
-totalPoints = 0;
-totalTokens = 0;
-}
+
+points = 0;
+tokens = 0;
+
 }
 
-/* UI */
+}
+
+/* ================= SAVE ================= */
+
+function save(){
+
+if(!wallet) return;
+
+localStorage.setItem(key(wallet), JSON.stringify({
+points,
+tokens
+}));
+
+}
+
+/* ================= UI ================= */
+
 function set(id,val){
-let el = document.getElementById(id);
-if(el) el.innerText = val;
+document.getElementById(id).innerText = val;
 }
 
-function updateUI(){
+function update(){
 
 if(!wallet){
+
 document.getElementById("navbar").style.display = "none";
 return;
+
 }
 
 document.getElementById("navbar").style.display = "flex";
 
-set("totalPoints", totalPoints);
-set("totalTokens", totalTokens.toFixed(4));
+set("points", points);
+set("tokens", tokens.toFixed(4));
 
-set("sessionPoints", sessionPoints);
-set("sessionTokens", sessionTokens.toFixed(4));
+set("session", session);
 
 set("userId", wallet.slice(0,6)+"..."+wallet.slice(-4));
+
 }
 
-/* CONNECT ONLY MANUAL */
-function toggleWallet(){
+/* ================= CONNECT ================= */
 
-let input = document.getElementById("wallet");
-let btn = document.getElementById("walletBtn");
-let status = document.getElementById("walletStatus");
+function connect(){
 
-if(!wallet){
-
-let addr = input.value.trim().toLowerCase();
+let addr = document.getElementById("wallet").value.trim();
 
 if(!addr.startsWith("0x") || addr.length !== 42){
 alert("Invalid wallet");
 return;
 }
 
-wallet = addr;
+wallet = addr.toLowerCase();
 
-loadData();
+load(wallet);
 
-sessionPoints = 0;
-sessionTokens = 0;
+session = 0;
 
-btn.innerText = "DISCONNECT WALLET";
-status.style.display = "block";
-
-updateUI();
-
-}else{
-
-saveData();
-
-wallet = "";
-
-sessionPoints = 0;
-sessionTokens = 0;
-
-totalPoints = 0;
-totalTokens = 0;
-
-input.value = "";
-
-btn.innerText = "CONNECT WALLET";
-status.style.display = "none";
-
-updateUI();
+update();
 
 }
 
-}
+/* ================= TAP ================= */
 
-/* SESSION RESET */
-function resetSession(){
-
-totalPoints += sessionPoints;
-totalTokens = totalPoints / POINTS_PER_TOKEN;
-
-sessionPoints = 0;
-sessionTokens = 0;
-
-saveData();
-updateUI();
-
-}
-
-/* TAP */
 function tap(){
 
 if(!wallet){
@@ -300,23 +278,35 @@ alert("Connect wallet first");
 return;
 }
 
-clearTimeout(tapTimer);
+clearTimeout(timer);
 
-sessionPoints++;
-sessionTokens = sessionPoints / POINTS_PER_TOKEN;
+session++;
 
-updateUI();
+set("session", session);
 
-tapTimer = setTimeout(()=>{
-resetSession();
+timer = setTimeout(()=>{
+
+points += session;
+
+tokens = points / P2T;
+
+session = 0;
+
+save();
+
+update();
+
 },3000);
 
 }
 
-/* INIT (IMPORTANT FIX: NO AUTO RESTORE) */
-window.addEventListener("DOMContentLoaded", ()=>{
-updateUI();
-});
+/* ================= INIT ================= */
+
+window.onload = ()=>{
+
+update();
+
+};
 
 </script>
 
