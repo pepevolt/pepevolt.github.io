@@ -113,12 +113,13 @@ opacity:0.7;
 
 <body>
 
-<!-- NAV -->
+<!-- NAVBAR -->
 <div class="nav">
+
 <div>⚡ <span id="points">0</span></div>
 <div>💎 <span id="tokens">0.0000</span></div>
-<div>🔋 <span id="energy">50</span></div>
 <div>👤 <span id="walletView">guest</span></div>
+
 </div>
 
 <!-- MAIN -->
@@ -126,9 +127,8 @@ opacity:0.7;
 
 <button class="tap" onclick="tap()">TAP</button>
 
-<div class="small">1 Tap = 1 Point | Energy max 50</div>
+<div class="small">1 Tap = 1 Point</div>
 
-<!-- WALLET -->
 <div class="card">
 
 <input id="walletInput" placeholder="Paste BSC wallet">
@@ -139,26 +139,7 @@ CONNECT WALLET
 
 </div>
 
-<!-- ENERGY -->
 <div class="card">
-
-<div class="small">
-Buy Energy using PVLT Token
-</div>
-
-<button onclick="buyEnergy()">
-BUY ENERGY (RECHARGE)
-</button>
-
-</div>
-
-<!-- CLAIM SECTION (ADDED FIX) -->
-<div class="card">
-
-<div class="small">
-Min Claim: 100 Tokens  
-Max Claim: 500 Tokens  
-</div>
 
 <button onclick="claim()">
 CLAIM TOKENS
@@ -172,77 +153,126 @@ CLAIM TOKENS
 
 /* ================= STATE ================= */
 
-let wallet="";
-let points=0;
+let wallet = "";
+let points = 0;
 
-let energy=50;
-const MAX_ENERGY=50;
+const RATE = 10000; // 10000 points = 1 token
 
-/* ================= ENERGY REGEN ================= */
+/* ================= STORAGE ================= */
 
-setInterval(()=>{
+function saveWalletData(){
 
-if(energy < MAX_ENERGY){
-energy += 1;
-document.getElementById("energy").innerText = energy;
+if(!wallet) return;
+
+localStorage.setItem(wallet, JSON.stringify({
+points: points
+}));
+
 }
 
-},4000);
+function loadWalletData(addr){
+
+let data = localStorage.getItem(addr);
+
+if(data){
+
+let obj = JSON.parse(data);
+
+points = obj.points || 0;
+
+}else{
+
+points = 0;
+
+}
+
+}
+
+/* ================= UI ================= */
+
+function updateUI(){
+
+if(!wallet){
+
+document.getElementById("points").innerText = 0;
+document.getElementById("tokens").innerText = "0.0000";
+document.getElementById("walletView").innerText = "guest";
+return;
+
+}
+
+document.getElementById("points").innerText = points;
+
+document.getElementById("tokens").innerText =
+(points / RATE).toFixed(4);
+
+document.getElementById("walletView").innerText =
+wallet.slice(0,6)+"..."+wallet.slice(-4);
+
+}
 
 /* ================= TAP ================= */
 
 function tap(){
 
 if(!wallet){
-alert("Connect wallet");
+alert("Connect wallet first");
 return;
 }
 
-if(energy<=0){
-alert("No energy");
-return;
-}
-
-energy--;
 points++;
 
 updateUI();
+saveWalletData();
 
 }
 
-/* ================= BUY ENERGY ================= */
+/* ================= WALLET CONNECT ================= */
 
-function buyEnergy(){
+function toggleWallet(){
 
-if(!wallet){
-alert("Connect wallet");
+const input = document.getElementById("walletInput");
+
+if(wallet){
+
+/* DISCONNECT */
+wallet = "";
+points = 0;
+
+input.value = "";
+
+updateUI();
 return;
 }
 
-/*
-REAL CONTRACT HOOK:
-PVLT token payment will be added here:
-approve() + transferFrom()
-*/
+let w = input.value.trim();
 
-energy = MAX_ENERGY;
-updateUI();
-
-alert("Energy recharged using PVLT tokens (pending contract integration)");
+if(!w.startsWith("0x") || w.length !== 42){
+alert("Invalid wallet");
+return;
 }
 
-/* ================= CLAIM FUNCTION ================= */
+wallet = w.toLowerCase();
+
+/* LOAD OLD DATA */
+loadWalletData(wallet);
+
+updateUI();
+
+}
+
+/* ================= CLAIM SYSTEM ================= */
 
 function claim(){
 
 if(!wallet){
-alert("Connect wallet");
+alert("Connect wallet first");
 return;
 }
 
-let tokens = points / 10000;
+let tokens = points / RATE;
 
-/* MIN/MAX RULE */
+/* MIN MAX RULE */
 if(tokens < 100){
 alert("Minimum 100 tokens required");
 return;
@@ -252,67 +282,22 @@ if(tokens > 500){
 tokens = 500;
 }
 
-/* hidden fee (NOT shown in UI) */
-let fee = 1; // $1 internal deduction
-
 /* RESET AFTER CLAIM */
 points = 0;
 
+saveWalletData();
 updateUI();
 
 alert(
-"CLAIM SUCCESS\n\n" +
-"Tokens: " + tokens.toFixed(4) +
-"\nStatus: Completed"
+"CLAIM SUCCESS\n" +
+"Tokens: " + tokens.toFixed(4)
 );
 
 }
 
-/* ================= WALLET ================= */
-
-function toggleWallet(){
-
-const input=document.getElementById("walletInput");
-const view=document.getElementById("walletView");
-
-if(wallet){
-
-wallet="";
-points=0;
-energy=50;
-
-input.value="";
-
-view.innerText="guest";
+/* ================= INIT ================= */
 
 updateUI();
-
-return;
-}
-
-let w=input.value.trim();
-
-if(!w.startsWith("0x")||w.length!==42){
-alert("Invalid wallet");
-return;
-}
-
-wallet=w.toLowerCase();
-
-view.innerText=
-wallet.slice(0,6)+"..."+wallet.slice(-4);
-
-}
-
-/* ================= UI ================= */
-
-function updateUI(){
-
-document.getElementById("points").innerText=points;
-document.getElementById("tokens").innerText=(points/10000).toFixed(4);
-document.getElementById("energy").innerText=energy;
-
-}
 
 </script>
 
