@@ -50,7 +50,6 @@ display:flex;
 flex-direction:column;
 align-items:center;
 padding:20px;
-overflow:hidden;
 }
 
 .tap{
@@ -58,7 +57,7 @@ width:220px;
 height:220px;
 border-radius:50%;
 border:none;
-margin-top:25px;
+margin-top:20px;
 
 font-size:28px;
 font-weight:bold;
@@ -71,14 +70,21 @@ color:black;
 transform:scale(0.96);
 }
 
-.card{
+/* ================= SINGLE MAIN CARD ================= */
+
+.bigCard{
 width:90%;
-max-width:360px;
-margin-top:15px;
-padding:15px;
+max-width:380px;
+margin-top:20px;
+padding:18px;
 
 background:rgba(255,255,255,0.05);
-border-radius:14px;
+border:1px solid rgba(255,255,255,0.08);
+border-radius:16px;
+
+display:flex;
+flex-direction:column;
+gap:12px;
 }
 
 input{
@@ -93,7 +99,6 @@ color:white;
 button{
 width:100%;
 padding:14px;
-margin-top:10px;
 border:none;
 border-radius:10px;
 font-weight:bold;
@@ -104,6 +109,7 @@ color:black;
 .small{
 font-size:12px;
 opacity:0.7;
+text-align:center;
 }
 
 </style>
@@ -128,8 +134,8 @@ opacity:0.7;
 
 <div class="small">1 Tap = 1 Point</div>
 
-<!-- WALLET -->
-<div class="card">
+<!-- SINGLE CARD -->
+<div class="bigCard">
 
 <input id="walletInput" placeholder="Paste BSC wallet">
 
@@ -137,27 +143,9 @@ opacity:0.7;
 CONNECT WALLET
 </button>
 
-</div>
-
-<!-- BUY ENERGY (NOW 2ND) -->
-<div class="card">
-
-<div class="small">
-Buy Energy via PVLT Token Contract
-</div>
-
 <button onclick="buyEnergy()">
 BUY ENERGY (REFILL)
 </button>
-
-</div>
-
-<!-- CLAIM (NOW 3RD) -->
-<div class="card">
-
-<div class="small">
-Min 100 | Max 500 Tokens
-</div>
 
 <button onclick="claim()">
 CLAIM TOKENS
@@ -196,59 +184,6 @@ updateUI();
 
 }
 
-/* ================= BUY ENERGY ================= */
-
-function buyEnergy(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
-/* REAL CONTRACT HOOK PLACEHOLDER */
-alert(
-"Energy purchase initiated\nPaid via PVLT Token Contract"
-);
-
-energy = 50;
-
-updateUI();
-
-}
-
-/* ================= STORAGE ================= */
-
-function saveData(){
-if(!wallet) return;
-
-localStorage.setItem(wallet, JSON.stringify({
-points: points
-}));
-}
-
-function loadData(addr){
-
-let data = localStorage.getItem(addr);
-
-if(data){
-points = JSON.parse(data).points || 0;
-}else{
-points = 0;
-}
-}
-
-/* ================= UI ================= */
-
-function updateUI(){
-
-document.getElementById("energy").innerText = energy;
-document.getElementById("points").innerText = points;
-
-document.getElementById("tokens").innerText =
-(points / 10000).toFixed(4);
-
-}
-
 /* ================= WALLET ================= */
 
 function toggleWallet(){
@@ -277,7 +212,23 @@ return;
 
 wallet=w.toLowerCase();
 
-loadData(wallet);
+updateUI();
+
+}
+
+/* ================= BUY ENERGY ================= */
+
+function buyEnergy(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+/* REAL CONTRACT HOOK PLACEHOLDER */
+alert("Energy purchased via PVLT Token Contract");
+
+energy = 50;
 
 updateUI();
 
@@ -305,10 +256,21 @@ tokens = 500;
 
 points = 0;
 
-saveData();
 updateUI();
 
 alert("CLAIM SUCCESS\nTokens: " + tokens.toFixed(4));
+
+}
+
+/* ================= UI ================= */
+
+function updateUI(){
+
+document.getElementById("energy").innerText = energy;
+document.getElementById("points").innerText = points;
+document.getElementById("tokens").innerText =
+(points / 10000).toFixed(4);
+
 }
 
 </script>
