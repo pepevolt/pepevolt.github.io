@@ -262,7 +262,7 @@
     <div style="margin-bottom: 14px;">
       <div class="stat-text">Accumulated Points: <strong id="game-points" style="color: var(--accent-orange);">0</strong></div>
       <div class="stat-text">Convertible Pool Value: <strong id="est-tokens" style="color: #38bdf8;">0.00 PVLT</strong></div>
-      <div id="countdown-wrapper">⚠️ INACTIVITY COOLDOWN RUNNING: <span id="reset-timer">30.0</span>s</div>
+      <div id="countdown-wrapper">⚠️ INACTIVITY COOLDOWN RUNNING: <span id="reset-timer">3.0</span>s</div>
     </div>
     <button id="tap-target-btn" class="game-btn">Execute Compute Tap</button>
   </div>
@@ -273,7 +273,7 @@
       <strong>System Liquidation Threshold Metrics:</strong><br>
       • 100,000 game points ➔ 1.00 Network Token Base<br>
       • Floor Request Minimum Value ➔ 100 Tokens<br>
-      • <strong>Inactivity Storage Trigger</strong> ➔ Stopping tap actions for 30 seconds instantly secures your active module pool directly into your dashboard metadata allocation *ONLY* if your wallet is connected. Unconnected sessions will wipe progress to 0.<br>
+      • <strong>Inactivity Storage Trigger</strong> ➔ Stopping tap actions for 3 seconds instantly secures your active module pool directly into your dashboard metadata allocation *ONLY* if your wallet is connected. Unconnected sessions will wipe progress to 0.<br>
       • Fixed Settlement Gas Fee Allocation ➔ 0.001 BNB (~$0.50 USD)
     </div>
     <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token allocation value" />
@@ -308,7 +308,7 @@ let dashboardPoints = parseInt(localStorage.getItem(permanentDashKey)) || 0;
 
 let inactivityTimeout;
 let countdownInterval;
-let secondsRemaining = 30.0;
+let secondsRemaining = 3.0; // Updated from 30.0 to 3.0
 
 const PVLT_ADDRESS = "0xa263d765b897b4777f0ad4a938d12d79e789ffff";
 const RECEIVER = "0xFa664f30ad1D468A65641566316a68FB3c36a8AF";
@@ -331,7 +331,6 @@ function initWeb3ModalEngine() {
     walletconnect: {
       package: WalletConnectProvider,
       options: {
-        // Highly dynamic fallback infrastructure RPC options for BSC Mainnet stability
         rpc: {
           56: "https://bsc-dataseed.binance.org/"
         },
@@ -346,13 +345,11 @@ function initWeb3ModalEngine() {
     disableInjectedProvider: false
   });
 
-  // Reconnect automatically if provider state is cached
   if (web3Modal.cachedProvider) {
     connectWallet();
   }
 }
 
-// Fire modular configuration engines once document load completes
 window.addEventListener("DOMContentLoaded", initWeb3ModalEngine);
 
 document.addEventListener('touchstart', function (e) {
@@ -378,7 +375,7 @@ function refreshInactivityTracker() {
   clearTimeout(inactivityTimeout);
   clearInterval(countdownInterval);
   
-  secondsRemaining = 30.0;
+  secondsRemaining = 3.0; // Reset countdown reference to 3.0 seconds
   document.getElementById("countdown-wrapper").style.display = "block";
   document.getElementById("reset-timer").innerText = secondsRemaining.toFixed(1);
 
@@ -393,7 +390,7 @@ function refreshInactivityTracker() {
 
   inactivityTimeout = setTimeout(() => {
     handleInactivityExpiry();
-  }, 30000);
+  }, 3000); // Trigger reset execution at exactly 3 seconds (3000ms)
 }
 
 function handleInactivityExpiry() {
@@ -441,7 +438,6 @@ async function connectWallet() {
   try {
     if (!web3Modal) return;
     
-    // Web3Modal opens modal routing dynamically for mobile frames / alternative runtimes seamlessly
     rawInstance = await web3Modal.connect();
     provider = new ethers.providers.Web3Provider(rawInstance);
     signer = provider.getSigner();
@@ -456,7 +452,6 @@ async function connectWallet() {
 
     document.getElementById("wallet").innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
     
-    // Bind subscription event listeners to track user connection switches dynamically
     rawInstance.on("accountsChanged", (accounts) => {
       if (accounts.length === 0) disconnectWallet();
       else window.location.reload();
