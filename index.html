@@ -78,6 +78,10 @@ color:black;
 box-shadow:0 0 25px rgba(0,255,200,0.3);
 }
 
+.tap:active{
+transform:scale(0.96);
+}
+
 /* ================= LIVE ================= */
 .live{
 margin-top:20px;
@@ -121,10 +125,10 @@ font-weight:bold;
 
 <body>
 
-<!-- NAVBAR (TOTAL ONLY) -->
+<!-- NAVBAR (AUTO CONVERTED TOKENS) -->
 <div class="navbar">
 <div>⚡ TOTAL POINTS: <span id="totalPoints">0</span></div>
-<div>💎 TOTAL TOKENS: <span id="totalTokens">0</span></div>
+<div>💎 TOKENS: <span id="totalTokens">0.0000</span></div>
 <div>👤 <span id="userId">guest</span></div>
 </div>
 
@@ -135,7 +139,6 @@ font-weight:bold;
 
 <button class="tap" onclick="tap()">TAP</button>
 
-<!-- LIVE POINTS ONLY -->
 <div class="live">
 <div>LIVE POINTS: <span id="livePoints">0</span></div>
 </div>
@@ -159,7 +162,6 @@ font-weight:bold;
 /* ================= STATE ================= */
 let livePoints = 0;
 let totalPoints = 0;
-let totalTokens = 0;
 
 let wallet = "";
 let userId = "guest";
@@ -167,7 +169,7 @@ let userId = "guest";
 let lastTap = Date.now();
 
 /* ================= CONFIG ================= */
-const POINTS_PER_TOKEN = 10000;
+const POINTS_PER_TOKEN = 10000; // 1 token = 10000 points
 const RESET_TIME = 3000;
 
 /* ================= SAFE UI ================= */
@@ -200,18 +202,17 @@ lastTap = Date.now();
 updateUI();
 }
 
-/* ================= TOKEN CALC ================= */
-function calcTokens(points){
-return Math.floor(points / POINTS_PER_TOKEN);
+/* ================= AUTO CONVERT ================= */
+function getTokens(points){
+return (points / POINTS_PER_TOKEN).toFixed(4);
 }
 
 /* ================= UI UPDATE ================= */
 function updateUI(){
 
 set("livePoints", livePoints);
-
 set("totalPoints", totalPoints);
-set("totalTokens", calcTokens(totalPoints));
+set("totalTokens", getTokens(totalPoints));
 
 }
 
@@ -243,7 +244,6 @@ let required=amt*POINTS_PER_TOKEN;
 if(totalPoints<required) return alert("Not enough points");
 
 totalPoints-=required;
-totalTokens+=amt;
 
 updateUI();
 
