@@ -9,115 +9,205 @@
 
   <style>
     :root {
-      -webkit-text-size-adjust: none; /* Prevents text scaling changes */
+      --bg-main: #060814;
+      --bg-card: #0e132b;
+      --bg-card-inner: #161d3a;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --accent-green: #10b981;
+      --accent-orange: #f97316;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      -webkit-text-size-adjust: none;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      margin: 0;
+      padding: 0;
     }
 
     body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0b0f1a;
-      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
       text-align: center;
       
-      /* Essential Telegram container fixes */
+      /* Rigid structural absolute-freeze constraints */
       overscroll-behavior: none; 
-      overflow: hidden; /* Stops page dragging up/down */
-      position: fixed; /* Freezes layout viewport in place */
-      width: 100%;
-      height: 100%;
-      
-      /* Forces webview engines to freeze scale factors */
+      overflow: hidden; 
+      position: fixed; 
+      width: 100vw;
+      height: 100vh;
       -webkit-user-zoom: fixed;
+      
+      display: flex;
+      flex-direction: column;
     }
 
+    /* Scrollable frame container that doesn't trigger parent view bounces */
     .container {
-      padding: 20px;
-      max-width: 500px;
-      margin: auto;
-      box-sizing: border-box;
-      height: 100%;
-      overflow-y: auto; /* Allows smooth scrolling INSIDE container if needed without dragging the app window */
+      flex: 1;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
 
+    h2 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, #fff 0%, var(--text-muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
     .card {
-      background: #151c2e;
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.05);
       padding: 20px;
-      border-radius: 15px;
-      margin-top: 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      border-radius: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      text-align: left;
+    }
+
+    .card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .wallet-info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .address-box {
+      font-family: monospace;
+      background: var(--bg-card-inner);
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: #3b82f6;
+      word-break: break-all;
     }
 
     button {
-      padding: 12px 15px;
+      font-family: inherit;
+      padding: 14px 20px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
-      margin-top: 10px;
       width: 100%;
-      font-size: 16px;
-      font-weight: bold;
-      -webkit-tap-highlight-color: transparent; /* Eliminates tap flash box */
+      font-size: 15px;
+      font-weight: 600;
+      transition: background 0.2s ease, transform 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .connect {
-      background: #4c7dff;
+      background: var(--accent-blue);
       color: white;
     }
+    .connect:active { background: #2563eb; }
 
     .pay {
-      background: #00c853;
+      background: var(--accent-green);
       color: white;
+      margin-top: 12px;
     }
+    .pay:active { background: #059669; }
 
+    /* Performance Tap Button */
     .game-btn {
-      background: #e67e22;
+      background: linear-gradient(135deg, var(--accent-orange) 0%, #dd5a04 100%);
       color: white;
-      font-size: 18px;
-      padding: 25px 20px; /* Enhanced touch target size */
-      touch-action: none; /* Disables ALL default browser touch reactions like double-tap */
-      user-select: none;
-      -webkit-user-select: none;
+      font-size: 16px;
+      padding: 22px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+      touch-action: none; /* Tells the layout engine to absolutely bypass native interactions */
     }
-
     .game-btn:active {
-      transform: scale(0.96); /* Subtle internal action response without layout jitter */
+      transform: scale(0.97);
     }
 
     .withdraw-btn {
-      background: #9b59b6;
+      background: var(--accent-purple);
       color: white;
+      margin-top: 12px;
     }
+    .withdraw-btn:active { background: #7c3aed; }
 
     input {
       width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px;
-      border: none;
+      padding: 12px 16px;
+      background: var(--bg-card-inner);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
       box-sizing: border-box;
-      font-size: 16px; /* Prevents auto-zoom on input tap */
+      font-size: 16px; /* Explicitly prevents iOS zoom focus overrides */
+      outline: none;
+    }
+    input:focus {
+      border-color: var(--accent-blue);
     }
 
     .status {
       margin-top: 10px;
-      font-size: 14px;
-      color: #aaa;
+      font-size: 13px;
+      color: var(--text-muted);
     }
 
     .stat-text {
-      font-size: 18px;
-      margin: 8px 0;
+      font-size: 15px;
+      color: var(--text-main);
+      margin: 6px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .stat-text strong {
+      font-size: 16px;
     }
 
     .rules-list {
-      text-align: left;
-      font-size: 13px;
-      color: #a0aec0;
-      background: #1e293b;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--bg-card-inner);
       padding: 12px;
-      border-radius: 8px;
-      margin-top: 10px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+    .rules-list strong {
+      color: var(--text-main);
     }
   </style>
 </head>
@@ -125,41 +215,47 @@
 <body>
 
 <div class="container">
-  <h2>⚡ PVLT Mini App & Game</h2>
+  <h2>⚡ PVLT Executive Portal</h2>
+  <p class="subtitle">Web3 Protocol Ecosystem Integration</p>
 
   <div class="card">
-    <button class="connect" onclick="connectWallet()">Connect Wallet</button>
-    <p id="wallet">Not connected</p>
-    <p id="balance">Balance: -</p>
-  </div>
-
-  <div class="card">
-    <h3>🎰 Clicker Game</h3>
-    <p class="stat-text">🎮 Game Points: <strong id="game-points" style="color: #f1c40f;">0</strong></p>
-    <p class="stat-text">🪙 Estimated Tokens: <strong id="est-tokens" style="color: #3498db;">0.00</strong> PVLT</p>
-    <button id="tap-target-btn" class="game-btn">TAP TO EARN POINTS</button>
-  </div>
-
-  <div class="card">
-    <h3>🎁 Claim Rewards</h3>
-    <div class="rules-list">
-      📌 <strong>Withdrawal Rules:</strong><br>
-      • 100,000 points = 1 token<br>
-      • 1 token = 0.00000001 BNB<br>
-      • Minimum withdrawal = 100 tokens<br>
-      • Maximum withdrawal = Once per day
+    <h3>🌐 Identity & Network</h3>
+    <button class="connect" onclick="connectWallet()">Connect Web3 Wallet</button>
+    <div class="wallet-info-row">
+      <div class="stat-text">Account Status: <span id="wallet" class="address-box">Not connected</span></div>
+      <div class="stat-text">Available Assets: <strong id="balance" style="color: var(--accent-blue)">-</strong></div>
     </div>
-    <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token amount to claim" oninput="calculateBnbValue()" />
-    <p id="bnb-estimation" style="font-size: 13px; color: #cbd5e1; margin-top: 5px;">Estimated BNB Fee value: 0 BNB</p>
-    <button class="withdraw-btn" onclick="withdrawTokens()">Withdraw to Wallet</button>
-    <p class="status" id="withdraw-status">Waiting for interaction...</p>
   </div>
 
   <div class="card">
-    <h3>Pay with PVLT</h3>
-    <input id="amount" type="number" placeholder="Enter PVLT amount" />
-    <button class="pay" onclick="payPVLT()">Send Payment</button>
-    <p class="status" id="status">Waiting...</p>
+    <h3>🎰 Mining Module</h3>
+    <div style="margin-bottom: 14px;">
+      <div class="stat-text">Accumulated Points: <strong id="game-points" style="color: var(--accent-orange);">0</strong></div>
+      <div class="stat-text">Convertible Pool Value: <strong id="est-tokens" style="color: #38bdf8;">0.00 PVLT</strong></div>
+    </div>
+    <button id="tap-target-btn" class="game-btn">Execute Compute Tap</button>
+  </div>
+
+  <div class="card">
+    <h3>🎁 Asset Conversion Protocol</h3>
+    <div class="rules-list">
+      <strong>System Liquidation Threshold Metrics:</strong><br>
+      • 100,000 game points ➔ 1.00 Network Token Base<br>
+      • 1.00 Token Unit Equivalency Value ➔ 0.00000001 BNB Pool<br>
+      • Floor Request Minimum Value ➔ 100 Tokens<br>
+      • Frequency Limit ➔ Maximum 1 Cycle Allocation / 24 Hours
+    </div>
+    <input id="withdraw-tokens" type="number" placeholder="Enter PVLT Token allocation allocation value" oninput="calculateBnbValue()" />
+    <p id="bnb-estimation" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Required Outbound Payload Fee: 0 BNB</p>
+    <button class="withdraw-btn" onclick="withdrawTokens()">Process Settlement Request</button>
+    <p class="status" id="withdraw-status">Awaiting core validation engine trigger...</p>
+  </div>
+
+  <div class="card">
+    <h3>💳 Merchant Services Distribution</h3>
+    <input id="amount" type="number" placeholder="Enter processing PVLT amount" />
+    <button class="pay" onclick="payPVLT()">Confirm Merchant Payment</button>
+    <p class="status" id="status">Standby for manual payment distribution routing...</p>
   </div>
 </div>
 
@@ -168,7 +264,7 @@ let provider;
 let signer;
 let userAddress;
 
-// Game State Setup
+// Point Loop Setup Initialization
 let points = parseInt(localStorage.getItem('pvlt_points')) || 0;
 updateGameUI();
 
@@ -181,30 +277,22 @@ const ABI = [
   "function decimals() view returns (uint8)"
 ];
 
-// HARD REJECTION FOR MULTI-TOUCH ZOOM GESTURES
-document.addEventListener('touchstart', function (event) {
-  if (event.touches.length > 1) {
-    event.preventDefault(); // Blocks pinch to zoom instantly
+/* CRITICAL FIX: DIRECT EVENT LISTENER INTERCEPTION FOR TELEGRAM MINI APP INTERACTION
+  Bypasses the default Webview click stack to drop visual scale jitters entirely.
+*/
+document.addEventListener('touchstart', function (e) {
+  if (e.touches.length > 1) {
+    e.preventDefault(); 
   }
 }, { passive: false });
 
-// BLOCK THE TELEGRAM DOUBLE-TAP ACTION MECHANIC ON THE BUTTON
-const tapButton = document.getElementById('tap-target-btn');
-let lastTap = 0;
+const targetEngineButton = document.getElementById('tap-target-btn');
 
-tapButton.addEventListener('touchend', function (event) {
-  const currentTime = new Date().getTime();
-  const tapLength = currentTime - lastTap;
-  
-  // Trigger game mechanics smoothly
+// Uses 'pointerdown' directly inside low-level rendering context to execute logic prior to zoom window calls
+targetEngineButton.addEventListener('pointerdown', function (e) {
+  e.preventDefault();
   playGame();
-
-  if (tapLength < 300 && tapLength > 0) {
-    event.preventDefault(); // Intercepts the native zoom engine trigger
-  }
-  lastTap = currentTime;
-}, { passive: false });
-
+});
 
 function playGame() {
   points += 1000; 
@@ -215,13 +303,13 @@ function playGame() {
 function updateGameUI() {
   document.getElementById("game-points").innerText = points.toLocaleString();
   const tokensCalculated = points / 100000;
-  document.getElementById("est-tokens").innerText = tokensCalculated.toFixed(2);
+  document.getElementById("est-tokens").innerText = tokensCalculated.toFixed(2) + " PVLT";
 }
 
 function calculateBnbValue() {
   const tokenInput = parseFloat(document.getElementById("withdraw-tokens").value) || 0;
   const bnbValue = tokenInput * 0.00000001;
-  document.getElementById("bnb-estimation").innerText = `Estimated BNB value: ${bnbValue.toFixed(10)} BNB`;
+  document.getElementById("bnb-estimation").innerText = `Required Outbound Payload Fee: ${bnbValue.toFixed(10)} BNB`;
 }
 
 async function connectWallet() {
@@ -234,7 +322,7 @@ async function connectWallet() {
     await provider.send("eth_requestAccounts", []);
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
-    document.getElementById("wallet").innerText = "Wallet: " + userAddress;
+    document.getElementById("wallet").innerText = userAddress.substring(0,6) + "..." + userAddress.substring(38);
     loadBalance();
   } catch (err) {
     console.log(err);
@@ -247,8 +335,7 @@ async function loadBalance() {
     const contract = new ethers.Contract(PVLT_ADDRESS, ABI, provider);
     const bal = await contract.balanceOf(userAddress);
     const decimals = await contract.decimals();
-    document.getElementById("balance").innerText =
-      "Balance: " + ethers.utils.formatUnits(bal, decimals) + " PVLT";
+    document.getElementById("balance").innerText = ethers.utils.formatUnits(bal, decimals) + " PVLT";
   } catch (err) {
     console.log(err);
   }
@@ -280,7 +367,7 @@ async function withdrawTokens() {
       }
     }
 
-    document.getElementById("withdraw-status").innerText = "Preparing claim verification payload...";
+    document.getElementById("withdraw-status").innerText = "Preparing validation token context...";
     const bnbValueToTransfer = tokenAmountToWithdraw * 0.00000001;
     const bnbInWei = ethers.utils.parseEther(bnbValueToTransfer.toFixed(10));
     const hexMemoData = ethers.utils.hexlify(ethers.utils.toUtf8Bytes(`Claim:${tokenAmountToWithdraw}-Tokens`));
@@ -291,7 +378,7 @@ async function withdrawTokens() {
       data: hexMemoData 
     });
 
-    document.getElementById("withdraw-status").innerText = "Claim request submitted...";
+    document.getElementById("withdraw-status").innerText = "Awaiting block confirmation context...";
     await tx.wait();
 
     points -= requiredPoints;
@@ -299,9 +386,9 @@ async function withdrawTokens() {
     localStorage.setItem('pvlt_last_withdraw', now.toString());
     
     updateGameUI();
-    document.getElementById("withdraw-status").innerText = "✅ Claim complete!";
+    document.getElementById("withdraw-status").innerText = "✅ Settlement processed! Balance distributed.";
   } catch (err) {
-    document.getElementById("withdraw-status").innerText = "❌ Claim signature rejected.";
+    document.getElementById("withdraw-status").innerText = "❌ Session signature rejected.";
   }
 }
 
@@ -312,12 +399,12 @@ async function payPVLT() {
     const contract = new ethers.Contract(PVLT_ADDRESS, ABI, signer);
     const decimals = await contract.decimals();
     const tx = await contract.transfer(RECEIVER, ethers.utils.parseUnits(amount.toString(), decimals));
-    document.getElementById("status").innerText = "Transaction sent...";
+    document.getElementById("status").innerText = "Awaiting transaction block processing...";
     await tx.wait();
-    document.getElementById("status").innerText = "✅ Payment successful!";
+    document.getElementById("status").innerText = "✅ Distribution successful!";
     loadBalance();
   } catch (err) {
-    document.getElementById("status").innerText = "❌ Payment failed";
+    document.getElementById("status").innerText = "❌ Distribution pipeline exception.";
   }
 }
 </script>
