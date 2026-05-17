@@ -5,9 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>PVLT Web3 Tap</title>
-
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>PVLT Safe Web3 Tap</title>
 
 <style>
 
@@ -15,13 +13,13 @@
 body{
 margin:0;
 font-family:Arial;
-background: radial-gradient(circle at top, #0f172a, #020617);
+background: radial-gradient(circle at top, #0b1220, #020617);
 color:white;
 text-align:center;
 overflow-x:hidden;
 }
 
-/* TOP NAV GLASS */
+/* NAVBAR */
 .navbar{
 position:fixed;
 top:0;left:0;right:0;
@@ -32,9 +30,9 @@ justify-content:space-between;
 align-items:center;
 padding:0 12px;
 
-background: rgba(255,255,255,0.05);
+background: rgba(255,255,255,0.06);
 backdrop-filter: blur(12px);
-border-bottom:1px solid rgba(255,255,255,0.1);
+border-bottom:1px solid rgba(255,255,255,0.08);
 
 font-size:12px;
 z-index:10;
@@ -47,6 +45,7 @@ padding-top:90px;
 
 /* TITLE */
 h2{
+margin:10px 0;
 font-size:22px;
 background: linear-gradient(90deg,#00ff99,#00ccff);
 -webkit-background-clip:text;
@@ -55,34 +54,31 @@ background: linear-gradient(90deg,#00ff99,#00ccff);
 
 /* TAP BUTTON */
 .tap{
-width:180px;
-height:180px;
+width:170px;
+height:170px;
 border-radius:50%;
 
 background: linear-gradient(135deg,#00ff99,#00ccff);
 border:none;
 
-font-size:24px;
+font-size:22px;
 font-weight:bold;
 color:black;
 
-box-shadow:0 0 30px rgba(0,255,200,0.4);
-transition:0.1s;
+box-shadow:0 0 25px rgba(0,255,200,0.3);
 }
 
 .tap:active{
-transform:scale(0.95);
+transform:scale(0.96);
 }
 
-/* CARDS */
+/* CARD */
 .card{
 margin:15px;
-padding:16px;
+padding:15px;
 
 background: rgba(255,255,255,0.05);
-backdrop-filter: blur(10px);
-
-border:1px solid rgba(255,255,255,0.1);
+border:1px solid rgba(255,255,255,0.08);
 border-radius:14px;
 }
 
@@ -109,17 +105,9 @@ margin-top:10px;
 background: linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
 font-weight:bold;
-cursor:pointer;
 }
 
-button:active{
-transform:scale(0.97);
-}
-
-/* SMALL TEXT */
-small{
-opacity:0.7;
-}
+small{opacity:0.7;}
 
 </style>
 
@@ -127,120 +115,143 @@ opacity:0.7;
 
 <body>
 
+<!-- NAVBAR (ALWAYS VISIBLE) -->
 <div class="navbar">
-<div>⚡ Points: <span id="points">0</span></div>
-<div>💎 Tokens: <span id="tokens">0</span></div>
-<div>👤 ID: <span id="userId">---</span></div>
+<div>⚡ <span id="points">0</span></div>
+<div>💎 <span id="tokens">0</span></div>
+<div>👤 <span id="userId">guest</span></div>
 </div>
 
+<!-- MAIN -->
 <div class="container">
 
-<h2>PVLT WEB3 TAP</h2>
-<small>Tap • Earn • Withdraw</small>
+<h2>PVLT TAP GAME</h2>
+<small>Safe Mode • No Crash Version</small>
 
 <br><br>
 
 <button class="tap" onclick="tap()">TAP</button>
 
 <div class="card">
-<h3>Wallet</h3>
-<input id="wallet" placeholder="Enter BSC wallet">
+<input id="wallet" placeholder="Enter wallet">
 <br>
 <button onclick="saveWallet()">LINK WALLET</button>
 </div>
 
 <div class="card">
-<h3>Withdraw</h3>
 <input id="withdraw" placeholder="100 - 500 tokens">
 <br>
-<button onclick="withdraw()">REQUEST WITHDRAW</button>
+<button onclick="withdraw()">WITHDRAW</button>
 </div>
 
 </div>
 
 <script>
 
-/* SAFE STATE */
+/* ================= SAFE STATE ================= */
 let points = 0;
 let tokens = 0;
-let wallet = null;
+let wallet = "";
 let userId = "guest";
 
-/* SAFE INIT */
+/* ================= SAFE DOM UPDATE ================= */
+function set(id,val){
+  let el = document.getElementById(id);
+  if(el) el.innerText = val;
+}
+
+/* ================= SAFE INIT ================= */
 function init(){
 
 try{
 
-if(window.Telegram && Telegram.WebApp){
-Telegram.WebApp.ready();
-Telegram.WebApp.expand();
+if(window.Telegram && window.Telegram.WebApp){
 
-userId =
-Telegram.WebApp.initDataUnsafe?.user?.id || "guest";
-}
+let tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
 
-}catch(e){}
-
-document.getElementById("userId").innerText = userId;
+userId = tg.initDataUnsafe?.user?.id || "guest";
 
 }
 
-/* SAFE RENDER */
-function render(){
-document.getElementById("points").innerText = points;
-document.getElementById("tokens").innerText = tokens;
+}catch(e){
+console.log("Telegram not available");
 }
 
-/* TAP */
+set("userId", userId);
+
+}
+
+/* ================= TAP ================= */
 function tap(){
 points++;
-render();
+set("points", points);
 }
 
-/* WALLET */
+/* ================= WALLET ================= */
 function saveWallet(){
 
-let w = document.getElementById("wallet").value;
+let w = document.getElementById("wallet");
 
-if(!w) return alert("Enter wallet");
+if(!w || !w.value){
+alert("Enter wallet");
+return;
+}
 
-wallet = w;
+wallet = w.value;
 alert("Wallet linked");
 
 }
 
-/* WITHDRAW */
+/* ================= WITHDRAW ================= */
 function withdraw(){
 
-let amt = parseInt(document.getElementById("withdraw").value);
+let w = document.getElementById("withdraw");
 
-if(!wallet) return alert("Link wallet first");
+if(!wallet){
+alert("Link wallet first");
+return;
+}
 
-if(amt < 100 || amt > 500)
-return alert("Only 100–500 tokens");
+if(!w || !w.value){
+alert("Enter amount");
+return;
+}
+
+let amt = parseInt(w.value);
+
+if(amt < 100 || amt > 500){
+alert("Only 100-500 tokens");
+return;
+}
 
 let required = amt * 100000;
 
-if(points < required)
-return alert("Not enough points");
+if(points < required){
+alert("Not enough points");
+return;
+}
 
 points -= required;
 tokens += amt;
 
-render();
+set("points", points);
+set("tokens", tokens);
 
-alert("Withdraw request sent");
+alert("Withdraw request sent (demo)");
 
 }
 
-/* ERROR SAFE */
-window.onerror = function(){ return true; };
+/* ================= GLOBAL SAFETY ================= */
+window.onerror = function(){
+  return true; // prevents freeze
+};
 
-/* START */
+/* ================= START ================= */
 window.addEventListener("DOMContentLoaded", init);
 
 </script>
 
 </body>
-
 </html>
