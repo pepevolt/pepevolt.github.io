@@ -40,8 +40,6 @@ display:flex;
 flex-direction:column;
 }
 
-/* ================= NAV ================= */
-
 .nav{
 display:flex;
 justify-content:space-between;
@@ -49,8 +47,6 @@ padding:14px;
 background:#101b2e;
 font-size:12px;
 }
-
-/* ================= MAIN ================= */
 
 .container{
 flex:1;
@@ -60,34 +56,24 @@ align-items:center;
 padding:20px;
 }
 
-/* ================= TAP ================= */
-
 .tap{
 width:220px;
 height:220px;
 border-radius:50%;
 border:none;
 margin-top:20px;
-
 background:linear-gradient(135deg,#00ff99,#00ccff);
-
 display:flex;
 align-items:center;
 justify-content:center;
-
 overflow:hidden;
 position:relative;
-
 touch-action:manipulation;
 user-select:none;
 -webkit-user-select:none;
 }
 
-.tap:active{
-transform:scale(0.96);
-}
-
-/* LOGO */
+.tap:active{ transform:scale(0.96); }
 
 .tapLogo{
 width:75%;
@@ -96,24 +82,18 @@ object-fit:contain;
 pointer-events:none;
 }
 
-/* ================= CARD ================= */
-
 .bigCard{
 width:90%;
 max-width:380px;
 margin-top:20px;
 padding:18px;
-
 background:rgba(255,255,255,0.05);
 border:1px solid rgba(255,255,255,0.08);
 border-radius:16px;
-
 display:flex;
 flex-direction:column;
 gap:12px;
 }
-
-/* ================= INPUT ================= */
 
 input{
 width:100%;
@@ -124,8 +104,6 @@ background:#111827;
 color:white;
 }
 
-/* ================= BUTTON ================= */
-
 button{
 width:100%;
 padding:14px;
@@ -134,10 +112,7 @@ border-radius:10px;
 font-weight:bold;
 background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
-cursor:pointer;
 }
-
-/* ================= STATUS ================= */
 
 .status{
 font-size:12px;
@@ -146,41 +121,23 @@ margin-top:5px;
 display:none;
 }
 
-/* CONNECT / DISCONNECT COLORS */
-
-.connected{
-background:linear-gradient(90deg,#ff4d4d,#ff1a1a) !important;
-color:white !important;
-}
-
-.disconnected{
-background:linear-gradient(90deg,#00ff99,#00ccff) !important;
-color:black !important;
-}
-
 </style>
 
 </head>
 
 <body>
 
-<!-- NAV -->
 <div class="nav">
-
 <div>🔋 <span id="energy">50</span></div>
 <div>⚡ <span id="points">0</span></div>
 <div>💎 <span id="tokens">0.0000</span></div>
-
 </div>
 
-<!-- MAIN -->
 <div class="container">
 
 <button class="tap" onclick="tap()">
   <img src="images/IMG_1850.png" class="tapLogo">
 </button>
-
-<div class="small">1 Tap = 1 Point</div>
 
 <div class="bigCard">
 
@@ -192,13 +149,9 @@ CONNECT WALLET
 
 <div id="walletStatus" class="status">Wallet Connected</div>
 
-<button onclick="buyEnergy()">
-BUY ENERGY (REFILL)
-</button>
+<button onclick="buyEnergy()">BUY ENERGY (REFILL)</button>
 
-<button onclick="claim()">
-CLAIM TOKENS
-</button>
+<button onclick="claim()">CLAIM TOKENS</button>
 
 </div>
 
@@ -211,6 +164,7 @@ CLAIM TOKENS
 let wallet = "";
 let points = 0;
 let energy = 50;
+let lastClaimTime = 0;
 
 /* ================= STORAGE ================= */
 
@@ -219,7 +173,8 @@ function saveState(){
 
   localStorage.setItem(wallet, JSON.stringify({
     points,
-    energy
+    energy,
+    lastClaimTime
   }));
 }
 
@@ -230,69 +185,21 @@ function loadState(addr){
     let obj = JSON.parse(data);
     points = obj.points || 0;
     energy = obj.energy || 50;
+    lastClaimTime = obj.lastClaimTime || 0;
   } else {
     points = 0;
     energy = 50;
+    lastClaimTime = 0;
   }
 }
 
 /* ================= UI ================= */
 
 function updateUI(){
-
 document.getElementById("energy").innerText = energy;
 document.getElementById("points").innerText = points;
 document.getElementById("tokens").innerText =
 (points / 10000).toFixed(4);
-
-}
-
-/* ================= WALLET ================= */
-
-function toggleWallet(){
-
-const input = document.getElementById("walletInput");
-const btn = document.getElementById("walletBtn");
-const status = document.getElementById("walletStatus");
-
-if(wallet){
-
-wallet = "";
-points = 0;
-energy = 50;
-
-input.value = "";
-
-btn.innerText = "CONNECT WALLET";
-btn.classList.remove("connected");
-btn.classList.add("disconnected");
-
-status.style.display = "none";
-
-updateUI();
-
-return;
-}
-
-let w = input.value.trim();
-
-if(!w.startsWith("0x") || w.length !== 42){
-alert("Invalid wallet");
-return;
-}
-
-wallet = w.toLowerCase();
-
-loadState(wallet);
-
-btn.innerText = "DISCONNECT WALLET";
-btn.classList.remove("disconnected");
-btn.classList.add("connected");
-
-status.style.display = "block";
-
-updateUI();
-
 }
 
 /* ================= TAP ================= */
@@ -314,10 +221,52 @@ points++;
 
 saveState();
 updateUI();
-
 }
 
-/* ================= BUY ENERGY (FIXED SIMPLE POPUP) ================= */
+/* ================= WALLET ================= */
+
+function toggleWallet(){
+
+const input = document.getElementById("walletInput");
+const btn = document.getElementById("walletBtn");
+const status = document.getElementById("walletStatus");
+
+if(wallet){
+
+wallet = "";
+points = 0;
+energy = 50;
+
+input.value = "";
+
+btn.innerText = "CONNECT WALLET";
+
+status.style.display = "none";
+
+updateUI();
+
+return;
+}
+
+let w = input.value.trim();
+
+if(!w.startsWith("0x") || w.length !== 42){
+alert("Invalid wallet");
+return;
+}
+
+wallet = w.toLowerCase();
+
+loadState(wallet);
+
+btn.innerText = "DISCONNECT WALLET";
+
+status.style.display = "block";
+
+updateUI();
+}
+
+/* ================= BUY ENERGY ================= */
 
 function buyEnergy(){
 
@@ -326,35 +275,35 @@ alert("Connect wallet first");
 return;
 }
 
-let amt = prompt("Enter Energy Amount (10000 Energy = $1 BNB)");
+let amt = prompt("Enter Energy Amount (10000 Energy = $1)");
 
-if(!amt || isNaN(amt) || amt <= 0){
-return;
-}
+if(!amt || isNaN(amt) || amt <= 0) return;
 
 let energyAmount = Number(amt);
 let price = energyAmount / 10000;
 
-alert(
-"Energy Purchase:\n" +
-"Energy: " + energyAmount + "\n" +
-"Price: $" + price.toFixed(4) + " (BNB)"
-);
+alert("Price: $" + price.toFixed(4) + " (BNB payment placeholder)");
 
-/* REFILL */
 energy += energyAmount;
 
 saveState();
 updateUI();
-
 }
 
-/* ================= CLAIM ================= */
+/* ================= CLAIM (UPDATED) ================= */
 
 function claim(){
 
 if(!wallet){
 alert("Connect wallet first");
+return;
+}
+
+let now = Date.now();
+let ONE_DAY = 24 * 60 * 60 * 1000;
+
+if(now - lastClaimTime < ONE_DAY){
+alert("You can claim only once per day");
 return;
 }
 
@@ -369,13 +318,21 @@ if(tokens > 500){
 tokens = 500;
 }
 
+/* RESET POINTS AFTER CLAIM */
 points = 0;
+
+/* SAVE CLAIM TIME */
+lastClaimTime = now;
+
+/* SIMULATED TRANSFER TO WALLET */
+alert(
+"CLAIM SUCCESS\n" +
+"Sent: " + tokens.toFixed(4) + " TOKENS\n" +
+"Wallet: " + wallet
+);
 
 saveState();
 updateUI();
-
-alert("CLAIM SUCCESS\nTokens: " + tokens.toFixed(4));
-
 }
 
 </script>
