@@ -73,7 +73,7 @@ document.getElementById("connectBtn").onclick = async () => {
 window.tap = async function () {
   if (!wallet) return alert("Connect wallet first");
 
-  const res = await fetch("https://YOUR-RENDER-URL/tap", {
+  const res = await fetch("https://pvlt-server.onrender.com/tap", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ wallet })
@@ -92,7 +92,7 @@ window.tap = async function () {
 window.loadScore = async function () {
   if (!wallet) return;
 
-  const res = await fetch("https://YOUR-RENDER-URL/score/" + wallet);
+  const res = await fetch("https://pvlt-server.onrender.com/score/" + wallet);
 
   const data = await res.json();
 
