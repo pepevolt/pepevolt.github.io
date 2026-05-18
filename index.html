@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PEPE VOLT ⚡ Tap Game</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PEPE VOLT ⚡ Game</title>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js"></script>
 
@@ -16,15 +16,13 @@
     }
 
     button {
-      padding: 15px 20px;
+      padding: 14px 18px;
       margin: 10px;
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
     }
 
-    .box {
-      margin-top: 30px;
-    }
+    .box { margin-top: 30px; }
   </style>
 </head>
 
@@ -32,7 +30,7 @@
 
 <h1>⚡ PEPE VOLT TAP GAME</h1>
 
-<button onclick="connectWallet()">Connect Wallet</button>
+<button id="connectBtn">Connect Wallet</button>
 
 <p id="wallet">Not connected</p>
 
@@ -40,35 +38,38 @@
   <h2>Score: <span id="score">0</span></h2>
 
   <button onclick="tap()">⚡ TAP</button>
-  <button onclick="claim()">💰 CLAIM REWARDS</button>
+  <button onclick="claim()">💰 CLAIM</button>
 </div>
 
-<script>
+<!-- Reown WalletConnect -->
+<script type="module">
+import { createAppKit } from "https://unpkg.com/@reown/appkit@latest/dist/index.js";
+
+const appKit = createAppKit({
+  projectId: "1731f99148b9cf6107dee70b6efb14b7",
+  networks: [137], // Polygon mainnet
+  defaultNetwork: 137
+});
+
 let wallet = null;
 
-// 🔗 CONNECT WALLET
-async function connectWallet() {
-  if (!window.ethereum) {
-    alert("Install MetaMask");
-    return;
-  }
+// CONNECT WALLET
+document.getElementById("connectBtn").onclick = async () => {
+  const result = await appKit.open();
 
-  const accounts = await window.ethereum.request({
-    method: "eth_requestAccounts"
-  });
+  wallet = result.address;
 
-  wallet = accounts[0];
   document.getElementById("wallet").innerText = wallet;
-}
+};
 
-// ⚡ TAP FUNCTION
-async function tap() {
+// TAP FUNCTION
+window.tap = async function () {
   if (!wallet) return alert("Connect wallet first");
 
   const res = await fetch("https://pvlt-server.onrender.com/tap", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ walletAddr: wallet })
+    body: JSON.stringify({ wallet })
   });
 
   const data = await res.json();
@@ -78,26 +79,26 @@ async function tap() {
   } else {
     alert(data.error);
   }
-}
+};
 
-// 💰 CLAIM FUNCTION
-async function claim() {
+// CLAIM FUNCTION
+window.claim = async function () {
   if (!wallet) return alert("Connect wallet first");
 
   const res = await fetch("https://pvlt-server.onrender.com/claim", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ walletAddr: wallet })
+    body: JSON.stringify({ wallet })
   });
 
   const data = await res.json();
 
   if (data.success) {
-    alert("🎉 You received " + data.minted + " PVLTG");
+    alert("🎉 Reward sent: " + data.minted + " PVLTG");
   } else {
-    alert(data.error || "No rewards");
+    alert(data.error || "No reward");
   }
-}
+};
 </script>
 
 </body>
