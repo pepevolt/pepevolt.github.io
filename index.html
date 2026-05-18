@@ -4,6 +4,7 @@
 <head>
 
 <meta charset="UTF-8">
+
 <meta name="viewport"
 content="width=device-width,
 initial-scale=1,
@@ -11,6 +12,9 @@ maximum-scale=1,
 user-scalable=no">
 
 <title>PVLT Tap Game</title>
+
+<!-- ETHERS.JS -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.1/dist/ethers.umd.min.js"></script>
 
 <style>
 
@@ -40,6 +44,8 @@ display:flex;
 flex-direction:column;
 }
 
+/* ================= NAV ================= */
+
 .nav{
 display:flex;
 justify-content:space-between;
@@ -48,13 +54,18 @@ background:#101b2e;
 font-size:12px;
 }
 
+/* ================= MAIN ================= */
+
 .container{
 flex:1;
 display:flex;
 flex-direction:column;
 align-items:center;
 padding:20px;
+overflow:auto;
 }
+
+/* ================= TAP ================= */
 
 .tap{
 width:220px;
@@ -62,18 +73,24 @@ height:220px;
 border-radius:50%;
 border:none;
 margin-top:20px;
+
 background:linear-gradient(135deg,#00ff99,#00ccff);
+
 display:flex;
 align-items:center;
 justify-content:center;
+
 overflow:hidden;
 position:relative;
+
 touch-action:manipulation;
 user-select:none;
 -webkit-user-select:none;
 }
 
-.tap:active{ transform:scale(0.96); }
+.tap:active{
+transform:scale(0.96);
+}
 
 .tapLogo{
 width:75%;
@@ -82,18 +99,25 @@ object-fit:contain;
 pointer-events:none;
 }
 
+/* ================= CARD ================= */
+
 .bigCard{
 width:90%;
 max-width:380px;
 margin-top:20px;
 padding:18px;
+
 background:rgba(255,255,255,0.05);
 border:1px solid rgba(255,255,255,0.08);
+
 border-radius:16px;
+
 display:flex;
 flex-direction:column;
 gap:12px;
 }
+
+/* ================= INPUT ================= */
 
 input{
 width:100%;
@@ -104,6 +128,8 @@ background:#111827;
 color:white;
 }
 
+/* ================= BUTTON ================= */
+
 button{
 width:100%;
 padding:14px;
@@ -112,13 +138,24 @@ border-radius:10px;
 font-weight:bold;
 background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
+cursor:pointer;
 }
+
+/* ================= STATUS ================= */
 
 .status{
 font-size:12px;
 text-align:center;
 margin-top:5px;
 display:none;
+color:#00ff99;
+}
+
+/* ================= CONNECTED ================= */
+
+.connected{
+background:linear-gradient(90deg,#ff4d4d,#ff1a1a)!important;
+color:white!important;
 }
 
 </style>
@@ -127,31 +164,65 @@ display:none;
 
 <body>
 
+<!-- ================= NAV ================= -->
+
 <div class="nav">
-<div>🔋 <span id="energy">50</span></div>
-<div>⚡ <span id="points">0</span></div>
-<div>💎 <span id="tokens">0.0000</span></div>
+
+<div>
+🔋 <span id="energy">50</span>
 </div>
+
+<div>
+⚡ <span id="points">0</span>
+</div>
+
+<div>
+💎 <span id="tokens">0.0000</span>
+</div>
+
+</div>
+
+<!-- ================= MAIN ================= -->
 
 <div class="container">
 
 <button class="tap" onclick="tap()">
-  <img src="images/IMG_1850.png" class="tapLogo">
+
+<img
+src="images/IMG_1850.png"
+class="tapLogo"
+>
+
 </button>
 
 <div class="bigCard">
 
-<input id="walletInput" placeholder="Paste BSC wallet">
+<input
+id="walletInput"
+placeholder="Paste BSC wallet"
+>
 
-<button id="walletBtn" onclick="toggleWallet()">
+<button
+id="walletBtn"
+onclick="toggleWallet()"
+>
 CONNECT WALLET
 </button>
 
-<div id="walletStatus" class="status">Wallet Connected</div>
+<div
+id="walletStatus"
+class="status"
+>
+Wallet Connected
+</div>
 
-<button onclick="buyEnergy()">BUY ENERGY (REFILL)</button>
+<button onclick="buyEnergy()">
+BUY ENERGY (REFILL)
+</button>
 
-<button onclick="claim()">CLAIM TOKENS</button>
+<button onclick="claim()">
+CLAIM TOKENS
+</button>
 
 </div>
 
@@ -159,61 +230,134 @@ CONNECT WALLET
 
 <script>
 
-/* ================= STATE ================= */
+/* =================================================
+PVLT FULL PRODUCTION CONFIG
+================================================= */
+
+// RENDER BACKEND
+const API =
+"https://YOUR-RENDER.onrender.com";
+
+// GAME CONTRACT
+const GAME_CONTRACT =
+"0xYOUR_GAME_CONTRACT";
+
+// BSC CHAIN ID
+const CHAIN_ID = 56;
+
+/* =================================================
+GAME CONTRACT ABI
+================================================= */
+
+const ABI = [
+
+"function claim(uint256,uint256,bytes) external"
+
+];
+
+/* =================================================
+STATE
+================================================= */
 
 let wallet = "";
 let points = 0;
 let energy = 50;
 let lastClaimTime = 0;
 
-/* ================= STORAGE ================= */
+/* =================================================
+SAVE STORAGE
+================================================= */
 
 function saveState(){
-  if(!wallet) return;
 
-  localStorage.setItem(wallet, JSON.stringify({
-    points,
-    energy,
-    lastClaimTime
-  }));
+if(!wallet) return;
+
+localStorage.setItem(
+wallet,
+JSON.stringify({
+points,
+energy,
+lastClaimTime
+})
+);
+
 }
+
+/* =================================================
+LOAD STORAGE
+================================================= */
 
 function loadState(addr){
-  let data = localStorage.getItem(addr);
 
-  if(data){
-    let obj = JSON.parse(data);
-    points = obj.points || 0;
-    energy = obj.energy || 50;
-    lastClaimTime = obj.lastClaimTime || 0;
-  } else {
-    points = 0;
-    energy = 50;
-    lastClaimTime = 0;
-  }
+let data =
+localStorage.getItem(addr);
+
+if(data){
+
+let obj =
+JSON.parse(data);
+
+points =
+obj.points || 0;
+
+energy =
+obj.energy || 50;
+
+lastClaimTime =
+obj.lastClaimTime || 0;
+
+}else{
+
+points = 0;
+energy = 50;
+lastClaimTime = 0;
+
 }
 
-/* ================= UI ================= */
+}
+
+/* =================================================
+UPDATE UI
+================================================= */
 
 function updateUI(){
-document.getElementById("energy").innerText = energy;
-document.getElementById("points").innerText = points;
-document.getElementById("tokens").innerText =
+
+document.getElementById(
+"energy"
+).innerText = energy;
+
+document.getElementById(
+"points"
+).innerText = points;
+
+document.getElementById(
+"tokens"
+).innerText =
 (points / 10000).toFixed(4);
+
 }
 
-/* ================= TAP ================= */
+/* =================================================
+TAP
+================================================= */
 
 function tap(){
 
 if(!wallet){
-alert("Connect wallet first");
+
+alert(
+"Connect wallet first"
+);
+
 return;
+
 }
 
 if(energy <= 0){
+
 alert("No energy");
 return;
+
 }
 
 energy--;
@@ -221,121 +365,331 @@ points++;
 
 saveState();
 updateUI();
+
 }
 
-/* ================= WALLET ================= */
+/* =================================================
+CONNECT / DISCONNECT
+================================================= */
 
 function toggleWallet(){
 
-const input = document.getElementById("walletInput");
-const btn = document.getElementById("walletBtn");
-const status = document.getElementById("walletStatus");
+const input =
+document.getElementById(
+"walletInput"
+);
+
+const btn =
+document.getElementById(
+"walletBtn"
+);
+
+const status =
+document.getElementById(
+"walletStatus"
+);
+
+/* DISCONNECT */
 
 if(wallet){
 
 wallet = "";
 points = 0;
 energy = 50;
+lastClaimTime = 0;
 
 input.value = "";
 
-btn.innerText = "CONNECT WALLET";
+btn.innerText =
+"CONNECT WALLET";
 
-status.style.display = "none";
+btn.classList.remove(
+"connected"
+);
+
+status.style.display =
+"none";
 
 updateUI();
 
 return;
+
 }
 
-let w = input.value.trim();
+/* CONNECT */
 
-if(!w.startsWith("0x") || w.length !== 42){
+let w =
+input.value.trim();
+
+if(
+!w.startsWith("0x") ||
+w.length !== 42
+){
+
 alert("Invalid wallet");
 return;
+
 }
 
-wallet = w.toLowerCase();
+wallet =
+w.toLowerCase();
 
 loadState(wallet);
 
-btn.innerText = "DISCONNECT WALLET";
+btn.innerText =
+"DISCONNECT WALLET";
 
-status.style.display = "block";
+btn.classList.add(
+"connected"
+);
+
+status.style.display =
+"block";
 
 updateUI();
+
 }
 
-/* ================= BUY ENERGY ================= */
+/* =================================================
+BUY ENERGY
+================================================= */
 
 function buyEnergy(){
 
 if(!wallet){
-alert("Connect wallet first");
+
+alert(
+"Connect wallet first"
+);
+
 return;
+
 }
 
-let amt = prompt("Enter Energy Amount (10000 Energy = $1)");
+let amt = prompt(
+"Enter Energy Amount\n(10000 Energy = $1)"
+);
 
-if(!amt || isNaN(amt) || amt <= 0) return;
+if(
+!amt ||
+isNaN(amt) ||
+amt <= 0
+) return;
 
-let energyAmount = Number(amt);
-let price = energyAmount / 10000;
+let energyAmount =
+Number(amt);
 
-alert("Price: $" + price.toFixed(4) + " (BNB payment placeholder)");
+let price =
+energyAmount / 10000;
+
+alert(
+"Price: $" +
+price.toFixed(4) +
+"\nPayment via PVLT / BNB"
+);
+
+/* PRODUCTION PLACEHOLDER */
 
 energy += energyAmount;
 
 saveState();
 updateUI();
+
 }
 
-/* ================= CLAIM (UPDATED) ================= */
+/* =================================================
+SECURE CLAIM SYSTEM
+================================================= */
 
-function claim(){
+async function claim(){
 
 if(!wallet){
-alert("Connect wallet first");
+
+alert(
+"Connect wallet first"
+);
+
 return;
+
 }
 
 let now = Date.now();
-let ONE_DAY = 24 * 60 * 60 * 1000;
 
-if(now - lastClaimTime < ONE_DAY){
-alert("You can claim only once per day");
+let ONE_DAY =
+24 * 60 * 60 * 1000;
+
+/* COOLDOWN */
+
+if(
+now - lastClaimTime
+< ONE_DAY
+){
+
+alert(
+"You can claim once per day"
+);
+
 return;
+
 }
 
-let tokens = points / 10000;
+/* POINTS → TOKENS */
+
+let tokens =
+points / 10000;
 
 if(tokens < 100){
-alert("Minimum 100 tokens required");
+
+alert(
+"Minimum 100 tokens required"
+);
+
 return;
+
 }
 
 if(tokens > 500){
+
 tokens = 500;
+
 }
 
-/* RESET POINTS AFTER CLAIM */
+try{
+
+/* =========================================
+GET SIGNATURE FROM RENDER
+========================================= */
+
+let res = await fetch(
+API + "/claim",
+{
+method:"POST",
+headers:{
+"Content-Type":
+"application/json"
+},
+body:JSON.stringify({
+address: wallet,
+points: points
+})
+}
+);
+
+let data =
+await res.json();
+
+if(!data.signature){
+
+alert(
+"Backend rejected claim"
+);
+
+return;
+
+}
+
+/* =========================================
+CONNECT METAMASK
+========================================= */
+
+if(!window.ethereum){
+
+alert(
+"Install MetaMask"
+);
+
+return;
+
+}
+
+const provider =
+new ethers.BrowserProvider(
+window.ethereum
+);
+
+await provider.send(
+"eth_requestAccounts",
+[]
+);
+
+const signer =
+await provider.getSigner();
+
+/* =========================================
+SWITCH BSC
+========================================= */
+
+await window.ethereum.request({
+method:"wallet_switchEthereumChain",
+params:[
+{
+chainId:"0x38"
+}
+]
+});
+
+/* =========================================
+CALL SMART CONTRACT
+========================================= */
+
+const contract =
+new ethers.Contract(
+GAME_CONTRACT,
+ABI,
+signer
+);
+
+const tx =
+await contract.claim(
+data.amount,
+data.nonce,
+data.signature
+);
+
+alert(
+"Transaction submitted"
+);
+
+/* WAIT TX */
+
+await tx.wait();
+
+/* RESET */
+
 points = 0;
 
-/* SAVE CLAIM TIME */
-lastClaimTime = now;
-
-/* SIMULATED TRANSFER TO WALLET */
-alert(
-"CLAIM SUCCESS\n" +
-"Sent: " + tokens.toFixed(4) + " TOKENS\n" +
-"Wallet: " + wallet
-);
+lastClaimTime =
+Date.now();
 
 saveState();
 updateUI();
+
+alert(
+"CLAIM SUCCESS\n\n" +
+"TX:\n" +
+tx.hash
+);
+
+}catch(err){
+
+console.log(err);
+
+alert(
+"Claim failed"
+);
+
 }
+
+}
+
+/* =================================================
+INIT
+================================================= */
+
+updateUI();
 
 </script>
 
 </body>
+
 </html>
