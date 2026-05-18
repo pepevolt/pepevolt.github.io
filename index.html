@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PEPE VOLT ⚡ Game</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js"></script>
 
   <style>
     body {
@@ -22,7 +20,14 @@
       cursor: pointer;
     }
 
-    .box { margin-top: 30px; }
+    .box {
+      margin-top: 30px;
+    }
+
+    .score {
+      font-size: 32px;
+      margin: 20px;
+    }
   </style>
 </head>
 
@@ -35,19 +40,19 @@
 <p id="wallet">Not connected</p>
 
 <div class="box">
-  <h2>Score: <span id="score">0</span></h2>
+  <div class="score">Score: <span id="score">0</span></div>
 
   <button onclick="tap()">⚡ TAP</button>
-  <button onclick="claim()">💰 CLAIM</button>
+  <button onclick="loadScore()">🔄 Refresh Score</button>
 </div>
 
-<!-- Reown WalletConnect -->
 <script type="module">
 import { createAppKit } from "https://unpkg.com/@reown/appkit@latest/dist/index.js";
 
+// 🔗 Reown WalletConnect
 const appKit = createAppKit({
   projectId: "1731f99148b9cf6107dee70b6efb14b7",
-  networks: [137], // Polygon mainnet
+  networks: [137], // Polygon mainnet ([Polygon Labs](chatgpt://generic-entity?number=0))
   defaultNetwork: 137
 });
 
@@ -60,13 +65,15 @@ document.getElementById("connectBtn").onclick = async () => {
   wallet = result.address;
 
   document.getElementById("wallet").innerText = wallet;
+
+  loadScore();
 };
 
 // TAP FUNCTION
 window.tap = async function () {
   if (!wallet) return alert("Connect wallet first");
 
-  const res = await fetch("https://pvlt-server.onrender.com/tap", {
+  const res = await fetch("https://YOUR-RENDER-URL/tap", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ wallet })
@@ -77,26 +84,20 @@ window.tap = async function () {
   if (data.score !== undefined) {
     document.getElementById("score").innerText = data.score;
   } else {
-    alert(data.error);
+    alert(data.error || "Error");
   }
 };
 
-// CLAIM FUNCTION
-window.claim = async function () {
-  if (!wallet) return alert("Connect wallet first");
+// LOAD SCORE
+window.loadScore = async function () {
+  if (!wallet) return;
 
-  const res = await fetch("https://pvlt-server.onrender.com/claim", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ wallet })
-  });
+  const res = await fetch("https://YOUR-RENDER-URL/score/" + wallet);
 
   const data = await res.json();
 
-  if (data.success) {
-    alert("🎉 Reward sent: " + data.minted + " PVLTG");
-  } else {
-    alert(data.error || "No reward");
+  if (data.score !== undefined) {
+    document.getElementById("score").innerText = data.score;
   }
 };
 </script>
