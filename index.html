@@ -3,66 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <title>PVLT Mini App</title>
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
   <style>
     body {
+      margin: 0;
       font-family: Arial;
-      text-align: center;
       background: #0f0f0f;
       color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    .box {
+    .container {
       margin-top: 40px;
+      text-align: center;
     }
 
     button {
-      padding: 12px 20px;
-      margin: 10px;
+      padding: 12px 18px;
+      margin: 8px;
       border: none;
       border-radius: 10px;
-      cursor: pointer;
       font-size: 16px;
+      cursor: pointer;
     }
 
-    .tap {
-      background: #00ff88;
-    }
-
-    .claim {
-      background: #ffcc00;
-    }
-
-    .wallet {
-      background: #0088ff;
-    }
+    .tap { background: #00ff88; }
+    .claim { background: #ffcc00; }
+    .wallet { background: #0088ff; }
   </style>
 </head>
 
 <body>
 
-<h2>⚡ PVLT Mini App</h2>
+<div class="container">
+  <h2>⚡ PVLT Mini App</h2>
 
-<div class="box">
-  <p>Telegram User: <span id="user"></span></p>
+  <p>User: <span id="user">Loading...</span></p>
   <p>Wallet: <span id="wallet">Not connected</span></p>
   <p>Score: <span id="score">0</span></p>
-</div>
 
-<button class="tap" onclick="tap()">TAP</button>
-<button class="wallet" onclick="connectWallet()">CONNECT WALLET</button>
-<button class="tap" onclick="submitScore()">SUBMIT SCORE</button>
-<button class="claim" onclick="claimReward()">CLAIM REWARD</button>
+  <button class="tap" onclick="tap()">TAP</button>
+  <button class="wallet" onclick="connectWallet()">CONNECT WALLET</button>
+  <button class="tap" onclick="submitScore()">SUBMIT</button>
+  <button class="claim" onclick="claimReward()">CLAIM</button>
+</div>
 
 <script>
 let score = 0;
-let walletAddress = "";
+let wallet = "";
 
-const tg = window.Telegram.WebApp;
-tg.expand();
+// SAFE TELEGRAM INIT
+let tg = null;
+let user = { username: "Guest", id: "0" };
 
-document.getElementById("user").innerText =
-  tg.initDataUnsafe?.user?.username || "Guest";
+try {
+  tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.expand();
+    user = tg.initDataUnsafe?.user || user;
+  }
+} catch (e) {
+  console.log("Telegram not available");
+}
+
+document.getElementById("user").innerText = user.username || "Guest";
 
 // TAP GAME
 function tap() {
@@ -70,53 +78,71 @@ function tap() {
   document.getElementById("score").innerText = score;
 }
 
-// WALLET CONNECT (MetaMask)
+// WALLET CONNECT
 async function connectWallet() {
-  if (window.ethereum) {
-    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
-    walletAddress = accounts[0];
-    document.getElementById("wallet").innerText = walletAddress;
-  } else {
-    alert("Install MetaMask");
+  try {
+    if (!window.ethereum) {
+      alert("Install MetaMask");
+      return;
+    }
+
+    const accounts = await ethereum.request({
+      method: "eth_requestAccounts"
+    });
+
+    wallet = accounts[0];
+    document.getElementById("wallet").innerText = wallet;
+
+  } catch (err) {
+    alert("Wallet error");
+    console.log(err);
   }
 }
 
-// SUBMIT SCORE TO BACKEND
+// SUBMIT SCORE
 async function submitScore() {
-  if (!walletAddress) return alert("Connect wallet first");
+  try {
+    if (!wallet) return alert("Connect wallet first");
 
-  const res = await fetch("https://YOUR-RENDER-URL.onrender.com/api/submit", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      telegramId: tg.initDataUnsafe.user.id,
-      wallet: walletAddress,
-      score: score
-    })
-  });
+    await fetch("https://YOUR-BACKEND.onrender.com/api/submit", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        telegramId: user.id,
+        wallet: wallet,
+        score: score
+      })
+    });
 
-  const data = await res.json();
-  alert("Score submitted: " + JSON.stringify(data));
+    alert("Score submitted");
+  } catch (err) {
+    alert("Submit failed");
+    console.log(err);
+  }
 }
 
 // CLAIM REWARD
 async function claimReward() {
-  const res = await fetch("https://YOUR-RENDER-URL.onrender.com/api/claim", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      wallet: walletAddress
-    })
-  });
+  try {
+    const res = await fetch("https://YOUR-BACKEND.onrender.com/api/claim", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ wallet })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.success) {
-    alert("Reward received: " + data.amount + " PVLT");
-    score = 0;
-    document.getElementById("score").innerText = 0;
-  } else {
-    alert(data.error || "Error");
+    if (data.success) {
+      alert("Reward: " + data.amount);
+      score = 0;
+      document.getElementById("score").innerText = 0;
+    } else {
+      alert(data.error || "Failed");
+    }
+
+  } catch (err) {
+    alert("Claim error");
+    console.log(err);
   }
 }
 </script>
