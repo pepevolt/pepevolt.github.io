@@ -31,6 +31,8 @@ background:#08111f;
 font-family:Arial;
 color:white;
 touch-action:manipulation;
+-webkit-text-size-adjust:100%;
+overscroll-behavior:none;
 }
 
 body{
@@ -58,7 +60,7 @@ align-items:center;
 padding:20px;
 }
 
-/* ================= TAP BUTTON ================= */
+/* ================= TAP ================= */
 
 .tap{
 width:220px;
@@ -75,13 +77,18 @@ justify-content:center;
 
 overflow:hidden;
 position:relative;
+
+/* MOBILE FIX */
+touch-action:manipulation;
+user-select:none;
+-webkit-user-select:none;
 }
 
 .tap:active{
 transform:scale(0.96);
 }
 
-/* LOGO INSIDE TAP */
+/* LOGO */
 
 .tapLogo{
 width:75%;
@@ -130,7 +137,7 @@ background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
 }
 
-/* ================= SMALL TEXT ================= */
+/* ================= SMALL ================= */
 
 .small{
 font-size:12px;
@@ -156,14 +163,13 @@ text-align:center;
 <!-- MAIN -->
 <div class="container">
 
-<!-- TAP BUTTON -->
 <button class="tap" onclick="tap()">
   <img src="images/IMG_1850.png" class="tapLogo">
 </button>
 
 <div class="small">1 Tap = 1 Point</div>
 
-<!-- MAIN CARD -->
+<!-- CARD -->
 <div class="bigCard">
 
 <input id="walletInput" placeholder="Paste BSC wallet">
@@ -192,6 +198,41 @@ let wallet = "";
 let points = 0;
 let energy = 50;
 
+/* ================= STORAGE SYSTEM ================= */
+
+function saveState(){
+  if(!wallet) return;
+
+  localStorage.setItem(wallet, JSON.stringify({
+    points,
+    energy
+  }));
+}
+
+function loadState(addr){
+  let data = localStorage.getItem(addr);
+
+  if(data){
+    let obj = JSON.parse(data);
+    points = obj.points || 0;
+    energy = obj.energy || 50;
+  } else {
+    points = 0;
+    energy = 50;
+  }
+}
+
+/* ================= UI ================= */
+
+function updateUI(){
+
+document.getElementById("energy").innerText = energy;
+document.getElementById("points").innerText = points;
+document.getElementById("tokens").innerText =
+(points / 10000).toFixed(4);
+
+}
+
 /* ================= TAP ================= */
 
 function tap(){
@@ -209,6 +250,7 @@ return;
 energy--;
 points++;
 
+saveState();
 updateUI();
 
 }
@@ -221,6 +263,7 @@ const input = document.getElementById("walletInput");
 
 if(wallet){
 
+// disconnect ONLY UI session
 wallet = "";
 points = 0;
 energy = 50;
@@ -241,6 +284,7 @@ return;
 
 wallet = w.toLowerCase();
 
+loadState(wallet);
 updateUI();
 
 }
@@ -254,11 +298,11 @@ alert("Connect wallet first");
 return;
 }
 
-/* REAL CONTRACT PLACEHOLDER */
 alert("Energy purchase via PVLT Token Contract");
 
 energy = 50;
 
+saveState();
 updateUI();
 
 }
@@ -285,20 +329,10 @@ tokens = 500;
 
 points = 0;
 
+saveState();
 updateUI();
 
 alert("CLAIM SUCCESS\nTokens: " + tokens.toFixed(4));
-
-}
-
-/* ================= UI ================= */
-
-function updateUI(){
-
-document.getElementById("energy").innerText = energy;
-document.getElementById("points").innerText = points;
-document.getElementById("tokens").innerText =
-(points / 10000).toFixed(4);
 
 }
 
