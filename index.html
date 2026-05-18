@@ -78,7 +78,6 @@ justify-content:center;
 overflow:hidden;
 position:relative;
 
-/* MOBILE FIX */
 touch-action:manipulation;
 user-select:none;
 -webkit-user-select:none;
@@ -135,14 +134,28 @@ border-radius:10px;
 font-weight:bold;
 background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
+cursor:pointer;
 }
 
-/* ================= SMALL ================= */
+/* ================= STATUS ================= */
 
-.small{
+.status{
 font-size:12px;
-opacity:0.7;
 text-align:center;
+margin-top:5px;
+display:none;
+}
+
+/* CONNECT / DISCONNECT COLORS */
+
+.connected{
+background:linear-gradient(90deg,#ff4d4d,#ff1a1a) !important;
+color:white !important;
+}
+
+.disconnected{
+background:linear-gradient(90deg,#00ff99,#00ccff) !important;
+color:black !important;
 }
 
 </style>
@@ -174,9 +187,11 @@ text-align:center;
 
 <input id="walletInput" placeholder="Paste BSC wallet">
 
-<button onclick="toggleWallet()">
+<button id="walletBtn" onclick="toggleWallet()">
 CONNECT WALLET
 </button>
+
+<div id="walletStatus" class="status">Wallet Connected</div>
 
 <button onclick="buyEnergy()">
 BUY ENERGY (REFILL)
@@ -198,7 +213,7 @@ let wallet = "";
 let points = 0;
 let energy = 50;
 
-/* ================= STORAGE SYSTEM ================= */
+/* ================= STORAGE ================= */
 
 function saveState(){
   if(!wallet) return;
@@ -233,6 +248,56 @@ document.getElementById("tokens").innerText =
 
 }
 
+/* ================= WALLET TOGGLE (UPDATED) ================= */
+
+function toggleWallet(){
+
+const input = document.getElementById("walletInput");
+const btn = document.getElementById("walletBtn");
+const status = document.getElementById("walletStatus");
+
+if(wallet){
+
+// DISCONNECT
+wallet = "";
+points = 0;
+energy = 50;
+
+input.value = "";
+
+btn.innerText = "CONNECT WALLET";
+btn.classList.remove("connected");
+btn.classList.add("disconnected");
+
+status.style.display = "none";
+
+updateUI();
+
+return;
+}
+
+// CONNECT
+let w = input.value.trim();
+
+if(!w.startsWith("0x") || w.length !== 42){
+alert("Invalid wallet");
+return;
+}
+
+wallet = w.toLowerCase();
+
+loadState(wallet);
+
+btn.innerText = "DISCONNECT WALLET";
+btn.classList.remove("disconnected");
+btn.classList.add("connected");
+
+status.style.display = "block";
+
+updateUI();
+
+}
+
 /* ================= TAP ================= */
 
 function tap(){
@@ -251,40 +316,6 @@ energy--;
 points++;
 
 saveState();
-updateUI();
-
-}
-
-/* ================= WALLET ================= */
-
-function toggleWallet(){
-
-const input = document.getElementById("walletInput");
-
-if(wallet){
-
-// disconnect ONLY UI session
-wallet = "";
-points = 0;
-energy = 50;
-
-input.value = "";
-
-updateUI();
-
-return;
-}
-
-let w = input.value.trim();
-
-if(!w.startsWith("0x") || w.length !== 42){
-alert("Invalid wallet");
-return;
-}
-
-wallet = w.toLowerCase();
-
-loadState(wallet);
 updateUI();
 
 }
