@@ -1,742 +1,125 @@
 <!DOCTYPE html>
 <html>
-
 <head>
+  <meta charset="UTF-8">
+  <title>PVLT Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #0f0f0f;
+      color: white;
+    }
 
-<meta charset="UTF-8">
+    .box {
+      margin-top: 40px;
+    }
 
-<meta name="viewport"
-content="width=device-width,
-initial-scale=1,
-maximum-scale=1,
-user-scalable=no">
+    button {
+      padding: 12px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
 
-<title>PVLT Tap Game</title>
+    .tap {
+      background: #00ff88;
+    }
 
-<!-- ETHERS.JS -->
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.1/dist/ethers.umd.min.js"></script>
+    .claim {
+      background: #ffcc00;
+    }
 
-<style>
-
-/* ================= RESET ================= */
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
--webkit-tap-highlight-color:transparent;
-}
-
-html,body{
-width:100%;
-height:100%;
-overflow:hidden;
-background:#08111f;
-font-family:Arial;
-color:white;
-touch-action:manipulation;
--webkit-text-size-adjust:100%;
-overscroll-behavior:none;
-}
-
-body{
-display:flex;
-flex-direction:column;
-}
-
-/* ================= NAV ================= */
-
-.nav{
-display:flex;
-justify-content:space-between;
-padding:14px;
-background:#101b2e;
-font-size:12px;
-}
-
-/* ================= MAIN ================= */
-
-.container{
-flex:1;
-display:flex;
-flex-direction:column;
-align-items:center;
-padding:20px;
-overflow:auto;
-}
-
-/* ================= TAP ================= */
-
-.tap{
-width:220px;
-height:220px;
-border-radius:50%;
-border:none;
-margin-top:20px;
-
-background:linear-gradient(135deg,#00ff99,#00ccff);
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-overflow:hidden;
-position:relative;
-
-touch-action:manipulation;
-user-select:none;
--webkit-user-select:none;
-}
-
-.tap:active{
-transform:scale(0.96);
-}
-
-.tapLogo{
-width:75%;
-height:75%;
-object-fit:contain;
-pointer-events:none;
-}
-
-/* ================= CARD ================= */
-
-.bigCard{
-width:90%;
-max-width:380px;
-margin-top:20px;
-padding:18px;
-
-background:rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.08);
-
-border-radius:16px;
-
-display:flex;
-flex-direction:column;
-gap:12px;
-}
-
-/* ================= INPUT ================= */
-
-input{
-width:100%;
-padding:14px;
-border:none;
-border-radius:10px;
-background:#111827;
-color:white;
-}
-
-/* ================= BUTTON ================= */
-
-button{
-width:100%;
-padding:14px;
-border:none;
-border-radius:10px;
-font-weight:bold;
-background:linear-gradient(90deg,#00ff99,#00ccff);
-color:black;
-cursor:pointer;
-}
-
-/* ================= STATUS ================= */
-
-.status{
-font-size:12px;
-text-align:center;
-margin-top:5px;
-display:none;
-color:#00ff99;
-}
-
-/* ================= CONNECTED ================= */
-
-.connected{
-background:linear-gradient(90deg,#ff4d4d,#ff1a1a)!important;
-color:white!important;
-}
-
-</style>
-
+    .wallet {
+      background: #0088ff;
+    }
+  </style>
 </head>
 
 <body>
-    
-    
 
-<!-- ENERGY POPUP -->
-<div id="energyModal" style="
-position:fixed;
-top:0;left:0;
-width:100%;height:100%;
-background:rgba(0,0,0,0.7);
-display:none;
-align-items:center;
-justify-content:center;
-z-index:9999;
-">
+<h2>⚡ PVLT Mini App</h2>
 
-<div style="
-background:#111827;
-padding:20px;
-border-radius:12px;
-width:85%;
-max-width:320px;
-">
-
-<h3 style="margin-bottom:10px;">Buy Energy</h3>
-
-<input id="energyInput" placeholder="Enter Energy Amount"
-style="margin-bottom:10px;">
-
-<div id="priceView" style="font-size:12px;margin-bottom:10px;opacity:0.8;"></div>
-
-<button onclick="confirmEnergyBuy()">CONFIRM PAYMENT</button>
-
-<button onclick="closeModal()" style="margin-top:8px;background:#333;color:white;">
-CANCEL
-</button>
-
+<div class="box">
+  <p>Telegram User: <span id="user"></span></p>
+  <p>Wallet: <span id="wallet">Not connected</span></p>
+  <p>Score: <span id="score">0</span></p>
 </div>
 
-</div>
-
-
-
-
-<!-- ================= NAV ================= -->
-
-<div class="nav">
-
-<div>
-🔋 <span id="energy">50</span>
-</div>
-
-<div>
-⚡ <span id="points">0</span>
-</div>
-
-<div>
-💎 <span id="tokens">0.0000</span>
-</div>
-
-</div>
-
-<!-- ================= MAIN ================= -->
-
-<div class="container">
-
-<button class="tap" onclick="tap()">
-
-<img
-src="images/IMG_1850.png"
-class="tapLogo"
->
-
-</button>
-
-<div class="bigCard">
-
-<input
-id="walletInput"
-placeholder="Paste BSC wallet"
->
-
-<button
-id="walletBtn"
-onclick="toggleWallet()"
->
-CONNECT WALLET
-</button>
-
-<div
-id="walletStatus"
-class="status"
->
-Wallet Connected
-</div>
-
-<button onclick="buyEnergy()">
-BUY ENERGY (REFILL)
-</button>
-
-<button onclick="claim()">
-CLAIM TOKENS
-</button>
-
-</div>
-
-</div>
+<button class="tap" onclick="tap()">TAP</button>
+<button class="wallet" onclick="connectWallet()">CONNECT WALLET</button>
+<button class="tap" onclick="submitScore()">SUBMIT SCORE</button>
+<button class="claim" onclick="claimReward()">CLAIM REWARD</button>
 
 <script>
+let score = 0;
+let walletAddress = "";
 
-/* =================================================
-PVLT FULL PRODUCTION CONFIG
-================================================= */
+const tg = window.Telegram.WebApp;
+tg.expand();
 
-// RENDER BACKEND
-const API =
-"https://pvlt-server.onrender.com";
+document.getElementById("user").innerText =
+  tg.initDataUnsafe?.user?.username || "Guest";
 
-// GAME CONTRACT
-const GAME_CONTRACT =
-"0x1690e009e78b66BA54E30c9574BA4e84C230CFA8";
-
-// BSC CHAIN ID
-const CHAIN_ID = 56;
-
-/* =================================================
-GAME CONTRACT ABI
-================================================= */
-
-const ABI = [
-
-"function claim(uint256,uint256,bytes) external"
-
-];
-
-/* =================================================
-STATE
-================================================= */
-
-let wallet = "";
-let points = 0;
-let energy = 50;
-let lastClaimTime = 0;
-
-/* =================================================
-SAVE STORAGE
-================================================= */
-
-function saveState(){
-
-if(!wallet) return;
-
-localStorage.setItem(
-wallet,
-JSON.stringify({
-points,
-energy,
-lastClaimTime
-})
-);
-
+// TAP GAME
+function tap() {
+  score++;
+  document.getElementById("score").innerText = score;
 }
 
-/* =================================================
-LOAD STORAGE
-================================================= */
-
-function loadState(addr){
-
-let data =
-localStorage.getItem(addr);
-
-if(data){
-
-let obj =
-JSON.parse(data);
-
-points =
-obj.points || 0;
-
-energy =
-obj.energy || 50;
-
-lastClaimTime =
-obj.lastClaimTime || 0;
-
-}else{
-
-points = 0;
-energy = 50;
-lastClaimTime = 0;
-
+// WALLET CONNECT (MetaMask)
+async function connectWallet() {
+  if (window.ethereum) {
+    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+    walletAddress = accounts[0];
+    document.getElementById("wallet").innerText = walletAddress;
+  } else {
+    alert("Install MetaMask");
+  }
 }
 
+// SUBMIT SCORE TO BACKEND
+async function submitScore() {
+  if (!walletAddress) return alert("Connect wallet first");
+
+  const res = await fetch("https://YOUR-RENDER-URL.onrender.com/api/submit", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      telegramId: tg.initDataUnsafe.user.id,
+      wallet: walletAddress,
+      score: score
+    })
+  });
+
+  const data = await res.json();
+  alert("Score submitted: " + JSON.stringify(data));
 }
 
-/* =================================================
-UPDATE UI
-================================================= */
+// CLAIM REWARD
+async function claimReward() {
+  const res = await fetch("https://YOUR-RENDER-URL.onrender.com/api/claim", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      wallet: walletAddress
+    })
+  });
 
-function updateUI(){
+  const data = await res.json();
 
-document.getElementById(
-"energy"
-).innerText = energy;
-
-document.getElementById(
-"points"
-).innerText = points;
-
-document.getElementById(
-"tokens"
-).innerText =
-(points / 10000).toFixed(4);
-
+  if (data.success) {
+    alert("Reward received: " + data.amount + " PVLT");
+    score = 0;
+    document.getElementById("score").innerText = 0;
+  } else {
+    alert(data.error || "Error");
+  }
 }
-
-/* =================================================
-TAP
-================================================= */
-
-function tap(){
-
-if(!wallet){
-
-alert(
-"Connect wallet first"
-);
-
-return;
-
-}
-
-if(energy <= 0){
-
-alert("No energy");
-return;
-
-}
-
-energy--;
-points++;
-
-saveState();
-updateUI();
-
-}
-
-/* =================================================
-CONNECT / DISCONNECT
-================================================= */
-
-function toggleWallet(){
-
-const input =
-document.getElementById(
-"walletInput"
-);
-
-const btn =
-document.getElementById(
-"walletBtn"
-);
-
-const status =
-document.getElementById(
-"walletStatus"
-);
-
-/* DISCONNECT */
-
-if(wallet){
-
-wallet = "";
-points = 0;
-energy = 50;
-lastClaimTime = 0;
-
-input.value = "";
-
-btn.innerText =
-"CONNECT WALLET";
-
-btn.classList.remove(
-"connected"
-);
-
-status.style.display =
-"none";
-
-updateUI();
-
-return;
-
-}
-
-/* CONNECT */
-
-let w =
-input.value.trim();
-
-if(
-!w.startsWith("0x") ||
-w.length !== 42
-){
-
-alert("Invalid wallet");
-return;
-
-}
-
-wallet =
-w.toLowerCase();
-
-loadState(wallet);
-
-btn.innerText =
-"DISCONNECT WALLET";
-
-btn.classList.add(
-"connected"
-);
-
-status.style.display =
-"block";
-
-updateUI();
-
-}
-
-/* =================================================
-BUY ENERGY
-================================================= */
-
-function closeModal(){
-document.getElementById("energyModal").style.display = "none";
-}
-
-document.getElementById("energyInput").addEventListener("input", function(){
-
-let amt = Number(this.value || 0);
-
-let price = amt / 10000;
-
-document.getElementById("priceView").innerText =
-"Price: $" + price.toFixed(4) + " (BNB equivalent)";
-});
-
-function confirmEnergyBuy(){
-
-let amt = Number(document.getElementById("energyInput").value);
-
-if(!amt || amt <= 0){
-alert("Invalid amount");
-return;
-}
-
-let price = amt / 10000;
-
-alert(
-"Payment Required: $" + price.toFixed(4) + "\n" +
-"Processing via wallet..."
-);
-
-// simulate recharge
-energy += amt;
-
-saveState();
-updateUI();
-
-closeModal();
-}
-
-/* PRODUCTION PLACEHOLDER */
-
-energy += energyAmount;
-
-saveState();
-updateUI();
-
-}
-
-/* =================================================
-SECURE CLAIM SYSTEM
-================================================= */
-
-async function claim(){
-
-if(!wallet){
-
-alert(
-"Connect wallet first"
-);
-
-return;
-
-}
-
-let now = Date.now();
-
-let ONE_DAY =
-24 * 60 * 60 * 1000;
-
-/* COOLDOWN */
-
-if(
-now - lastClaimTime
-< ONE_DAY
-){
-
-alert(
-"You can claim once per day"
-);
-
-return;
-
-}
-
-/* POINTS → TOKENS */
-
-let tokens =
-points / 10000;
-
-if(tokens < 100){
-
-alert(
-"Minimum 100 tokens required"
-);
-
-return;
-
-}
-
-if(tokens > 500){
-
-tokens = 500;
-
-}
-
-try{
-
-/* =========================================
-GET SIGNATURE FROM RENDER
-========================================= */
-
-let res = await fetch(
-API + "/claim",
-{
-method:"POST",
-headers:{
-"Content-Type":
-"application/json"
-},
-body:JSON.stringify({
-address: wallet,
-points: points
-})
-}
-);
-
-let data =
-await res.json();
-
-if(!data.signature){
-
-alert(
-"Backend rejected claim"
-);
-
-return;
-
-}
-
-/* =========================================
-CONNECT METAMASK
-========================================= */
-
-if(!window.ethereum){
-
-alert(
-"Install MetaMask"
-);
-
-return;
-
-}
-
-const provider =
-new ethers.BrowserProvider(
-window.ethereum
-);
-
-await provider.send(
-"eth_requestAccounts",
-[]
-);
-
-const signer =
-await provider.getSigner();
-
-/* =========================================
-SWITCH BSC
-========================================= */
-
-await window.ethereum.request({
-method:"wallet_switchEthereumChain",
-params:[
-{
-chainId:"0x38"
-}
-]
-});
-
-/* =========================================
-CALL SMART CONTRACT
-========================================= */
-
-const contract =
-new ethers.Contract(
-GAME_CONTRACT,
-ABI,
-signer
-);
-
-const tx =
-await contract.claim(
-data.amount,
-data.nonce,
-data.signature
-);
-
-alert(
-"Transaction submitted"
-);
-
-/* WAIT TX */
-
-await tx.wait();
-
-/* RESET */
-
-points = 0;
-
-lastClaimTime =
-Date.now();
-
-saveState();
-updateUI();
-
-alert(
-"CLAIM SUCCESS\n\n" +
-"TX:\n" +
-tx.hash
-);
-
-}catch(err){
-
-console.log(err);
-
-alert(
-"Claim failed"
-);
-
-}
-
-}
-
-/* =================================================
-INIT
-================================================= */
-
-updateUI();
-
 </script>
 
 </body>
-
 </html>
