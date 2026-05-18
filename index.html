@@ -1,105 +1,340 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PEPE VOLT ⚡ Game</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #0b0b0b;
-      color: white;
-    }
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1,
+maximum-scale=1,
+user-scalable=no">
 
-    button {
-      padding: 14px 18px;
-      margin: 10px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+<title>PVLT Tap Game</title>
 
-    .box {
-      margin-top: 30px;
-    }
+<style>
 
-    .score {
-      font-size: 32px;
-      margin: 20px;
-    }
-  </style>
+/* ================= RESET ================= */
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+background:#08111f;
+font-family:Arial;
+color:white;
+touch-action:manipulation;
+-webkit-text-size-adjust:100%;
+overscroll-behavior:none;
+}
+
+body{
+display:flex;
+flex-direction:column;
+}
+
+.nav{
+display:flex;
+justify-content:space-between;
+padding:14px;
+background:#101b2e;
+font-size:12px;
+}
+
+.container{
+flex:1;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding:20px;
+}
+
+.tap{
+width:220px;
+height:220px;
+border-radius:50%;
+border:none;
+margin-top:20px;
+background:linear-gradient(135deg,#00ff99,#00ccff);
+display:flex;
+align-items:center;
+justify-content:center;
+overflow:hidden;
+position:relative;
+touch-action:manipulation;
+user-select:none;
+-webkit-user-select:none;
+}
+
+.tap:active{ transform:scale(0.96); }
+
+.tapLogo{
+width:75%;
+height:75%;
+object-fit:contain;
+pointer-events:none;
+}
+
+.bigCard{
+width:90%;
+max-width:380px;
+margin-top:20px;
+padding:18px;
+background:rgba(255,255,255,0.05);
+border:1px solid rgba(255,255,255,0.08);
+border-radius:16px;
+display:flex;
+flex-direction:column;
+gap:12px;
+}
+
+input{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+background:#111827;
+color:white;
+}
+
+button{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+font-weight:bold;
+background:linear-gradient(90deg,#00ff99,#00ccff);
+color:black;
+}
+
+.status{
+font-size:12px;
+text-align:center;
+margin-top:5px;
+display:none;
+}
+
+</style>
+
 </head>
 
 <body>
 
-<h1>⚡ PEPE VOLT TAP GAME</h1>
-
-<button id="connectBtn">Connect Wallet</button>
-
-<p id="wallet">Not connected</p>
-
-<div class="box">
-  <div class="score">Score: <span id="score">0</span></div>
-
-  <button onclick="tap()">⚡ TAP</button>
-  <button onclick="loadScore()">🔄 Refresh Score</button>
+<div class="nav">
+<div>🔋 <span id="energy">50</span></div>
+<div>⚡ <span id="points">0</span></div>
+<div>💎 <span id="tokens">0.0000</span></div>
 </div>
 
-<script type="module">
-import { createAppKit } from "https://unpkg.com/@reown/appkit@latest/dist/index.js";
+<div class="container">
 
-// 🔗 Reown WalletConnect
-const appKit = createAppKit({
-  projectId: "1731f99148b9cf6107dee70b6efb14b7",
-  networks: [137], // Polygon mainnet ([Polygon Labs](chatgpt://generic-entity?number=0))
-  defaultNetwork: 137
-});
+<button class="tap" onclick="tap()">
+  <img src="images/IMG_1850.png" class="tapLogo">
+</button>
 
-let wallet = null;
+<div class="bigCard">
 
-// CONNECT WALLET
-document.getElementById("connectBtn").onclick = async () => {
-  const result = await appKit.open();
+<input id="walletInput" placeholder="Paste BSC wallet">
 
-  wallet = result.address;
+<button id="walletBtn" onclick="toggleWallet()">
+CONNECT WALLET
+</button>
 
-  document.getElementById("wallet").innerText = wallet;
+<div id="walletStatus" class="status">Wallet Connected</div>
 
-  loadScore();
-};
+<button onclick="buyEnergy()">BUY ENERGY (REFILL)</button>
 
-// TAP FUNCTION
-window.tap = async function () {
-  if (!wallet) return alert("Connect wallet first");
+<button onclick="claim()">CLAIM TOKENS</button>
 
-  const res = await fetch("https://pvlt-server.onrender.com/tap", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ wallet })
-  });
+</div>
 
-  const data = await res.json();
+</div>
 
-  if (data.score !== undefined) {
-    document.getElementById("score").innerText = data.score;
+<script>
+
+/* ================= STATE ================= */
+
+let wallet = "";
+let points = 0;
+let energy = 50;
+let lastClaimTime = 0;
+
+/* ================= STORAGE ================= */
+
+function saveState(){
+  if(!wallet) return;
+
+  localStorage.setItem(wallet, JSON.stringify({
+    points,
+    energy,
+    lastClaimTime
+  }));
+}
+
+function loadState(addr){
+  let data = localStorage.getItem(addr);
+
+  if(data){
+    let obj = JSON.parse(data);
+    points = obj.points || 0;
+    energy = obj.energy || 50;
+    lastClaimTime = obj.lastClaimTime || 0;
   } else {
-    alert(data.error || "Error");
+    points = 0;
+    energy = 50;
+    lastClaimTime = 0;
   }
-};
+}
 
-// LOAD SCORE
-window.loadScore = async function () {
-  if (!wallet) return;
+/* ================= UI ================= */
 
-  const res = await fetch("https://pvlt-server.onrender.com/score/" + wallet);
+function updateUI(){
+document.getElementById("energy").innerText = energy;
+document.getElementById("points").innerText = points;
+document.getElementById("tokens").innerText =
+(points / 10000).toFixed(4);
+}
 
-  const data = await res.json();
+/* ================= TAP ================= */
 
-  if (data.score !== undefined) {
-    document.getElementById("score").innerText = data.score;
-  }
-};
+function tap(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+if(energy <= 0){
+alert("No energy");
+return;
+}
+
+energy--;
+points++;
+
+saveState();
+updateUI();
+}
+
+/* ================= WALLET ================= */
+
+function toggleWallet(){
+
+const input = document.getElementById("walletInput");
+const btn = document.getElementById("walletBtn");
+const status = document.getElementById("walletStatus");
+
+if(wallet){
+
+wallet = "";
+points = 0;
+energy = 50;
+
+input.value = "";
+
+btn.innerText = "CONNECT WALLET";
+
+status.style.display = "none";
+
+updateUI();
+
+return;
+}
+
+let w = input.value.trim();
+
+if(!w.startsWith("0x") || w.length !== 42){
+alert("Invalid wallet");
+return;
+}
+
+wallet = w.toLowerCase();
+
+loadState(wallet);
+
+btn.innerText = "DISCONNECT WALLET";
+
+status.style.display = "block";
+
+updateUI();
+}
+
+/* ================= BUY ENERGY ================= */
+
+function buyEnergy(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+let amt = prompt("Enter Energy Amount (10000 Energy = $1)");
+
+if(!amt || isNaN(amt) || amt <= 0) return;
+
+let energyAmount = Number(amt);
+let price = energyAmount / 10000;
+
+alert("Price: $" + price.toFixed(4) + " (BNB payment placeholder)");
+
+energy += energyAmount;
+
+saveState();
+updateUI();
+}
+
+/* ================= CLAIM (UPDATED) ================= */
+
+function claim(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+let now = Date.now();
+let ONE_DAY = 24 * 60 * 60 * 1000;
+
+if(now - lastClaimTime < ONE_DAY){
+alert("You can claim only once per day");
+return;
+}
+
+let tokens = points / 10000;
+
+if(tokens < 100){
+alert("Minimum 100 tokens required");
+return;
+}
+
+if(tokens > 500){
+tokens = 500;
+}
+
+/* RESET POINTS AFTER CLAIM */
+points = 0;
+
+/* SAVE CLAIM TIME */
+lastClaimTime = now;
+
+/* SIMULATED TRANSFER TO WALLET */
+alert(
+"CLAIM SUCCESS\n" +
+"Sent: " + tokens.toFixed(4) + " TOKENS\n" +
+"Wallet: " + wallet
+);
+
+saveState();
+updateUI();
+}
+
 </script>
 
 </body>
