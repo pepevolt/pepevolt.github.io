@@ -226,7 +226,31 @@ updateUI();
 
 /* ================= WALLET ================= */
 
-function toggleWallet(){
+function toggleWallet(let provider = await EthereumProvider.init({
+projectId: "1731f99148b9cf6107dee70b6efb14b7",
+chains: [137], // Polygon MAINNET
+showQrModal: true
+});
+
+await provider.enable();
+
+const ethersProvider =
+new ethers.providers.Web3Provider(provider);
+
+const signer = ethersProvider.getSigner();
+
+wallet = await signer.getAddress();
+
+document.getElementById("walletInput").value = wallet;
+
+document.getElementById("walletBtn").innerText =
+"DISCONNECT WALLET";
+
+document.getElementById("walletStatus").style.display =
+"block";
+
+loadState(wallet);
+updateUI();      ){
 
 const input = document.getElementById("walletInput");
 const btn = document.getElementById("walletBtn");
