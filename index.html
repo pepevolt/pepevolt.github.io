@@ -14,6 +14,8 @@ user-scalable=no">
 
 <style>
 
+/* ================= RESET ================= */
+
 *{
 margin:0;
 padding:0;
@@ -36,6 +38,8 @@ display:flex;
 flex-direction:column;
 }
 
+/* ================= NAV ================= */
+
 .nav{
 display:flex;
 justify-content:space-between;
@@ -43,6 +47,8 @@ padding:14px;
 background:#101b2e;
 font-size:12px;
 }
+
+/* ================= MAIN ================= */
 
 .container{
 flex:1;
@@ -52,6 +58,8 @@ align-items:center;
 padding:20px;
 }
 
+/* ================= TAP BUTTON ================= */
+
 .tap{
 width:220px;
 height:220px;
@@ -59,18 +67,30 @@ border-radius:50%;
 border:none;
 margin-top:20px;
 
-font-size:28px;
-font-weight:bold;
-
 background:linear-gradient(135deg,#00ff99,#00ccff);
-color:black;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+overflow:hidden;
+position:relative;
 }
 
 .tap:active{
 transform:scale(0.96);
 }
 
-/* ================= SINGLE MAIN CARD ================= */
+/* LOGO INSIDE TAP */
+
+.tapLogo{
+width:75%;
+height:75%;
+object-fit:contain;
+pointer-events:none;
+}
+
+/* ================= CARD ================= */
 
 .bigCard{
 width:90%;
@@ -87,6 +107,8 @@ flex-direction:column;
 gap:12px;
 }
 
+/* ================= INPUT ================= */
+
 input{
 width:100%;
 padding:14px;
@@ -95,6 +117,8 @@ border-radius:10px;
 background:#111827;
 color:white;
 }
+
+/* ================= BUTTON ================= */
 
 button{
 width:100%;
@@ -105,6 +129,8 @@ font-weight:bold;
 background:linear-gradient(90deg,#00ff99,#00ccff);
 color:black;
 }
+
+/* ================= SMALL TEXT ================= */
 
 .small{
 font-size:12px;
@@ -130,11 +156,14 @@ text-align:center;
 <!-- MAIN -->
 <div class="container">
 
-<button class="tap" onclick="tap()">TAP</button>
+<!-- TAP BUTTON -->
+<button class="tap" onclick="tap()">
+  <img src="images/logo.png" class="tapLogo">
+</button>
 
 <div class="small">1 Tap = 1 Point</div>
 
-<!-- SINGLE CARD -->
+<!-- MAIN CARD -->
 <div class="bigCard">
 
 <input id="walletInput" placeholder="Paste BSC wallet">
@@ -188,29 +217,29 @@ updateUI();
 
 function toggleWallet(){
 
-const input=document.getElementById("walletInput");
+const input = document.getElementById("walletInput");
 
 if(wallet){
 
-wallet="";
-points=0;
-energy=50;
+wallet = "";
+points = 0;
+energy = 50;
 
-input.value="";
+input.value = "";
 
 updateUI();
 
 return;
 }
 
-let w=input.value.trim();
+let w = input.value.trim();
 
-if(!w.startsWith("0x")||w.length!==42){
+if(!w.startsWith("0x") || w.length !== 42){
 alert("Invalid wallet");
 return;
 }
 
-wallet=w.toLowerCase();
+wallet = w.toLowerCase();
 
 updateUI();
 
@@ -225,8 +254,8 @@ alert("Connect wallet first");
 return;
 }
 
-/* REAL CONTRACT HOOK PLACEHOLDER */
-alert("Energy purchased via PVLT Token Contract");
+/* REAL CONTRACT PLACEHOLDER */
+alert("Energy purchase via PVLT Token Contract");
 
 energy = 50;
 
