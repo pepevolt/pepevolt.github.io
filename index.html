@@ -141,7 +141,8 @@ display:none;
 
 <div class="bigCard">
 
-<input id="walletInput" placeholder="Paste BSC wallet">
+<!-- CHANGED HERE -->
+<input id="walletInput" placeholder="Paste POL wallet">
 
 <button id="walletBtn" onclick="toggleWallet()">
 CONNECT WALLET
@@ -282,7 +283,8 @@ if(!amt || isNaN(amt) || amt <= 0) return;
 let energyAmount = Number(amt);
 let price = energyAmount / 10000;
 
-alert("Price: $" + price.toFixed(4) + " (BNB payment placeholder)");
+/* CHANGED HERE */
+alert("Price: $" + price.toFixed(4) + " (POL payment placeholder)");
 
 energy += energyAmount;
 
@@ -290,7 +292,7 @@ saveState();
 updateUI();
 }
 
-/* ================= CLAIM (UPDATED) ================= */
+/* ================= CLAIM ================= */
 
 function claim(){
 
@@ -318,13 +320,11 @@ if(tokens > 500){
 tokens = 500;
 }
 
-/* RESET POINTS AFTER CLAIM */
+/* RESET POINTS */
 points = 0;
 
-/* SAVE CLAIM TIME */
 lastClaimTime = now;
 
-/* SIMULATED TRANSFER TO WALLET */
 alert(
 "CLAIM SUCCESS\n" +
 "Sent: " + tokens.toFixed(4) + " TOKENS\n" +
