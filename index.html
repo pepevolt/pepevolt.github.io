@@ -148,6 +148,12 @@
             color:white;
         }
 
+        /* Styling for the disconnect state */
+        .btn-disconnect {
+            background: linear-gradient(90deg, #ff3333, #aa0000) !important;
+            color: white !important;
+        }
+
         .live-balances-box{
             background:rgba(255,255,255,0.02);
             margin-top:5px;
@@ -246,7 +252,6 @@
             document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
         }
 
-        // --- REFILLS BY 1 EVERY SECOND UNTIL IT HITS MAX 20 ---
         function initializeEnergyTracking(){
             if(autoRefillInterval) clearInterval(autoRefillInterval);
             
@@ -266,7 +271,8 @@
                     
                     if (accounts.length > 0) {
                         console.log("Wallet autodetected successfully.");
-                        await handleWalletAction();
+                        // Passing true allows handleWalletAction to run cleanly without toggling to disconnect on boot up
+                        await handleWalletAction(true);
                     }
                 }
             } catch (err) {
@@ -274,7 +280,29 @@
             }
         }
 
-        async function handleWalletAction(){
+        // --- UPDATED TOGGLE/DISCONNECT LOGIC ---
+        async function handleWalletAction(isAutoDetect = false){
+            const connectBtn = document.getElementById("connectBtn");
+
+            // If a wallet address already exists and this wasn't an automatic system boot check, treat click as DISCONNECT
+            if(walletAddress && !isAutoDetect) {
+                walletAddress = "";
+                points = 0;
+                energy = 0;
+                pvltg = 0;
+                
+                // Reset UI Elements back to starting clean state
+                document.getElementById("walletDisplay").value = "Wallet Not Connected";
+                connectBtn.innerText = "CONNECT WALLET";
+                connectBtn.classList.remove("btn-disconnect");
+                
+                document.getElementById("userWalletPvlt").innerText = "0.0000";
+                document.getElementById("treasuryVaultPvlt").innerText = "0.0000";
+                
+                updateUI();
+                return;
+            }
+
             try{
                 if(!window.ethereum){
                     alert("Wallet not found");
@@ -292,7 +320,10 @@
                 }
 
                 document.getElementById("walletDisplay").value = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
-                document.getElementById("connectBtn").innerText = "CONNECTED";
+                
+                // Change style and label to DISCONNECT
+                connectBtn.innerText = "DISCONNECT";
+                connectBtn.classList.add("btn-disconnect");
 
                 const res = await fetch(`${API_URL}/user`, {
                     method:"POST",
@@ -302,10 +333,9 @@
 
                 const data = await res.json();
                 
-                // FORCE RESET: Overriding the database results to maintain your 0,0 starting rules
                 points = 0; 
                 energy = 0; 
-                pvltg = data.pvltg; // Keep the real token balances from the database
+                pvltg = data.pvltg;
 
                 updateUI();
                 await loadOnChainBalances();
@@ -343,7 +373,6 @@
                 const data = await res.json();
                 if(data.error){ alert(data.error); return; }
                 
-                // Locally increment points by 2 and decrease energy by 1 per tap
                 points += 2;
                 energy -= 1;
                 pvltg = data.pvltg;
@@ -365,7 +394,6 @@
                 const buyTx = await treasury.buyEnergy();
                 await buyTx.wait();
 
-                // If they purchase instant energy, we fill it completely back to 20
                 energy = 20;
                 updateUI();
                 await loadOnChainBalances();
@@ -388,7 +416,7 @@
                 const data = await res.json();
                 if(data.error){ alert(data.error); return; }
                 
-                points = 0; // Clear points locally on successful swap
+                points = 0;
                 pvltg = data.pvltg;
                 updateUI();
             } catch(err){ console.log(err); alert("Swap failed"); }
