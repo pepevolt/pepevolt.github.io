@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
@@ -16,7 +16,7 @@ user-scalable=no">
 <!-- ETHERS -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 
-<!-- WALLETCONNECT / REOWN -->
+<!-- WALLETCONNECT -->
 <script src="https://unpkg.com/@walletconnect/ethereum-provider/dist/index.umd.js"></script>
 
 <style>
@@ -34,107 +34,110 @@ html,body{
 width:100%;
 height:100%;
 overflow:hidden;
-background:#08111f;
-font-family:Arial;
+background:#020b18;
+font-family:Arial,sans-serif;
 color:white;
-touch-action:manipulation;
--webkit-text-size-adjust:100%;
-overscroll-behavior:none;
 }
+
+/* ================= BODY ================= */
 
 body{
 display:flex;
 flex-direction:column;
 }
 
-/* ================= NAV ================= */
+/* ================= TOP BAR ================= */
 
-.nav{
+.topbar{
+width:100%;
+padding:14px 18px;
+background:#091426;
 display:flex;
 justify-content:space-between;
-padding:14px;
-background:#101b2e;
-font-size:12px;
+align-items:center;
+font-size:14px;
+font-weight:bold;
 }
 
-/* ================= CONTAINER ================= */
+/* ================= MAIN ================= */
 
-.container{
+.main{
 flex:1;
 display:flex;
 flex-direction:column;
 align-items:center;
 padding:20px;
+overflow-y:auto;
 }
 
 /* ================= TAP BUTTON ================= */
 
-.tap{
-width:220px;
-height:220px;
-border-radius:50%;
+.tapBtn{
+width:240px;
+height:240px;
 border:none;
-margin-top:20px;
-background:linear-gradient(135deg,#00ff99,#00ccff);
-display:flex;
-align-items:center;
-justify-content:center;
+border-radius:50%;
 overflow:hidden;
-position:relative;
-touch-action:manipulation;
-user-select:none;
--webkit-user-select:none;
+margin-top:20px;
+background:linear-gradient(
+135deg,
+#00ff99,
+#00ccff
+);
+display:flex;
+justify-content:center;
+align-items:center;
+box-shadow:0 0 30px rgba(0,255,180,0.25);
 }
 
-.tap:active{
+.tapBtn:active{
 transform:scale(0.96);
 }
 
-/* ================= LOGO ================= */
-
-.tapLogo{
-width:75%;
-height:75%;
+.tapBtn img{
+width:78%;
+height:78%;
 object-fit:contain;
 pointer-events:none;
 }
 
 /* ================= CARD ================= */
 
-.bigCard{
-width:90%;
+.card{
+width:100%;
 max-width:380px;
-margin-top:20px;
-padding:18px;
-background:rgba(255,255,255,0.05);
+margin-top:28px;
+background:rgba(255,255,255,0.04);
 border:1px solid rgba(255,255,255,0.08);
-border-radius:16px;
+border-radius:18px;
+padding:18px;
 display:flex;
 flex-direction:column;
-gap:12px;
+gap:14px;
 }
 
 /* ================= INPUT ================= */
 
 input{
 width:100%;
-padding:14px;
+padding:15px;
 border:none;
-border-radius:10px;
-background:#111827;
+border-radius:12px;
+background:#0c1628;
 color:white;
 font-size:14px;
+outline:none;
 }
 
 /* ================= BUTTON ================= */
 
-button{
+.actionBtn{
 width:100%;
-padding:14px;
+padding:15px;
 border:none;
-border-radius:10px;
+border-radius:12px;
+font-size:15px;
 font-weight:bold;
-font-size:16px;
 background:linear-gradient(
 90deg,
 #00ff99,
@@ -146,10 +149,21 @@ color:black;
 /* ================= STATUS ================= */
 
 .status{
-font-size:12px;
 text-align:center;
-margin-top:5px;
+font-size:12px;
+opacity:0.8;
 display:none;
+}
+
+/* ================= INFO BOX ================= */
+
+.info{
+margin-top:16px;
+font-size:12px;
+line-height:1.7;
+opacity:0.8;
+text-align:center;
+max-width:380px;
 }
 
 </style>
@@ -158,9 +172,9 @@ display:none;
 
 <body>
 
-<!-- ================= TOP NAV ================= -->
+<!-- ================= TOP BAR ================= -->
 
-<div class="nav">
+<div class="topbar">
 
 <div>
 🔋
@@ -174,28 +188,26 @@ display:none;
 
 <div>
 💎
-<span id="tokens">0.0000</span>
+<span id="pvltg">0.0000</span>
 </div>
 
 </div>
 
 <!-- ================= MAIN ================= -->
 
-<div class="container">
+<div class="main">
 
 <!-- TAP BUTTON -->
 
-<button class="tap" onclick="tap()">
+<button class="tapBtn" onclick="tap()">
 
-<img
-src="images/IMG_1850.png"
-class="tapLogo">
+<img src="images/IMG_1850.png">
 
 </button>
 
 <!-- CARD -->
 
-<div class="bigCard">
+<div class="card">
 
 <input
 id="walletInput"
@@ -203,62 +215,85 @@ placeholder="Connect Polygon Wallet"
 readonly>
 
 <button
+class="actionBtn"
 id="walletBtn"
-onclick="toggleWallet()">
+onclick="connectWallet()">
 
 CONNECT WALLET
 
 </button>
 
 <div
-id="walletStatus"
-class="status">
+class="status"
+id="walletStatus">
 
 Wallet Connected
 
 </div>
 
-<button onclick="buyEnergy()">
+<button
+class="actionBtn"
+onclick="buyEnergy()">
 
-BUY ENERGY (REFILL)
+BUY ENERGY
 
 </button>
 
-<button onclick="swapPoints()">
+<button
+class="actionBtn"
+onclick="swapPoints()">
 
 SWAP POINTS → PVLTG
 
 </button>
 
-<button onclick="claim()">
+<button
+class="actionBtn"
+onclick="claimPVLT()">
 
-CLAIM PVLTG
+CLAIM PVLT
 
 </button>
 
 </div>
 
+<!-- INFO -->
+
+<div class="info">
+
+1 Tap = 1 Point<br>
+
+10000 Points = 1 PVLTG<br>
+
+100 PVLTG = 1 PVLT
+
 </div>
 
-<!-- ================= SCRIPT ================= -->
+</div>
 
 <script>
 
-/* ================= STATE ================= */
-
-let wallet = "";
-let points = 0;
-let energy = 50;
-let pvltg = 0;
-
-let provider;
-
-/* ================= BACKEND URL ================= */
+/* ================= CONFIG ================= */
 
 const API =
 "https://pvlt-server.onrender.com";
 
-/* ================= UI ================= */
+const PROJECT_ID =
+"1731f99148b9cf6107dee70b6efb14b7";
+
+/* ================= STATE ================= */
+
+let provider;
+
+let wallet = "";
+
+let points = 0;
+
+let energy = 50;
+
+let pvltg = 0;
+
+/* ================= UPDATE UI ================= */
 
 function updateUI(){
 
@@ -271,22 +306,21 @@ document.getElementById(
 ).innerText = points;
 
 document.getElementById(
-"tokens"
+"pvltg"
 ).innerText =
 Number(pvltg).toFixed(4);
 }
 
 /* ================= CONNECT WALLET ================= */
 
-async function toggleWallet(){
+async function connectWallet(){
 
 try{
 
 provider =
 await EthereumProvider.init({
 
-projectId:
-"1731f99148b9cf6107dee70b6efb14b7",
+projectId:PROJECT_ID,
 
 chains:[137],
 
@@ -295,8 +329,6 @@ showQrModal:true
 });
 
 await provider.enable();
-
-/* ================= ETHERS ================= */
 
 const ethersProvider =
 new ethers.providers.Web3Provider(
@@ -309,7 +341,7 @@ ethersProvider.getSigner();
 wallet =
 await signer.getAddress();
 
-/* ================= SHOW ADDRESS ================= */
+/* DISPLAY ADDRESS */
 
 document.getElementById(
 "walletInput"
@@ -322,21 +354,21 @@ wallet.substring(
 wallet.length - 4
 );
 
-/* ================= BUTTON ================= */
+/* BUTTON */
 
 document.getElementById(
 "walletBtn"
 ).innerText =
 "CONNECTED";
 
-/* ================= STATUS ================= */
+/* STATUS */
 
 document.getElementById(
 "walletStatus"
 ).style.display =
 "block";
 
-/* ================= REGISTER USER ================= */
+/* REGISTER USER */
 
 const res =
 await fetch(
@@ -358,7 +390,7 @@ wallet
 const data =
 await res.json();
 
-/* ================= LOAD USER ================= */
+/* LOAD USER */
 
 points =
 data.points || 0;
@@ -368,8 +400,6 @@ data.energy || 50;
 
 pvltg =
 data.pvltg || 0;
-
-/* ================= UPDATE UI ================= */
 
 updateUI();
 
@@ -426,8 +456,6 @@ alert(data.error);
 return;
 }
 
-/* ================= UPDATE ================= */
-
 points =
 data.points;
 
@@ -440,7 +468,9 @@ updateUI();
 
 console.log(err);
 
-alert("Tap failed");
+alert(
+"Tap failed"
+);
 }
 }
 
@@ -486,15 +516,13 @@ alert(data.error);
 return;
 }
 
-/* ================= UPDATE ================= */
-
 energy =
 data.energy;
 
 updateUI();
 
 alert(
-"50 energy added"
+"50 Energy Added"
 );
 
 }catch(err){
@@ -502,7 +530,7 @@ alert(
 console.log(err);
 
 alert(
-"Refill failed"
+"Energy purchase failed"
 );
 }
 }
@@ -549,8 +577,6 @@ alert(data.error);
 return;
 }
 
-/* ================= UPDATE ================= */
-
 points = 0;
 
 pvltg =
@@ -572,14 +598,23 @@ alert(
 }
 }
 
-/* ================= CLAIM ================= */
+/* ================= CLAIM PVLT ================= */
 
-async function claim(){
+async function claimPVLT(){
 
 if(!wallet){
 
 alert(
 "Connect wallet first"
+);
+
+return;
+}
+
+if(pvltg < 100){
+
+alert(
+"Need minimum 100 PVLTG"
 );
 
 return;
@@ -614,14 +649,14 @@ alert(data.error);
 return;
 }
 
-/* ================= RESET PVLTG ================= */
+/* RESET */
 
 pvltg = 0;
 
 updateUI();
 
 alert(
-"PVLTG claimed successfully\n\nTX:\n"
+"PVLT claimed successfully\n\nTX:\n"
 +
 data.tx
 );
@@ -635,6 +670,19 @@ alert(
 );
 }
 }
+
+/* ================= AUTO REFILL ================= */
+
+setInterval(()=>{
+
+if(energy < 50){
+
+energy += 1;
+
+updateUI();
+}
+
+},30000);
 
 /* ================= START ================= */
 
