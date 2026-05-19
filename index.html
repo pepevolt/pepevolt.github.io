@@ -273,10 +273,11 @@ placeholder="Connect Polygon Wallet"
 readonly
 >
 
+<!-- TRIGGER MODIFIED TO USE TOGGLEWALLET() -->
 <button
 class="actionBtn"
 id="walletBtn"
-onclick="connectWallet()"
+onclick="toggleWallet()"
 >
 CONNECT WALLET
 </button>
@@ -452,7 +453,15 @@ document
 
 }
 
-/* ================= CONNECT WALLET ================= */
+/* ================= CONNECT/DISCONNECT WALLET ================= */
+
+async function toggleWallet() {
+    if (wallet) {
+        disconnectWallet();
+    } else {
+        await connectWallet();
+    }
+}
 
 async function connectWallet(){
 
@@ -512,7 +521,7 @@ wallet.slice(0,6)
 document.getElementById(
 "walletBtn"
 ).innerText =
-"CONNECTED";
+"DISCONNECT";
 
 document.getElementById(
 "walletStatus"
@@ -562,6 +571,24 @@ alert(
 
 }
 
+}
+
+function disconnectWallet() {
+    wallet = "";
+    web3Provider = null;
+    
+    // Clear application metrics upon disconnect
+    points = 0;
+    energy = 50;
+    pvltg = 0;
+    
+    // Update interfaces back to default state
+    document.getElementById("walletInput").value = "";
+    document.getElementById("walletBtn").innerText = "CONNECT WALLET";
+    document.getElementById("walletStatus").style.display = "none";
+    
+    updateUI();
+    alert("Wallet disconnected");
 }
 
 /* ================= TAP ================= */
@@ -677,7 +704,7 @@ PVLT_TOKEN_ADDRESS,
 
 [
 "function transfer(address to,uint256 amount) external returns(bool)",
-"function balanceOf(address owner) external view returns(uint256)"
+"function balanceOf(address owner) external view returns(uint225)"
 ],
 
 signer
