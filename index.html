@@ -734,5 +734,212 @@ updateUI();
 
 </script>
 
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
+
+<script>
+/* ================= CONFIG ================= */
+const API = "https://pvlt-server.onrender.com";
+const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
+
+/* ================= STATE ================= */
+let web3Provider; // Ethers provider instance
+let wallet = "";
+let points = 0;
+let energy = 50;
+let pvltg = 0;
+
+/* ================= UPDATE UI ================= */
+function updateUI(){
+    document.getElementById("energy").innerText = energy;
+    document.getElementById("points").innerText = points;
+    document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
+}
+
+/* ================= CONNECT WALLET ================= */
+async function connectWallet(){
+    try {
+        // 1. Check if user is opening this directly inside MetaMask/TrustWallet browser
+        if (window.ethereum) {
+            console.log("In-app Web3 browser detected.");
+            await window.ethereum.request({ method: "eth_requestAccounts" });
+            web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+        } 
+        // 2. Fallback to WalletConnect if they are on Safari/Chrome/Desktop
+        else {
+            console.log("Standard browser detected. Initializing WalletConnect...");
+            const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
+            
+            const wcProvider = await WalletConnectProvider.init({
+                projectId: PROJECT_ID,
+                chains: [137], // Polygon Mainnet
+                showQrModal: true,
+                qrModalOptions: { themeMode: "dark" }
+            });
+
+            await wcProvider.enable();
+            web3Provider = new ethers.providers.Web3Provider(wcProvider);
+        }
+
+        // 3. Extract the signer and user address
+        const signer = web3Provider.getSigner();
+        wallet = await signer.getAddress();
+
+        /* DISPLAY ADDRESS */
+        document.getElementById("walletInput").value =
+            wallet.substring(0,6) + "..." + wallet.substring(wallet.length - 4);
+
+        /* UPDATE BUTTONS */
+        document.getElementById("walletBtn").innerText = "CONNECTED";
+        document.getElementById("walletStatus").style.display = "block";
+
+        /* REGISTER / FETCH USER FROM RENDER BACKEND */
+        const res = await fetch(API + "/user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet })
+        });
+
+        const data = await res.json();
+        if (data.error) {
+            alert("Server Error: " + data.error);
+            return;
+        }
+
+        /* SYNC STATE */
+        points = data.points ?? 0;
+        energy = data.energy ?? 50;
+        pvltg = data.pvltg ?? 0;
+
+        updateUI();
+
+    } catch(err) {
+        console.error("Connection detailed error log:", err);
+        alert("Wallet connection failed: " + (err.message || "Unknown Error"));
+    }
+}
+
+/* ================= TAP ================= */
+async function tap(){
+    if(!wallet) return alert("Connect wallet first");
+
+    try{
+        const res = await fetch(API + "/tap", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet })
+        });
+        const data = await res.json();
+
+        if(data.error) return alert(data.error);
+
+        points = data.points;
+        energy = data.energy;
+        updateUI();
+    } catch(err){
+        console.error(err);
+        alert("Tap failed");
+    }
+}
+
+/* ================= BUY ENERGY ================= */
+async function buyEnergy(){
+    if(!wallet) return alert("Connect wallet first");
+
+    try{
+        const res = await fetch(API + "/refill", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet })
+        });
+        const data = await res.json();
+
+        if(data.error) return alert(data.error);
+
+        energy = data.energy;
+        updateUI();
+        alert("50 Energy Added");
+    } catch(err){
+        console.error(err);
+        alert("Energy purchase failed");
+    }
+}
+
+/* ================= SWAP POINTS ================= */
+async function swapPoints(){
+    if(!wallet) return alert("Connect wallet first");
+
+    try{
+        const res = await fetch(API + "/swap-points", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet })
+        });
+        const data = await res.json();
+
+        if(data.error) return alert(data.error);
+
+        points = 0;
+        pvltg = data.pvltg;
+        updateUI();
+        alert("Points swapped to PVLTG");
+    } catch(err){
+        console.error(err);
+        alert("Swap failed");
+    }
+}
+
+/* ================= CLAIM PVLT ================= */
+async function claimPVLT(){
+    if(!wallet) return alert("Connect wallet first");
+    if(pvltg < 100) return alert("Need minimum 100 PVLTG");
+
+    try{
+        const signer = web3Provider.getSigner();
+        const pvltgContract = new ethers.Contract(
+            "0x3094Dc50cB01721eE6c0ECAf18bd0D15c154ba2d",
+            ["function approve(address spender,uint256 amount) external returns(bool)"],
+            signer
+        );
+
+        const amount = ethers.utils.parseEther(pvltg.toString());
+        const approveTx = await pvltgContract.approve(
+            "0xe2bb81bD8e36367F2C85c89F0B03570dFCaf5D57",
+            amount
+        );
+        await approveTx.wait();
+
+        const res = await fetch(API + "/claim-pvltg", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet })
+        });
+        const data = await res.json();
+
+        if(data.error) return alert(data.error);
+
+        pvltg = 0;
+        updateUI();
+        alert("PVLT claimed successfully!\n\nTX:\n" + data.tx);
+    } catch(err){
+        console.error(err);
+        alert("Claim failed");
+    }
+}
+
+/* ================= AUTO REFILL ================= */
+setInterval(()=>{
+    if(energy < 50){
+        energy += 1;
+        updateUI();
+    }
+}, 30000);
+
+/* ================= START ================= */
+updateUI();
+</script>
+
+
 </body>
 </html>
