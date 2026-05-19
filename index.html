@@ -19,32 +19,30 @@
         let providerInstance = null;
         let modalInstance = null;
 
-        // Force explicit initialization as soon as DOM parses
+        // Automatically initialize the Web3 components when the document structure parses
         window.addEventListener('DOMContentLoaded', async () => {
             try {
-                // 1. Instantly assemble the standalone structural UI modal framework
+                // 1. Initialize standalone UI modal structure for standard mobile browsers
                 modalInstance = new Web3ModalStandalone.Web3Modal({
                     projectId: projectId,
                     walletConnectVersion: 2,
                     themeMode: 'dark',
-                    chains: ['eip155:137'] // Explicitly single out Polygon Mainnet
+                    chains: ['eip155:137'] // Explicitly targeting Polygon Mainnet
                 });
                 window.web3ModalInstance = modalInstance;
 
-                // 2. Initialize provider with lightweight configurations optimized for mobile connections
+                // 2. Initialize provider connection configuration optimized for quick mobile handshakes
                 providerInstance = await WalletConnectProvider.EthereumProvider.init({
                     projectId: projectId,
-                    chains: [137], // Core Required Chain ID
-                    optionalChains: [137], // Keeps internal lookup loops completely empty
-                    showQrModal: false, // Prevents dual-modal rendering conflicts
-                    methods: ["eth_sendTransaction", "personal_sign"], // Bare minimum methods required to run game mechanics
+                    chains: [137], 
+                    optionalChains: [137],
+                    showQrModal: false, // UI modal handles the modal popup event
+                    methods: ["eth_sendTransaction", "personal_sign"], 
                     events: ["chainChanged", "accountsChanged"]
                 });
-                
-                // Expose immediately to pass button validation checks
                 window.walletConnectProviderInstance = providerInstance;
 
-                // 3. Connect event streams cleanly
+                // 3. Bind event listeners to handle connections, accounts changes, and disconnections
                 providerInstance.on("display_uri", (uri) => {
                     modalInstance.openModal({ uri });
                 });
@@ -62,7 +60,7 @@
                     window.clearWalletState();
                 });
 
-                // Auto-session parsing check for existing storage objects
+                // Silent re-authentication hook for returning users with active sessions
                 if (providerInstance.session) {
                     const accounts = providerInstance.accounts;
                     if (accounts && accounts.length > 0) {
@@ -70,7 +68,7 @@
                     }
                 }
             } catch (err) {
-                console.error("Critical Web3 Connection Core Failure: ", err);
+                console.error("Web3 Wallet System Initialization Failure: ", err);
             }
         });
     </script>
@@ -325,10 +323,11 @@
                     }
                 }
             } catch (err) {
-                console.log("Injected auto-check bypassed.");
+                console.log("Injected silent pre-checks skipped.");
             }
         }
 
+        // Core Web3 Connection Routing Method
         async function handleWalletAction(){
             if(walletAddress) {
                 if(connectionType === "walletconnect" && window.walletConnectProviderInstance) {
@@ -339,7 +338,7 @@
                 return;
             }
 
-            // Route A: Natural Web3 DApp Interceptors (Bitget, Trust Wallet, MetaMask native webviews)
+            // Route A: Internal Web3 DApp Browsers (Bitget, MetaMask App view, etc.)
             if(window.ethereum) {
                 try {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -355,22 +354,23 @@
                     await syncWalletState(addr, "injected");
                     return;
                 } catch(e) {
-                    console.log("Bypassing DApp provider tab interceptor execution, launching modal.");
+                    console.log("DApp browser environment rejected or bypassed; falling back to modal window.");
                 }
             }
 
-            // Route B: Normal Browsers -> Execute WalletConnect QR Dialog UI
+            // Route B: Normal Browsers (Safari, Chrome, Telegram) -> Launches WalletConnect UI modal dialog 
             if(window.walletConnectProviderInstance) {
                 try {
                     await window.walletConnectProviderInstance.connect();
                 } catch (err) {
-                    console.log("User terminated stream interface dialog.");
+                    console.log("User closed the connection window frame manually.");
                 }
             } else {
                 alert("Web3 system initializing. Please try again in 3 seconds.");
             }
         }
 
+        // Global context assistant method to identify active transaction signers
         async function getActiveSigner() {
             if (connectionType === "injected" && window.ethereum) {
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -406,7 +406,7 @@
                 updateUI();
                 await loadOnChainBalances();
             } catch(err) {
-                console.log("Database fetch tracking sync error: ", err);
+                console.log("Database state sync mismatch: ", err);
             }
         }
 
@@ -468,18 +468,18 @@
             
             const signer = await getActiveSigner();
             if(!signer) {
-                alert("Failed to locate active login session metadata. Reconnect.");
+                alert("Could not access verification signature. Please reconnect.");
                 return;
             }
 
             try{
                 const token = new ethers.Contract(MAIN_TOKEN_CONTRACT, ERC20_ABI, signer);
                 
-                console.log("Requesting contract spend token authorization limits...");
+                console.log("Invoking contract allowance approvals...");
                 const approveTx = await token.approve(TREASURY_CONTRACT, ethers.utils.parseEther("100"));
                 await approveTx.wait();
 
-                console.log("Broadcasting verification payload to back-end node engine...");
+                console.log("Routing payment confirmation to main backend node...");
                 const res = await fetch(`${API_URL}/buy-energy`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -491,11 +491,11 @@
                 energy = data.energy; 
                 updateUI();
                 await loadOnChainBalances();
-                alert("Energy pack transaction cleared successfully!");
+                alert("Energy pack successfully unlocked!");
             }
             catch(err){
                 console.error(err);
-                alert("Transaction dropped or rejected.");
+                alert("Transaction dropped.");
             }
         }
 
@@ -513,14 +513,14 @@
                 points = data.points || 0;
                 pvltg = data.pvltg;
                 updateUI();
-            } catch(err){ console.log(err); alert("Points swap processing failure."); }
+            } catch(err){ console.log(err); alert("Points execution processing failed."); }
         }
 
         async function triggerWithdrawal(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
 
             try{
-                console.log("Submitting server reward extraction allocation request...");
+                console.log("Requesting server payout reward tracking checks...");
                 const res = await fetch(`${API_URL}/withdraw-pvltg`, {
                     method:"POST",
                     headers:{ "Content-Type":"application/json" },
@@ -532,9 +532,9 @@
                 pvltg = 0;
                 updateUI();
                 await loadOnChainBalances();
-                alert(`Withdrawal processing complete. Hash: ${data.tx}`);
+                alert(`Withdrawal complete! Hash Reference: ${data.tx}`);
             }
-            catch(err){ console.error(err); alert("Claim transaction routine failed."); }
+            catch(err){ console.error(err); alert("Claim transaction failed."); }
         }
 
         initializeEnergyTracking();
