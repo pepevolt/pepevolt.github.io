@@ -15,9 +15,7 @@
         .character-btn img { width: 220px; height: 220px; border-radius: 50%; box-shadow: 0 0 40px rgba(0, 255, 153, 0.3); }
         .ui-card { width: 90%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
         .address-display { width: 100%; padding: 14px; border-radius: 12px; background: #0a182c; color: #8fa3bf; border: none; font-size: 14px; text-align: center; font-weight: bold; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 15px; font-weight: bold; color: black; cursor: pointer; background: linear-gradient(90deg, #00ff99, #00ccff); transition: opacity 0.2s; }
-        .btn:active { opacity: 0.9; }
-        .footer-rules { font-size: 11px; line-height: 1.6; color: #697d95; text-align: center; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 15px; font-weight: bold; color: black; cursor: pointer; background: linear-gradient(90deg, #00ff99, #00ccff); }
     </style>
 </head>
 <body>
@@ -32,25 +30,23 @@
     <button class="character-btn" onclick="handleTap()">
         <img src="images/IMG_1850.png" alt="PepeVolt">
     </button>
-
     <div class="ui-card">
         <input class="address-display" id="walletDisplay" value="Wallet Not Connected" readonly>
         <button class="btn" id="connectBtn" onclick="toggleWalletConnection()">CONNECT WALLET</button>
+        <button class="btn" onclick="swapPoints()">SWAP POINTS → PVLTG</button>
         <button class="btn" onclick="triggerClaim()">CLAIM PVLT</button>
     </div>
 </div>
 
-<div class="footer-rules">
-    1 Tap = 1 Point<br>
-    10000 Points = 1 PVLTG<br>
-    100 PVLTG = 1 PVLT
+<div style="font-size: 11px; color: #697d95; text-align: center; line-height: 1.6;">
+    1 Tap = 1 Point<br>10000 Points = 1 PVLTG<br>100 PVLTG = 1 PVLT
 </div>
 
 <script>
-    const API_URL = "https://pvlt-server.onrender.com";
-    let provider, walletAddress = "", points = 0, energy = 50, pvltg = 0;
+    const API_URL = "https://pvlt-server.onrender.com"; // Replace with your actual Render URL
+    let walletAddress = "", points = 0, energy = 50, pvltg = 0;
 
-    function updateAppInterface() {
+    function updateUI() {
         document.getElementById("energy").innerText = energy;
         document.getElementById("points").innerText = points;
         document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
@@ -58,49 +54,56 @@
 
     async function toggleWalletConnection() {
         if (walletAddress) {
-            walletAddress = ""; provider = null;
+            walletAddress = "";
             document.getElementById("walletDisplay").value = "Wallet Not Connected";
             document.getElementById("connectBtn").innerText = "CONNECT WALLET";
             return;
         }
         if (window.ethereum) {
             await window.ethereum.request({ method: "eth_requestAccounts" });
-            provider = new ethers.providers.Web3Provider(window.ethereum, { chainId: 137, name: 'polygon' });
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
             walletAddress = await provider.getSigner().getAddress();
             document.getElementById("walletDisplay").value = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
             document.getElementById("connectBtn").innerText = "DISCONNECT";
             
-            // Sync with backend database
             const res = await fetch(`${API_URL}/user`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ wallet: walletAddress })
             });
             const data = await res.json();
-            points = data.points || 0; energy = data.energy || 50; pvltg = data.pvltg || 0;
-            updateAppInterface();
-        } else {
-            alert("Please open this app inside a Web3 compatible browser or wallet app.");
+            points = data.points; energy = data.energy; pvltg = data.pvltg;
+            updateUI();
         }
     }
 
     async function handleTap() {
-        if (!walletAddress) return alert("Connect wallet first");
+        if (!walletAddress) return;
         const res = await fetch(`${API_URL}/tap`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ wallet: walletAddress })
         });
         const data = await res.json();
-        if (data.error) return alert(data.error);
         points = data.points; energy = data.energy;
-        updateAppInterface();
+        updateUI();
+    }
+
+    async function swapPoints() {
+        if (!walletAddress) return;
+        const res = await fetch(`${API_URL}/swap-points`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet: walletAddress })
+        });
+        const data = await res.json();
+        if (data.error) return alert(data.error);
+        pvltg = data.pvltg; points = data.remainingPoints;
+        updateUI();
     }
 
     async function triggerClaim() {
-        if (!walletAddress) return alert("Connect wallet first");
-        alert("Processing exchange payout... Please wait.");
-        
+        if (!walletAddress) return;
         const res = await fetch(`${API_URL}/claim-pvltg`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -108,10 +111,9 @@
         });
         const data = await res.json();
         if (data.error) return alert(data.error);
-        
         pvltg = 0;
-        updateAppInterface();
-        alert("Success! Your earned PVLT has been dropped directly into your personal wallet account.");
+        updateUI();
+        alert("Claim successful! Tokens transferred to your personal wallet.");
     }
 </script>
 </body>
