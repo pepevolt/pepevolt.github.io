@@ -310,10 +310,10 @@ CLAIM PVLT
 1 Tap = 1 Point
 <br>
 
-10000 Points = 1 PVLTG
+10 Points = 1 PVLTG
 <br>
 
-100 PVLTG = 1 PVLT
+1 PVLTG = 1 PVLT
 
 </div>
 
@@ -713,19 +713,6 @@ await tokenContract.balanceOf(
 wallet
 );
 
-console.log(
-"RAW BALANCE:",
-rawBalance.toString()
-);
-
-console.log(
-"FORMATTED:",
-ethers.utils.formatUnits(
-rawBalance,
-TOKEN_DECIMALS
-)
-);
-
 if(rawBalance.lt(amount)){
 
 alert(
@@ -900,10 +887,11 @@ alert(
 return;
 }
 
-if(pvltg < 100){
+/* Match server validation limits */
+if(pvltg < 1){
 
 alert(
-"Need minimum 100 PVLTG"
+"Need minimum 1 PVLTG"
 );
 
 return;
@@ -914,10 +902,11 @@ try{
 const signer =
 web3Provider.getSigner();
 
+/* FIX: Call approve on the PVLTG token contract so the engine can clear it */
 const tokenContract =
 new ethers.Contract(
 
-PVLT_TOKEN_ADDRESS,
+PVLTG_TOKEN_ADDRESS,
 
 [
 "function approve(address spender,uint256 amount) external returns(bool)"
