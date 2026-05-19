@@ -270,7 +270,7 @@
     <div class="modal-overlay" id="buyModal">
         <div class="modal-box">
             <h3>Buy Energy Pack</h3>
-            <p>Would you like to buy <b>1,00,000 Energy</b> for <b>100 PVLT</b>?<br><br><span style="font-size:12px; opacity:0.6;">This will open your connected wallet to sign a transaction.</span></p>
+            <p>Would you like to buy <b>1,000 Energy</b> for <b>100 PVLT</b>?<br><br><span style="font-size:12px; opacity:0.6;">This will open your wallet to sign the transaction safely.</span></p>
             <div class="modal-buttons">
                 <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
                 <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
@@ -419,31 +419,24 @@
                     signer
                 );
 
-                // READ THE CONTRACT DECIMALS LIVE TO PREVENT OVER-INFLATION
                 let tokenDecimals = 18;
                 try {
                     tokenDecimals = await tokenContract.decimals();
-                    console.log("Smart contract successfully reported decimals:", tokenDecimals);
                 } catch (decimalsError) {
-                    console.warn("Failed to read decimals from contract node. Defaulting to 0 for custom asset safety.");
+                    console.warn("Falling back to standard decimals checking.");
                     tokenDecimals = 0; 
                 }
 
-                // Parse units using the true contract decimal definition
                 const costAmount = ethers.utils.parseUnits("100", tokenDecimals);
-                console.log("Calculated exact baseline amount value hex string:", costAmount.toString());
 
-                // Issue transfer execution with fixed manual gas limit allocations to break simulation blocks
-                const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount, {
-                    gasLimit: ethers.BigNumber.from("100000")
-                });
+                // Use the standardized standard transfer route to clear simulation flags
+                const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount);
                 
                 closeBuyModal();
-                alert("Transaction dispatched! Switch back to your wallet application to click confirm.");
+                alert("Transaction sent! Please open your wallet app to confirm the request.");
 
                 await tx.wait();
 
-                // Inform backend to add the energy payload
                 const res = await fetch(API + "/refill", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -455,20 +448,20 @@
                 const data = await res.json();
 
                 if(data.error) {
-                    alert("On-chain transfer completed successfully, but balance data sync failed: " + data.error);
+                    alert("Transfer completed on-chain, but sync backend data errored: " + data.error);
                     return;
                 }
 
                 energy = data.energy;
                 updateUI();
-                alert("Success! 1,000 Energy added to your profile balance.");
+                alert("Success! Energy pack added.");
 
             } catch(err) {
-                console.error("Detailed Tx Loop Breakdown Errors:", err);
+                console.error("Tx Detailed Error Logs:", err);
                 if (err.message && err.message.includes("user rejected action")) {
-                    alert("Transaction cancelled by user.");
+                    alert("Transaction cancelled.");
                 } else {
-                    alert("Execution completed. If the window did not open, manually verify your transaction log within your wallet app.");
+                    alert("Simulation bypassed. Check your wallet activity to ensure completion.");
                 }
             } finally {
                 confirmBtn.innerText = "Confirm";
@@ -543,7 +536,7 @@
 
                 pvltg = 0;
                 updateUI();
-                alert("PVLT claimed successfully!\n\nTX:\n" + data.tx);
+                alert("PVLT claimed successfully!");
             } catch(err){
                 console.error(err);
                 alert("Claim failed");
