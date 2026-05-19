@@ -9,6 +9,7 @@
     <script type="module">
         import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.run/@web3modal/wagmi@3.5.0';
         import { polygon } from 'https://esm.run/viem/chains';
+        import { getAccount, watchAccount, disconnect } from 'https://esm.run/@wagmi/core';
 
         const projectId = '1731f99148b9cf6107dee70b6efb14b7';
         const metadata = {
@@ -21,7 +22,22 @@
         const chains = [polygon];
         const wagmiConfig = defaultWagmiConfig({ chains, projectId, metadata });
 
-        createWeb3Modal({ wagmiConfig, projectId, chains });
+        // Initialize Web3Modal global registry
+        const modal = createWeb3Modal({ wagmiConfig, projectId, chains });
+
+        // Bind Web3Modal globally so our vanilla buttons can trigger modal states smoothly
+        window.web3ModalInstance = modal;
+        window.wagmiDisconnect = disconnect;
+        window.wagmiConfig = wagmiConfig;
+
+        // Automatically track and listen to connection state changes
+        watchAccount((account) => {
+            if (account && account.isConnected) {
+                window.syncWalletState(account.address);
+            } else {
+                window.clearWalletState();
+            }
+        });
     </script>
 
     <style>
@@ -203,7 +219,7 @@
 
         <div class="ui-card">
             <input class="address-display" id="walletDisplay" value="Wallet Not Connected" readonly>
-            <button class="btn" id="connectBtn" onclick="handleWalletAction(false)">CONNECT WALLET</button>
+            <button class="btn" id="connectBtn" onclick="handleWalletAction()">CONNECT WALLET</button>
             <button class="btn" onclick="triggerBuyEnergy()">BUY INSTANT ENERGY</button>
             <button class="btn" onclick="swapPoints()">SWAP POINTS → PVLTG</button>
             <button class="btn btn-withdraw" onclick="triggerWithdrawal()">WITHDRAWAL PVLT</button>
@@ -262,76 +278,42 @@
             }, 1000);
         }
 
-        // --- FIXED: COMPLETELY SILENT AUTO-DETECTOR ---
-        async function checkExistingConnection() {
-            try {
-                if (window.ethereum) {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const accounts = await provider.listAccounts();
-                    
-                    if (accounts.length > 0) {
-                        console.log("Authorized session detected.");
-                        await handleWalletAction(true);
-                    }
+        // --- DYNAMIC WEB3MODAL TRIGGER ACTIONS ---
+        async function handleWalletAction(){
+            const connectBtn = document.getElementById("connectBtn");
+
+            // If a valid connection exists, act as a clean DISCONNECT toggle
+            if(walletAddress) {
+                if(window.wagmiDisconnect && window.wagmiConfig) {
+                    await window.wagmiDisconnect(window.wagmiConfig);
                 }
-            } catch (err) {
-                console.log("Silent auto-detection skipped:", err);
+                clearWalletState();
+                return;
+            }
+
+            // Launch Web3Modal selection popup immediately for clean mobile connecting
+            if(window.web3ModalInstance) {
+                window.web3ModalInstance.open();
+            } else {
+                alert("Web3 system initializing. Please try again in a moment.");
             }
         }
 
-        // --- UPDATED LOGIN HANDLER WITH FIXED ALERTS ---
-        async function handleWalletAction(isAutoDetect = false){
+        // --- GLOBAL SYNC: CONNECTED STATE ---
+        window.syncWalletState = async function(address) {
+            walletAddress = address;
             const connectBtn = document.getElementById("connectBtn");
 
-            // Click action to DISCONNECT
-            if(walletAddress && !isAutoDetect) {
-                walletAddress = "";
-                points = 0;
-                energy = 0;
-                pvltg = 0;
-                
-                document.getElementById("walletDisplay").value = "Wallet Not Connected";
-                connectBtn.innerText = "CONNECT WALLET";
-                connectBtn.classList.remove("btn-disconnect");
-                
-                document.getElementById("userWalletPvlt").innerText = "0.0000";
-                document.getElementById("treasuryVaultPvlt").innerText = "0.0000";
-                
-                updateUI();
-                return;
-            }
+            document.getElementById("walletDisplay").value = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
+            connectBtn.innerText = "DISCONNECT";
+            connectBtn.classList.add("btn-disconnect");
 
-            // If no provider is found...
-            if(!window.ethereum){
-                // ONLY show the error alert if the user explicitly clicked the button
-                if(!isAutoDetect) {
-                    alert("Wallet provider not detected! Please open this game link inside your crypto wallet app's built-in Web3 browser (like MetaMask or Trust Wallet).");
-                }
-                return;
-            }
-
-            try{
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                const signer = provider.getSigner();
-                walletAddress = await signer.getAddress();
-                const network = await provider.getNetwork();
-
-                if(network.chainId !== 137){
-                    await provider.send("wallet_switchEthereumChain", [{ chainId:"0x89" }]);
-                }
-
-                document.getElementById("walletDisplay").value = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
-                
-                connectBtn.innerText = "DISCONNECT";
-                connectBtn.classList.add("btn-disconnect");
-
+            try {
                 const res = await fetch(`${API_URL}/user`, {
                     method:"POST",
                     headers: { "Content-Type":"application/json" },
                     body:JSON.stringify({ wallet:walletAddress })
                 });
-
                 const data = await res.json();
                 
                 points = 0; 
@@ -340,16 +322,46 @@
 
                 updateUI();
                 await loadOnChainBalances();
+            } catch(err) {
+                console.log("Database fetch failed: ", err);
             }
-            catch(err){
-                console.log("Connection handling issue: ", err);
+        }
+
+        // --- GLOBAL SYNC: DISCONNECTED STATE ---
+        window.clearWalletState = function() {
+            walletAddress = "";
+            points = 0;
+            energy = 0;
+            pvltg = 0;
+            
+            const connectBtn = document.getElementById("connectBtn");
+            document.getElementById("walletDisplay").value = "Wallet Not Connected";
+            connectBtn.innerText = "CONNECT WALLET";
+            connectBtn.classList.remove("btn-disconnect");
+            
+            document.getElementById("userWalletPvlt").innerText = "0.0000";
+            document.getElementById("treasuryVaultPvlt").innerText = "0.0000";
+            
+            updateUI();
+        }
+
+        // Helper fallback method to access standard injected providers or WalletConnect chains
+        function getWeb3Provider() {
+            if (window.ethereum) {
+                return new ethers.providers.Web3Provider(window.ethereum);
+            } else if (window.wagmiConfig) {
+                // If on standard mobile web, link cleanly using the WalletConnect routing pool
+                return new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
             }
+            return null;
         }
 
         async function loadOnChainBalances(){
             if(!walletAddress) return;
+            const provider = getWeb3Provider();
+            if(!provider) return;
+
             try{
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const token = new ethers.Contract(MAIN_TOKEN_CONTRACT, ERC20_ABI, provider);
                 const decimals = await token.decimals();
 
@@ -383,6 +395,11 @@
 
         async function triggerBuyEnergy(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
+            if(!window.ethereum) {
+                alert("To complete raw contract interactions, please use a built-in Web3 browser app.");
+                return;
+            }
+
             try{
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const signer = provider.getSigner();
@@ -402,10 +419,7 @@
                 });
                 const data = await res.json();
                 
-                if(data.error){ 
-                    alert(data.error); 
-                    return; 
-                }
+                if(data.error){ alert(data.error); return; }
 
                 energy = 20; 
                 updateUI();
@@ -413,7 +427,7 @@
                 alert("Energy purchased successfully!");
             }
             catch(err){
-                console.log("Purchase runtime loop exception: ", err);
+                console.log(err);
                 alert("Energy purchase failed");
             }
         }
@@ -437,6 +451,11 @@
 
         async function triggerWithdrawal(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
+            if(!window.ethereum) {
+                alert("To complete raw contract interactions, please use a built-in Web3 browser app.");
+                return;
+            }
+
             try{
                 const res = await fetch(`${API_URL}/withdraw`, {
                     method:"POST",
@@ -461,9 +480,8 @@
             catch(err){ console.log(err); alert("Withdrawal failed"); }
         }
 
-        // --- EXECUTIONS ON PAGE LOAD ---
+        // Initialize energy refill loops securely on page load
         initializeEnergyTracking();
-        checkExistingConnection();
     </script>
 
 </body>
