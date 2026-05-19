@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>PVLT Tap Game</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
 
@@ -208,13 +208,19 @@
         /* ================= CONNECT WALLET ================= */
         async function connectWallet(){
             try {
-                // 1. Check if user is opening this inside a native Web3 wallet browser
+                // Safety guard check to verify CDN parsed successfully on your phone
+                if (typeof window.ethers === 'undefined') {
+                    alert("Ethers library failed to load from CDN. Try clearing your browser cache.");
+                    return;
+                }
+
+                // 1. Check if user is opening this inside a native Web3 wallet application browser
                 if (typeof window.ethereum !== 'undefined') {
                     console.log("In-app Web3 browser detected.");
                     await window.ethereum.request({ method: "eth_requestAccounts" });
                     web3Provider = new ethers.providers.Web3Provider(window.ethereum);
                 } 
-                // 2. Fallback to WalletConnect if they are on Safari/Chrome/Telegram standard UI
+                // 2. Fallback to WalletConnect if they are on mobile Safari/Chrome/Telegram standard UI
                 else {
                     console.log("Standard browser detected. Initializing WalletConnect...");
                     const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
@@ -233,12 +239,12 @@
                         qrModalOptions: { themeMode: "dark" }
                     });
 
-                    // Trigger mobile workflow connection modal
+                    // Trigger mobile workflow connection modal connection
                     await wcProvider.connect();
                     web3Provider = new ethers.providers.Web3Provider(wcProvider);
                 }
 
-                // 3. Extract the signer and user address
+                // 3. Extract the signer and user address securely
                 const signer = web3Provider.getSigner();
                 wallet = await signer.getAddress();
 
