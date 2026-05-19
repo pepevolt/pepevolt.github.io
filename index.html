@@ -410,7 +410,6 @@
 
                 const signer = web3Provider.getSigner();
                 
-                // Comprehensive ABI to fetch exact properties dynamically
                 const tokenContract = new ethers.Contract(
                     PVLT_TOKEN_ADDRESS,
                     [
@@ -421,35 +420,40 @@
                     signer
                 );
 
-                // Fetch contract's native decimal setup automatically
+                // Fetch contract layout properties dynamically
                 let decimals = 18;
                 try {
                     decimals = await tokenContract.decimals();
+                    console.log("Contract uses native decimals:", decimals);
                 } catch(e) {
-                    console.log("Using standard 18 decimal fallback", e);
+                    console.log("Falling back to standard 18 decimals due to node reading lag:", e);
                 }
 
-                // Correctly parse 100 based on the contract's actual layout
+                // Format the 100 payment explicitly based on contract decimals
                 const costAmount = ethers.utils.parseUnits("100", decimals);
 
-                // Verify balance matches up safely
+                // Robust Balance validation structure
                 try {
-                    const userBalance = await tokenContract.balanceOf(wallet);
-                    if (userBalance.lt(costAmount)) {
-                        alert("Insufficient PVLT Balance! You need at least 100 PVLT to buy this pack.");
+                    const rawBalance = await tokenContract.balanceOf(wallet);
+                    console.log("Raw wallet token balance fetched:", rawBalance.toString());
+                    
+                    if (rawBalance.lt(costAmount)) {
+                        // Let's print out what the contract reports vs what we need to troubleshoot decimal gaps
+                        console.warn(`Balance Check failed. Required: ${costAmount.toString()}, Found: ${rawBalance.toString()}`);
+                        alert(`Contract Validation Error: Wallet balance reported to the node is lower than the amount required for purchase.`);
                         return;
                     }
                 } catch(balanceErr) {
-                    console.log("Balance safety check skipped:", balanceErr);
+                    console.log("Skipping automated node validation check due to processing latency:", balanceErr);
                 }
 
-                // Call transfer with an explicit Gas Limit override block
+                // Issue the transfer with explicit high-priority standard Gas Limits
                 const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount, {
-                    gasLimit: 80000 
+                    gasLimit: ethers.BigNumber.from("150000")
                 });
                 
                 closeBuyModal();
-                alert("Transaction submitted! Open your wallet app if prompted and approve the transfer.");
+                alert("Transaction sent! Please open your wallet app to confirm and process the payment execution.");
 
                 await tx.wait();
 
@@ -464,7 +468,7 @@
                 const data = await res.json();
 
                 if(data.error) {
-                    alert("Payment received, but database sync error occurred: " + data.error);
+                    alert("Payment transferred successfully on-chain, but profile database updates failed: " + data.error);
                     return;
                 }
 
@@ -473,11 +477,11 @@
                 alert("Success! 1,000 Energy added to your profile balance.");
 
             } catch(err) {
-                console.error("Purchase Detailed Error:", err);
+                console.error("Purchase Detailed Error Logs:", err);
                 if (err.message && err.message.includes("user rejected action")) {
                     alert("Transaction cancelled by user.");
                 } else {
-                    alert("Transaction failed! Ensure your contract configuration addresses match and you have a fraction of POL (MATIC) left to cover minor gas fees.");
+                    alert("Transaction execution failed! Please confirm that your contract address configurations match exactly and your wallet balance holds minor POL (MATIC) tokens to cover network gas fees.");
                 }
             } finally {
                 confirmBtn.innerText = "Confirm";
