@@ -15,10 +15,8 @@ user-scalable=no"
 
 <title>PVLT Tap Game</title>
 
-<!-- ETHERS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
-<!-- WALLET CONNECT -->
 <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
 
 <style>
@@ -231,8 +229,6 @@ color:white;
 
 <body>
 
-<!-- TOPBAR -->
-
 <div class="topbar">
 
 <div>
@@ -248,8 +244,6 @@ color:white;
 </div>
 
 </div>
-
-<!-- MAIN -->
 
 <div class="main">
 
@@ -273,7 +267,6 @@ placeholder="Connect Polygon Wallet"
 readonly
 >
 
-<!-- TRIGGER MODIFIED TO USE TOGGLEWALLET() -->
 <button
 class="actionBtn"
 id="walletBtn"
@@ -326,8 +319,6 @@ CLAIM PVLT
 
 </div>
 
-<!-- MODAL -->
-
 <div
 class="modal-overlay"
 id="buyModal"
@@ -342,7 +333,7 @@ Buy Energy Pack
 <p>
 
 Buy
-<b>100,000 Energy</b>
+<b>10,000 Energy</b>
 
 for
 
@@ -576,13 +567,10 @@ alert(
 function disconnectWallet() {
     wallet = "";
     web3Provider = null;
-    
-    // Clear application metrics upon disconnect
     points = 0;
     energy = 50;
     pvltg = 0;
     
-    // Update interfaces back to default state
     document.getElementById("walletInput").value = "";
     document.getElementById("walletBtn").innerText = "CONNECT WALLET";
     document.getElementById("walletStatus").style.display = "none";
@@ -704,7 +692,7 @@ PVLT_TOKEN_ADDRESS,
 
 [
 "function transfer(address to,uint256 amount) external returns(bool)",
-"function balanceOf(address owner) external view returns(uint225)"
+"function balanceOf(address owner) external view returns(uint256)"
 ],
 
 signer
@@ -803,7 +791,7 @@ refillData.energy;
 updateUI();
 
 alert(
-"100,000 Energy Added Successfully"
+"10,000 Energy Added Successfully"
 );
 
 }catch(err){
