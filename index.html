@@ -2,13 +2,9 @@
 <html>
 
 <head>
-  
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
-
-<script src="https://unpkg.com/@walletconnect/ethereum-provider/dist/index.umd.js"></script>
-  
 
 <meta charset="UTF-8">
+
 <meta name="viewport"
 content="width=device-width,
 initial-scale=1,
@@ -16,6 +12,12 @@ maximum-scale=1,
 user-scalable=no">
 
 <title>PVLT Tap Game</title>
+
+<!-- ETHERS -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
+<!-- WALLETCONNECT / REOWN -->
+<script src="https://unpkg.com/@walletconnect/ethereum-provider/dist/index.umd.js"></script>
 
 <style>
 
@@ -45,6 +47,8 @@ display:flex;
 flex-direction:column;
 }
 
+/* ================= NAV ================= */
+
 .nav{
 display:flex;
 justify-content:space-between;
@@ -53,6 +57,8 @@ background:#101b2e;
 font-size:12px;
 }
 
+/* ================= CONTAINER ================= */
+
 .container{
 flex:1;
 display:flex;
@@ -60,6 +66,8 @@ flex-direction:column;
 align-items:center;
 padding:20px;
 }
+
+/* ================= TAP BUTTON ================= */
 
 .tap{
 width:220px;
@@ -78,7 +86,11 @@ user-select:none;
 -webkit-user-select:none;
 }
 
-.tap:active{ transform:scale(0.96); }
+.tap:active{
+transform:scale(0.96);
+}
+
+/* ================= LOGO ================= */
 
 .tapLogo{
 width:75%;
@@ -86,6 +98,8 @@ height:75%;
 object-fit:contain;
 pointer-events:none;
 }
+
+/* ================= CARD ================= */
 
 .bigCard{
 width:90%;
@@ -100,6 +114,8 @@ flex-direction:column;
 gap:12px;
 }
 
+/* ================= INPUT ================= */
+
 input{
 width:100%;
 padding:14px;
@@ -107,7 +123,10 @@ border:none;
 border-radius:10px;
 background:#111827;
 color:white;
+font-size:14px;
 }
+
+/* ================= BUTTON ================= */
 
 button{
 width:100%;
@@ -115,9 +134,16 @@ padding:14px;
 border:none;
 border-radius:10px;
 font-weight:bold;
-background:linear-gradient(90deg,#00ff99,#00ccff);
+font-size:16px;
+background:linear-gradient(
+90deg,
+#00ff99,
+#00ccff
+);
 color:black;
 }
+
+/* ================= STATUS ================= */
 
 .status{
 font-size:12px;
@@ -132,81 +158,89 @@ display:none;
 
 <body>
 
+<!-- ================= TOP NAV ================= -->
+
 <div class="nav">
-<div>🔋 <span id="energy">50</span></div>
-<div>⚡ <span id="points">0</span></div>
-<div>💎 <span id="tokens">0.0000</span></div>
+
+<div>
+🔋
+<span id="energy">50</span>
 </div>
+
+<div>
+⚡
+<span id="points">0</span>
+</div>
+
+<div>
+💎
+<span id="tokens">0.0000</span>
+</div>
+
+</div>
+
+<!-- ================= MAIN ================= -->
 
 <div class="container">
 
+<!-- TAP BUTTON -->
+
 <button class="tap" onclick="tap()">
-  <img src="images/IMG_1850.png" class="tapLogo">
+
+<img
+src="images/IMG_1850.png"
+class="tapLogo">
+
 </button>
+
+<!-- CARD -->
 
 <div class="bigCard">
 
-<!-- CHANGED HERE -->
-<input id="walletInput" placeholder="Paste POL wallet">
+<input
+id="walletInput"
+placeholder="Connect Polygon Wallet"
+readonly>
 
-<button id="walletBtn" onclick="toggleWallet()">
+<button
+id="walletBtn"
+onclick="toggleWallet()">
+
 CONNECT WALLET
+
 </button>
 
-<div id="walletStatus" class="status">Wallet Connected</div>
+<div
+id="walletStatus"
+class="status">
 
-<button onclick="buyEnergy()">BUY ENERGY (REFILL)</button>
+Wallet Connected
 
-<button onclick="claim()">CLAIM TOKENS</button>
+</div>
+
+<button onclick="buyEnergy()">
+
+BUY ENERGY (REFILL)
+
+</button>
+
+<button onclick="swapPoints()">
+
+SWAP POINTS → PVLTG
+
+</button>
+
+<button onclick="claim()">
+
+CLAIM PVLTG
+
+</button>
 
 </div>
 
 </div>
 
-<script>
-
-/* ================= STATE ================= */
-
-let wallet = "";
-let points = 0;
-let energy = 50;
-let lastClaimTime = 0;
-
-/* ================= STORAGE ================= */
-
-function saveState(){
-  if(!wallet) return;
-
-  localStorage.setItem(wallet, JSON.stringify({
-    points,
-    energy,
-    lastClaimTime
-  }));
-}
-
-function loadState(addr){
-  let data = localStorage.getItem(addr);
-
-  if(data){
-    let obj = JSON.parse(data);
-    points = obj.points || 0;
-    energy = obj.energy || 50;
-    lastClaimTime = obj.lastClaimTime || 0;
-  } else {
-    points = 0;
-    energy = 50;
-    lastClaimTime = 0;
-  }
-}
-
-/* ================= UI ================= */
-
-function updateUI(){
-document.getElementById("energy").innerText = energy;
-document.getElementById("points").innerText = points;
-document.getElementById("tokens").innerText =
-(points / 10000).toFixed(4);
-}
+<!-- ================= SCRIPT ================= -->
 
 <script>
 
@@ -219,18 +253,27 @@ let pvltg = 0;
 
 let provider;
 
+/* ================= BACKEND URL ================= */
+
+const API =
+"https://pvlt-server.onrender.com";
+
 /* ================= UI ================= */
 
 function updateUI(){
 
-document.getElementById("energy")
-.innerText = energy;
+document.getElementById(
+"energy"
+).innerText = energy;
 
-document.getElementById("points")
-.innerText = points;
+document.getElementById(
+"points"
+).innerText = points;
 
-document.getElementById("tokens")
-.innerText = Number(pvltg).toFixed(4);
+document.getElementById(
+"tokens"
+).innerText =
+Number(pvltg).toFixed(4);
 }
 
 /* ================= CONNECT WALLET ================= */
@@ -239,7 +282,6 @@ async function toggleWallet(){
 
 try{
 
-/* CONNECT */
 provider =
 await EthereumProvider.init({
 
@@ -254,7 +296,8 @@ showQrModal:true
 
 await provider.enable();
 
-/* ETHERS */
+/* ================= ETHERS ================= */
+
 const ethersProvider =
 new ethers.providers.Web3Provider(
 provider
@@ -266,7 +309,8 @@ ethersProvider.getSigner();
 wallet =
 await signer.getAddress();
 
-/* SHOW WALLET */
+/* ================= SHOW ADDRESS ================= */
+
 document.getElementById(
 "walletInput"
 ).value =
@@ -274,41 +318,58 @@ wallet.substring(0,6)
 +
 "..."
 +
-wallet.substring(wallet.length-4);
+wallet.substring(
+wallet.length - 4
+);
 
-/* BUTTON */
+/* ================= BUTTON ================= */
+
 document.getElementById(
 "walletBtn"
 ).innerText =
 "CONNECTED";
 
-/* STATUS */
+/* ================= STATUS ================= */
+
 document.getElementById(
 "walletStatus"
 ).style.display =
 "block";
 
-/* REGISTER USER */
+/* ================= REGISTER USER ================= */
+
 const res =
 await fetch(
-"https://pvlt-server.onrender.com/user",
+API + "/user",
 {
 method:"POST",
+
 headers:{
-"Content-Type":"application/json"
+"Content-Type":
+"application/json"
 },
+
 body:JSON.stringify({
 wallet
 })
 }
 );
 
-const data = await res.json();
+const data =
+await res.json();
 
-/* LOAD DATA */
-points = data.points || 0;
-energy = data.energy || 50;
-pvltg = data.pvltg || 0;
+/* ================= LOAD USER ================= */
+
+points =
+data.points || 0;
+
+energy =
+data.energy || 50;
+
+pvltg =
+data.pvltg || 0;
+
+/* ================= UPDATE UI ================= */
 
 updateUI();
 
@@ -329,7 +390,9 @@ async function tap(){
 
 if(!wallet){
 
-alert("Connect wallet first");
+alert(
+"Connect wallet first"
+);
 
 return;
 }
@@ -338,12 +401,15 @@ try{
 
 const res =
 await fetch(
-"https://pvlt-server.onrender.com/tap",
+API + "/tap",
 {
 method:"POST",
+
 headers:{
-"Content-Type":"application/json"
+"Content-Type":
+"application/json"
 },
+
 body:JSON.stringify({
 wallet
 })
@@ -360,9 +426,13 @@ alert(data.error);
 return;
 }
 
-/* UPDATE UI */
-points = data.points;
-energy = data.energy;
+/* ================= UPDATE ================= */
+
+points =
+data.points;
+
+energy =
+data.energy;
 
 updateUI();
 
@@ -374,13 +444,15 @@ alert("Tap failed");
 }
 }
 
-/* ================= SWAP POINTS ================= */
+/* ================= BUY ENERGY ================= */
 
-async function swapPoints(){
+async function buyEnergy(){
 
 if(!wallet){
 
-alert("Connect wallet");
+alert(
+"Connect wallet first"
+);
 
 return;
 }
@@ -389,12 +461,15 @@ try{
 
 const res =
 await fetch(
-"https://pvlt-server.onrender.com/swap-points",
+API + "/refill",
 {
 method:"POST",
+
 headers:{
-"Content-Type":"application/json"
+"Content-Type":
+"application/json"
 },
+
 body:JSON.stringify({
 wallet
 })
@@ -411,9 +486,75 @@ alert(data.error);
 return;
 }
 
+/* ================= UPDATE ================= */
+
+energy =
+data.energy;
+
+updateUI();
+
+alert(
+"50 energy added"
+);
+
+}catch(err){
+
+console.log(err);
+
+alert(
+"Refill failed"
+);
+}
+}
+
+/* ================= SWAP POINTS ================= */
+
+async function swapPoints(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+API + "/swap-points",
+{
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+/* ================= UPDATE ================= */
+
 points = 0;
 
-pvltg = data.pvltg;
+pvltg =
+data.pvltg;
 
 updateUI();
 
@@ -425,17 +566,21 @@ alert(
 
 console.log(err);
 
-alert("Swap failed");
+alert(
+"Swap failed"
+);
 }
 }
 
-/* ================= CLAIM PVLTG ================= */
+/* ================= CLAIM ================= */
 
 async function claim(){
 
 if(!wallet){
 
-alert("Connect wallet");
+alert(
+"Connect wallet first"
+);
 
 return;
 }
@@ -444,12 +589,15 @@ try{
 
 const res =
 await fetch(
-"https://pvlt-server.onrender.com/claim-pvltg",
+API + "/claim-pvltg",
 {
 method:"POST",
+
 headers:{
-"Content-Type":"application/json"
+"Content-Type":
+"application/json"
 },
+
 body:JSON.stringify({
 wallet
 })
@@ -465,6 +613,8 @@ alert(data.error);
 
 return;
 }
+
+/* ================= RESET PVLTG ================= */
 
 pvltg = 0;
 
@@ -480,126 +630,15 @@ data.tx
 
 console.log(err);
 
-alert("Claim failed");
-}
-}
-
-/* ================= BUY ENERGY ================= */
-
-async function buyEnergy(){
-
-if(!wallet){
-
-alert("Connect wallet");
-
-return;
-}
-
-try{
-
-const res =
-await fetch(
-"https://pvlt-server.onrender.com/refill",
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-wallet
-})
-}
-);
-
-const data =
-await res.json();
-
-energy = data.energy;
-
-updateUI();
-
 alert(
-"50 energy added"
+"Claim failed"
 );
-
-}catch(err){
-
-console.log(err);
-
-alert("Refill failed");
 }
 }
 
-</script>
+/* ================= START ================= */
 
-
-/* ================= BUY ENERGY ================= */
-
-function buyEnergy(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
-let amt = prompt("Enter Energy Amount (10000 Energy = $1)");
-
-if(!amt || isNaN(amt) || amt <= 0) return;
-
-let energyAmount = Number(amt);
-let price = energyAmount / 10000;
-
-/* CHANGED HERE */
-alert("Price: $" + price.toFixed(4) + " (POL payment placeholder)");
-
-energy += energyAmount;
-
-saveState();
 updateUI();
-}
-
-/* ================= CLAIM ================= */
-
-function claim(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
-let now = Date.now();
-let ONE_DAY = 24 * 60 * 60 * 1000;
-
-if(now - lastClaimTime < ONE_DAY){
-alert("You can claim only once per day");
-return;
-}
-
-let tokens = points / 10000;
-
-if(tokens < 100){
-alert("Minimum 100 tokens required");
-return;
-}
-
-if(tokens > 500){
-tokens = 500;
-}
-
-/* RESET POINTS */
-points = 0;
-
-lastClaimTime = now;
-
-alert(
-"CLAIM SUCCESS\n" +
-"Sent: " + tokens.toFixed(4) + " TOKENS\n" +
-"Wallet: " + wallet
-);
-
-saveState();
-updateUI();
-}
 
 </script>
 
