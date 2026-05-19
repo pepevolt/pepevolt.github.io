@@ -70,8 +70,6 @@
             align-items: center;
             box-shadow: 0 0 30px rgba(0, 255, 180, 0.25);
             cursor: pointer;
-
-            /* FIXES MOBILE SCREEN ZOOMING & HIGHLIGHT BLINKING ON RAPID TAPS */
             touch-action: manipulation;
             -webkit-user-select: none;
             user-select: none;
@@ -144,6 +142,84 @@
             text-align: center;
             max-width: 380px;
         }
+
+        /* ================= BUY MODAL POPUP ================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 11, 24, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            width: 90%;
+            max-width: 340px;
+            background: #091426;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.25s ease;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1);
+        }
+
+        .modal-box h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: #00ff99;
+        }
+
+        .modal-box p {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-confirm {
+            background: linear-gradient(90deg, #00ff99, #00ccff);
+            color: black;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
     </style>
 </head>
 
@@ -171,7 +247,7 @@
                 Wallet Connected
             </div>
 
-            <button class="actionBtn" onclick="buyEnergy()">
+            <button class="actionBtn" onclick="openBuyModal()">
                 BUY ENERGY
             </button>
 
@@ -191,10 +267,25 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="buyModal">
+        <div class="modal-box">
+            <h3>Buy Energy Pack</h3>
+            <p>Would you like to buy <b>1,000 Energy</b> for <b>100 PVLT</b>?<br><br><span style="font-size:12px; opacity:0.6;">This will open your connected wallet to sign a transaction.</span></p>
+            <div class="modal-buttons">
+                <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
+                <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         /* ================= CONFIG ================= */
         const API = "https://pvlt-server.onrender.com";
         const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
+
+        // CONTRACT ADDRESS DETAILS
+        const PVLT_TOKEN_ADDRESS = "0x3094Dc50cB01721eE6c0ECAf18bd0D15c154ba2d"; 
+        const GAME_TREASURY_ADDRESS = "0xe2bb81bD8e36367F2C85c89F0B03570dFCaf5D57";
 
         /* ================= STATE ================= */
         let web3Provider; 
@@ -210,29 +301,36 @@
             document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
         }
 
+        /* ================= MODAL HANDLERS ================= */
+        function openBuyModal() {
+            if(!wallet) return alert("Connect wallet first");
+            document.getElementById("buyModal").classList.add("active");
+        }
+
+        function closeBuyModal() {
+            document.getElementById("buyModal").classList.remove("active");
+        }
+
         /* ================= CONNECT WALLET ================= */
         async function connectWallet(){
             try {
-                // Safety guard check to verify CDN parsed successfully on mobile
                 if (typeof window.ethers === 'undefined') {
                     alert("Ethers library failed to load from CDN. Try clearing your browser cache.");
                     return;
                 }
 
-                // 1. Check if user is opening this inside a native Web3 wallet application browser
                 if (typeof window.ethereum !== 'undefined') {
                     console.log("In-app Web3 browser detected.");
                     await window.ethereum.request({ method: "eth_requestAccounts" });
                     web3Provider = new ethers.providers.Web3Provider(window.ethereum);
                 } 
-                // 2. Fallback to WalletConnect if they are on mobile Safari/Chrome/Telegram standard UI
                 else {
                     console.log("Standard browser detected. Initializing WalletConnect...");
                     const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
                     
                     const wcProvider = await WalletConnectProvider.init({
                         projectId: PROJECT_ID,
-                        chains: [137], // Polygon Mainnet
+                        chains: [137], 
                         showQrModal: true,
                         optionalMethods: [
                             "eth_sendTransaction",
@@ -244,24 +342,19 @@
                         qrModalOptions: { themeMode: "dark" }
                     });
 
-                    // Trigger mobile workflow modal connection
                     await wcProvider.connect();
                     web3Provider = new ethers.providers.Web3Provider(wcProvider);
                 }
 
-                // 3. Extract the signer and user address securely
                 const signer = web3Provider.getSigner();
                 wallet = await signer.getAddress();
 
-                /* DISPLAY ADDRESS */
                 document.getElementById("walletInput").value =
                     wallet.substring(0,6) + "..." + wallet.substring(wallet.length - 4);
 
-                /* UPDATE BUTTONS */
                 document.getElementById("walletBtn").innerText = "CONNECTED";
                 document.getElementById("walletStatus").style.display = "block";
 
-                /* REGISTER / FETCH USER FROM RENDER BACKEND */
                 const res = await fetch(API + "/user", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -274,7 +367,6 @@
                     return;
                 }
 
-                /* SYNC STATE */
                 points = data.points ?? 0;
                 energy = data.energy ?? 50;
                 pvltg = data.pvltg ?? 0;
@@ -310,26 +402,63 @@
             }
         }
 
-        /* ================= BUY ENERGY ================= */
-        async function buyEnergy(){
-            if(!wallet) return alert("Connect wallet first");
+        /* ================= EXECUTE ENERGY PURCHASE (WITH BLOCKCHAIN TX) ================= */
+        async function executeEnergyPurchase(){
+            const confirmBtn = document.getElementById("confirmPaymentBtn");
+            try {
+                confirmBtn.innerText = "Processing...";
+                confirmBtn.disabled = true;
 
-            try{
+                const signer = web3Provider.getSigner();
+                
+                // 1. Initialize the token contract connection instance
+                const tokenContract = new ethers.Contract(
+                    PVLT_TOKEN_ADDRESS,
+                    ["function transfer(address to, uint256 value) external returns (bool)"],
+                    signer
+                );
+
+                // 2. Parse 100 Tokens (Assuming standard ERC20 18 decimals)
+                const costAmount = ethers.utils.parseEther("100");
+
+                // 3. Prompt user's wallet for the payment approval/transaction
+                const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount);
+                
+                // Close modal overlay visual while waiting on block verification
+                closeBuyModal();
+                alert("Transaction submitted! Processing confirmation block...");
+
+                // 4. Wait for transaction block confirmation
+                await tx.wait();
+
+                // 5. Alert backend API to verify payment and process the 1000 Energy sync update
                 const res = await fetch(API + "/refill", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ wallet })
+                    body: JSON.stringify({ 
+                        wallet: wallet,
+                        txHash: tx.hash // Send hash along so server can index confirmation safely if needed
+                    })
                 });
                 const data = await res.json();
 
-                if(data.error) return alert(data.error);
+                if(data.error) {
+                    alert("Blockchain payment succeeded, but database sync encountered an error: " + data.error);
+                    return;
+                }
 
+                // 6. Update local state and reflect updates on active UI counters
                 energy = data.energy;
                 updateUI();
-                alert("50 Energy Added");
-            } catch(err){
-                console.error(err);
-                alert("Energy purchase failed");
+                alert("Success! 1,000 Energy added to your profile balance.");
+
+            } catch(err) {
+                console.error("Purchase Loop Error:", err);
+                alert("Purchase Failed: " + (err.message || "User denied transaction or insufficient balance."));
+            } finally {
+                confirmBtn.innerText = "Confirm";
+                confirmBtn.disabled = false;
+                closeBuyModal();
             }
         }
 
@@ -365,14 +494,14 @@
             try{
                 const signer = web3Provider.getSigner();
                 const pvltgContract = new ethers.Contract(
-                    "0x3094Dc50cB01721eE6c0ECAf18bd0D15c154ba2d",
+                    PVLT_TOKEN_ADDRESS,
                     ["function approve(address spender,uint256 amount) external returns(bool)"],
                     signer
                 );
 
                 const amount = ethers.utils.parseEther(pvltg.toString());
                 const approveTx = await pvltgContract.approve(
-                    "0xe2bb81bD8e36367F2C85c89F0B03570dFCaf5D57",
+                    GAME_TREASURY_ADDRESS,
                     amount
                 );
                 await approveTx.wait();
