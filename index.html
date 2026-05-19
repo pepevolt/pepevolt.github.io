@@ -203,7 +203,7 @@
 
         <div class="ui-card">
             <input class="address-display" id="walletDisplay" value="Wallet Not Connected" readonly>
-            <button class="btn" id="connectBtn" onclick="handleWalletAction()">CONNECT WALLET</button>
+            <button class="btn" id="connectBtn" onclick="handleWalletAction(false)">CONNECT WALLET</button>
             <button class="btn" onclick="triggerBuyEnergy()">BUY INSTANT ENERGY</button>
             <button class="btn" onclick="swapPoints()">SWAP POINTS → PVLTG</button>
             <button class="btn btn-withdraw" onclick="triggerWithdrawal()">WITHDRAWAL PVLT</button>
@@ -262,28 +262,28 @@
             }, 1000);
         }
 
-        // --- MODIFIED SILENT DETECTION: NO SUDDEN POPUPS ---
+        // --- FIXED: COMPLETELY SILENT AUTO-DETECTOR ---
         async function checkExistingConnection() {
             try {
                 if (window.ethereum) {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
                     const accounts = await provider.listAccounts();
                     
-                    // Only link automatically if the user explicitly authorized a connection previously
                     if (accounts.length > 0) {
                         console.log("Authorized session detected.");
                         await handleWalletAction(true);
                     }
                 }
             } catch (err) {
-                console.log("Auto-detection skipped:", err);
+                console.log("Silent auto-detection skipped:", err);
             }
         }
 
+        // --- UPDATED LOGIN HANDLER WITH FIXED ALERTS ---
         async function handleWalletAction(isAutoDetect = false){
             const connectBtn = document.getElementById("connectBtn");
 
-            // Click action to DISCONNECT if clicked while active
+            // Click action to DISCONNECT
             if(walletAddress && !isAutoDetect) {
                 walletAddress = "";
                 points = 0;
@@ -301,15 +301,17 @@
                 return;
             }
 
-            try{
-                if(!window.ethereum){
-                    alert("Wallet not found");
-                    return;
+            // If no provider is found...
+            if(!window.ethereum){
+                // ONLY show the error alert if the user explicitly clicked the button
+                if(!isAutoDetect) {
+                    alert("Wallet provider not detected! Please open this game link inside your crypto wallet app's built-in Web3 browser (like MetaMask or Trust Wallet).");
                 }
+                return;
+            }
 
+            try{
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
-                
-                // Triggers request popups safely on standard click actions
                 await provider.send("eth_requestAccounts", []);
                 const signer = provider.getSigner();
                 walletAddress = await signer.getAddress();
