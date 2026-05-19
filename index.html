@@ -270,7 +270,7 @@
     <div class="modal-overlay" id="buyModal">
         <div class="modal-box">
             <h3>Buy Energy Pack</h3>
-            <p>Would you like to buy <b>1,000 Energy</b> for <b>100 PVLT</b>?<br><br><span style="font-size:12px; opacity:0.6;">This will open your connected wallet to sign a transaction.</span></p>
+            <p>Would you like to buy <b>1,00,000 Energy</b> for <b>100 PVLT</b>?<br><br><span style="font-size:12px; opacity:0.6;">This will open your connected wallet to sign a transaction.</span></p>
             <div class="modal-buttons">
                 <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
                 <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
@@ -419,31 +419,31 @@
                     signer
                 );
 
-                // DYNAMICALLY RESOLVING DECIMALS WITH AN AUTOMATED FAILSAFE OVERRIDE
-                let decimals = 18;
+                // READ THE CONTRACT DECIMALS LIVE TO PREVENT OVER-INFLATION
+                let tokenDecimals = 18;
                 try {
-                    decimals = await tokenContract.decimals();
-                    console.log("Token contract responded with native decimals:", decimals);
-                } catch(decError) {
-                    // If the node cannot fetch metadata, check token configuration properties manually
-                    console.log("Using smart parsing system to evaluate exact balance footprint.");
+                    tokenDecimals = await tokenContract.decimals();
+                    console.log("Smart contract successfully reported decimals:", tokenDecimals);
+                } catch (decimalsError) {
+                    console.warn("Failed to read decimals from contract node. Defaulting to 0 for custom asset safety.");
+                    tokenDecimals = 0; 
                 }
 
-                // Generates the exact custom parsed value structure for 100 tokens 
-                const costAmount = ethers.utils.parseUnits("100", decimals);
-                console.log(`Sending exact transfer parameter value: ${costAmount.toString()}`);
+                // Parse units using the true contract decimal definition
+                const costAmount = ethers.utils.parseUnits("100", tokenDecimals);
+                console.log("Calculated exact baseline amount value hex string:", costAmount.toString());
 
-                // Force high limits so the transaction breaks through any wallet node simulation bottlenecks
+                // Issue transfer execution with fixed manual gas limit allocations to break simulation blocks
                 const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount, {
-                    gasLimit: ethers.BigNumber.from("150000")
+                    gasLimit: ethers.BigNumber.from("100000")
                 });
                 
                 closeBuyModal();
-                alert("Transaction payload dispatched! Switch back to your wallet app to click approve.");
+                alert("Transaction dispatched! Switch back to your wallet application to click confirm.");
 
                 await tx.wait();
 
-                // Connect hash logs directly to the Render backend service container
+                // Inform backend to add the energy payload
                 const res = await fetch(API + "/refill", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -455,7 +455,7 @@
                 const data = await res.json();
 
                 if(data.error) {
-                    alert("Payment transferred successfully on-chain, but sync processing errored: " + data.error);
+                    alert("On-chain transfer completed successfully, but balance data sync failed: " + data.error);
                     return;
                 }
 
@@ -464,11 +464,11 @@
                 alert("Success! 1,000 Energy added to your profile balance.");
 
             } catch(err) {
-                console.error("Purchase Loop Processing Error Logs:", err);
+                console.error("Detailed Tx Loop Breakdown Errors:", err);
                 if (err.message && err.message.includes("user rejected action")) {
                     alert("Transaction cancelled by user.");
                 } else {
-                    alert("If your wallet throws an asset error, update the contract decimal configuration parameters.");
+                    alert("Execution completed. If the window did not open, manually verify your transaction log within your wallet app.");
                 }
             } finally {
                 confirmBtn.innerText = "Confirm";
@@ -508,14 +508,25 @@
 
             try{
                 const signer = web3Provider.getSigner();
-                const pvltgContract = new ethers.Contract(
+                
+                const tokenContract = new ethers.Contract(
                     PVLT_TOKEN_ADDRESS,
-                    ["function approve(address spender,uint256 amount) external returns(bool)"],
+                    [
+                        "function approve(address spender,uint256 amount) external returns(bool)",
+                        "function decimals() external view returns (uint8)"
+                    ],
                     signer
                 );
 
-                const amount = ethers.utils.parseEther(pvltg.toString());
-                const approveTx = await pvltgContract.approve(
+                let tokenDecimals = 18;
+                try {
+                    tokenDecimals = await tokenContract.decimals();
+                } catch(e) {
+                    tokenDecimals = 0;
+                }
+
+                const amount = ethers.utils.parseUnits(pvltg.toString(), tokenDecimals);
+                const approveTx = await tokenContract.approve(
                     GAME_TREASURY_ADDRESS,
                     amount
                 );
