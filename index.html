@@ -1,269 +1,834 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PEPEVOLT BOT</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <script type="module">
-        import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.run/@web3modal/wagmi@3.5.0';
-        import { mainnet, polygon } from 'https://esm.run/viem/chains';
-        
-        // REOWN PROJECT ID CONFIGURATION HOOK CONTAINER LINK
-        const projectId = '1731f99148b9cf6107dee70b6efb14b7'; 
 
-        const metadata = {
-            name: 'PepeVolt Tap Game',
-            description: 'PepeVolt Mini App System Engine',
-            url: window.location.origin,
-            icons: ['images/IMG_1850.png']
-        };
+<meta charset="UTF-8">
 
-        const chains = [polygon];
-        const wagmiConfig = defaultWagmiConfig({ chains, projectId, metadata });
-        
-        window.web3Modal = createWeb3Modal({ wagmiConfig, projectId, chains });
-    </script>
-    <style>
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-            touch-action: manipulation; user-select: none; -webkit-user-select: none;
-        }
-        body { 
-            background: #050f1e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            color: white; display: flex; flex-direction: column; min-height: 100vh; align-items: center;
-            overflow-y: auto; overflow-x: hidden; padding: 0 0 env(safe-area-inset-bottom) 0;
-        }
-        
-        /* LOCKED STICKY NAV BAR LAYOUT */
-        .topbar { 
-            position: sticky; top: 0; z-index: 999; background: #050f1e; width: 100%; max-width: 100%;
-            display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 15px; 
-            padding: calc(14px + env(safe-area-inset-top)) 24px 14px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        }
-        .stat-item { display: flex; align-items: center; gap: 6px; }
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"
+>
 
-        .main-container { 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            flex-grow: 1; gap: 25px; width: 100%; padding: 25px 0 20px 0;
-        }
-        
-        .character-btn { background: none; border: none; cursor: pointer; outline: none; border-radius: 50%; transition: transform 0.05s ease; }
-        .character-btn:active { transform: scale(0.95); }
-        .character-btn img { width: 220px; height: 220px; border-radius: 50%; box-shadow: 0 0 40px rgba(0, 255, 153, 0.3); }
-        
-        .ui-card { width: 90%; max-width: 360px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
-        .address-display { width: 100%; padding: 14px; border-radius: 14px; background: #0a182c; color: #8fa3bf; border: 1px solid rgba(255, 255, 255, 0.02); font-size: 14px; text-align: center; font-weight: bold; outline: none; }
-        
-        .btn { 
-            width: 100%; padding: 15px; border: none; border-radius: 14px; font-size: 15px; font-weight: bold; 
-            color: black; cursor: pointer; background: linear-gradient(90deg, #00ff99, #00ccff); 
-            transition: opacity 0.2s, transform 0.1s; text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .btn:active { opacity: 0.9; transform: scale(0.99); }
-        .btn-withdraw { background: linear-gradient(90deg, #ffcc00, #ff3300); color: white; }
-        
-        /* DATA BALANCES CONTAINER SUB-LAYER */
-        .live-balances-box {
-            background: rgba(255, 255, 255, 0.02); margin-top: 5px; padding: 12px; border-radius: 12px;
-            font-size: 12px; color: #a2b7d4; display: flex; flex-direction: column; gap: 6px; text-align: left;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-        }
-        .balance-line { display: flex; justify-content: space-between; }
-        .balance-val { font-weight: bold; color: #00ff99; }
+<title>PEPEVOLT BOT</title>
 
-        .footer-rules { font-size: 11px; line-height: 1.6; color: #697d95; text-align: center; margin-bottom: 25px; font-weight: 500; }
-    </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+
+<script type="module">
+
+import {
+createWeb3Modal,
+defaultWagmiConfig
+}
+from 'https://esm.run/@web3modal/wagmi@3.5.0';
+
+import {
+polygon
+}
+from 'https://esm.run/viem/chains';
+
+const projectId =
+'1731f99148b9cf6107dee70b6efb14b7';
+
+const metadata = {
+name: 'PepeVolt Tap Game',
+description: 'PepeVolt Mini App',
+url: window.location.origin,
+icons: ['images/IMG_1850.png']
+};
+
+const chains = [polygon];
+
+const wagmiConfig =
+defaultWagmiConfig({
+chains,
+projectId,
+metadata
+});
+
+createWeb3Modal({
+wagmiConfig,
+projectId,
+chains
+});
+
+</script>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+touch-action:manipulation;
+user-select:none;
+-webkit-user-select:none;
+}
+
+body{
+background:#050f1e;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+color:white;
+display:flex;
+flex-direction:column;
+min-height:100vh;
+align-items:center;
+overflow-y:auto;
+overflow-x:hidden;
+padding:0 0 env(safe-area-inset-bottom) 0;
+}
+
+.topbar{
+position:sticky;
+top:0;
+z-index:999;
+background:#050f1e;
+width:100%;
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-weight:bold;
+font-size:15px;
+padding:calc(14px + env(safe-area-inset-top)) 24px 14px 24px;
+border-bottom:1px solid rgba(255,255,255,0.05);
+box-shadow:0 4px 20px rgba(0,0,0,0.4);
+}
+
+.stat-item{
+display:flex;
+align-items:center;
+gap:6px;
+}
+
+.main-container{
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+flex-grow:1;
+gap:25px;
+width:100%;
+padding:25px 0 20px 0;
+}
+
+.character-btn{
+background:none;
+border:none;
+cursor:pointer;
+outline:none;
+border-radius:50%;
+transition:transform .05s ease;
+}
+
+.character-btn:active{
+transform:scale(.95);
+}
+
+.character-btn img{
+width:220px;
+height:220px;
+border-radius:50%;
+box-shadow:0 0 40px rgba(0,255,153,0.3);
+}
+
+.ui-card{
+width:90%;
+max-width:360px;
+display:flex;
+flex-direction:column;
+gap:10px;
+text-align:center;
+}
+
+.address-display{
+width:100%;
+padding:14px;
+border-radius:14px;
+background:#0a182c;
+color:#8fa3bf;
+border:1px solid rgba(255,255,255,0.02);
+font-size:14px;
+text-align:center;
+font-weight:bold;
+outline:none;
+}
+
+.btn{
+width:100%;
+padding:15px;
+border:none;
+border-radius:14px;
+font-size:15px;
+font-weight:bold;
+color:black;
+cursor:pointer;
+background:linear-gradient(90deg,#00ff99,#00ccff);
+transition:opacity .2s,transform .1s;
+text-transform:uppercase;
+letter-spacing:.5px;
+}
+
+.btn:active{
+opacity:.9;
+transform:scale(.99);
+}
+
+.btn-withdraw{
+background:linear-gradient(90deg,#ffcc00,#ff3300);
+color:white;
+}
+
+.live-balances-box{
+background:rgba(255,255,255,0.02);
+margin-top:5px;
+padding:12px;
+border-radius:12px;
+font-size:12px;
+color:#a2b7d4;
+display:flex;
+flex-direction:column;
+gap:6px;
+text-align:left;
+border:1px solid rgba(255,255,255,0.03);
+}
+
+.balance-line{
+display:flex;
+justify-content:space-between;
+}
+
+.balance-val{
+font-weight:bold;
+color:#00ff99;
+}
+
+.footer-rules{
+font-size:11px;
+line-height:1.6;
+color:#697d95;
+text-align:center;
+margin-bottom:25px;
+font-weight:500;
+}
+
+</style>
+
 </head>
+
 <body>
 
 <div class="topbar">
-    <div class="stat-item">🛢️ <span id="energy">9787</span></div>
-    <div class="stat-item">⚡ <span id="points">265</span></div>
-    <div class="stat-item">💎 <span id="pvltg">0.0000</span></div>
+
+<div class="stat-item">
+🛢️
+<span id="energy">9787</span>
+</div>
+
+<div class="stat-item">
+⚡
+<span id="points">265</span>
+</div>
+
+<div class="stat-item">
+💎
+<span id="pvltg">0.0000</span>
+</div>
+
 </div>
 
 <div class="main-container">
-    <button class="character-btn" onclick="handleTap()">
-        <img src="images/IMG_1850.png" alt="PepeVolt">
-    </button>
-    <div class="ui-card">
-        <input class="address-display" id="walletDisplay" value="Wallet Not Connected" readonly>
-        <button class="btn" id="connectBtn" onclick="handleWalletAction()">CONNECT WALLET</button>
-        <button class="btn" onclick="triggerBuyEnergy()">BUY INSTANT ENERGY</button>
-        <button class="btn" onclick="swapPoints()">SWAP POINTS → PVLTG</button>
-        <button class="btn btn-withdraw" onclick="triggerWithdrawal()">WITHDRAWAL PVLT</button>
 
-        <div class="live-balances-box">
-            <div class="balance-line">
-                <span>Your Personal Wallet PVLT:</span>
-                <span class="balance-val" id="userWalletPvlt">0.0000</span>
-            </div>
-            <div class="balance-line">
-                <span>Available Treasury Pool:</span>
-                <span class="balance-val" id="treasuryVaultPvlt" style="color:#00ccff;">0.0000</span>
-            </div>
-        </div>
-    </div>
+<button
+class="character-btn"
+onclick="handleTap()"
+>
+<img
+src="images/IMG_1850.png"
+alt="PepeVolt"
+>
+</button>
+
+<div class="ui-card">
+
+<input
+class="address-display"
+id="walletDisplay"
+value="Wallet Not Connected"
+readonly
+>
+
+<button
+class="btn"
+id="connectBtn"
+onclick="handleWalletAction()"
+>
+CONNECT WALLET
+</button>
+
+<button
+class="btn"
+onclick="triggerBuyEnergy()"
+>
+BUY INSTANT ENERGY
+</button>
+
+<button
+class="btn"
+onclick="swapPoints()"
+>
+SWAP POINTS → PVLTG
+</button>
+
+<button
+class="btn btn-withdraw"
+onclick="triggerWithdrawal()"
+>
+WITHDRAWAL PVLT
+</button>
+
+<div class="live-balances-box">
+
+<div class="balance-line">
+<span>Your Personal Wallet PVLT:</span>
+<span
+class="balance-val"
+id="userWalletPvlt"
+>
+0.0000
+</span>
+</div>
+
+<div class="balance-line">
+<span>Available Treasury Pool:</span>
+<span
+class="balance-val"
+id="treasuryVaultPvlt"
+style="color:#00ccff;"
+>
+0.0000
+</span>
+</div>
+
+</div>
+
+</div>
+
 </div>
 
 <div class="footer-rules">
-    1 Tap = 2 Points<br>
-    2000 Points = 4 PVLTG<br>
-    3000 PVLTG = 6 PVLT<br>
-    Min Withdrawal: 10 PVLT | Max: 1000 PVLT
+
+1 Tap = 2 Points<br>
+2000 Points = 4 PVLTG<br>
+3000 PVLTG = 6 PVLT<br>
+Min Withdrawal: 10 PVLT | Max: 1000 PVLT
+
 </div>
 
 <script>
-    const API_URL = "https://pepevolt-game-suite.onrender.com/"; 
-    
-    // Exact Token Contract Configurations addresses for chain data scraping
-    const MAIN_TOKEN_CONTRACT = "0x75996ad3ffd2fe2d55b38fdfad974c5e9ebe5400";
-    const TREASURY_CONTRACT = "0x5a625587Ee1eB45470a63813bA13B389F43Df063";
-    const ERC20_ABI = ["function balanceOf(address owner) view returns (uint256)"];
 
-    let walletAddress = "", points = 265, energy = 9787, pvltg = 0;
-    let autoRefillInterval = null;
+const API_URL =
+"https://pepevolt-game-suite.onrender.com";
 
-    function updateUI() {
-        document.getElementById("energy").innerText = energy;
-        document.getElementById("points").innerText = points;
-        document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
-    }
+const MAIN_TOKEN_CONTRACT =
+"0x75996ad3ffd2fe2d55b38fdfad974c5e9ebe5400";
 
-    // Dynamic 20-second background replenishment thread
-    function initializeEnergyTracking() {
-        if (autoRefillInterval) clearInterval(autoRefillInterval);
-        autoRefillInterval = setInterval(() => {
-            if (energy === 0) {
-                energy = 1;
-                updateUI();
-            } else if (energy > 0 && energy < 20) {
-                energy += 1;
-                updateUI();
-            }
-        }, 1000);
-    }
+const TREASURY_CONTRACT =
+"0x3FdCE8aB325E03d527605dd2f01730cd981F594F";
 
-    async function handleWalletAction() {
-        if (window.web3Modal) {
-            await window.web3Modal.open();
-            // Interval hooks update verification parameters natively
-            const verificationTracker = setInterval(async () => {
-                if (window.ethereum && window.ethereum.selectedAddress) {
-                    clearInterval(verificationTracker);
-                    walletAddress = window.ethereum.selectedAddress;
-                    document.getElementById("walletDisplay").value = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
-                    document.getElementById("connectBtn").innerText = "DISCONNECT";
-                    
-                    const res = await fetch(`${API_URL}/user`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ wallet: walletAddress })
-                    });
-                    const data = await res.json();
-                    points = data.points; energy = data.energy; pvltg = data.pvltg;
-                    updateUI();
-                    loadOnChainBalances();
-                }
-            }, 1000);
-        }
-    }
+const ERC20_ABI = [
 
-    async function loadOnChainBalances() {
-        if (!window.ethereum || !walletAddress) return;
-        try {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const tokenContractInstance = new ethers.Contract(MAIN_TOKEN_CONTRACT, ERC20_ABI, provider);
-            
-            const rawUserBalance = await tokenContractInstance.balanceOf(walletAddress);
-            document.getElementById("userWalletPvlt").innerText = Number(ethers.utils.formatEther(rawUserBalance)).toFixed(4);
-            
-            const rawTreasuryBalance = await tokenContractInstance.balanceOf(TREASURY_CONTRACT);
-            document.getElementById("treasuryVaultPvlt").innerText = Number(ethers.utils.formatEther(rawTreasuryBalance)).toFixed(4);
-        } catch(err) { console.error("Blockchain sync data load failure:", err); }
-    }
+"function balanceOf(address owner) view returns (uint256)",
 
-    async function handleTap() {
-        if (!walletAddress) return;
-        const res = await fetch(`${API_URL}/tap`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ wallet: walletAddress })
-        });
-        const data = await res.json();
-        points = data.points; energy = data.energy;
-        updateUI();
-    }
+"function decimals() view returns (uint8)",
 
-    async function triggerBuyEnergy() {
-        if (!walletAddress) return alert("Connect account wallet first");
-        
-        alert("Approving transaction signature parameters via Polygon infrastructure...");
-        try {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = provider.getSigner();
-            const tokenInstance = new ethers.Contract(MAIN_TOKEN_CONTRACT, ["function approve(address spender, uint256 value) returns (bool)"], signer);
-            
-            // Approve the treasury contract to pull 1000 PVLT tokens for the purchase
-            const approveTx = await tokenInstance.approve(TREASURY_CONTRACT, ethers.utils.parseEther("1000"));
-            await approveTx.wait();
+"function approve(address spender,uint256 amount) returns(bool)"
 
-            const res = await fetch(`${API_URL}/buy-energy`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ wallet: walletAddress })
-            });
-            const data = await res.json();
-            if(data.error) return alert(data.error);
-            
-            energy = data.energy;
-            updateUI();
-            loadOnChainBalances();
-            alert("Refill Confirmed on-chain! Added 10,000 Energy.");
-        } catch (e) {
-            alert("Transaction decline: Insufficient balance or rejection parameters encountered.");
-        }
-    }
+];
 
-    async function swapPoints() {
-        if (!walletAddress) return;
-        const res = await fetch(`${API_URL}/swap-points`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ wallet: walletAddress })
-        });
-        const data = await res.json();
-        if (data.error) return alert(data.error);
-        pvltg = data.pvltg; points = data.remainingPoints;
-        updateUI();
-    }
+let walletAddress = "";
+let points = 265;
+let energy = 9787;
+let pvltg = 0;
 
-    async function triggerWithdrawal() {
-        if (!walletAddress) return alert("Connect wallet first");
-        
-        const expectedPayout = pvltg / 500;
-        if (expectedPayout < 10) return alert("Quantity below 10 PVLT minimum threshold requirement.");
-        if (expectedPayout > 1000) return alert("Quantity exceeds 1000 PVLT maximum threshold authorization.");
+let autoRefillInterval = null;
 
-        const res = await fetch(`${API_URL}/withdraw-pvltg`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ wallet: walletAddress })
-        });
-        const data = await res.json();
-        if (data.error) return alert(data.error);
-        
-        // Target structural rule validation reset value
-        pvltg = 0; 
-        updateUI();
-        loadOnChainBalances();
-        alert("Withdrawal Complete! Converted assets dispatched directly to your personal crypto wallet.");
-    }
+function updateUI(){
 
-    initializeEnergyTracking();
+document.getElementById(
+"energy"
+).innerText = energy;
+
+document.getElementById(
+"points"
+).innerText = points;
+
+document.getElementById(
+"pvltg"
+).innerText =
+Number(pvltg).toFixed(4);
+
+}
+
+function initializeEnergyTracking(){
+
+if(autoRefillInterval)
+clearInterval(autoRefillInterval);
+
+autoRefillInterval =
+setInterval(()=>{
+
+if(energy === 0){
+
+energy = 1;
+
+updateUI();
+
+}
+else if(
+energy > 0 &&
+energy < 20
+){
+
+energy += 1;
+
+updateUI();
+
+}
+
+},1000);
+
+}
+
+async function handleWalletAction(){
+
+try{
+
+if(!window.ethereum){
+
+alert("Wallet not found");
+
+return;
+}
+
+const provider =
+new ethers.providers.Web3Provider(
+window.ethereum
+);
+
+await provider.send(
+"eth_requestAccounts",
+[]
+);
+
+const signer =
+provider.getSigner();
+
+walletAddress =
+await signer.getAddress();
+
+const network =
+await provider.getNetwork();
+
+if(network.chainId !== 137){
+
+await provider.send(
+"wallet_switchEthereumChain",
+[
+{ chainId:"0x89" }
+]
+);
+
+}
+
+document.getElementById(
+"walletDisplay"
+).value =
+walletAddress.slice(0,6)
++
+"..."
++
+walletAddress.slice(-4);
+
+document.getElementById(
+"connectBtn"
+).innerText =
+"CONNECTED";
+
+const res =
+await fetch(
+`${API_URL}/user`,
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet:walletAddress
+})
+}
+);
+
+const data =
+await res.json();
+
+points = data.points;
+energy = data.energy;
+pvltg = data.pvltg;
+
+updateUI();
+
+await loadOnChainBalances();
+
+}
+catch(err){
+
+console.log(err);
+
+alert(
+"Wallet connection failed"
+);
+
+}
+
+}
+
+async function loadOnChainBalances(){
+
+if(!walletAddress) return;
+
+try{
+
+const provider =
+new ethers.providers.Web3Provider(
+window.ethereum
+);
+
+const token =
+new ethers.Contract(
+MAIN_TOKEN_CONTRACT,
+ERC20_ABI,
+provider
+);
+
+const decimals =
+await token.decimals();
+
+const userBalance =
+await token.balanceOf(
+walletAddress
+);
+
+const treasuryBalance =
+await token.balanceOf(
+TREASURY_CONTRACT
+);
+
+document.getElementById(
+"userWalletPvlt"
+).innerText =
+Number(
+ethers.utils.formatUnits(
+userBalance,
+decimals
+)
+).toFixed(4);
+
+document.getElementById(
+"treasuryVaultPvlt"
+).innerText =
+Number(
+ethers.utils.formatUnits(
+treasuryBalance,
+decimals
+)
+).toFixed(4);
+
+}
+catch(err){
+
+console.log(err);
+
+}
+
+}
+
+async function handleTap(){
+
+if(!walletAddress){
+
+alert("Connect wallet first");
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+`${API_URL}/tap`,
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet:walletAddress
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+points = data.points;
+energy = data.energy;
+pvltg = data.pvltg;
+
+updateUI();
+
+}
+catch(err){
+
+console.log(err);
+
+}
+
+}
+
+async function triggerBuyEnergy(){
+
+if(!walletAddress){
+
+alert("Connect wallet first");
+
+return;
+}
+
+try{
+
+const provider =
+new ethers.providers.Web3Provider(
+window.ethereum
+);
+
+const signer =
+provider.getSigner();
+
+const token =
+new ethers.Contract(
+MAIN_TOKEN_CONTRACT,
+ERC20_ABI,
+signer
+);
+
+const treasury =
+new ethers.Contract(
+TREASURY_CONTRACT,
+[
+"function buyEnergy() external"
+],
+signer
+);
+
+const approveTx =
+await token.approve(
+TREASURY_CONTRACT,
+ethers.utils.parseEther("100")
+);
+
+await approveTx.wait();
+
+const buyTx =
+await treasury.buyEnergy();
+
+await buyTx.wait();
+
+const res =
+await fetch(
+`${API_URL}/buy-energy`,
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet:walletAddress
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+energy = data.energy;
+
+updateUI();
+
+await loadOnChainBalances();
+
+alert("Energy purchased");
+
+}
+catch(err){
+
+console.log(err);
+
+alert("Energy purchase failed");
+
+}
+
+}
+
+async function swapPoints(){
+
+if(!walletAddress){
+
+alert("Connect wallet first");
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+`${API_URL}/swap-points`,
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet:walletAddress
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+points = data.points;
+pvltg = data.pvltg;
+
+updateUI();
+
+}
+catch(err){
+
+console.log(err);
+
+alert("Swap failed");
+
+}
+
+}
+
+async function triggerWithdrawal(){
+
+if(!walletAddress){
+
+alert("Connect wallet first");
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+`${API_URL}/withdraw`,
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet:walletAddress
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+const provider =
+new ethers.providers.Web3Provider(
+window.ethereum
+);
+
+const signer =
+provider.getSigner();
+
+const treasury =
+new ethers.Contract(
+TREASURY_CONTRACT,
+[
+"function withdrawReward(uint256 amount,uint256 nonce,bytes calldata signature) external"
+],
+signer
+);
+
+const tx =
+await treasury.withdrawReward(
+ethers.utils.parseEther(
+data.amount.toString()
+),
+data.nonce,
+data.signature
+);
+
+await tx.wait();
+
+pvltg = 0;
+
+updateUI();
+
+await loadOnChainBalances();
+
+alert("Withdrawal successful");
+
+}
+catch(err){
+
+console.log(err);
+
+alert("Withdrawal failed");
+
+}
+
+}
+
+initializeEnergyTracking();
+
 </script>
+
 </body>
 </html>
