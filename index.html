@@ -12,7 +12,6 @@
             padding: 0; 
             box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent; 
-            /* Disables double-tap to zoom behavior on mobile elements */
             touch-action: manipulation; 
             user-select: none;
             -webkit-user-select: none;
@@ -24,30 +23,31 @@
             color: white; 
             display: flex; 
             flex-direction: column; 
-            height: 100vh; 
-            /* Prevents the elastic bouncing/scrolling inside Telegram App */
-            overflow: hidden; 
-            position: fixed;
-            width: 100%;
+            min-height: 100vh; 
             align-items: center;
-            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+            /* Allows natural vertical scrolling for everything under the navbar */
+            overflow-y: auto; 
+            overflow-x: hidden;
+            padding: 0 0 env(safe-area-inset-bottom) 0;
         }
         
-        /* ADJUSTED FIXED NAV BAR LAYOUT */
+        /* LOCKED STICKY NAV BAR LAYOUT */
         .topbar { 
-            width: 90%; 
-            max-width: 360px;
+            position: sticky;
+            top: 0;
+            /* Anchors background and stack layers so content scrolls underneath flawlessly */
+            z-index: 999; 
+            background: #050f1e; 
+            width: 100%; 
+            max-width: 100%;
             display: flex; 
             justify-content: space-between; 
             align-items: center;
             font-weight: bold; 
             font-size: 16px; 
-            background: rgba(255, 255, 255, 0.05); 
-            padding: 14px 20px; 
-            border-radius: 16px;
-            margin-top: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            padding: calc(14px + env(safe-area-inset-top)) 24px 14px 24px; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
         .stat-item {
@@ -56,16 +56,16 @@
             gap: 6px;
         }
         
-        /* MAIN AREA (DYNAMIC RESPONSIVE ADJUSTMENT) */
+        /* MOVING SCROLLABLE CONTAINER AREA */
         .main-container { 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
             flex-grow: 1; 
-            gap: 20px; 
+            gap: 25px; 
             width: 100%;
-            padding: 10px 0;
+            padding: 30px 0 20px 0;
         }
         
         .character-btn { 
@@ -80,11 +80,8 @@
             transform: scale(0.95); 
         }
         .character-btn img { 
-            /* Responsive sizing using vh guarantees it won't overflow small phone displays */
-            width: 28vh; 
-            height: 28vh; 
-            max-width: 220px;
-            max-height: 220px;
+            width: 220px; 
+            height: 220px; 
             border-radius: 50%; 
             box-shadow: 0 0 40px rgba(0, 255, 153, 0.3); 
         }
@@ -140,7 +137,7 @@
             line-height: 1.6; 
             color: #697d95; 
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 25px;
             font-weight: 500;
         }
     </style>
