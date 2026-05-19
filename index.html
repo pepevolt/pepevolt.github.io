@@ -114,7 +114,11 @@ async function connectWallet(){
     try{
         if(window.ethereum){
             await window.ethereum.request({ method:"eth_requestAccounts" });
-            web3Provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+            // Explicit network definition prevents detection loop errors inside sandboxed WebViews
+            web3Provider = new ethers.providers.Web3Provider(window.ethereum, {
+                chainId: 137,
+                name: 'polygon'
+            });
         } else {
             const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
             const wcProvider = await WalletConnectProvider.init({
@@ -123,7 +127,10 @@ async function connectWallet(){
                 showQrModal: true
             });
             await wcProvider.connect();
-            web3Provider = new ethers.providers.Web3Provider(wcProvider, "any");
+            web3Provider = new ethers.providers.Web3Provider(wcProvider, {
+                chainId: 137,
+                name: 'polygon'
+            });
         }
 
         const signer = web3Provider.getSigner();
@@ -205,7 +212,6 @@ async function executeEnergyPurchase(){
         try {
             rawBalance = await tokenContract.balanceOf(wallet);
         } catch(e) {
-            console.warn("Could not check live balance directly, attempting transaction anyway.", e);
             rawBalance = amount; 
         }
 
@@ -263,13 +269,10 @@ async function swapPoints(){
 
 async function claimPVLT(){
     if(!wallet){ alert("Connect wallet first"); return; }
-    
-    // UPDATED CHECK: Require minimum 10 PVLTG to claim
     if(pvltg < 10){ alert("Need minimum 10 PVLTG"); return; }
 
     try{
         const signer = web3Provider.getSigner();
-        
         const tokenContract = new ethers.Contract(
             PVLTG_TOKEN_ADDRESS,
             ["function approve(address spender,uint256 amount) external returns(bool)"],
@@ -279,7 +282,7 @@ async function claimPVLT(){
         const amount = ethers.utils.parseUnits(pvltg.toString(), TOKEN_DECIMALS);
         const approveTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, amount);
         
-        alert("Approval processing... Please wait.");
+        alert("Approval processing... Please confirm and wait.");
         await approveTx.wait();
 
         const res = await fetch(API + "/claim-pvltg", {
