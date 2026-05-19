@@ -11,53 +11,64 @@
     </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@web3modal/standalone@2.4.3/dist/index.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.min.js"></script>
 
-    <script type="module">
-        import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers5@4.3.1';
-
+    <script>
         const projectId = '1731f99148b9cf6107dee70b6efb14b7';
+        let providerInstance = null;
+        let modalInstance = null;
 
-        const polygonChain = {
-            chainId: 137,
-            name: 'Polygon',
-            currency: 'POL',
-            explorerUrl: 'https://polygonscan.com',
-            rpcUrl: 'https://polygon-rpc.com'
-        };
+        // Securely initialize components the absolute moment the page structure is ready
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // 1. Initialize the official Web3Modal standalone interface engine
+                modalInstance = new Web3ModalStandalone.Web3Modal({
+                    projectId: projectId,
+                    walletConnectVersion: 2,
+                    themeMode: 'dark',
+                    chains: ['eip155:137'] // Polygon Mainnet Chain
+                });
+                window.web3ModalInstance = modalInstance;
 
-        const metadata = {
-            name: 'PepeVolt Tap Game',
-            description: 'PepeVolt Mini App',
-            url: window.location.origin,
-            icons: ['images/IMG_1850.png']
-        };
+                // 2. Initialize the official Ethereum Provider layer
+                providerInstance = await WalletConnectProvider.EthereumProvider.init({
+                    projectId: projectId,
+                    chains: [137], 
+                    showQrModal: false, // Set to false because our standalone Web3Modal UI handles the QR modal popup
+                    methods: ["eth_sendTransaction", "eth_signTransaction", "personal_sign", "eth_sign", "eth_requestAccounts"],
+                    events: ["chainChanged", "accountsChanged"]
+                });
+                window.walletConnectProviderInstance = providerInstance;
 
-        const ethersConfig = defaultConfig({
-            metadata,
-            enableEthers: true,
-            enableInjected: true,
-            enableCoinbase: false,
-            defaultChainId: 137
-        });
+                // 3. Setup event listeners to capture the connection state
+                providerInstance.on("display_uri", (uri) => {
+                    // Open the official WalletConnect QR popup modal instantly when URI is supplied
+                    modalInstance.openModal({ uri });
+                });
 
-        // Initialize the unified Reown modal interface instantly
-        const modal = createWeb3Modal({
-            ethersConfig,
-            chains: [polygonChain],
-            projectId,
-            themeMode: 'dark',
-            enableAnalytics: false
-        });
+                providerInstance.on("accountsChanged", (accounts) => {
+                    if (accounts && accounts.length > 0) {
+                        modalInstance.closeModal();
+                        window.syncWalletState(accounts[0], "walletconnect");
+                    } else {
+                        window.clearWalletState();
+                    }
+                });
 
-        // Expose instance globally for immediate access
-        window.appKitModal = modal;
+                providerInstance.on("disconnect", () => {
+                    window.clearWalletState();
+                });
 
-        // Monitor session changes smoothly
-        modal.subscribeProvider((state) => {
-            if (state.isConnected && state.address) {
-                window.syncWalletState(state.address, "appkit");
-            } else if (!window.ethereumActive) {
-                window.clearWalletState();
+                // Silent auto-login hook for returning users
+                if (providerInstance.session) {
+                    const accounts = providerInstance.accounts;
+                    if (accounts && accounts.length > 0) {
+                        window.syncWalletState(accounts[0], "walletconnect");
+                    }
+                }
+            } catch (err) {
+                console.error("Web3 Boot Failure: ", err);
             }
         });
     </script>
@@ -317,16 +328,17 @@
         }
 
         async function handleWalletAction(){
+            // If already connected, handle disconnection cleanups
             if(walletAddress) {
-                if(window.appKitModal) {
-                    await window.appKitModal.disconnect();
+                if(connectionType === "walletconnect" && window.walletConnectProviderInstance) {
+                    await window.walletConnectProviderInstance.disconnect();
                 }
                 window.ethereumActive = false;
                 clearWalletState();
                 return;
             }
 
-            // Web3 DApp Browser Detection (Like your Bitget Discover browser view)
+            // Route A: In-App DApp Browsers (Bitget, MetaMask App, Trust Wallet Browser App)
             if(window.ethereum) {
                 try {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -342,15 +354,19 @@
                     await syncWalletState(addr, "injected");
                     return;
                 } catch(e) {
-                    console.log("Injected interception bypassed.");
+                    console.log("Injected browser route failed or was rejected, falling back to modal.");
                 }
             }
 
-            // Regular Browser Trigger -> Instantly launches QR and app connection modal
-            if(window.appKitModal) {
-                window.appKitModal.open();
+            // Route B: Regular Browsers (Safari, Chrome, Telegram) -> Trigger the WalletConnect QR Modal layout
+            if(window.walletConnectProviderInstance) {
+                try {
+                    await window.walletConnectProviderInstance.connect();
+                } catch (err) {
+                    console.log("User dismissed connection modal UI manually.");
+                }
             } else {
-                alert("AppKit subsystem loading. Please retry in a second.");
+                alert("Web3 system initializing. Please try again in 3 seconds.");
             }
         }
 
@@ -358,12 +374,9 @@
             if (connectionType === "injected" && window.ethereum) {
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 return provider.getSigner();
-            } else if (window.appKitModal) {
-                const walletProvider = window.appKitModal.getWalletProvider();
-                if (walletProvider) {
-                    const provider = new ethers.providers.Web3Provider(walletProvider);
-                    return provider.getSigner();
-                }
+            } else if (connectionType === "walletconnect" && window.walletConnectProviderInstance) {
+                const provider = new ethers.providers.Web3Provider(window.walletConnectProviderInstance);
+                return provider.getSigner();
             }
             return null;
         }
@@ -392,7 +405,7 @@
                 updateUI();
                 await loadOnChainBalances();
             } catch(err) {
-                console.log("Database state sync mismatch: ", err);
+                console.log("Database fetch tracking error: ", err);
             }
         }
 
@@ -454,7 +467,7 @@
             
             const signer = await getActiveSigner();
             if(!signer) {
-                alert("Could not extract active wallet provider signature. Reconnect and try again.");
+                alert("Could not access active wallet signatures. Please reconnect.");
                 return;
             }
 
@@ -465,7 +478,7 @@
                 const approveTx = await token.approve(TREASURY_CONTRACT, ethers.utils.parseEther("100"));
                 await approveTx.wait();
 
-                console.log("Routing payment confirmations back to main engine...");
+                console.log("Sending energy updates payload to server...");
                 const res = await fetch(`${API_URL}/buy-energy`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -499,14 +512,14 @@
                 points = data.points || 0;
                 pvltg = data.pvltg;
                 updateUI();
-            } catch(err){ console.log(err); alert("Points execution processing failed."); }
+            } catch(err){ console.log(err); alert("Points swap processing failure."); }
         }
 
         async function triggerWithdrawal(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
 
             try{
-                console.log("Requesting server payout reward tracking checks...");
+                console.log("Requesting payment release hash allocations...");
                 const res = await fetch(`${API_URL}/withdraw-pvltg`, {
                     method:"POST",
                     headers:{ "Content-Type":"application/json" },
@@ -518,7 +531,7 @@
                 pvltg = 0;
                 updateUI();
                 await loadOnChainBalances();
-                alert(`Withdrawal complete! Hash Reference: ${data.tx}`);
+                alert(`Withdrawal complete! Hash: ${data.tx}`);
             }
             catch(err){ console.error(err); alert("Claim transaction failed."); }
         }
