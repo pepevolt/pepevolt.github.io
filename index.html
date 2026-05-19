@@ -186,8 +186,8 @@
 <body>
 
     <div class="topbar">
-        <div class="stat-item">🛢️ <span id="energy">9787</span></div>
-        <div class="stat-item">⚡ <span id="points">265</span></div>
+        <div class="stat-item">🛢️ <span id="energy">0</span></div>
+        <div class="stat-item">⚡ <span id="points">0</span></div>
         <div class="stat-item">💎 <span id="pvltg">0.0000</span></div>
     </div>
 
@@ -234,9 +234,10 @@
             "function approve(address spender,uint256 amount) returns(bool)"
         ];
 
+        // Adjusted starting state clean to 0
         let walletAddress = "";
-        let points = 265;
-        let energy = 9787;
+        let points = 0;
+        let energy = 0;
         let pvltg = 0;
         let autoRefillInterval = null;
 
@@ -246,30 +247,28 @@
             document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
         }
 
+        // --- FIXED ENERGY REFILL PATTERN ---
         function initializeEnergyTracking(){
             if(autoRefillInterval) clearInterval(autoRefillInterval);
+            
             autoRefillInterval = setInterval(()=>{
-                if(energy === 0){
-                    energy = 1;
-                    updateUI();
-                } else if(energy > 0 && energy < 20){
+                // Checks if wallet is connected and energy is below the maximum cap of 20
+                if(walletAddress && energy < 20){
                     energy += 1;
                     updateUI();
                 }
-            }, 1000);
+            }, 1000); // 1000ms = 1 second
         }
 
-        // --- NEW AUTO DETECT FEATURE ---
         async function checkExistingConnection() {
             try {
                 if (window.ethereum) {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    // Silently checks for already authorized accounts without triggering a popup
                     const accounts = await provider.listAccounts();
                     
                     if (accounts.length > 0) {
                         console.log("Wallet autodetected successfully.");
-                        await handleWalletAction(); // Fire login logic safely
+                        await handleWalletAction();
                     }
                 }
             } catch (err) {
@@ -313,7 +312,6 @@
             }
             catch(err){
                 console.log("Connection dynamic handling: ", err);
-                // Suppressed alert popup during auto-detect sequence so it's a completely clean UX
             }
         }
 
@@ -334,6 +332,8 @@
 
         async function handleTap(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
+            if(energy <= 0){ alert("Out of energy!"); return; } // Extra validation safeguard
+            
             try{
                 const res = await fetch(`${API_URL}/tap`, {
                     method:"POST",
