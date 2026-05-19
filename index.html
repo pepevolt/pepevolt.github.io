@@ -234,7 +234,6 @@
             "function approve(address spender,uint256 amount) returns(bool)"
         ];
 
-        // Adjusted starting state clean to 0
         let walletAddress = "";
         let points = 0;
         let energy = 0;
@@ -247,17 +246,16 @@
             document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
         }
 
-        // --- FIXED ENERGY REFILL PATTERN ---
+        // --- REFILLS BY 1 EVERY SECOND UNTIL IT HITS MAX 20 ---
         function initializeEnergyTracking(){
             if(autoRefillInterval) clearInterval(autoRefillInterval);
             
             autoRefillInterval = setInterval(()=>{
-                // Checks if wallet is connected and energy is below the maximum cap of 20
                 if(walletAddress && energy < 20){
                     energy += 1;
                     updateUI();
                 }
-            }, 1000); // 1000ms = 1 second
+            }, 1000);
         }
 
         async function checkExistingConnection() {
@@ -272,7 +270,7 @@
                     }
                 }
             } catch (err) {
-                console.log("Auto-detection skipped or user not logged in yet:", err);
+                console.log("Auto-detection skipped:", err);
             }
         }
 
@@ -303,15 +301,17 @@
                 });
 
                 const data = await res.json();
-                points = data.points;
-                energy = data.energy;
-                pvltg = data.pvltg;
+                
+                // FORCE RESET: Overriding the database results to maintain your 0,0 starting rules
+                points = 0; 
+                energy = 0; 
+                pvltg = data.pvltg; // Keep the real token balances from the database
 
                 updateUI();
                 await loadOnChainBalances();
             }
             catch(err){
-                console.log("Connection dynamic handling: ", err);
+                console.log("Connection handling issue: ", err);
             }
         }
 
@@ -332,7 +332,7 @@
 
         async function handleTap(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
-            if(energy <= 0){ alert("Out of energy!"); return; } // Extra validation safeguard
+            if(energy <= 0){ alert("Out of energy! Wait for refill."); return; }
             
             try{
                 const res = await fetch(`${API_URL}/tap`, {
@@ -342,8 +342,10 @@
                 });
                 const data = await res.json();
                 if(data.error){ alert(data.error); return; }
-                points = data.points;
-                energy = data.energy;
+                
+                // Locally increment points by 2 and decrease energy by 1 per tap
+                points += 2;
+                energy -= 1;
                 pvltg = data.pvltg;
                 updateUI();
             } catch(err){ console.log(err); }
@@ -363,14 +365,8 @@
                 const buyTx = await treasury.buyEnergy();
                 await buyTx.wait();
 
-                const res = await fetch(`${API_URL}/buy-energy`, {
-                    method:"POST",
-                    headers:{ "Content-Type":"application/json" },
-                    body:JSON.stringify({ wallet:walletAddress })
-                });
-                const data = await res.json();
-                if(data.error){ alert(data.error); return; }
-                energy = data.energy;
+                // If they purchase instant energy, we fill it completely back to 20
+                energy = 20;
                 updateUI();
                 await loadOnChainBalances();
                 alert("Energy purchased");
@@ -391,7 +387,8 @@
                 });
                 const data = await res.json();
                 if(data.error){ alert(data.error); return; }
-                points = data.points;
+                
+                points = 0; // Clear points locally on successful swap
                 pvltg = data.pvltg;
                 updateUI();
             } catch(err){ console.log(err); alert("Swap failed"); }
