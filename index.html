@@ -10,7 +10,7 @@
     <script type="module">
         import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.run/@web3modal/wagmi@3.5.0';
         import { polygon } from 'https://esm.run/viem/chains';
-        import { watchAccount, disconnect } from 'https://esm.run/@wagmi/core';
+        import { watchAccount, disconnect, getWalletClient } from 'https://esm.run/@wagmi/core';
 
         const projectId = '1731f99148b9cf6107dee70b6efb14b7';
         const metadata = {
@@ -30,6 +30,19 @@
         window.web3ModalInstance = modal;
         window.wagmiDisconnect = disconnect;
         window.wagmiConfig = wagmiConfig;
+
+        // Helper function to extract an Ethers Signer out of a WalletConnect Session
+        window.getWalletConnectSigner = async function() {
+            try {
+                const client = await getWalletClient(wagmiConfig);
+                if (!client) return null;
+                const provider = new ethers.providers.Web3Provider(client.transport);
+                return provider.getSigner();
+            } catch (err) {
+                console.error("Failed to extract WalletConnect signer:", err);
+                return null;
+            }
+        };
 
         // Listen for WalletConnect success/disconnect actions
         watchAccount((account) => {
@@ -257,7 +270,7 @@
         ];
 
         let walletAddress = "";
-        let connectionType = ""; // Tracks "injected" or "walletconnect"
+        let connectionType = ""; 
         let points = 0;
         let energy = 0;
         let pvltg = 0;
@@ -280,7 +293,6 @@
             }, 1000);
         }
 
-        // --- SILENT INJECTED DETECTOR FOR WEB3 BROWSERS ---
         async function checkExistingConnection() {
             try {
                 if (window.ethereum) {
@@ -292,13 +304,11 @@
                     }
                 }
             } catch (err) {
-                console.log("Silent check skipped.");
+                console.log("Silent injection check skipped.");
             }
         }
 
-        // --- INTELLIGENT ROUTING CONNECTION HANDLER ---
         async function handleWalletAction(){
-            // If already connected, handle Disconnect cleanups
             if(walletAddress) {
                 if(connectionType === "walletconnect" && window.wagmiDisconnect && window.wagmiConfig) {
                     await window.wagmiDisconnect(window.wagmiConfig);
@@ -308,7 +318,6 @@
                 return;
             }
 
-            // Route 1: If inside a dedicated Web3 Injected Wallet browser, bypass standard popups
             if(window.ethereum) {
                 try {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -324,17 +333,25 @@
                     await syncWalletState(addr, "injected");
                     return;
                 } catch(e) {
-                    console.log("Injected login dropped, falling back to modal options.", e);
+                    console.log("Fallback triggering web3Modal container routing.");
                 }
             }
 
-            // Route 2: If on standard mobile web, gracefully open WalletConnect popup modal
             if(window.web3ModalInstance) {
                 window.web3ModalInstance.open();
             }
         }
 
-        // --- SYNC UI STATE & DB LOGINS ---
+        async function getActiveSigner() {
+            if (connectionType === "injected" && window.ethereum) {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                return provider.getSigner();
+            } else if (connectionType === "walletconnect" && window.getWalletConnectSigner) {
+                return await window.getWalletConnectSigner();
+            }
+            return null;
+        }
+
         window.syncWalletState = async function(address, type) {
             walletAddress = address;
             connectionType = type;
@@ -359,7 +376,7 @@
                 updateUI();
                 await loadOnChainBalances();
             } catch(err) {
-                console.log("Backend syncing issue: ", err);
+                console.log("API syncing failed: ", err);
             }
         }
 
@@ -383,7 +400,6 @@
 
         async function loadOnChainBalances(){
             if(!walletAddress) return;
-            // Fallback RPC link used if utilizing a standard browser connection path
             const provider = window.ethereum ? new ethers.providers.Web3Provider(window.ethereum) : new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
             
             try{
@@ -417,25 +433,26 @@
             } catch(err){ console.log(err); }
         }
 
+        // --- FIXED FOR WALLETCONNECT ROUTING AND NO DUAL SIGNING FAILS ---
         async function triggerBuyEnergy(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
-            if(!window.ethereum) {
-                alert("Please switch and open this app link inside MetaMask, Trust Wallet or Bitget Wallet application browsers to submit payment contract transactions.");
+            
+            const signer = await getActiveSigner();
+            if(!signer) {
+                alert("Could not access active wallet credentials. Please reconnect.");
                 return;
             }
 
             try{
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const signer = provider.getSigner();
                 const token = new ethers.Contract(MAIN_TOKEN_CONTRACT, ERC20_ABI, signer);
-                const treasury = new ethers.Contract(TREASURY_CONTRACT, ["function buyEnergy() external"], signer);
-
+                
+                // Player approves treasury contract to spend their 100 PVLT tokens on-chain
+                console.log("Requesting payment token allowance approval...");
                 const approveTx = await token.approve(TREASURY_CONTRACT, ethers.utils.parseEther("100"));
                 await approveTx.wait();
 
-                const buyTx = await treasury.buyEnergy();
-                await buyTx.wait();
-
+                // Call the API backend route. The server wallet executes the final on-chain function
+                console.log("Submitting transaction payload to game engine server...");
                 const res = await fetch(`${API_URL}/buy-energy`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -444,14 +461,14 @@
                 const data = await res.json();
                 if(data.error){ alert(data.error); return; }
 
-                energy = 20; 
+                energy = data.energy; 
                 updateUI();
                 await loadOnChainBalances();
-                alert("Energy purchased successfully!");
+                alert("Instant Energy pack applied successfully!");
             }
             catch(err){
-                console.log(err);
-                alert("Energy purchase failed");
+                console.error(err);
+                alert("Energy purchase rejected or failed.");
             }
         }
 
@@ -469,18 +486,16 @@
                 points = data.points || 0;
                 pvltg = data.pvltg;
                 updateUI();
-            } catch(err){ console.log(err); alert("Swap failed"); }
+            } catch(err){ console.log(err); alert("Swap conversion failed"); }
         }
 
+        // --- ALIGNED TARGET ENDPOINT TO MATCH THE SERVER WRAPPER ---
         async function triggerWithdrawal(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
-            if(!window.ethereum) {
-                alert("Please open this page directly in your Web3 browser application to authorize the transaction.");
-                return;
-            }
 
             try{
-                const res = await fetch(`${API_URL}/withdraw`, {
+                console.log("Requesting secure withdrawal allocation signature...");
+                const res = await fetch(`${API_URL}/withdraw-pvltg`, {
                     method:"POST",
                     headers:{ "Content-Type":"application/json" },
                     body:JSON.stringify({ wallet:walletAddress })
@@ -488,25 +503,16 @@
                 const data = await res.json();
                 if(data.error){ alert(data.error); return; }
 
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const signer = provider.getSigner();
-                const treasury = new ethers.Contract(TREASURY_CONTRACT, ["function withdrawReward(uint256 amount,uint256 nonce,bytes calldata signature) external"], signer);
-
-                const tx = await treasury.withdrawReward(ethers.utils.parseEther(data.amount.toString()), data.nonce, data.signature);
-                await tx.wait();
-
                 pvltg = 0;
                 updateUI();
                 await loadOnChainBalances();
-                alert("Withdrawal successful");
+                alert(`Withdrawal success! Tx Hash: ${data.tx}`);
             }
-            catch(err){ console.log(err); alert("Withdrawal failed"); }
+            catch(err){ console.error(err); alert("Withdrawal routine failed"); }
         }
 
-        // --- LIFECYCLE INITIALIZATION ---
         initializeEnergyTracking();
         checkExistingConnection();
     </script>
-
 </body>
 </html>
