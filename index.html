@@ -80,7 +80,6 @@ const API = "https://pvlt-server.onrender.com";
 const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
 const PVLT_TOKEN_ADDRESS = "0xC096dB70Fa05255b210Be58Ec2508Bed61e8dfD6";
-const PVLTG_TOKEN_ADDRESS = "0x3094Dc50cB01721eE6c0ECAf18bd0D15c154ba2d";
 const GAME_TREASURY_ADDRESS = "0xe2bb81bD8e36367F2C85c89F0B03570dFCaf5D57";
 const TOKEN_DECIMALS = 18;
 
@@ -114,7 +113,6 @@ async function connectWallet(){
     try{
         if(window.ethereum){
             await window.ethereum.request({ method:"eth_requestAccounts" });
-            // Explicit network definition prevents detection loop errors inside sandboxed WebViews
             web3Provider = new ethers.providers.Web3Provider(window.ethereum, {
                 chainId: 137,
                 name: 'polygon'
@@ -267,24 +265,15 @@ async function swapPoints(){
     }
 }
 
+/* ================= THE FIXED CLAIM ACTION ================= */
 async function claimPVLT(){
     if(!wallet){ alert("Connect wallet first"); return; }
     if(pvltg < 10){ alert("Need minimum 10 PVLTG"); return; }
 
-    try{
-        const signer = web3Provider.getSigner();
-        const tokenContract = new ethers.Contract(
-            PVLTG_TOKEN_ADDRESS,
-            ["function approve(address spender,uint256 amount) external returns(bool)"],
-            signer
-        );
+    try {
+        alert("Processing claim on our secure server... Please wait.");
 
-        const amount = ethers.utils.parseUnits(pvltg.toString(), TOKEN_DECIMALS);
-        const approveTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, amount);
-        
-        alert("Approval processing... Please confirm and wait.");
-        await approveTx.wait();
-
+        // Hand off processing securely directly to your backend endpoint
         const res = await fetch(API + "/claim-pvltg", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -292,14 +281,18 @@ async function claimPVLT(){
         });
         const data = await res.json();
 
-        if(data.error){ alert(data.error); return; }
+        if(data.error){ 
+            alert("Claim Failed: " + data.error); 
+            return; 
+        }
 
+        // Reset game engine view only after the transaction is confirmed
         pvltg = 0;
         updateUI();
-        alert("PVLT claimed successfully!");
+        alert("PVLT dropped into your wallet successfully!");
     } catch(err){
         console.error(err);
-        alert("Claim processing failed.");
+        alert("Claim processing failed. Check internet connectivity.");
     }
 }
 
