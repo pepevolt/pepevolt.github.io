@@ -7,9 +7,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script type="module">
         import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.run/@web3modal/wagmi@3.5.0';
-        import { mainnet, polygon } from 'https://esm.run/viem/chains';
+        import { polygon } from 'https://esm.run/viem/chains';
         
-        // REOWN PROJECT ID CONFIGURATION HOOK CONTAINER LINK
         const projectId = 'YOUR_REOWN_PROJECT_ID_HERE'; 
 
         const metadata = {
@@ -65,7 +64,6 @@
         .btn:active { opacity: 0.9; transform: scale(0.99); }
         .btn-withdraw { background: linear-gradient(90deg, #ffcc00, #ff3300); color: white; }
         
-        /* DATA BALANCES CONTAINER SUB-LAYER */
         .live-balances-box {
             background: rgba(255, 255, 255, 0.02); margin-top: 5px; padding: 12px; border-radius: 12px;
             font-size: 12px; color: #a2b7d4; display: flex; flex-direction: column; gap: 6px; text-align: left;
@@ -80,8 +78,8 @@
 <body>
 
 <div class="topbar">
-    <div class="stat-item">🛢️ <span id="energy">9787</span></div>
-    <div class="stat-item">⚡ <span id="points">265</span></div>
+    <div class="stat-item">🛢️ <span id="energy">0</span></div>
+    <div class="stat-item">⚡ <span id="points">0</span></div>
     <div class="stat-item">💎 <span id="pvltg">0.0000</span></div>
 </div>
 
@@ -119,12 +117,12 @@
 <script>
     const API_URL = "https://pvlt-server.onrender.com"; 
     
-    // Exact Token Contract Configurations addresses for chain data scraping
     const MAIN_TOKEN_CONTRACT = "YOUR_DEPLOYED_CONTRACT_1_ADDRESS";
     const TREASURY_CONTRACT = "YOUR_DEPLOYED_CONTRACT_3_ADDRESS";
     const ERC20_ABI = ["function balanceOf(address owner) view returns (uint256)"];
 
-    let walletAddress = "", points = 265, energy = 9787, pvltg = 0;
+    // Default javascript core local states set to absolute base values
+    let walletAddress = "", points = 0, energy = 0, pvltg = 0;
     let autoRefillInterval = null;
 
     function updateUI() {
@@ -133,7 +131,6 @@
         document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
     }
 
-    // Dynamic 20-second background replenishment thread
     function initializeEnergyTracking() {
         if (autoRefillInterval) clearInterval(autoRefillInterval);
         autoRefillInterval = setInterval(() => {
@@ -150,7 +147,6 @@
     async function handleWalletAction() {
         if (window.web3Modal) {
             await window.web3Modal.open();
-            // Interval hooks update verification parameters natively
             const verificationTracker = setInterval(async () => {
                 if (window.ethereum && window.ethereum.selectedAddress) {
                     clearInterval(verificationTracker);
@@ -187,13 +183,14 @@
     }
 
     async function handleTap() {
-        if (!walletAddress) return;
+        if (!walletAddress) return alert("Connect your wallet first to start earning points!");
         const res = await fetch(`${API_URL}/tap`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ wallet: walletAddress })
         });
         const data = await res.json();
+        if (data.error) return alert(data.error);
         points = data.points; energy = data.energy;
         updateUI();
     }
@@ -207,7 +204,6 @@
             const signer = provider.getSigner();
             const tokenInstance = new ethers.Contract(MAIN_TOKEN_CONTRACT, ["function approve(address spender, uint256 value) returns (bool)"], signer);
             
-            // Approve the treasury contract to pull 1000 PVLT tokens for the purchase
             const approveTx = await tokenInstance.approve(TREASURY_CONTRACT, ethers.utils.parseEther("1000"));
             await approveTx.wait();
 
@@ -256,13 +252,14 @@
         const data = await res.json();
         if (data.error) return alert(data.error);
         
-        // Target structural rule validation reset value
         pvltg = 0; 
         updateUI();
         loadOnChainBalances();
         alert("Withdrawal Complete! Converted assets dispatched directly to your personal crypto wallet.");
     }
 
+    // Force an immediate UI rendering layout refresh execution on script mount
+    updateUI();
     initializeEnergyTracking();
 </script>
 </body>
