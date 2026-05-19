@@ -2,36 +2,155 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PEPEVOLT BOT</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { background: #050f1e; font-family: Arial, sans-serif; color: white; display: flex; flex-direction: column; height: 100vh; justify-content: space-between; align-items: center; padding: 20px 0; }
+        /* CSS RESET & ZOOM BLOCKERS */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            /* Disables double-tap to zoom behavior on mobile elements */
+            touch-action: manipulation; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
         
-        .topbar { width: 90%; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; }
-        .main-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; gap: 25px; width: 100%; }
+        body { 
+            background: #050f1e; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            /* Prevents the elastic bouncing/scrolling inside Telegram App */
+            overflow: hidden; 
+            position: fixed;
+            width: 100%;
+            align-items: center;
+            padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+        }
         
-        .character-btn { background: none; border: none; cursor: pointer; outline: none; border-radius: 50%; transition: transform 0.05s; }
-        .character-btn:active { transform: scale(0.95); }
-        .character-btn img { width: 220px; height: 220px; border-radius: 50%; box-shadow: 0 0 40px rgba(0, 255, 153, 0.3); }
+        /* ADJUSTED FIXED NAV BAR LAYOUT */
+        .topbar { 
+            width: 90%; 
+            max-width: 360px;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-weight: bold; 
+            font-size: 16px; 
+            background: rgba(255, 255, 255, 0.05); 
+            padding: 14px 20px; 
+            border-radius: 16px;
+            margin-top: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         
-        .ui-card { width: 90%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
-        .address-display { width: 100%; padding: 14px; border-radius: 12px; background: #0a182c; color: #8fa3bf; border: none; font-size: 14px; text-align: center; font-weight: bold; }
+        /* MAIN AREA (DYNAMIC RESPONSIVE ADJUSTMENT) */
+        .main-container { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            flex-grow: 1; 
+            gap: 20px; 
+            width: 100%;
+            padding: 10px 0;
+        }
         
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 15px; font-weight: bold; color: black; cursor: pointer; background: linear-gradient(90deg, #00ff99, #00ccff); transition: opacity 0.2s; }
-        .btn:active { opacity: 0.9; }
-        .btn-withdraw { background: linear-gradient(90deg, #ffcc00, #ff3300); color: white; }
+        .character-btn { 
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            outline: none; 
+            border-radius: 50%; 
+            transition: transform 0.05s ease; 
+        }
+        .character-btn:active { 
+            transform: scale(0.95); 
+        }
+        .character-btn img { 
+            /* Responsive sizing using vh guarantees it won't overflow small phone displays */
+            width: 28vh; 
+            height: 28vh; 
+            max-width: 220px;
+            max-height: 220px;
+            border-radius: 50%; 
+            box-shadow: 0 0 40px rgba(0, 255, 153, 0.3); 
+        }
         
-        .footer-rules { font-size: 11px; line-height: 1.6; color: #697d95; text-align: center; }
+        /* ADJUSTED CARD BUTTON GROUP */
+        .ui-card { 
+            width: 90%; 
+            max-width: 360px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            text-align: center; 
+        }
+        
+        .address-display { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 14px; 
+            background: #0a182c; 
+            color: #8fa3bf; 
+            border: 1px solid rgba(255, 255, 255, 0.02); 
+            font-size: 14px; 
+            text-align: center; 
+            font-weight: bold;
+            outline: none;
+        }
+        
+        .btn { 
+            width: 100%; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 14px; 
+            font-size: 15px; 
+            font-weight: bold; 
+            color: black; 
+            cursor: pointer; 
+            background: linear-gradient(90deg, #00ff99, #00ccff); 
+            transition: opacity 0.2s, transform 0.1s; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn:active { 
+            opacity: 0.9;
+            transform: scale(0.99);
+        }
+        .btn-withdraw { 
+            background: linear-gradient(90deg, #ffcc00, #ff3300); 
+            color: white; 
+        }
+        
+        .footer-rules { 
+            font-size: 12px; 
+            line-height: 1.6; 
+            color: #697d95; 
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
 
 <div class="topbar">
-    <div>🛢️ <span id="energy">9787</span></div>
-    <div>⚡ <span id="points">265</span></div>
-    <div>💎 <span id="pvltg">0.0000</span></div>
+    <div class="stat-item">🛢️ <span id="energy">9787</span></div>
+    <div class="stat-item">⚡ <span id="points">265</span></div>
+    <div class="stat-item">💎 <span id="pvltg">0.0000</span></div>
 </div>
 
 <div class="main-container">
