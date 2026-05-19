@@ -262,14 +262,16 @@
             }, 1000);
         }
 
+        // --- MODIFIED SILENT DETECTION: NO SUDDEN POPUPS ---
         async function checkExistingConnection() {
             try {
                 if (window.ethereum) {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
                     const accounts = await provider.listAccounts();
                     
+                    // Only link automatically if the user explicitly authorized a connection previously
                     if (accounts.length > 0) {
-                        console.log("Wallet autodetected successfully.");
+                        console.log("Authorized session detected.");
                         await handleWalletAction(true);
                     }
                 }
@@ -281,6 +283,7 @@
         async function handleWalletAction(isAutoDetect = false){
             const connectBtn = document.getElementById("connectBtn");
 
+            // Click action to DISCONNECT if clicked while active
             if(walletAddress && !isAutoDetect) {
                 walletAddress = "";
                 points = 0;
@@ -305,6 +308,8 @@
                 }
 
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
+                
+                // Triggers request popups safely on standard click actions
                 await provider.send("eth_requestAccounts", []);
                 const signer = provider.getSigner();
                 walletAddress = await signer.getAddress();
@@ -374,7 +379,6 @@
             } catch(err){ console.log(err); }
         }
 
-        // --- FIXED BUY ENERGY METHOD ---
         async function triggerBuyEnergy(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
             try{
@@ -383,15 +387,12 @@
                 const token = new ethers.Contract(MAIN_TOKEN_CONTRACT, ERC20_ABI, signer);
                 const treasury = new ethers.Contract(TREASURY_CONTRACT, ["function buyEnergy() external"], signer);
 
-                // Step 1: Execute ERC20 Approve contract transaction
                 const approveTx = await token.approve(TREASURY_CONTRACT, ethers.utils.parseEther("100"));
                 await approveTx.wait();
 
-                // Step 2: Execute Contract payment interaction
                 const buyTx = await treasury.buyEnergy();
                 await buyTx.wait();
 
-                // Step 3: Inform your Render Backend API about the purchase to reset database state
                 const res = await fetch(`${API_URL}/buy-energy`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -404,7 +405,6 @@
                     return; 
                 }
 
-                // Step 4: Sync frontend memory state safely to the exact cap value
                 energy = 20; 
                 updateUI();
                 await loadOnChainBalances();
