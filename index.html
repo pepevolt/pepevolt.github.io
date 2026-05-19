@@ -5,52 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PEPEVOLT BOT</title>
 
+    <script>
+        window.global = window;
+        window.process = { env: {} };
+    </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3wallet@1.15.1/dist/index.umd.min.js"></script>
-    
-    <script type="module">
-        import { createWeb3Modal, defaultConfig } from 'https://esm.sh/@web3modal/ethers5@3.5.7?bundle';
+    <script src="https://cdn.jsdelivr.net/npm/@web3modal/standalone@2.4.3/dist/index.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.min.js"></script>
 
+    <script>
         const projectId = '1731f99148b9cf6107dee70b6efb14b7';
-        
-        const polygonChain = {
-            chainId: 137,
-            name: 'Polygon',
-            currency: 'POL',
-            explorerUrl: 'https://polygonscan.com',
-            rpcUrl: 'https://polygon-rpc.com'
-        };
+        let providerInstance = null;
+        let modalInstance = null;
 
-        const metadata = {
-            name: 'PepeVolt Tap Game',
-            description: 'PepeVolt Mini App',
-            url: window.location.origin,
-            icons: ['images/IMG_1850.png']
-        };
+        // Initialize WalletConnect Core Components safely after DOM load
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // 1. Initialize the Standalone Visual Modal Engine
+                modalInstance = new Web3ModalStandalone.Web3Modal({
+                    projectId: projectId,
+                    walletConnectVersion: 2,
+                    themeMode: 'dark',
+                    chains: ['eip155:137'] // Polygon Mainnet ID
+                });
+                window.web3ModalInstance = modalInstance;
 
-        const ethersConfig = defaultConfig({
-            metadata,
-            enableEthers: true,
-            enableInjected: true,
-            enableCoinbase: false,
-            defaultChainId: 137
-        });
+                // 2. Initialize the Ethereum Provider with clean relay architectures
+                providerInstance = await WalletConnectProvider.EthereumProvider.init({
+                    projectId: projectId,
+                    chains: [137], 
+                    showQrModal: false, // Turned false because our standalone Web3Modal handles the UI popup
+                    methods: ["eth_sendTransaction", "eth_signTransaction", "personal_sign", "eth_sign", "eth_requestAccounts"],
+                    events: ["chainChanged", "accountsChanged"]
+                });
 
-        const modal = createWeb3Modal({
-            ethersConfig,
-            chains: [polygonChain],
-            projectId,
-            enableAnalytics: false
-        });
+                // 3. Connect internal wallet session event handlers
+                providerInstance.on("display_uri", (uri) => {
+                    // Open the visual connection modal popup as soon as WalletConnect gives us the URI link
+                    modalInstance.openModal({ uri });
+                });
 
-        window.web3ModalInstance = modal;
+                providerInstance.on("accountsChanged", (accounts) => {
+                    if (accounts && accounts.length > 0) {
+                        modalInstance.closeModal();
+                        window.syncWalletState(accounts[0], "walletconnect");
+                    } else {
+                        window.clearWalletState();
+                    }
+                });
 
-        // Listen actively to wallet adjustments or connection states updates
-        modal.subscribeProvider((state) => {
-            if (state.isConnected && state.address) {
-                window.syncWalletState(state.address, "walletconnect");
-            } else if (!window.ethereumActive) {
-                window.clearWalletState();
+                providerInstance.on("disconnect", () => {
+                    window.clearWalletState();
+                });
+
+                // Run silent auto-login check for established connections
+                if (providerInstance.session) {
+                    const accounts = providerInstance.accounts;
+                    if (accounts && accounts.length > 0) {
+                        window.syncWalletState(accounts[0], "walletconnect");
+                    }
+                }
+            } catch (err) {
+                console.error("WalletConnect Boot Exception Encountered:", err);
             }
         });
     </script>
@@ -305,21 +322,21 @@
                     }
                 }
             } catch (err) {
-                console.log("Auto check skipped.");
+                console.log("Injected silent sweep passed.");
             }
         }
 
         async function handleWalletAction(){
             if(walletAddress) {
-                if(connectionType === "walletconnect" && window.web3ModalInstance) {
-                    await window.web3ModalInstance.disconnect();
+                if(connectionType === "walletconnect" && providerInstance) {
+                    await providerInstance.disconnect();
                 }
                 window.ethereumActive = false;
                 clearWalletState();
                 return;
             }
 
-            // Web3 embedded app interceptor
+            // Web3 embedded App Interceptor (e.g. Bitget, Trust Wallet, MetaMask browser tabs)
             if(window.ethereum) {
                 try {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -335,15 +352,19 @@
                     await syncWalletState(addr, "injected");
                     return;
                 } catch(e) {
-                    console.log("Injected browser fallback passed.");
+                    console.log("Injected browser route skipped, opening modal instead.");
                 }
             }
 
-            // Regular browser route: Fire up the popup modal visual box smoothly
-            if(window.web3ModalInstance) {
-                window.web3ModalInstance.open();
+            // Regular Safari/Chrome/Telegram Mobile Browser -> Open WalletConnect Connection QR Box
+            if(providerInstance) {
+                try {
+                    await providerInstance.connect();
+                } catch (err) {
+                    console.log("User closed connection stream modal manually.");
+                }
             } else {
-                alert("Web3 system initialization pending. Please try again in a few seconds.");
+                alert("Web3 system initializing. Please try again in a moment.");
             }
         }
 
@@ -351,12 +372,9 @@
             if (connectionType === "injected" && window.ethereum) {
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 return provider.getSigner();
-            } else if (connectionType === "walletconnect" && window.web3ModalInstance) {
-                const walletProvider = window.web3ModalInstance.getWalletProvider();
-                if (walletProvider) {
-                    const provider = new ethers.providers.Web3Provider(walletProvider);
-                    return provider.getSigner();
-                }
+            } else if (connectionType === "walletconnect" && providerInstance) {
+                const provider = new ethers.providers.Web3Provider(providerInstance);
+                return provider.getSigner();
             }
             return null;
         }
@@ -385,7 +403,7 @@
                 updateUI();
                 await loadOnChainBalances();
             } catch(err) {
-                console.log("Backend profile registration sync down error: ", err);
+                console.log("Backend synchronization error: ", err);
             }
         }
 
@@ -447,18 +465,18 @@
             
             const signer = await getActiveSigner();
             if(!signer) {
-                alert("Failed to hook into your current wallet session provider connection state. Please reconnect.");
+                alert("Failed to grab current active connection provider session. Please reconnect.");
                 return;
             }
 
             try{
                 const token = new ethers.Contract(MAIN_TOKEN_CONTRACT, ERC20_ABI, signer);
                 
-                console.log("Approving token spend limit allowances...");
+                console.log("Requesting contract spend token authorization limits...");
                 const approveTx = await token.approve(TREASURY_CONTRACT, ethers.utils.parseEther("100"));
                 await approveTx.wait();
 
-                console.log("Submitting pack purchase action request to server...");
+                console.log("Broadcasting verification payload to back-end node engine...");
                 const res = await fetch(`${API_URL}/buy-energy`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -470,11 +488,11 @@
                 energy = data.energy; 
                 updateUI();
                 await loadOnChainBalances();
-                alert("Energy pack successfully applied to profile!");
+                alert("Energy pack transaction cleared successfully!");
             }
             catch(err){
                 console.error(err);
-                alert("Energy purchase rejected.");
+                alert("Transaction dropped or rejected.");
             }
         }
 
@@ -492,14 +510,14 @@
                 points = data.points || 0;
                 pvltg = data.pvltg;
                 updateUI();
-            } catch(err){ console.log(err); alert("Points swap failed"); }
+            } catch(err){ console.log(err); alert("Points swap processing failure."); }
         }
 
         async function triggerWithdrawal(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
 
             try{
-                console.log("Submitting payout claim trigger...");
+                console.log("Submitting server reward extraction allocation request...");
                 const res = await fetch(`${API_URL}/withdraw-pvltg`, {
                     method:"POST",
                     headers:{ "Content-Type":"application/json" },
@@ -511,9 +529,9 @@
                 pvltg = 0;
                 updateUI();
                 await loadOnChainBalances();
-                alert(`Withdrawal claim processing transaction complete! Hash: ${data.tx}`);
+                alert(`Withdrawal processing complete. Hash: ${data.tx}`);
             }
-            catch(err){ console.error(err); alert("Claim request route execution error."); }
+            catch(err){ console.error(err); alert("Claim transaction routine failed."); }
         }
 
         initializeEnergyTracking();
