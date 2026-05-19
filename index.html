@@ -70,6 +70,11 @@
             align-items: center;
             box-shadow: 0 0 30px rgba(0, 255, 180, 0.25);
             cursor: pointer;
+
+            /* FIXES MOBILE SCREEN ZOOMING & HIGHLIGHT BLINKING ON RAPID TAPS */
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .tapBtn:active {
@@ -208,7 +213,7 @@
         /* ================= CONNECT WALLET ================= */
         async function connectWallet(){
             try {
-                // Safety guard check to verify CDN parsed successfully on your phone
+                // Safety guard check to verify CDN parsed successfully on mobile
                 if (typeof window.ethers === 'undefined') {
                     alert("Ethers library failed to load from CDN. Try clearing your browser cache.");
                     return;
@@ -239,7 +244,7 @@
                         qrModalOptions: { themeMode: "dark" }
                     });
 
-                    // Trigger mobile workflow connection modal connection
+                    // Trigger mobile workflow modal connection
                     await wcProvider.connect();
                     web3Provider = new ethers.providers.Web3Provider(wcProvider);
                 }
