@@ -8,21 +8,29 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: #050f1e; font-family: Arial, sans-serif; color: white; display: flex; flex-direction: column; height: 100vh; justify-content: space-between; align-items: center; padding: 20px 0; }
+        
         .topbar { width: 90%; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; }
         .main-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; gap: 25px; width: 100%; }
+        
         .character-btn { background: none; border: none; cursor: pointer; outline: none; border-radius: 50%; transition: transform 0.05s; }
         .character-btn:active { transform: scale(0.95); }
         .character-btn img { width: 220px; height: 220px; border-radius: 50%; box-shadow: 0 0 40px rgba(0, 255, 153, 0.3); }
+        
         .ui-card { width: 90%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
         .address-display { width: 100%; padding: 14px; border-radius: 12px; background: #0a182c; color: #8fa3bf; border: none; font-size: 14px; text-align: center; font-weight: bold; }
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 15px; font-weight: bold; color: black; cursor: pointer; background: linear-gradient(90deg, #00ff99, #00ccff); }
+        
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 15px; font-weight: bold; color: black; cursor: pointer; background: linear-gradient(90deg, #00ff99, #00ccff); transition: opacity 0.2s; }
+        .btn:active { opacity: 0.9; }
+        .btn-withdraw { background: linear-gradient(90deg, #ffcc00, #ff3300); color: white; }
+        
+        .footer-rules { font-size: 11px; line-height: 1.6; color: #697d95; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="topbar">
-    <div>🔋 <span id="energy">50</span></div>
-    <div>⚡ <span id="points">0</span></div>
+    <div>🛢️ <span id="energy">9787</span></div>
+    <div>⚡ <span id="points">265</span></div>
     <div>💎 <span id="pvltg">0.0000</span></div>
 </div>
 
@@ -33,18 +41,21 @@
     <div class="ui-card">
         <input class="address-display" id="walletDisplay" value="Wallet Not Connected" readonly>
         <button class="btn" id="connectBtn" onclick="toggleWalletConnection()">CONNECT WALLET</button>
+        <button class="btn" onclick="triggerBuyEnergy()">BUY ENERGY</button>
         <button class="btn" onclick="swapPoints()">SWAP POINTS → PVLTG</button>
-        <button class="btn" onclick="triggerClaim()">CLAIM PVLT</button>
+        <button class="btn btn-withdraw" onclick="triggerWithdrawal()">WITHDRAWAL PVLT</button>
     </div>
 </div>
 
-<div style="font-size: 11px; color: #697d95; text-align: center; line-height: 1.6;">
-    1 Tap = 1 Point<br>10000 Points = 1 PVLTG<br>100 PVLTG = 1 PVLT
+<div class="footer-rules">
+    1 Tap = 1 Point<br>
+    10000 Points = 1 PVLTG<br>
+    100 PVLTG = 1 PVLT
 </div>
 
 <script>
-    const API_URL = "https://pvlt-server.onrender.com"; // Replace with your actual Render URL
-    let walletAddress = "", points = 0, energy = 50, pvltg = 0;
+    const API_URL = "https://pvlt-server.onrender.com"; 
+    let walletAddress = "", points = 265, energy = 9787, pvltg = 0;
 
     function updateUI() {
         document.getElementById("energy").innerText = energy;
@@ -89,6 +100,18 @@
         updateUI();
     }
 
+    async function triggerBuyEnergy() {
+        if (!walletAddress) return;
+        const res = await fetch(`${API_URL}/buy-energy`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet: walletAddress })
+        });
+        const data = await res.json();
+        energy = data.energy;
+        updateUI();
+    }
+
     async function swapPoints() {
         if (!walletAddress) return;
         const res = await fetch(`${API_URL}/swap-points`, {
@@ -102,9 +125,11 @@
         updateUI();
     }
 
-    async function triggerClaim() {
-        if (!walletAddress) return;
-        const res = await fetch(`${API_URL}/claim-pvltg`, {
+    async function triggerWithdrawal() {
+        if (!walletAddress) return alert("Connect wallet first");
+        if (pvltg < 100) return alert("Need minimum 100 PVLTG to withdraw");
+
+        const res = await fetch(`${API_URL}/withdraw-pvltg`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ wallet: walletAddress })
@@ -113,7 +138,7 @@
         if (data.error) return alert(data.error);
         pvltg = 0;
         updateUI();
-        alert("Claim successful! Tokens transferred to your personal wallet.");
+        alert("Withdrawal complete! Converted PVLT transferred directly to your wallet.");
     }
 </script>
 </body>
