@@ -283,7 +283,6 @@
         const API = "https://pvlt-server.onrender.com";
         const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
-        // CONTRACT ADDRESS DETAILS
         const PVLT_TOKEN_ADDRESS = "0x3094Dc50cB01721eE6c0ECAf18bd0D15c154ba2d"; 
         const GAME_TREASURY_ADDRESS = "0xe2bb81bD8e36367F2C85c89F0B03570dFCaf5D57";
 
@@ -402,7 +401,7 @@
             }
         }
 
-        /* ================= EXECUTE ENERGY PURCHASE (WITH BLOCKCHAIN TX) ================= */
+        /* ================= EXECUTE ENERGY PURCHASE ================= */
         async function executeEnergyPurchase(){
             const confirmBtn = document.getElementById("confirmPaymentBtn");
             try {
@@ -411,50 +410,75 @@
 
                 const signer = web3Provider.getSigner();
                 
-                // 1. Initialize the token contract connection instance
+                // Comprehensive ABI to fetch exact properties dynamically
                 const tokenContract = new ethers.Contract(
                     PVLT_TOKEN_ADDRESS,
-                    ["function transfer(address to, uint256 value) external returns (bool)"],
+                    [
+                        "function transfer(address to, uint256 value) external returns (bool)",
+                        "function balanceOf(address owner) external view returns (uint256)",
+                        "function decimals() external view returns (uint8)"
+                    ],
                     signer
                 );
 
-                // 2. Parse 100 Tokens (Assuming standard ERC20 18 decimals)
-                const costAmount = ethers.utils.parseEther("100");
+                // Fetch contract's native decimal setup automatically
+                let decimals = 18;
+                try {
+                    decimals = await tokenContract.decimals();
+                } catch(e) {
+                    console.log("Using standard 18 decimal fallback", e);
+                }
 
-                // 3. Prompt user's wallet for the payment approval/transaction
-                const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount);
+                // Correctly parse 100 based on the contract's actual layout
+                const costAmount = ethers.utils.parseUnits("100", decimals);
+
+                // Verify balance matches up safely
+                try {
+                    const userBalance = await tokenContract.balanceOf(wallet);
+                    if (userBalance.lt(costAmount)) {
+                        alert("Insufficient PVLT Balance! You need at least 100 PVLT to buy this pack.");
+                        return;
+                    }
+                } catch(balanceErr) {
+                    console.log("Balance safety check skipped:", balanceErr);
+                }
+
+                // Call transfer with an explicit Gas Limit override block
+                const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount, {
+                    gasLimit: 80000 
+                });
                 
-                // Close modal overlay visual while waiting on block verification
                 closeBuyModal();
-                alert("Transaction submitted! Processing confirmation block...");
+                alert("Transaction submitted! Open your wallet app if prompted and approve the transfer.");
 
-                // 4. Wait for transaction block confirmation
                 await tx.wait();
 
-                // 5. Alert backend API to verify payment and process the 1000 Energy sync update
                 const res = await fetch(API + "/refill", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
                         wallet: wallet,
-                        txHash: tx.hash // Send hash along so server can index confirmation safely if needed
+                        txHash: tx.hash 
                     })
                 });
                 const data = await res.json();
 
                 if(data.error) {
-                    alert("Blockchain payment succeeded, but database sync encountered an error: " + data.error);
+                    alert("Payment received, but database sync error occurred: " + data.error);
                     return;
                 }
 
-                // 6. Update local state and reflect updates on active UI counters
                 energy = data.energy;
                 updateUI();
                 alert("Success! 1,000 Energy added to your profile balance.");
 
             } catch(err) {
-                console.error("Purchase Loop Error:", err);
-                alert("Purchase Failed: " + (err.message || "User denied transaction or insufficient balance."));
+                console.error("Purchase Detailed Error:", err);
+                if (err.message && err.message.includes("user rejected action")) {
+                    alert("Transaction cancelled by user.");
+                } else {
+                    alert("Transaction failed! Ensure your contract configuration addresses match and you have a fraction of POL (MATIC) left to cover minor gas fees.");
+                }
             } finally {
                 confirmBtn.innerText = "Confirm";
                 confirmBtn.disabled = false;
