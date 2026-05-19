@@ -148,7 +148,6 @@
             color:white;
         }
 
-        /* Styling for the disconnect state */
         .btn-disconnect {
             background: linear-gradient(90deg, #ff3333, #aa0000) !important;
             color: white !important;
@@ -271,7 +270,6 @@
                     
                     if (accounts.length > 0) {
                         console.log("Wallet autodetected successfully.");
-                        // Passing true allows handleWalletAction to run cleanly without toggling to disconnect on boot up
                         await handleWalletAction(true);
                     }
                 }
@@ -280,18 +278,15 @@
             }
         }
 
-        // --- UPDATED TOGGLE/DISCONNECT LOGIC ---
         async function handleWalletAction(isAutoDetect = false){
             const connectBtn = document.getElementById("connectBtn");
 
-            // If a wallet address already exists and this wasn't an automatic system boot check, treat click as DISCONNECT
             if(walletAddress && !isAutoDetect) {
                 walletAddress = "";
                 points = 0;
                 energy = 0;
                 pvltg = 0;
                 
-                // Reset UI Elements back to starting clean state
                 document.getElementById("walletDisplay").value = "Wallet Not Connected";
                 connectBtn.innerText = "CONNECT WALLET";
                 connectBtn.classList.remove("btn-disconnect");
@@ -321,7 +316,6 @@
 
                 document.getElementById("walletDisplay").value = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
                 
-                // Change style and label to DISCONNECT
                 connectBtn.innerText = "DISCONNECT";
                 connectBtn.classList.add("btn-disconnect");
 
@@ -380,6 +374,7 @@
             } catch(err){ console.log(err); }
         }
 
+        // --- FIXED BUY ENERGY METHOD ---
         async function triggerBuyEnergy(){
             if(!walletAddress){ alert("Connect wallet first"); return; }
             try{
@@ -388,19 +383,35 @@
                 const token = new ethers.Contract(MAIN_TOKEN_CONTRACT, ERC20_ABI, signer);
                 const treasury = new ethers.Contract(TREASURY_CONTRACT, ["function buyEnergy() external"], signer);
 
+                // Step 1: Execute ERC20 Approve contract transaction
                 const approveTx = await token.approve(TREASURY_CONTRACT, ethers.utils.parseEther("100"));
                 await approveTx.wait();
 
+                // Step 2: Execute Contract payment interaction
                 const buyTx = await treasury.buyEnergy();
                 await buyTx.wait();
 
-                energy = 20;
+                // Step 3: Inform your Render Backend API about the purchase to reset database state
+                const res = await fetch(`${API_URL}/buy-energy`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ wallet: walletAddress })
+                });
+                const data = await res.json();
+                
+                if(data.error){ 
+                    alert(data.error); 
+                    return; 
+                }
+
+                // Step 4: Sync frontend memory state safely to the exact cap value
+                energy = 20; 
                 updateUI();
                 await loadOnChainBalances();
-                alert("Energy purchased");
+                alert("Energy purchased successfully!");
             }
             catch(err){
-                console.log(err);
+                console.log("Purchase runtime loop exception: ", err);
                 alert("Energy purchase failed");
             }
         }
