@@ -35,7 +35,6 @@ overflow:hidden;
 background:#020b18;
 font-family:Arial,sans-serif;
 color:white;
-/* Prevents overall page dragging/accidental zooming on certain devices */
 touch-action: none; 
 }
 
@@ -77,8 +76,6 @@ justify-content:center;
 align-items:center;
 box-shadow:0 0 30px rgba(0,255,180,0.25);
 cursor:pointer;
-
-/* FIXES FOR TAP-ZOOMING AND SELECTION ACCIDENTS */
 touch-action: manipulation;
 user-select: none;
 -webkit-user-select: none;
@@ -464,9 +461,11 @@ await window.ethereum.request({
 method:"eth_requestAccounts"
 });
 
+/* Force static fallback configuration onto provider to avoid missing network definitions in WebView */
 web3Provider =
 new ethers.providers.Web3Provider(
-window.ethereum
+window.ethereum,
+"any"
 );
 
 }else{
@@ -491,7 +490,8 @@ await wcProvider.connect();
 
 web3Provider =
 new ethers.providers.Web3Provider(
-wcProvider
+wcProvider,
+"any"
 );
 
 }
@@ -665,20 +665,6 @@ confirmBtn.innerText =
 "Processing...";
 
 confirmBtn.disabled = true;
-
-/* NETWORK CHECK */
-
-const network =
-await web3Provider.getNetwork();
-
-if(network.chainId !== 137){
-
-alert(
-"Switch wallet to Polygon Mainnet"
-);
-
-return;
-}
 
 const signer =
 web3Provider.getSigner();
@@ -887,7 +873,6 @@ alert(
 return;
 }
 
-/* Match server validation limits */
 if(pvltg < 1){
 
 alert(
@@ -902,7 +887,6 @@ try{
 const signer =
 web3Provider.getSigner();
 
-/* FIX: Call approve on the PVLTG token contract so the engine can clear it */
 const tokenContract =
 new ethers.Contract(
 
