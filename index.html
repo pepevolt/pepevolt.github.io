@@ -599,6 +599,72 @@ alert(
 }
 
 /* ================= CLAIM PVLT ================= */
+async function claimPVLT(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+if(pvltg < 100){
+
+alert(
+"Need minimum 100 PVLTG"
+);
+
+return;
+}
+
+try{
+
+/* ================= ETHERS ================= */
+
+const ethersProvider =
+new ethers.providers.Web3Provider(
+provider
+);
+
+const signer =
+ethersProvider.getSigner();
+
+/* ================= PVLTG CONTRACT ================= */
+
+const pvltgContract =
+new ethers.Contract(
+
+"0xcaf3f8172d8accaa87d3eb9f679b693d04976aee",
+
+[
+"function approve(address spender,uint256 amount) external returns(bool)"
+],
+
+signer
+
+);
+
+/* ================= APPROVE ================= */
+
+const amount =
+ethers.utils.parseEther(
+pvltg.toString()
+);
+
+const approveTx =
+await pvltgContract.approve(
+
+"YOUR_GAME_ENGINE_ADDRESS",
+
+amount
+
+);
+
+await approveTx.wait();
+
+/* ================= CLAIM ================= */
 
 async function claimPVLT(){
 
@@ -621,6 +687,51 @@ return;
 }
 
 try{
+
+/* ================= ETHERS ================= */
+
+const ethersProvider =
+new ethers.providers.Web3Provider(
+provider
+);
+
+const signer =
+ethersProvider.getSigner();
+
+/* ================= PVLTG CONTRACT ================= */
+
+const pvltgContract =
+new ethers.Contract(
+
+"0xcaf3f8172d8accaa87d3eb9f679b693d04976aee",
+
+[
+"function approve(address spender,uint256 amount) external returns(bool)"
+],
+
+signer
+
+);
+
+/* ================= APPROVE ================= */
+
+const amount =
+ethers.utils.parseEther(
+pvltg.toString()
+);
+
+const approveTx =
+await pvltgContract.approve(
+
+"YOUR_GAME_ENGINE_ADDRESS",
+
+amount
+
+);
+
+await approveTx.wait();
+
+/* ================= CLAIM ================= */
 
 const res =
 await fetch(
@@ -649,7 +760,7 @@ alert(data.error);
 return;
 }
 
-/* RESET */
+/* ================= RESET ================= */
 
 pvltg = 0;
 
@@ -670,6 +781,31 @@ alert(
 );
 }
 }
+
+/* ================= RESET ================= */
+
+pvltg = 0;
+
+updateUI();
+
+alert(
+"PVLT claimed successfully\n\nTX:\n"
++
+data.tx
+);
+
+}catch(err){
+
+console.log(err);
+
+alert(
+"Claim failed"
+);
+}
+}
+
+
+
 
 /* ================= AUTO REFILL ================= */
 
