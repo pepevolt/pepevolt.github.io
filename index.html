@@ -58,8 +58,8 @@ input{ width:100%; padding:15px; border:none; border-radius:12px; background:#0c
 
     <div class="info">
         1 Tap = 1 Point<br>
-        10000 Points = 1 PVLTG<br>
-        100 PVLTG = 1 PVLT
+        100 Points = 1 PVLTG<br>
+        10 PVLTG = 1 PVLT
     </div>
 </div>
 
@@ -201,7 +201,6 @@ async function executeEnergyPurchase(){
 
         const amount = ethers.utils.parseUnits("100", TOKEN_DECIMALS);
         
-        // Wrapped balance verification inside try-catch to bypass RPC sync failures on Webview
         let rawBalance = ethers.BigNumber.from(0);
         try {
             rawBalance = await tokenContract.balanceOf(wallet);
@@ -251,7 +250,8 @@ async function swapPoints(){
         });
         const data = await res.json();
         if(data.error){ alert(data.error); return; }
-        points = 0;
+        
+        points = data.remainingPoints || 0; 
         pvltg = data.pvltg;
         updateUI();
         alert("Points swapped successfully");
@@ -263,12 +263,13 @@ async function swapPoints(){
 
 async function claimPVLT(){
     if(!wallet){ alert("Connect wallet first"); return; }
-    if(pvltg < 100){ alert("Need minimum 100 PVLTG"); return; }
+    
+    // UPDATED CHECK: Require minimum 10 PVLTG to claim
+    if(pvltg < 10){ alert("Need minimum 10 PVLTG"); return; }
 
     try{
         const signer = web3Provider.getSigner();
         
-        // TARGET TO APPROVE: PVLTG TOKEN ADDRESS
         const tokenContract = new ethers.Contract(
             PVLTG_TOKEN_ADDRESS,
             ["function approve(address spender,uint256 amount) external returns(bool)"],
