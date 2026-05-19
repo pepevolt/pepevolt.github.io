@@ -2,6 +2,11 @@
 <html>
 
 <head>
+  
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
+<script src="https://unpkg.com/@walletconnect/ethereum-provider/dist/index.umd.js"></script>
+  
 
 <meta charset="UTF-8">
 <meta name="viewport"
@@ -203,93 +208,330 @@ document.getElementById("tokens").innerText =
 (points / 10000).toFixed(4);
 }
 
-/* ================= TAP ================= */
+<script>
 
-function tap(){
+/* ================= STATE ================= */
 
-if(!wallet){
-alert("Connect wallet first");
-return;
+let wallet = "";
+let points = 0;
+let energy = 50;
+let pvltg = 0;
+
+let provider;
+
+/* ================= UI ================= */
+
+function updateUI(){
+
+document.getElementById("energy")
+.innerText = energy;
+
+document.getElementById("points")
+.innerText = points;
+
+document.getElementById("tokens")
+.innerText = Number(pvltg).toFixed(4);
 }
 
-if(energy <= 0){
-alert("No energy");
-return;
-}
+/* ================= CONNECT WALLET ================= */
 
-energy--;
-points++;
+async function toggleWallet(){
 
-saveState();
-updateUI();
-}
+try{
 
-/* ================= WALLET ================= */
+/* CONNECT */
+provider =
+await EthereumProvider.init({
 
-function toggleWallet(let provider = await EthereumProvider.init({
-projectId: "1731f99148b9cf6107dee70b6efb14b7",
-chains: [137], // Polygon MAINNET
-showQrModal: true
+projectId:
+"1731f99148b9cf6107dee70b6efb14b7",
+
+chains:[137],
+
+showQrModal:true
+
 });
 
 await provider.enable();
 
+/* ETHERS */
 const ethersProvider =
-new ethers.providers.Web3Provider(provider);
+new ethers.providers.Web3Provider(
+provider
+);
 
-const signer = ethersProvider.getSigner();
+const signer =
+ethersProvider.getSigner();
 
-wallet = await signer.getAddress();
+wallet =
+await signer.getAddress();
 
-document.getElementById("walletInput").value = wallet;
+/* SHOW WALLET */
+document.getElementById(
+"walletInput"
+).value =
+wallet.substring(0,6)
++
+"..."
++
+wallet.substring(wallet.length-4);
 
-document.getElementById("walletBtn").innerText =
-"DISCONNECT WALLET";
+/* BUTTON */
+document.getElementById(
+"walletBtn"
+).innerText =
+"CONNECTED";
 
-document.getElementById("walletStatus").style.display =
+/* STATUS */
+document.getElementById(
+"walletStatus"
+).style.display =
 "block";
 
-loadState(wallet);
-updateUI();      ){
+/* REGISTER USER */
+const res =
+await fetch(
+"https://pvlt-server.onrender.com/user",
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet
+})
+}
+);
 
-const input = document.getElementById("walletInput");
-const btn = document.getElementById("walletBtn");
-const status = document.getElementById("walletStatus");
+const data = await res.json();
 
-if(wallet){
+/* LOAD DATA */
+points = data.points || 0;
+energy = data.energy || 50;
+pvltg = data.pvltg || 0;
 
-wallet = "";
+updateUI();
+
+}catch(err){
+
+console.log(err);
+
+alert(
+"Wallet connection failed"
+);
+
+}
+}
+
+/* ================= TAP ================= */
+
+async function tap(){
+
+if(!wallet){
+
+alert("Connect wallet first");
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+"https://pvlt-server.onrender.com/tap",
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+/* UPDATE UI */
+points = data.points;
+energy = data.energy;
+
+updateUI();
+
+}catch(err){
+
+console.log(err);
+
+alert("Tap failed");
+}
+}
+
+/* ================= SWAP POINTS ================= */
+
+async function swapPoints(){
+
+if(!wallet){
+
+alert("Connect wallet");
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+"https://pvlt-server.onrender.com/swap-points",
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
 points = 0;
-energy = 50;
 
-input.value = "";
-
-btn.innerText = "CONNECT WALLET";
-
-status.style.display = "none";
+pvltg = data.pvltg;
 
 updateUI();
+
+alert(
+"Points swapped to PVLTG"
+);
+
+}catch(err){
+
+console.log(err);
+
+alert("Swap failed");
+}
+}
+
+/* ================= CLAIM PVLTG ================= */
+
+async function claim(){
+
+if(!wallet){
+
+alert("Connect wallet");
 
 return;
 }
 
-let w = input.value.trim();
+try{
 
-if(!w.startsWith("0x") || w.length !== 42){
-alert("Invalid wallet");
+const res =
+await fetch(
+"https://pvlt-server.onrender.com/claim-pvltg",
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
 return;
 }
 
-wallet = w.toLowerCase();
-
-loadState(wallet);
-
-btn.innerText = "DISCONNECT WALLET";
-
-status.style.display = "block";
+pvltg = 0;
 
 updateUI();
+
+alert(
+"PVLTG claimed successfully\n\nTX:\n"
++
+data.tx
+);
+
+}catch(err){
+
+console.log(err);
+
+alert("Claim failed");
 }
+}
+
+/* ================= BUY ENERGY ================= */
+
+async function buyEnergy(){
+
+if(!wallet){
+
+alert("Connect wallet");
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+"https://pvlt-server.onrender.com/refill",
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+energy = data.energy;
+
+updateUI();
+
+alert(
+"50 energy added"
+);
+
+}catch(err){
+
+console.log(err);
+
+alert("Refill failed");
+}
+}
+
+</script>
+
 
 /* ================= BUY ENERGY ================= */
 
