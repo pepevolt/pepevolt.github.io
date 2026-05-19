@@ -9,7 +9,7 @@
         import { createWeb3Modal, defaultWagmiConfig } from 'https://esm.run/@web3modal/wagmi@3.5.0';
         import { polygon } from 'https://esm.run/viem/chains';
         
-        const projectId = 'YOUR_REOWN_PROJECT_ID_HERE'; 
+        const projectId = '1731f99148b9cf6107dee70b6efb14b7'; 
 
         const metadata = {
             name: 'PepeVolt Tap Game',
@@ -114,10 +114,10 @@
 </div>
 
 <script>
-    const API_URL = "https://pvlt-server.onrender.com"; 
+    const API_URL = "https://pepevolt-game-suite.onrender.com/"; 
     
-    const MAIN_TOKEN_CONTRACT = "YOUR_DEPLOYED_CONTRACT_1_ADDRESS";
-    const TREASURY_CONTRACT = "YOUR_DEPLOYED_CONTRACT_3_ADDRESS";
+    const MAIN_TOKEN_CONTRACT = "0x5a625587Ee1eB45470a63813bA13B389F43Df063";
+    const TREASURY_CONTRACT = "0x5a625587Ee1eB45470a63813bA13B389F43Df063";
     const ERC20_ABI = ["function balanceOf(address owner) view returns (uint256)"];
 
     let walletAddress = "", points = 0, energy = 0, pvltg = 0;
