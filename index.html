@@ -19,6 +19,7 @@
         input { width:100%; padding:15px; border:none; border-radius:12px; background:#0c1628; color:white; font-size:14px; outline:none; }
         .actionBtn { width:100%; padding:15px; border:none; border-radius:12px; font-size:15px; font-weight:bold; background:linear-gradient(90deg,#00ff99,#00ccff); color:black; cursor:pointer; }
         .status { text-align:center; font-size:12px; opacity:0.8; display:none; }
+        .treasury-display { background:rgba(0, 255, 153, 0.06); border: 1px dashed rgba(0, 255, 153, 0.25); border-radius:12px; padding:12px; text-align:center; font-size:13px; color:#00ff99; font-weight:bold; }
         .info { margin-top:16px; font-size:12px; line-height:1.7; opacity:0.8; text-align:center; max-width:380px; }
         .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(2,11,24,0.85); backdrop-filter:blur(5px); display:flex; justify-content:center; align-items:center; z-index:9999; opacity:0; pointer-events:none; transition:0.25s; }
         .modal-overlay.active { opacity:1; pointer-events:auto; }
@@ -51,6 +52,11 @@
         <button class="actionBtn" id="walletBtn" onclick="connectWallet()">CONNECT WALLET</button>
         <div class="status" id="walletStatus">Wallet Connected</div>
         
+        <!-- LIVE TREASURY CAPACITY RUNTIME DISPLAY -->
+        <div class="treasury-display">
+            🏛️ Treasury Vault: <span id="treasuryCapacity">Loading...</span> PVLT
+        </div>
+
         <button class="actionBtn" onclick="openBuyModal()">BUY ENERGY</button>
         <button class="actionBtn" onclick="claimPVLT()">CLAIM PVLT</button>
     </div>
@@ -111,6 +117,29 @@ function closeBuyModal() {
     document.getElementById("buyModal").classList.remove("active");
 }
 
+/* ================= READ ON-CHAIN TREASURY BALANCE ================= */
+async function fetchOnChainTreasuryFunds() {
+    try {
+        // Fallback reading provider if wallet is not connected yet
+        const queryProvider = web3Provider || new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
+        const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, [
+            "function balanceOf(address owner) external view returns (uint256)"
+        ], queryProvider);
+        
+        const rawBalance = await tokenContract.balanceOf(GAME_TREASURY_ADDRESS);
+        const formattedBalance = ethers.utils.formatUnits(rawBalance, TOKEN_DECIMALS);
+        
+        // Display with comma separators for clean aesthetics
+        document.getElementById("treasuryCapacity").innerText = parseFloat(formattedBalance).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    } catch (e) {
+        console.error("Could not fetch pool balances:", e);
+        document.getElementById("treasuryCapacity").innerText = "0.00";
+    }
+}
+
 /* ================= ACTIONS ================= */
 async function connectWallet() {
     try {
@@ -145,6 +174,9 @@ async function connectWallet() {
         points = data.points || 0;
         energy = data.energy || 50;
         updateUI();
+        
+        // Refresh vault context post-connection
+        fetchOnChainTreasuryFunds();
 
     } catch (err) {
         console.error(err);
@@ -219,6 +251,7 @@ async function executeEnergyPurchase() {
 
         energy = refillData.energy;
         updateUI();
+        fetchOnChainTreasuryFunds(); // Refresh numbers upon deposit completion
         alert("Payment Successful! 10,000 Energy added to your profile.");
 
     } catch (err) {
@@ -252,6 +285,7 @@ async function claimPVLT() {
 
         points = data.remainingPoints;
         updateUI();
+        fetchOnChainTreasuryFunds(); // Refresh numbers upon withdrawal completion
         alert(`Tokens claimed successfully! Sent directly from treasury.\nTx Hash: ${data.tx}`);
     } catch (err) {
         console.error(err);
@@ -268,7 +302,9 @@ setInterval(() => {
     }
 }, 3000);
 
+// Initialize UI layout states
 updateUI();
+fetchOnChainTreasuryFunds();
 </script>
 </body>
 </html>
