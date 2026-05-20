@@ -35,7 +35,6 @@ overflow:hidden;
 background:#020b18;
 font-family:Arial,sans-serif;
 color:white;
-/* Prevents overall page dragging/accidental zooming on certain devices */
 touch-action: none; 
 }
 
@@ -77,8 +76,6 @@ justify-content:center;
 align-items:center;
 box-shadow:0 0 30px rgba(0,255,180,0.25);
 cursor:pointer;
-
-/* FIXES FOR TAP-ZOOMING AND SELECTION ACCIDENTS */
 touch-action: manipulation;
 user-select: none;
 -webkit-user-select: none;
@@ -145,6 +142,33 @@ line-height:1.7;
 opacity:0.8;
 text-align:center;
 max-width:380px;
+}
+
+.balance-box {
+width: 100%;
+background: rgba(255, 255, 255, 0.02);
+border: 1px dashed rgba(255, 255, 255, 0.1);
+border-radius: 12px;
+padding: 12px;
+font-size: 13px;
+display: flex;
+flex-direction: column;
+gap: 6px;
+}
+
+.balance-line {
+display: flex;
+justify-content: space-between;
+}
+
+.balance-val-user {
+color: #00ff99;
+font-weight: bold;
+}
+
+.balance-val-treasury {
+color: #00ccff;
+font-weight: bold;
 }
 
 .modal-overlay{
@@ -282,11 +306,22 @@ id="walletStatus"
 Wallet Connected
 </div>
 
+<div class="balance-box">
+<div class="balance-line">
+<span>Your Personal Wallet PVLT:</span>
+<span class="balance-val-user" id="userPvltBalance">0.0000</span>
+</div>
+<div class="balance-line">
+<span>Available Treasury Pool:</span>
+<span class="balance-val-treasury" id="treasuryPvltPool">0.0000</span>
+</div>
+</div>
+
 <button
 class="actionBtn"
 onclick="openBuyModal()"
 >
-BUY ENERGY
+BUY INSTANT ENERGY
 </button>
 
 <button
@@ -300,7 +335,7 @@ SWAP POINTS → PVLTG
 class="actionBtn"
 onclick="claimPVLT()"
 >
-CLAIM PVLT
+WITHDRAW PVLT
 </button>
 
 </div>
@@ -366,24 +401,18 @@ Confirm
 
 <script>
 
-/* ================= CONFIG ================= */
+/* ================= SYSTEM LAYER CONFIGURATIONS ================= */
 
 const API = "https://pepevolt-game-suite.onrender.com/";
 const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
-/* REAL PVLT TOKEN */
 const PVLT_TOKEN_ADDRESS = "0x75996Ad3FFd2fE2d55b38fDfAd974C5e9EBE5400";
-
-/* PVLTG TOKEN */
 const PVLTG_TOKEN_ADDRESS = "0x3FdCE8aB325E03d527605dd2f01730cd981F594F";
-
-/* GAME ENGINE */
 const GAME_TREASURY_ADDRESS = "0xE8e0404F37b3F9AA2866158808877eb752FdB2c5";
 
-/* TOKEN DECIMALS */
 const TOKEN_DECIMALS = 18;
 
-/* ================= STATE ================= */
+/* ================= RUNTIME GAME STATE MATRICES ================= */
 
 let web3Provider;
 let wallet = "";
@@ -392,85 +421,61 @@ let points = 0;
 let energy = 50;
 let pvltg = 0;
 
-/* ================= UPDATE UI ================= */
-
 function updateUI(){
-
-document.getElementById(
-"energy"
-).innerText = energy;
-
-document.getElementById(
-"points"
-).innerText = points;
-
-document.getElementById(
-"pvltg"
-).innerText =
-Number(pvltg).toFixed(4);
-
+document.getElementById("energy").innerText = energy;
+document.getElementById("points").innerText = points;
+document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
 }
-
-/* ================= MODAL ================= */
 
 function openBuyModal(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
-document
-.getElementById("buyModal")
-.classList.add("active");
-
+if(!wallet){ alert("Connect wallet first"); return; }
+document.getElementById("buyModal").classList.add("active");
 }
 
 function closeBuyModal(){
-
-document
-.getElementById("buyModal")
-.classList.remove("active");
-
+document.getElementById("buyModal").classList.remove("active");
 }
 
-/* ================= CONNECT WALLET ================= */
+/* FETCH LIVE ON-CHAIN LIQUIDITY BALANCE AND DISPLAY */
+async function fetchOnChainBalances() {
+if(!web3Provider || !wallet) return;
+try {
+    const genericProvider = new ethers.providers.Web3Provider(window.ethereum || web3Provider.provider);
+    
+    const minABI = ["function balanceOf(address owner) external view returns (uint256)"];
+    const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, minABI, genericProvider);
+    
+    const userBalRaw = await tokenContract.balanceOf(wallet);
+    const treasuryBalRaw = await tokenContract.balanceOf(GAME_TREASURY_ADDRESS);
+    
+    document.getElementById("userPvltBalance").innerText = Number(ethers.utils.formatUnits(userBalRaw, TOKEN_DECIMALS)).toFixed(4);
+    document.getElementById("treasuryPvltPool").innerText = Number(ethers.utils.formatUnits(treasuryBalRaw, TOKEN_DECIMALS)).toFixed(4);
+} catch (e) {
+    console.error("Failed fetching live balance records:", e);
+}
+}
 
 async function connectWallet(){
-
 try{
-    // Execution lane for In-App dApp Browsers
     if(window.ethereum && (window.ethereum.isMetaMask || typeof window.ethereum.request !== 'undefined')){
-
-        await window.ethereum.request({
-            method:"eth_requestAccounts"
-        });
-
+        await window.ethereum.request({ method: "eth_requestAccounts" });
         web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-
     } else {
-        // Fallback lane for standard browsers -> WalletConnect v2
         if (!window["@walletconnect/ethereum-provider"]) {
-            throw new Error("WalletConnect library failed to fetch via UMD CDN.");
+            throw new Error("WalletConnect CDN runtime dependencies missing from scope.");
         }
-
         const EthereumProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
-
         const wcProvider = await EthereumProvider.init({
             projectId: PROJECT_ID,
             chains: [137], 
             showQrModal: true,
-            qrModalOptions: {
-                themeMode: "dark"
-            }
+            qrModalOptions: { themeMode: "dark" }
         });
 
         await wcProvider.connect();
         web3Provider = new ethers.providers.Web3Provider(wcProvider);
 
-        wcProvider.on("disconnect", () => {
-            window.location.reload();
-        });
+        wcProvider.on("disconnect", () => { window.location.reload(); });
     }
 
     const signer = web3Provider.getSigner();
@@ -480,7 +485,6 @@ try{
     document.getElementById("walletBtn").innerText = "CONNECTED";
     document.getElementById("walletStatus").style.display = "block";
 
-    /* SAFELY PING BACKEND WITH FALLBACK TRAPS FOR SPINNING SERVERS */
     let res;
     try {
         res = await fetch(API + "user", {
@@ -489,12 +493,10 @@ try{
             body: JSON.stringify({ wallet })
         });
     } catch (networkErr) {
-        throw new Error("Your Render Free Engine is waking up from idle mode. Please press Connect again in 20-30 seconds!");
+        throw new Error("Your backend API on Render is spinning up from its sleep mode. Please click Connect again in 25 seconds!");
     }
 
-    if (!res.ok) {
-        throw new Error(`Server execution trace rejected with code: ${res.status}`);
-    }
+    if (!res.ok) { throw new Error(`Server monitoring channel error profile: ${res.status}`); }
 
     const data = await res.json();
     points = data.points || 0;
@@ -502,75 +504,57 @@ try{
     pvltg = data.pvltg || 0;
 
     updateUI();
+    await fetchOnChainBalances();
 
 }catch(err){
-    console.error("Connection Trace Fault:", err);
+    console.error("Connection Interface Core Drop Failure Log:", err);
     alert("Wallet connection failed:\n" + (err.message || err));
 }
-
 }
-
-/* ================= TAP ================= */
 
 async function tap(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
+if(!wallet){ alert("Connect wallet first"); return; }
 try{
     const res = await fetch(API + "tap", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({ wallet })
     });
-
     const data = await res.json();
-
-    if(data.error){
-        alert(data.error);
-        return;
-    }
-
+    if(data.error){ alert(data.error); return; }
     points = data.points;
     energy = data.energy;
     updateUI();
-
 }catch(err){
     console.error(err);
-    alert("Tap failed");
+    alert("Tap request processing dropped");
 }
-
 }
-
-/* ================= BUY ENERGY ================= */
 
 async function executeEnergyPurchase(){
-
 const confirmBtn = document.getElementById("confirmPaymentBtn");
-
 try{
-    if(!wallet){
-        alert("Connect wallet first");
-        return;
-    }
-
+    if(!wallet){ alert("Connect wallet first"); return; }
     confirmBtn.innerText = "Processing...";
     confirmBtn.disabled = true;
 
     const network = await web3Provider.getNetwork();
-    if(network.chainId !== 137){
-        alert("Switch wallet to Polygon Mainnet");
-        return;
-    }
+    if(network.chainId !== 137){ alert("Switch network configuration properties to Polygon Mainnet"); return; }
 
     const signer = web3Provider.getSigner();
+    
+    // Wire up directly into the brand new GameTreasury contract interface layout rules
+    const treasuryContractInstance = new ethers.Contract(
+        GAME_TREASURY_ADDRESS,
+        ["function buyEnergyPack(uint256 amount) external"],
+        signer
+    );
+
     const tokenContract = new ethers.Contract(
         PVLT_TOKEN_ADDRESS,
         [
-            "function transfer(address to,uint256 amount) external returns(bool)",
-            "function balanceOf(address owner) external view returns(uint256)"
+            "function approve(address spender, uint256 amount) external returns (bool)",
+            "function balanceOf(address owner) external view returns (uint256)"
         ],
         signer
     );
@@ -578,17 +562,16 @@ try{
     const amount = ethers.utils.parseUnits("100", TOKEN_DECIMALS);
     const rawBalance = await tokenContract.balanceOf(wallet);
 
-    if(rawBalance.lt(amount)){
-        alert("Insufficient PVLT balance");
-        return;
-    }
+    if(rawBalance.lt(amount)){ alert("Insufficient personal PVLT asset parameters"); return; }
 
-    const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, amount);
+    const approveTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, amount);
+    await approveTx.wait();
+
+    const tx = await treasuryContractInstance.buyEnergyPack(amount);
     closeBuyModal();
-    alert("Confirm transaction in wallet");
+    alert("Confirming operational transaction logs on block level, please wait...");
     await tx.wait();
 
-    /* LIVE BLOCKCHAIN RECEIPTS POST TO BACKEND CORE */
     const refillRes = await fetch(API + "refill", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
@@ -596,15 +579,12 @@ try{
     });
 
     const refillData = await refillRes.json();
-    if(refillData.error){
-        alert(refillData.error);
-        return;
-    }
+    if(refillData.error){ alert(refillData.error); return; }
 
     energy = refillData.energy;
     updateUI();
+    await fetchOnChainBalances();
     alert("100,000 Energy Added Successfully");
-
 }catch(err){
     console.error(err);
     let message = err.reason || err.data?.message || err.message || "Unknown error";
@@ -614,69 +594,32 @@ try{
     confirmBtn.disabled = false;
     closeBuyModal();
 }
-
 }
-
-/* ================= SWAP ================= */
 
 async function swapPoints(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
+if(!wallet){ alert("Connect wallet first"); return; }
 try{
     const res = await fetch(API + "swap-points", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({ wallet })
     });
-
     const data = await res.json();
-    if(data.error){
-        alert(data.error);
-        return;
-    }
-
+    if(data.error){ alert(data.error); return; }
     points = data.points;
     pvltg = data.pvltg;
     updateUI();
     alert("Points swapped successfully");
-
 }catch(err){
     console.error(err);
-    alert("Swap failed");
+    alert("Point tracking subsystem mutation error");
 }
-
 }
-
-/* ================= CLAIM ================= */
 
 async function claimPVLT(){
-
-if(!wallet){
-alert("Connect wallet first");
-return;
-}
-
-if(pvltg < 100){
-alert("Need minimum 100 PVLTG");
-return;
-}
-
-try{
-    const signer = web3Provider.getSigner();
-    const tokenContract = new ethers.Contract(
-        PVLT_TOKEN_ADDRESS,
-        [ "function approve(address spender,uint256 amount) external returns(bool)" ],
-        signer
-    );
-
-    const amount = ethers.utils.parseUnits(pvltg.toString(), TOKEN_DECIMALS);
-    const approveTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, amount);
-    await approveTx.wait();
-
+if(!wallet){ alert("Connect wallet first"); return; }
+if(pvltg < 100){ alert("Need minimum 100 PVLTG virtual tokens to claim payouts"); return; }
+try {
     const res = await fetch(API + "claim-pvltg", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
@@ -684,23 +627,17 @@ try{
     });
 
     const data = await res.json();
-    if(data.error){
-        alert(data.error);
-        return;
-    }
+    if(data.error){ alert(data.error); return; }
 
     pvltg = data.pvltg;
     updateUI();
-    alert("PVLT claimed successfully");
-
+    await fetchOnChainBalances();
+    alert("PVLT claim validated! Rewards dispatched directly to your personal connected wallet address.");
 }catch(err){
     console.error(err);
-    alert("Claim failed");
+    alert("Claim authorization process routing failed");
 }
-
 }
-
-/* ================= AUTO REFILL ================= */
 
 setInterval(()=>{
     if(wallet && energy < 50){
@@ -709,10 +646,7 @@ setInterval(()=>{
     }
 },30000);
 
-/* ================= START ================= */
-
 updateUI();
-
 </script>
 
 </body>
