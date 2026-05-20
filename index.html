@@ -19,7 +19,13 @@
         input { width:100%; padding:15px; border:none; border-radius:12px; background:#0c1628; color:white; font-size:14px; outline:none; }
         .actionBtn { width:100%; padding:15px; border:none; border-radius:12px; font-size:15px; font-weight:bold; background:linear-gradient(90deg,#00ff99,#00ccff); color:black; cursor:pointer; }
         .status { text-align:center; font-size:12px; opacity:0.8; display:none; }
-        .treasury-display { background:rgba(0, 255, 153, 0.06); border: 1px dashed rgba(0, 255, 153, 0.25); border-radius:12px; padding:12px; text-align:center; font-size:13px; color:#00ff99; font-weight:bold; }
+        
+        /* DUAL TRACKING DISPLAY GRID */
+        .metrics-container { display: flex; flex-direction: column; gap: 8px; background:rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius:12px; padding:12px; }
+        .metric-row { display: flex; justify-content: space-between; align-items: center; font-size:13px; font-weight: bold; }
+        .treasury-color { color: #00ff99; }
+        .user-color { color: #00ccff; }
+
         .info { margin-top:16px; font-size:12px; line-height:1.7; opacity:0.8; text-align:center; max-width:380px; }
         .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(2,11,24,0.85); backdrop-filter:blur(5px); display:flex; justify-content:center; align-items:center; z-index:9999; opacity:0; pointer-events:none; transition:0.25s; }
         .modal-overlay.active { opacity:1; pointer-events:auto; }
@@ -50,8 +56,15 @@
         <button class="actionBtn" id="walletBtn" onclick="connectWallet()">CONNECT WALLET</button>
         <div class="status" id="walletStatus">Wallet Connected</div>
         
-        <div class="treasury-display">
-            🏛️ Treasury Vault: <span id="treasuryCapacity">Loading...</span> PVLT
+        <div class="metrics-container">
+            <div class="metric-row treasury-color">
+                <span>🏛️ Treasury Vault:</span>
+                <span><span id="treasuryCapacity">0.00</span> PVLT</span>
+            </div>
+            <div class="metric-row user-color">
+                <span>👛 Your Wallet:</span>
+                <span><span id="userHolding">0.00</span> PVLT</span>
+            </div>
         </div>
 
         <button class="actionBtn" style="background: linear-gradient(90deg, #00ffcc, #0099ff);" onclick="convertGPVLT()">CONVERT gPVLT</button>
@@ -92,15 +105,14 @@ const TOKEN_DECIMALS = 18;
 /* ================= STATE ================= */
 let web3Provider;
 let wallet = "";
-let points = 0; // Tracks gPVLT
+let points = 0; 
 let energy = 50;
-let pvltBalance = 0.00; // Tracked internal balance sheet profile calculation values
+let pvltBalance = 0.00; 
 
 function updateUI() {
     document.getElementById("energy").innerText = energy;
     document.getElementById("points").innerText = points;
     
-    // Calculated dynamically to display raw conversion potential values on screen
     pvltBalance = points / 10000;
     document.getElementById("pvlt").innerText = pvltBalance.toFixed(4);
 }
@@ -114,23 +126,33 @@ function closeBuyModal() {
     document.getElementById("buyModal").classList.remove("active");
 }
 
-async function fetchOnChainTreasuryFunds() {
+/* ================= COMPREHENSIVE ON-CHAIN STATE EXTRACTOR ================= */
+async function refreshOnChainBalances() {
     try {
         const queryProvider = web3Provider || new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
         const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, [
             "function balanceOf(address owner) external view returns (uint256)"
         ], queryProvider);
         
-        const rawBalance = await tokenContract.balanceOf(GAME_TREASURY_ADDRESS);
-        const formattedBalance = ethers.utils.formatUnits(rawBalance, TOKEN_DECIMALS);
-        
-        document.getElementById("treasuryCapacity").innerText = parseFloat(formattedBalance).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
+        // 1. Read Treasury Pool Size
+        const rawTreasury = await tokenContract.balanceOf(GAME_TREASURY_ADDRESS);
+        const formattedTreasury = ethers.utils.formatUnits(rawTreasury, TOKEN_DECIMALS);
+        document.getElementById("treasuryCapacity").innerText = parseFloat(formattedTreasury).toLocaleString(undefined, {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
         });
+
+        // 2. Read Connected User Wallet Holdings if online
+        if (wallet) {
+            const rawUser = await tokenContract.balanceOf(wallet);
+            const formattedUser = ethers.utils.formatUnits(rawUser, TOKEN_DECIMALS);
+            document.getElementById("userHolding").innerText = parseFloat(formattedUser).toLocaleString(undefined, {
+                minimumFractionDigits: 2, maximumFractionDigits: 2
+            });
+        } else {
+            document.getElementById("userHolding").innerText = "0.00";
+        }
     } catch (e) {
-        console.error(e);
-        document.getElementById("treasuryCapacity").innerText = "0.00";
+        console.error("Balance lookup failed:", e);
     }
 }
 
@@ -168,7 +190,9 @@ async function connectWallet() {
         points = data.points || 0;
         energy = data.energy || 50;
         updateUI();
-        fetchOnChainTreasuryFunds();
+        
+        // Populate dynamic chain properties immediately post-handshake
+        refreshOnChainBalances();
 
     } catch (err) {
         console.error(err);
@@ -198,7 +222,6 @@ async function tap() {
     }
 }
 
-/* ================= NEW CONVERT FUNCTION ROUTINE ================= */
 async function convertGPVLT() {
     if (!wallet) { alert("Connect wallet first"); return; }
     if (points < 10000) {
@@ -207,7 +230,6 @@ async function convertGPVLT() {
     }
 
     try {
-        // Triggers the backend transaction endpoint structure to log the change
         const res = await fetch(API + "/swap-points", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -217,7 +239,6 @@ async function convertGPVLT() {
 
         if (data.error) { alert(data.error); return; }
 
-        // Fetch user data post conversion to sync state cleanly
         const userRes = await fetch(API + "/user", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -278,7 +299,7 @@ async function executeEnergyPurchase() {
 
         energy = refillData.energy;
         updateUI();
-        fetchOnChainTreasuryFunds();
+        refreshOnChainBalances(); // Sync data layout following spent tokens
         alert("Payment Successful! 10,000 Energy added to your profile.");
 
     } catch (err) {
@@ -311,7 +332,7 @@ async function claimPVLT() {
 
         points = data.remainingPoints;
         updateUI();
-        fetchOnChainTreasuryFunds();
+        refreshOnChainBalances(); // Sync data layout following incoming tokens
         alert(`Tokens claimed successfully! Sent directly from treasury.\nTx Hash: ${data.tx}`);
     } catch (err) {
         console.error(err);
@@ -328,7 +349,7 @@ setInterval(() => {
 }, 3000);
 
 updateUI();
-fetchOnChainTreasuryFunds();
+refreshOnChainBalances();
 </script>
 </body>
 </html>
