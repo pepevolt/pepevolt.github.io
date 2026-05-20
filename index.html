@@ -7,7 +7,7 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     
-    <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.14.0/dist/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@reown/appkit-ethers5@1.1.0/dist/umd/index.min.js"></script>
 
     <style>
         * {
@@ -47,32 +47,38 @@
             padding: 20px;
             overflow-y: auto;
         }
-        .tapBtn {
+        
+        /* FIX: PERFECT HITBOX CIRCLE BOUNDS */
+        .tapContainer {
             width: 240px;
             height: 240px;
-            border: none;
-            border-radius: 50%;
-            overflow: hidden;
             margin-top: 20px;
+            border-radius: 50%;
             background: linear-gradient(135deg, #4ef2a4, #00bfff);
             display: flex;
             justify-content: center;
             align-items: center;
             box-shadow: 0 0 30px rgba(0, 255, 180, 0.25);
             cursor: pointer;
-            touch-action: manipulation;
+            
+            /* Crucial: Forces modern web views to clip input events strictly within the circle radius */
+            clip-path: circle(50% at 50% 50%);
+            -webkit-clip-path: circle(50% at 50% 50%);
+            
             user-select: none;
             -webkit-user-select: none;
+            transform: translateZ(0); /* Hardware Acceleration */
         }
-        .tapBtn:active {
+        .tapContainer:active {
             transform: scale(0.96);
         }
-        .tapBtn img {
+        .tapContainer img {
             width: 78%;
             height: 78%;
             object-fit: contain;
             pointer-events: none;
         }
+        
         .card {
             width: 100%;
             max-width: 380px;
@@ -226,9 +232,9 @@
 </div>
 
 <div class="main">
-    <button class="tapBtn" onclick="tap()">
-        <img src="images/IMG_1850.png" alt="Pepe Tap Button Target">
-    </button>
+    <div class="tapContainer" id="tapZone">
+        <img src="images/IMG_1850.png" alt="Pepe Target Grid">
+    </div>
 
     <div class="card">
         <input id="walletInput" value="Connect Polygon Wallet" readonly>
@@ -270,7 +276,6 @@
 </div>
 
 <script>
-    /* ================= SERVER & DEPLOYMENT ROUTING CONSTANTS ================= */
     const API = "https://pepevolt-game-suite.onrender.com/";
     const REOWN_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
@@ -278,11 +283,51 @@
     const GAME_TREASURY_ADDRESS = "0xE8e0404F37b3F9AA2866158808877eb752FdB2c5";
     const TOKEN_DECIMALS = 18;
 
-    let web3Provider;
+    let appKitInstance = null;
+    let web3Provider = null;
     let wallet = "";
     let points = 0;
     let energy = 50;
     let pvltg = 0;
+
+    // Strict metadata constraints matching Polygon configuration parameters
+    const polygonMainnet = {
+        chainId: 137,
+        name: 'Polygon',
+        currency: 'MATIC',
+        explorerUrl: 'https://polygonscan.com',
+        rpcUrl: 'https://polygon-rpc.com'
+    };
+
+    const metadata = {
+        name: 'PepeVolt',
+        description: 'PVLT Tap Token Game Ecosystem',
+        url: 'https://pepevolt.github.io',
+        icons: ['https://pepevolt.github.io/images/IMG_1850.png']
+    };
+
+    // Initialize the official Reown AppKit instance on window load
+    window.addEventListener('DOMContentLoaded', () => {
+        try {
+            if (window.AppKitEthers && window.AppKitEthers.createAppKit) {
+                appKitInstance = window.AppKitEthers.createAppKit({
+                    ethersConfig: window.AppKitEthers.defaultEthersConfig({ metadata }),
+                    chains: [polygonMainnet],
+                    projectId: REOWN_PROJECT_ID,
+                    features: { analytics: false }
+                });
+
+                // Set up event listeners to monitor when the user completes a connection through the Reown modal overlay
+                appKitInstance.subscribeProvider((state) => {
+                    if (state.isConnected && state.provider) {
+                        syncConnectedWallet(state.provider);
+                    }
+                });
+            }
+        } catch (initErr) {
+            console.error("AppKit framework configuration failure:", initErr);
+        }
+    });
 
     function updateUI() {
         document.getElementById("energy").innerText = energy;
@@ -311,36 +356,25 @@
             document.getElementById("userPvltBalance").innerText = Number(ethers.utils.formatUnits(userBalRaw, TOKEN_DECIMALS)).toFixed(4);
             document.getElementById("treasuryPvltPool").innerText = Number(ethers.utils.formatUnits(treasuryBalRaw, TOKEN_DECIMALS)).toFixed(4);
         } catch (e) {
-            console.error("Balance retrieval error:", e);
+            console.error("Onchain balance extraction trace fail:", e);
         }
     }
 
     async function connectWallet() {
+        if (!appKitInstance) {
+            alert("AppKit client engine is still initializing. Please wait.");
+            return;
+        }
         try {
-            // Check for modern EIP-1193 in-app injection layer
-            if (window.ethereum) {
-                await window.ethereum.request({ method: "eth_requestAccounts" });
-                web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-            } else {
-                // Initialize Reown Universal Connection Layer
-                if (!window["@walletconnect/ethereum-provider"]) {
-                    throw new Error("Reown Core client layer script parsing timeout.");
-                }
-                
-                const EthereumProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
-                const reownProvider = await EthereumProvider.init({
-                    projectId: REOWN_PROJECT_ID,
-                    chains: [137], // Polygon Mainnet ID
-                    showQrModal: true,
-                    qrModalOptions: { themeMode: "dark" }
-                });
+            await appKitInstance.open();
+        } catch (err) {
+            alert("Connection window interface launch error.");
+        }
+    }
 
-                await reownProvider.connect();
-                web3Provider = new ethers.providers.Web3Provider(reownProvider);
-
-                reownProvider.on("disconnect", () => { window.location.reload(); });
-            }
-
+    async function syncConnectedWallet(rawProvider) {
+        try {
+            web3Provider = new ethers.providers.Web3Provider(rawProvider);
             const signer = web3Provider.getSigner();
             wallet = await signer.getAddress();
 
@@ -361,9 +395,8 @@
 
             updateUI();
             await fetchOnChainBalances();
-        } catch (err) {
-            console.error("Wallet connection failed:", err);
-            alert("Wallet connection failed:\n" + (err.message || "Load failed"));
+        } catch (syncErr) {
+            console.error("Profile synchronization engine failure:", syncErr);
         }
     }
 
@@ -381,18 +414,21 @@
             energy = data.energy;
             updateUI();
         } catch (err) {
-            console.error(err);
+            console.error("Tap registration drop:", err);
         }
     }
+
+    // Attach custom touch event to completely bypass touch action delays on mobile view screens
+    document.getElementById("tapZone").addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        tap();
+    });
 
     async function executeEnergyPurchase() {
         const confirmBtn = document.getElementById("confirmPaymentBtn");
         try {
             confirmBtn.innerText = "Processing...";
             confirmBtn.disabled = true;
-
-            const network = await web3Provider.getNetwork();
-            if (network.chainId !== 137) { alert("Switch to Polygon Mainnet"); return; }
 
             const signer = web3Provider.getSigner();
             const treasury = new ethers.Contract(GAME_TREASURY_ADDRESS, ["function buyEnergyPack(uint256 amount) external"], signer);
@@ -426,7 +462,7 @@
             alert("100,000 Energy Refilled!");
         } catch (err) {
             console.error(err);
-            alert("Transaction rejected or failed.");
+            alert("Transaction processing dropped.");
         } finally {
             confirmBtn.innerText = "Confirm";
             confirmBtn.disabled = false;
