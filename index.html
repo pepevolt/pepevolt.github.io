@@ -22,14 +22,14 @@
         
         .main { flex:1; display:flex; flex-direction:column; align-items:center; padding:24px 20px; overflow-y:auto; justify-content: flex-start; }
         
-        /* Fixed Circular Tap Button Styling */
+        /* Circular Tap Button Styling */
         .tapBtn-container { position: relative; width: 220px; height: 220px; margin: 15px 0; display: flex; justify-content: center; align-items: center; }
         .tapBtn { width:100%; height:100%; border:none; border-radius:50%; background:linear-gradient(135deg,#00ff99,#00ccff); display:flex; justify-content:center; align-items:center; box-shadow:0 0 35px rgba(0,255,180,0.3); cursor:pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; position: relative; transition: transform 0.05s ease; }
         .tapBtn::after { content: ''; position: absolute; top: 4px; left: 4px; right: 4px; bottom: 4px; background: #031226; border-radius: 50%; z-index: 1; }
         .tapBtn:active { transform:scale(0.95); }
         .tapBtn img { width:70%; height:70%; object-fit:contain; pointer-events:none; z-index: 2; position: relative; }
         
-        /* Beautiful Modern Dashboard Card Interface */
+        /* Dashboard Card Interface */
         .card { width:100%; max-width:380px; margin-top:16px; background:rgba(9, 20, 38, 0.6); border:1px solid rgba(255,255,255,0.08); border-radius:24px; padding:20px; display:flex; flex-direction:column; gap:12px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
         
         input { width:100%; padding:14px; border:1px solid rgba(255, 255, 255, 0.1); border-radius:14px; background:#0c1628; color:white; font-size:14px; outline:none; text-align:center; font-family: monospace; letter-spacing: 0.5px; }
@@ -40,7 +40,7 @@
         
         .status { text-align:center; font-size:12px; font-weight: bold; opacity:0.9; display:none; color: #00ff99; margin-top: -4px; margin-bottom: 2px; }
         
-        /* Refactored Metrics Rows */
+        /* Metrics Rows */
         .metrics-container { display: flex; flex-direction: column; gap: 10px; background:rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius:14px; padding:14px; margin: 4px 0; }
         .metric-row { display: flex; justify-content: space-between; align-items: center; font-size:13px; font-weight: 700; }
         .treasury-color { color: #00ff99; }
@@ -178,14 +178,16 @@ async function syncActiveWalletData() {
 
         const res = await fetch(`${API}/user`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wallet }) });
         const data = await res.json();
-        points = data.points || 0;
-        energy = data.energy || 50;
-        pvltBalance = data.pvltBalance || 0.0;
+        
+        // Use logical fallback values safely without crashing counters into undefined bounds
+        points = typeof data.points !== 'undefined' ? data.points : 0;
+        energy = typeof data.energy !== 'undefined' ? data.energy : 50;
+        pvltBalance = typeof data.pvltBalance !== 'undefined' ? data.pvltBalance : 0.0;
         
         updateUI();
         refreshOnChainBalances();
     } catch (e) {
-        console.error("Backend offline or unreachable:", e);
+        console.error("Backend initializing:", e);
         updateUI();
         refreshOnChainBalances();
     }
@@ -211,9 +213,9 @@ function toggleWalletConnection() {
 }
 
 function updateUI() {
-    document.getElementById("energy").innerText = energy;
-    document.getElementById("points").innerText = points;
-    document.getElementById("pvlt").innerText = pvltBalance.toFixed(4);
+    document.getElementById("energy").innerText = typeof energy !== 'undefined' ? energy : 50;
+    document.getElementById("points").innerText = typeof points !== 'undefined' ? points : 0;
+    document.getElementById("pvlt").innerText = typeof pvltBalance !== 'undefined' ? pvltBalance.toFixed(4) : "0.0000";
 }
 
 function openBuyModal() { if(!wallet){alert("Connect wallet first");return;} document.getElementById("buyModal").classList.add("active"); }
@@ -242,8 +244,11 @@ async function tap() {
     try {
         const res = await fetch(`${API}/tap`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wallet }) });
         const data = await res.json();
-        points = data.points; energy = data.energy;
-        updateUI();
+        if(data && typeof data.points !== 'undefined') {
+            points = data.points; 
+            energy = data.energy;
+            updateUI();
+        }
     } catch(e){}
 }
 
