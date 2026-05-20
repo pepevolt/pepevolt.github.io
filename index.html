@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
 
 <meta
@@ -12,17 +13,14 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale
 
 <script>
 window.global = window;
-window.process = { env: {} };
+window.process = { env:{} };
 </script>
 
 <!-- ETHERS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
-<!-- WEB3MODAL -->
-<script src="https://unpkg.com/@web3modal/standalone@2.4.3/dist/index.js"></script>
-
 <!-- WALLETCONNECT -->
-<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.17.0/dist/index.umd.js"></script>
+<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.min.js"></script>
 
 <style>
 
@@ -298,113 +296,62 @@ let connectionType = "";
 let points = 0;
 let energy = 0;
 let pvltg = 0;
-
 let providerInstance = null;
-let modalInstance = null;
 
 function updateUI(){
+
 document.getElementById("energy").innerText = energy;
 document.getElementById("points").innerText = points;
 document.getElementById("pvltg").innerText =
 Number(pvltg).toFixed(4);
-}
 
-function setLoading(state){
-
-const btn =
-document.getElementById("connectBtn");
-
-if(state){
-btn.classList.add("loading");
-btn.innerText = "LOADING...";
-}else{
-btn.classList.remove("loading");
-
-if(walletAddress){
-btn.innerText = "DISCONNECT";
-}else{
-btn.innerText = "CONNECT WALLET";
-}
-}
 }
 
 async function initWeb3(){
 
 try{
 
-console.log("Initializing Web3...");
+console.log("Starting WalletConnect init...");
 
-modalInstance =
-new window.Web3ModalStandalone.default({
-projectId,
-themeMode:"dark",
-walletConnectVersion:2,
-chains:["eip155:137"]
-});
+if(
+typeof window.WalletConnectEthereumProvider === "undefined"
+){
+
+console.error(
+"WalletConnect library failed loading"
+);
+
+return;
+
+}
 
 providerInstance =
-await window.EthereumProvider.init({
-projectId,
+await window.WalletConnectEthereumProvider.init({
+
+projectId: projectId,
+
 chains:[137],
-optionalChains:[137],
-showQrModal:false,
-methods:[
-"eth_sendTransaction",
-"personal_sign",
-"eth_signTypedData"
-],
-events:[
-"chainChanged",
-"accountsChanged",
-"disconnect"
-]
+
+showQrModal:true,
+
+rpcMap:{
+137:"https://polygon-rpc.com"
+}
+
 });
 
-window.walletConnectProviderInstance =
-providerInstance;
-
-window.web3ModalInstance =
-modalInstance;
-
-providerInstance.on(
-"display_uri",
-(uri)=>{
-modalInstance.openModal({ uri });
-}
-);
-
-providerInstance.on(
-"accountsChanged",
-(accounts)=>{
-
-if(accounts.length > 0){
-
-modalInstance.closeModal();
-
-syncWalletState(
-accounts[0],
-"walletconnect"
-);
-
-}else{
-clearWalletState();
-}
-}
-);
-
-providerInstance.on(
-"disconnect",
-()=>{
-clearWalletState();
-}
-);
-
-console.log("Web3 initialized successfully");
+console.log("WalletConnect initialized");
 
 }
 catch(err){
-console.error("WEB3 INIT ERROR:", err);
+
+console.error(
+"WalletConnect init error:",
+err
+);
+
 }
+
 }
 
 async function handleWalletAction(){
@@ -431,11 +378,9 @@ console.log(err);
 return;
 }
 
-setLoading(true);
-
 try{
 
-/* METAMASK / TRUST WALLET / BITGET */
+/* METAMASK / TRUST WALLET */
 
 if(window.ethereum){
 
@@ -474,27 +419,39 @@ addr,
 "injected"
 );
 
-setLoading(false);
 return;
 
 }
 catch(err){
+
 console.log(
-"Injected wallet failed, fallback to WalletConnect."
+"Injected wallet failed"
 );
+
 }
+
 }
 
 /* WALLETCONNECT */
 
-if(providerInstance){
-
-await providerInstance.connect();
-
-}else{
+if(!providerInstance){
 
 alert(
-"Wallet system not ready. Refresh page."
+"WalletConnect not loaded yet. Refresh page."
+);
+
+return;
+
+}
+
+const accounts =
+await providerInstance.enable();
+
+if(accounts.length > 0){
+
+await syncWalletState(
+accounts[0],
+"walletconnect"
 );
 
 }
@@ -503,11 +460,13 @@ alert(
 catch(err){
 
 console.log(err);
-alert("Wallet connection failed.");
+
+alert(
+"Wallet connection failed"
+);
 
 }
 
-setLoading(false);
 }
 
 async function getActiveSigner(){
@@ -543,6 +502,7 @@ return provider.getSigner();
 }
 
 return null;
+
 }
 
 async function syncWalletState(address,type){
@@ -563,7 +523,10 @@ const btn =
 document.getElementById("connectBtn");
 
 btn.innerText = "DISCONNECT";
-btn.classList.add("btn-disconnect");
+
+btn.classList.add(
+"btn-disconnect"
+);
 
 try{
 
@@ -592,7 +555,9 @@ await loadOnChainBalances();
 
 }
 catch(err){
+
 console.log(err);
+
 }
 
 }
@@ -614,7 +579,8 @@ document.getElementById(
 const btn =
 document.getElementById("connectBtn");
 
-btn.innerText = "CONNECT WALLET";
+btn.innerText =
+"CONNECT WALLET";
 
 btn.classList.remove(
 "btn-disconnect"
@@ -629,6 +595,7 @@ document.getElementById(
 ).innerText = "0.0000";
 
 updateUI();
+
 }
 
 async function loadOnChainBalances(){
@@ -682,8 +649,11 @@ decimals
 
 }
 catch(err){
+
 console.log(err);
+
 }
+
 }
 
 async function handleTap(){
@@ -728,8 +698,11 @@ updateUI();
 
 }
 catch(err){
+
 console.log(err);
+
 }
+
 }
 
 async function triggerBuyEnergy(){
@@ -790,15 +763,17 @@ updateUI();
 
 await loadOnChainBalances();
 
-alert("Energy purchased!");
+alert("Energy purchased");
 
 }
 catch(err){
 
 console.log(err);
-alert("Transaction failed.");
+
+alert("Transaction failed");
 
 }
+
 }
 
 async function swapPoints(){
@@ -839,9 +814,11 @@ updateUI();
 catch(err){
 
 console.log(err);
+
 alert("Swap failed");
 
 }
+
 }
 
 async function triggerWithdrawal(){
@@ -880,16 +857,18 @@ updateUI();
 await loadOnChainBalances();
 
 alert(
-`Withdrawal complete!\nTX: ${data.tx}`
+`Withdrawal complete\nTX: ${data.tx}`
 );
 
 }
 catch(err){
 
 console.log(err);
+
 alert("Withdrawal failed");
 
 }
+
 }
 
 setInterval(()=>{
@@ -905,8 +884,15 @@ updateUI();
 
 window.addEventListener(
 "load",
-()=>{
-initWeb3();
+async ()=>{
+
+await initWeb3();
+
+console.log(
+"Provider Loaded:",
+providerInstance
+);
+
 }
 );
 
