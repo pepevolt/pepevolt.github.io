@@ -43,13 +43,11 @@
         .row-value { font-weight: 600; }
         
         .card-btn { width: 100%; padding: 14px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; border: none; color: white; margin-top: 5px; }
-        .btn-outline-green { background: transparent; border: 1px solid var(--accent-green); color: var(--accent-green); }
         .btn-blue-grad { background: linear-gradient(135deg, #182848 0%, #293a5a 100%); border: 1px solid #3b4e70; }
         .btn-purple { background: linear-gradient(135deg, #7b1fa2 0%, #5e1784 100%); }
         
-        .wallet-mount { display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; }
-        .address-text { text-align: center; font-size: 13px; color: var(--text-muted); font-family: monospace; display: none; margin-top: 5px; }
-        appkit-button { width: 100% !important; }
+        .wallet-mount { display: flex; justify-content: center; width: 100%; }
+        appkit-button { width: 100% !important; display: flex; justify-content: center; }
     </style>
 </head>
 <body>
@@ -63,7 +61,7 @@
 
     <div class="clicker-section">
         <div class="avatar-wrapper" id="tap-target">
-            <img src="https://placehold.co/300x300/111/fff?text=PEPE" class="avatar-img" alt="Target Logo">
+            <img src="https://pepevolt.github.io/images/pepe-logo.png" onerror="this.src='https://placehold.co/300x300/111/fff?text=PEPE'" class="avatar-img" alt="Target Logo">
         </div>
     </div>
 
@@ -71,8 +69,6 @@
         <div class="panel-title">Identity & Access</div>
         <div class="wallet-mount">
             <appkit-button balance="show"></appkit-button>
-            <button class="card-btn btn-outline-green" id="custom-connect-btn">CONNECT WALLET</button>
-            <div class="address-text" id="custom-addr-display">Not Connected</div>
         </div>
     </div>
 
@@ -87,229 +83,4 @@
     <div class="panel-card">
         <div class="panel-title">Staking Engine (Contract #2)</div>
         <div class="panel-row"><span class="row-label">Accumulated Points:</span><span class="row-value" id="accum-points">0</span></div>
-        <div class="panel-row"><span class="row-label">Convertible Balance:</span><span class="row-value" style="color:var(--accent-blue)" id="convertible-pvlt">0.0000 PVLT</span></div>
-        <button class="card-btn btn-blue-grad" id="convert-btn" style="background:#112233; margin-bottom: 8px;">Convert Points to gPVLT</button>
-        <button class="card-btn btn-purple" id="claim-reward-btn">Claim Rewards to Wallet</button>
-    </div>
-</div>
-
-<script type="module">
-    import { createAppKit } from 'https://unpkg.com/@reown/appkit@1.1.0/dist/index.js'
-    import { Ethers5Adapter } from 'https://unpkg.com/@reown/appkit-adapter-ethers5@1.1.0/dist/index.js'
-    import { polygon } from 'https://unpkg.com/@reown/appkit/networks/dist/index.js'
-
-    const REOWN_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7"; 
-    const CONTRACT_PVLT = "0xE660068C739Ce9E6781f38B79da8012D1118c953";
-    const CONTRACT_GPVLT = "0x5b8edda9D28C36c6696B956AcBD9D10a76CA1545";
-    const CONTRACT_TREASURY = "0xcA1C48152dd7cc49FfA427532731aa8B0f3ef244";
-    const SERVER_API = "https://pepevolt-game-suite.onrender.com";
-
-    const ERC20_ABI = [
-        "function balanceOf(address) view returns (uint256)",
-        "function allowance(address, address) view returns (uint256)",
-        "function approve(address, uint256) returns (bool)"
-    ];
-    const TREASURY_ABI = [
-        "function buyEnergyPack() external",
-        "function nonces(address) view returns (uint256)",
-        "function swapGpvltToPvlt(uint256, uint256, uint256, bytes) external"
-    ];
-
-    const modal = createAppKit({
-        adapters: [new Ethers5Adapter()],
-        networks: [polygon],
-        metadata: {
-            name: 'PepeVolt Game',
-            description: 'PepeVolt Clicker App',
-            url: window.location.origin,
-            icons: []
-        },
-        projectId: REOWN_PROJECT_ID,
-        features: { analytics: false }
-    });
-
-    let userAddress = null, provider = null, signer = null;
-    let energy = 50, points = 0, gpvltBalance = 0.0, lastTap = 0;
-
-    const customConnectBtn = document.getElementById("custom-connect-btn");
-    const customAddrDisplay = document.getElementById("custom-addr-display");
-
-    customConnectBtn.addEventListener("click", () => {
-        if (!userAddress) {
-            modal.open();
-        } else {
-            modal.open({ view: 'Account' });
-        }
-    });
-
-    modal.subscribeAccount(async (state) => {
-        if (state.isConnected) {
-            userAddress = state.address;
-            
-            customConnectBtn.innerText = "DISCONNECT WALLET";
-            customConnectBtn.style.background = "#1a2638";
-            customConnectBtn.style.border = "1px solid #2d3f58";
-            customConnectBtn.style.color = "#8492a6";
-            
-            customAddrDisplay.innerText = `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
-            customAddrDisplay.style.display = "block";
-
-            const walletProvider = modal.getWalletProvider();
-            if (walletProvider) {
-                provider = new ethers.providers.Web3Provider(walletProvider);
-                signer = provider.getSigner();
-                syncChainData();
-            }
-        } else {
-            userAddress = null; provider = null; signer = null;
-            
-            customConnectBtn.innerText = "CONNECT WALLET";
-            customConnectBtn.removeAttribute("style");
-            customConnectBtn.className = "card-btn btn-outline-green";
-            
-            customAddrDisplay.innerText = "Not Connected";
-            customAddrDisplay.style.display = "none";
-            
-            document.getElementById("wallet-pvlt").innerText = "0.0000";
-        }
-    });
-
-    setInterval(() => {
-        if (energy < 50) {
-            energy++;
-            document.getElementById("top-energy").innerText = energy;
-            document.getElementById("energy-pool").innerText = `${energy}/50`;
-        }
-    }, 1000);
-
-    async function syncChainData() {
-        if (!userAddress || !provider) return;
-        try {
-            const pvltContract = new ethers.Contract(CONTRACT_PVLT, ERC20_ABI, provider);
-            const gpvltContract = new ethers.Contract(CONTRACT_GPVLT, ERC20_ABI, provider);
-            
-            const bPvlt = await pvltContract.balanceOf(userAddress);
-            const bGpvlt = await gpvltContract.balanceOf(userAddress);
-            
-            gpvltBalance = parseFloat(ethers.utils.formatEther(bGpvlt));
-            
-            document.getElementById("wallet-pvlt").innerText = Number(ethers.utils.formatEther(bPvlt)).toFixed(4);
-            document.getElementById("game-gpvlt").innerText = `${gpvltBalance.toFixed(4)} gPVLT`;
-            document.getElementById("top-g-pvlt").innerText = gpvltBalance.toFixed(4);
-            document.getElementById("convertible-pvlt").innerText = (gpvltBalance / 1000).toFixed(4);
-        } catch (e) { console.error("Error reading blockchain values:", e); }
-    }
-
-    function tap(e) {
-        const now = Date.now();
-        if (now - lastTap < 120 || energy <= 0) return;
-        lastTap = now; energy--; points++;
-
-        document.getElementById("top-energy").innerText = energy;
-        document.getElementById("energy-pool").innerText = `${energy}/50`;
-        document.getElementById("top-points").innerText = points;
-        document.getElementById("accum-points").innerText = points;
-
-        const pop = document.createElement("div");
-        pop.className = "floating-pop"; pop.innerText = "+1";
-        
-        const clickX = e.clientX || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : window.innerWidth/2);
-        const clickY = e.clientY || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : window.innerHeight/2);
-        
-        pop.style.left = `${clickX}px`; pop.style.top = `${clickY}px`;
-        document.body.appendChild(pop);
-        setTimeout(() => pop.remove(), 500);
-
-        if (userAddress) {
-            fetch(`${SERVER_API}/api/tap`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ wallet: userAddress })
-            }).catch(() => {});
-        }
-    }
-
-    document.getElementById("convert-btn").addEventListener("click", () => {
-        if (points < 100) return alert("Minimum milestone requires 100 points.");
-        
-        const chunks = Math.floor(points / 100) * 100;
-        const rewardGpvlt = chunks / 100;
-        
-        points -= chunks;
-        gpvltBalance += rewardGpvlt;
-
-        document.getElementById("top-points").innerText = points;
-        document.getElementById("accum-points").innerText = points;
-        document.getElementById("game-gpvlt").innerText = `${gpvltBalance.toFixed(4)} gPVLT`;
-        document.getElementById("top-g-pvlt").innerText = gpvltBalance.toFixed(4);
-        document.getElementById("convertible-pvlt").innerText = (gpvltBalance / 1000).toFixed(4);
-        alert(`Successfully converted points into game balance!`);
-    });
-
-    document.getElementById("buy-energy-btn").addEventListener("click", async () => {
-        if (!signer) return alert("Connect your wallet via AppKit");
-        try {
-            const pvlt = new ethers.Contract(CONTRACT_PVLT, ERC20_ABI, signer);
-            const treasury = new ethers.Contract(CONTRACT_TREASURY, TREASURY_ABI, signer);
-            const cost = ethers.utils.parseEther("150");
-
-            const allowance = await pvlt.allowance(userAddress, CONTRACT_TREASURY);
-            if (allowance.lt(cost)) {
-                alert("Approving 150 PVLT usage...");
-                const tx = await pvlt.approve(CONTRACT_TREASURY, cost);
-                await tx.wait();
-            }
-            const txBuy = await treasury.buyEnergyPack();
-            await txBuy.wait();
-            
-            energy = 50;
-            document.getElementById("energy-pool").innerText = "50/50";
-            alert("Energy pack successfully unlocked!");
-            syncChainData();
-        } catch (err) { alert("Transaction failed or canceled."); }
-    });
-
-    document.getElementById("claim-reward-btn").addEventListener("click", async () => {
-        if (!signer) return alert("Connect your wallet via AppKit");
-        
-        const claimCalculated = gpvltBalance / 1000;
-        if (claimCalculated < 10) return alert("Minimum claim boundary limit rule is 10 PVLT");
-        if (claimCalculated > 1000) return alert("Maximum claim limit rule is 1000 PVLT");
-
-        try {
-            const treasury = new ethers.Contract(CONTRACT_TREASURY, TREASURY_ABI, signer);
-            const accountNonce = await treasury.nonces(userAddress);
-
-            const gpvltWei = ethers.utils.parseEther(gpvltBalance.toString());
-            const pvltWei = ethers.utils.parseEther(claimCalculated.toString());
-
-            const res = await fetch(`${SERVER_API}/api/sign-swap`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    wallet: userAddress,
-                    gpvltAmount: gpvltWei.toString(),
-                    pvltReward: pvltWei.toString(),
-                    nonce: accountNonce.toString()
-                })
-            });
-            const data = await res.json();
-
-            const tx = await treasury.swapGpvltToPvlt(gpvltWei, pvltWei, accountNonce, data.signature);
-            await tx.wait();
-
-            alert("Claim complete! Assets updated on-chain.");
-            
-            points = 0;
-            gpvltBalance = 0;
-            document.getElementById("top-points").innerText = "0";
-            document.getElementById("accum-points").innerText = "0";
-            syncChainData();
-        } catch (err) { alert("Verification transaction error"); }
-    });
-
-    const target = document.getElementById("tap-target");
-    target.addEventListener("pointerdown", tap);
-</script>
-</body>
-</html>
+        <div class="panel-row"><span class="row-label
