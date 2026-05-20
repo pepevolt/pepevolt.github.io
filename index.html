@@ -29,9 +29,9 @@
         .stat-item { display: flex; align-items: center; gap: 4px; }
 
         .clicker-section { display: flex; flex-direction: column; align-items: center; padding: 25px 20px 10px; }
-        .avatar-wrapper { width: 190px; height: 190px; border-radius: 50%; background: linear-gradient(135deg, #3bfad1 0%, #0099ff 100%); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.05s; position: relative; }
+        .avatar-wrapper { width: 190px; height: 190px; border-radius: 50%; background: linear-gradient(135deg, #3bfad1 0%, #0099ff 100%); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: transform 0.05s; position: relative; user-select: none; -webkit-user-select: none; }
         .avatar-wrapper:active { transform: scale(0.96); }
-        .avatar-img { width: 95%; height: 95%; border-radius: 50%; object-fit: cover; background-color: #111; }
+        .avatar-img { width: 95%; height: 95%; border-radius: 50%; object-fit: cover; background-color: #111; pointer-events: none; }
 
         .floating-pop { position: absolute; color: var(--accent-green); font-weight: 800; font-size: 24px; pointer-events: none; animation: floatUp 0.5s ease-out forwards; z-index: 10; }
         @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-50px); } }
@@ -71,7 +71,6 @@
         <div class="panel-title">Identity & Access</div>
         <div class="wallet-mount">
             <appkit-button balance="show"></appkit-button>
-            
             <button class="card-btn btn-outline-green" id="custom-connect-btn">CONNECT WALLET</button>
             <div class="address-text" id="custom-addr-display">Not Connected</div>
         </div>
@@ -135,7 +134,6 @@
     const customConnectBtn = document.getElementById("custom-connect-btn");
     const customAddrDisplay = document.getElementById("custom-addr-display");
 
-    // Intercept custom button clicks to toggle open/close UI panels via modal core framework 
     customConnectBtn.addEventListener("click", () => {
         if (!userAddress) {
             modal.open();
@@ -148,7 +146,6 @@
         if (state.isConnected) {
             userAddress = state.address;
             
-            // Adjust appearance metrics of custom action layouts
             customConnectBtn.innerText = "DISCONNECT WALLET";
             customConnectBtn.style.background = "#1a2638";
             customConnectBtn.style.border = "1px solid #2d3f58";
@@ -166,7 +163,6 @@
         } else {
             userAddress = null; provider = null; signer = null;
             
-            // Reset layout definitions upon network disconnection events
             customConnectBtn.innerText = "CONNECT WALLET";
             customConnectBtn.removeAttribute("style");
             customConnectBtn.className = "card-btn btn-outline-green";
@@ -216,8 +212,11 @@
 
         const pop = document.createElement("div");
         pop.className = "floating-pop"; pop.innerText = "+1";
-        const clickX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : window.innerWidth/2);
-        const clickY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : window.innerHeight/2);
+        
+        // Accurate location fetching for pops across screen types
+        const clickX = e.clientX || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : window.innerWidth/2);
+        const clickY = e.clientY || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : window.innerHeight/2);
+        
         pop.style.left = `${clickX}px`; pop.style.top = `${clickY}px`;
         document.body.appendChild(pop);
         setTimeout(() => pop.remove(), 500);
@@ -245,7 +244,7 @@
         document.getElementById("game-gpvlt").innerText = `${gpvltBalance.toFixed(4)} gPVLT`;
         document.getElementById("top-g-pvlt").innerText = gpvltBalance.toFixed(4);
         document.getElementById("convertible-pvlt").innerText = (gpvltBalance / 1000).toFixed(4);
-        alert(`Successfully converted points into game balance! Please notice: to securely reflect tokens on the ledger network, finalize the balance with a 'Claim Rewards' submission.`);
+        alert(`Successfully converted points into game balance!`);
     });
 
     document.getElementById("buy-energy-btn").addEventListener("click", async () => {
@@ -310,9 +309,9 @@
         } catch (err) { alert("Verification transaction error"); }
     });
 
+    // FIXED: Unified event setup that will not freeze execution runtimes
     const target = document.getElementById("tap-target");
-    target.addEventListener("touchstart", (e) => { e.preventDefault(); tap(e); });
-    target.addEventListener("mousedown", tap);
+    target.addEventListener("pointerdown", tap);
 </script>
 </body>
 </html>
