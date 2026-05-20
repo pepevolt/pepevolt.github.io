@@ -110,10 +110,6 @@
             color: black;
             cursor: pointer;
         }
-        .actionBtn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
         .withdrawBtn {
             background: linear-gradient(90deg, #ffcc00, #ff6600);
             color: white;
@@ -238,8 +234,8 @@
     </div>
 
     <div class="card">
-        <input id="walletInput" value="Loading Connection Engine..." readonly>
-        <button class="actionBtn" id="walletBtn" onclick="connectWallet()" disabled>INITIALIZING...</button>
+        <input id="walletInput" value="Connect Polygon Wallet" readonly>
+        <button class="actionBtn" id="walletBtn" onclick="connectWallet()">CONNECT WALLET</button>
         <div class="status" id="walletStatus">CONNECTED</div>
 
         <div class="balance-box">
@@ -280,6 +276,7 @@
     const API = "https://pepevolt-game-suite.onrender.com/";
     const REOWN_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
+    // Your contract deployment variables maps
     const PVLT_TOKEN_ADDRESS = "0xf4c400280f0d6aF9340fCD491F0cb5A7b51f70F1";
     const GAME_TREASURY_ADDRESS = "0x1dC8375d5D8C3fbCBaD85417ce66E9740D6b05e7";
     const TOKEN_DECIMALS = 18;
@@ -306,12 +303,7 @@
         icons: ['https://pepevolt.github.io/images/IMG_1850.png']
     };
 
-    // Safely check and wait for script dependencies to boot up completely
     window.addEventListener('DOMContentLoaded', () => {
-        initializeEngineWithRetry();
-    });
-
-    function initializeEngineWithRetry() {
         try {
             if (window.AppKitEthers && window.AppKitEthers.createAppKit) {
                 appKitInstance = window.AppKitEthers.createAppKit({
@@ -326,20 +318,11 @@
                         syncConnectedWallet(state.provider);
                     }
                 });
-
-                // Activation Lifecycle complete -> Unlock UI Button
-                const walletBtn = document.getElementById("walletBtn");
-                walletBtn.innerText = "CONNECT WALLET";
-                walletBtn.disabled = false;
-                document.getElementById("walletInput").value = "Connect Polygon Wallet";
-            } else {
-                // If script injection isn't fully compiled by browser, look again in 300ms
-                setTimeout(initializeEngineWithRetry, 300);
             }
         } catch (initErr) {
-            console.error("AppKit framework configuration failure:", initErr);
+            console.error("AppKit failed configuration:", initErr);
         }
-    }
+    });
 
     function updateUI() {
         document.getElementById("energy").innerText = energy;
@@ -372,15 +355,9 @@
         }
     }
 
-    // Programmatic activation of the multi-wallet pop-up listing modal interface
     async function connectWallet() {
-        if (!appKitInstance) return;
-        try { 
-            // Opens the complete dynamic native wallet popup checklist
-            await appKitInstance.open(); 
-        } catch (err) { 
-            console.error("Modal initialization dropped:", err); 
-        }
+        if (!appKitInstance) { alert("AppKit client initialization running."); return; }
+        try { await appKitInstance.open(); } catch (err) { alert("Modal layout initialization crash."); }
     }
 
     async function syncConnectedWallet(rawProvider) {
