@@ -36,8 +36,8 @@
 <!-- TOPBAR -->
 <div class="topbar">
     <div>🔋 Energy: <span id="energy">50</span></div>
-    <div>⚡ gPVLT (Points): <span id="points">0</span></div>
-    <div>💎 PVLT (Real): <span id="pvlt">0.00</span></div>
+    <div>⚡ gPVLT: <span id="points">0</span></div>
+    <div>💎 PVLT: <span id="pvlt">0.00</span></div>
 </div>
 
 <!-- MAIN -->
@@ -56,9 +56,9 @@
     </div>
 
     <div class="info">
-        1 Tap = 1 gPVLT Point
+        1 Tap = 1 gPVLT
         <br>
-        10,000 gPVLT Points = 1 PVLT Token
+        10,000 gPVLT = 1 PVLT Token
         <br>
         <b style="color: #00ff99;">Claim Limits: Minimum 100 PVLT - Maximum 500 PVLT</b>
     </div>
@@ -189,7 +189,7 @@ async function executeEnergyPurchase() {
         const signer = web3Provider.getSigner();
         const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, [
             "function transfer(address to, uint256 amount) external returns (bool)",
-            "function balanceOf(address owner) external view returns (uint256)"
+            "function balanceOf(address owner) external view returns (uint226)"
         ], signer);
 
         const costAmount = ethers.utils.parseUnits("100", TOKEN_DECIMALS);
