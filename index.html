@@ -109,6 +109,13 @@
             background: linear-gradient(90deg, #00ff99, #00ccff);
             color: black;
             cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .actionBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #223147;
+            color: #7a8b9e;
         }
         .withdrawBtn {
             background: linear-gradient(90deg, #ffcc00, #ff6600);
@@ -234,8 +241,8 @@
     </div>
 
     <div class="card">
-        <input id="walletInput" value="Connect Polygon Wallet" readonly>
-        <button class="actionBtn" id="walletBtn" onclick="connectWallet()">CONNECT WALLET</button>
+        <input id="walletInput" value="Connecting to Network..." readonly>
+        <button class="actionBtn" id="walletBtn" onclick="connectWallet()" disabled>LOADING ENGINE...</button>
         <div class="status" id="walletStatus">CONNECTED</div>
 
         <div class="balance-box">
@@ -276,7 +283,6 @@
     const API = "https://pepevolt-game-suite.onrender.com/";
     const REOWN_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
-    // Your contract deployment variables maps
     const PVLT_TOKEN_ADDRESS = "0xf4c400280f0d6aF9340fCD491F0cb5A7b51f70F1";
     const GAME_TREASURY_ADDRESS = "0x1dC8375d5D8C3fbCBaD85417ce66E9740D6b05e7";
     const TOKEN_DECIMALS = 18;
@@ -303,7 +309,12 @@
         icons: ['https://pepevolt.github.io/images/IMG_1850.png']
     };
 
-    window.addEventListener('DOMContentLoaded', () => {
+    // Safe Engine Initialization Lifecycle
+    window.addEventListener('load', () => {
+        setTimeout(initAppKitEngine, 500); 
+    });
+
+    function initAppKitEngine() {
         try {
             if (window.AppKitEthers && window.AppKitEthers.createAppKit) {
                 appKitInstance = window.AppKitEthers.createAppKit({
@@ -318,11 +329,20 @@
                         syncConnectedWallet(state.provider);
                     }
                 });
+
+                // AppKit Engine Loaded - Enable UI Interactions Safely
+                const wBtn = document.getElementById("walletBtn");
+                wBtn.innerText = "CONNECT WALLET";
+                wBtn.disabled = false;
+                document.getElementById("walletInput").value = "Connect Polygon Wallet";
+            } else {
+                // Retry if scripts are taking extra long to parse
+                setTimeout(initAppKitEngine, 1000);
             }
         } catch (initErr) {
-            console.error("AppKit failed configuration:", initErr);
+            console.error("AppKit script framework configuration failure:", initErr);
         }
-    });
+    }
 
     function updateUI() {
         document.getElementById("energy").innerText = energy;
@@ -351,13 +371,17 @@
             document.getElementById("userPvltBalance").innerText = Number(ethers.utils.formatUnits(userBalRaw, TOKEN_DECIMALS)).toFixed(4);
             document.getElementById("treasuryPvltPool").innerText = Number(ethers.utils.formatUnits(treasuryBalRaw, TOKEN_DECIMALS)).toFixed(4);
         } catch (e) {
-            console.error("Balance collection fail:", e);
+            console.error("Balance tracking exception trace:", e);
         }
     }
 
     async function connectWallet() {
-        if (!appKitInstance) { alert("AppKit client initialization running."); return; }
-        try { await appKitInstance.open(); } catch (err) { alert("Modal layout initialization crash."); }
+        if (!appKitInstance) return;
+        try { 
+            await appKitInstance.open(); 
+        } catch (err) { 
+            console.error("Launch interface runtime tracking error:", err);
+        }
     }
 
     async function syncConnectedWallet(rawProvider) {
