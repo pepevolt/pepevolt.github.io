@@ -31,7 +31,7 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding-bottom: 80px; /* Space for bottom nav */
+            padding-bottom: 80px;
         }
 
         /* Top Status Bar */
@@ -154,7 +154,11 @@
             color: var(--accent-green);
         }
 
-        /* Centered connection element inside identity card */
+        .value.pool {
+            color: #ffcc00;
+        }
+
+        /* Connection element inside identity card */
         .wallet-address {
             background: rgba(3, 10, 22, 0.5);
             padding: 12px;
@@ -274,6 +278,10 @@
                 <span class="value highlight" id="points-ledger">0</span>
             </div>
             <div class="card-row">
+                <span class="label">Game Treasury Pool:</span>
+                <span class="value pool" id="treasury-pool">0.00 MATIC</span>
+            </div>
+            <div class="card-row">
                 <span class="label">Current Energy Pool:</span>
                 <span class="value" id="energy-ledger">50/50</span>
             </div>
@@ -333,7 +341,6 @@
             "function claimRewards(uint amount) external"
         ];
 
-        // Updates all mirrored UI items dynamically
         function updateUIElements() {
             document.getElementById("energy-top").innerHTML = energy;
             document.getElementById("energy-ledger").innerHTML = energy + "/" + maxEnergy;
@@ -343,6 +350,19 @@
             document.getElementById("points-rewards").innerHTML = points;
         }
 
+        // New feature: Fetches contract's native token balance (or update to track ERC20 pool)
+        async function updateTreasuryPoolBalance() {
+            if (!provider || CONTRACT === "YOUR_TREASURY_CONTRACT") return;
+            try {
+                const balance = await provider.getBalance(CONTRACT);
+                const formattedBalance = ethers.utils.formatEther(balance);
+                // Rounds native token balance representation cleanly to 4 decimals
+                document.getElementById("treasury-pool").innerHTML = parseFloat(formattedBalance).toFixed(4) + " MATIC";
+            } catch(err) {
+                console.error("Could not fetch pool balance", err);
+            }
+        }
+
         async function connectWallet(){
             try {
                 await window.ethereum.request({ method: "eth_requestAccounts" });
@@ -350,10 +370,12 @@
                 signer = provider.getSigner();
                 user = await signer.getAddress();
                 
-                // Format display address like screenshot (e.g., 0xbA82...3099)
                 const displayAddress = user.substring(0, 6) + "..." + user.substring(user.length - 4);
                 
                 document.getElementById("wallet").innerHTML = displayAddress + "<br><span style='color:#00ffaa; font-size:11px; font-family:sans-serif;'>CONNECTED NETWORK: POLYGON</span>";
+                
+                // Get the pool balance as soon as wallet is connected
+                updateTreasuryPoolBalance();
             } catch (err) {
                 console.error("Wallet connection failed", err);
             }
@@ -382,9 +404,7 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ wallet: user, points: 1 })
                 });
-            } catch(e) {
-                // Silent catch if local server endpoint doesn't exist yet
-            }
+            } catch(e) {}
         }
 
         async function buyEnergyPack(){
@@ -395,6 +415,7 @@
 
                 energy += 10000;
                 updateUIElements();
+                updateTreasuryPoolBalance(); // Update pool if it takes fees
                 alert("Energy Purchased");
             } catch(err) {
                 alert("Transaction failed or rejected.");
@@ -417,12 +438,12 @@
                 alert("Rewards Claimed");
                 points = 0;
                 updateUIElements();
+                updateTreasuryPoolBalance(); // Update balance as pool changes
             } catch(err) {
                 alert("Transaction failed.");
             }
         }
         
-        // Initial run to map variables to newly added selectors
         updateUIElements();
     </script>
 </body>
