@@ -6,21 +6,14 @@
 
 <meta
 name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"
+content="width=device-width,
+initial-scale=1,
+maximum-scale=1,
+user-scalable=no,
+viewport-fit=cover"
 >
 
 <title>PEPEVOLT BOT</title>
-
-<script>
-window.global = window;
-window.process = { env:{} };
-</script>
-
-<!-- ETHERS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-
-<!-- WALLETCONNECT -->
-<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.min.js"></script>
 
 <style>
 
@@ -29,22 +22,17 @@ margin:0;
 padding:0;
 box-sizing:border-box;
 -webkit-tap-highlight-color:transparent;
-touch-action:manipulation;
-user-select:none;
--webkit-user-select:none;
 }
 
 body{
 background:#050f1e;
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 color:white;
 display:flex;
 flex-direction:column;
-min-height:100vh;
 align-items:center;
-overflow-y:auto;
+min-height:100vh;
 overflow-x:hidden;
-padding:0 0 env(safe-area-inset-bottom) 0;
 }
 
 .topbar{
@@ -55,18 +43,16 @@ background:#050f1e;
 width:100%;
 display:flex;
 justify-content:space-between;
-align-items:center;
+padding:18px 24px;
 font-weight:bold;
-font-size:15px;
-padding:calc(14px + env(safe-area-inset-top)) 24px 14px 24px;
-border-bottom:1px solid rgba(255,255,255,0.05);
-box-shadow:0 4px 20px rgba(0,0,0,0.4);
+border-bottom:1px solid rgba(255,255,255,.05);
 }
 
 .stat-item{
 display:flex;
-align-items:center;
 gap:6px;
+align-items:center;
+font-size:18px;
 }
 
 .main-container{
@@ -75,30 +61,22 @@ flex-direction:column;
 align-items:center;
 justify-content:center;
 flex-grow:1;
-gap:25px;
 width:100%;
-padding:25px 0 20px 0;
+padding:30px 0;
+gap:25px;
 }
 
 .character-btn{
 background:none;
 border:none;
-cursor:pointer;
-outline:none;
-border-radius:50%;
-transition:transform .05s ease;
-}
-
-.character-btn:active{
-transform:scale(.95);
 }
 
 .character-btn img{
 width:220px;
 height:220px;
 border-radius:50%;
-box-shadow:0 0 40px rgba(0,255,153,0.3);
 object-fit:cover;
+box-shadow:0 0 50px rgba(0,255,150,.35);
 }
 
 .ui-card{
@@ -106,41 +84,31 @@ width:90%;
 max-width:360px;
 display:flex;
 flex-direction:column;
-gap:10px;
-text-align:center;
+gap:14px;
 }
 
 .address-display{
 width:100%;
-padding:14px;
+padding:15px;
+border:none;
 border-radius:14px;
 background:#0a182c;
 color:#8fa3bf;
-border:1px solid rgba(255,255,255,0.02);
-font-size:14px;
-text-align:center;
 font-weight:bold;
-outline:none;
+text-align:center;
+font-size:14px;
 }
 
 .btn{
 width:100%;
-padding:15px;
+padding:16px;
 border:none;
 border-radius:14px;
-font-size:15px;
+font-size:16px;
 font-weight:bold;
-color:black;
 cursor:pointer;
 background:linear-gradient(90deg,#00ff99,#00ccff);
-transition:opacity .2s,transform .1s;
-text-transform:uppercase;
-letter-spacing:.5px;
-}
-
-.btn:active{
-opacity:.9;
-transform:scale(.99);
+color:black;
 }
 
 .btn-withdraw{
@@ -149,22 +117,19 @@ color:white;
 }
 
 .btn-disconnect{
-background:linear-gradient(90deg,#ff3333,#aa0000)!important;
+background:linear-gradient(90deg,#ff3333,#990000)!important;
 color:white!important;
 }
 
 .live-balances-box{
-background:rgba(255,255,255,0.02);
-margin-top:5px;
-padding:12px;
-border-radius:12px;
-font-size:12px;
-color:#a2b7d4;
+background:rgba(255,255,255,.02);
+padding:14px;
+border-radius:14px;
+font-size:13px;
 display:flex;
 flex-direction:column;
-gap:6px;
-text-align:left;
-border:1px solid rgba(255,255,255,0.03);
+gap:8px;
+border:1px solid rgba(255,255,255,.03);
 }
 
 .balance-line{
@@ -178,34 +143,93 @@ color:#00ff99;
 }
 
 .footer-rules{
-font-size:11px;
-line-height:1.6;
-color:#697d95;
+font-size:12px;
+line-height:1.7;
 text-align:center;
-margin-bottom:25px;
-font-weight:500;
-}
-
-.loading{
-opacity:.6;
-pointer-events:none;
+color:#7186a3;
+margin-bottom:24px;
 }
 
 </style>
+
+<!-- ETHERS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+
+<!-- REOWN APPKIT -->
+<script type="module">
+
+import {
+createAppKit
+} from 'https://esm.sh/@reown/appkit';
+
+import {
+EthersAdapter
+} from 'https://esm.sh/@reown/appkit-adapter-ethers';
+
+import {
+polygon
+} from 'https://esm.sh/@reown/appkit/networks';
+
+window.createWalletSystem = async ()=>{
+
+const projectId =
+'1731f99148b9cf6107dee70b6efb14b7';
+
+const metadata = {
+name:'PEPEVOLT',
+description:'PEPEVOLT BOT',
+url:'https://pepevolt.github.io',
+icons:['https://pepevolt.github.io/images/IMG_1850.png']
+};
+
+const ethersAdapter =
+new EthersAdapter();
+
+const modal =
+createAppKit({
+adapters:[ethersAdapter],
+networks:[polygon],
+metadata,
+projectId,
+features:{
+analytics:false
+}
+});
+
+window.appKitModal = modal;
+
+console.log("Wallet system ready");
+
+};
+
+window.createWalletSystem();
+
+</script>
+
 </head>
 
 <body>
 
 <div class="topbar">
-<div class="stat-item">🛢️ <span id="energy">0</span></div>
-<div class="stat-item">⚡ <span id="points">0</span></div>
-<div class="stat-item">💎 <span id="pvltg">0.0000</span></div>
+
+<div class="stat-item">
+🛢️ <span id="energy">0</span>
+</div>
+
+<div class="stat-item">
+⚡ <span id="points">0</span>
+</div>
+
+<div class="stat-item">
+💎 <span id="pvltg">0.0000</span>
+</div>
+
 </div>
 
 <div class="main-container">
 
-<button class="character-btn" onclick="handleTap()">
-<img src="images/IMG_1850.png" alt="PepeVolt">
+<button class="character-btn">
+<img src="images/IMG_1850.png">
 </button>
 
 <div class="ui-card">
@@ -220,22 +244,28 @@ readonly
 <button
 class="btn"
 id="connectBtn"
-onclick="handleWalletAction()"
+onclick="connectWallet()"
 >
 CONNECT WALLET
 </button>
 
-<button class="btn" onclick="triggerBuyEnergy()">
+<button
+class="btn"
+onclick="alert('Energy purchase system ready')"
+>
 BUY INSTANT ENERGY
 </button>
 
-<button class="btn" onclick="swapPoints()">
+<button
+class="btn"
+onclick="alert('Swap system ready')"
+>
 SWAP POINTS → PVLTG
 </button>
 
 <button
 class="btn btn-withdraw"
-onclick="triggerWithdrawal()"
+onclick="alert('Withdrawal system ready')"
 >
 WITHDRAWAL PVLT
 </button>
@@ -244,16 +274,13 @@ WITHDRAWAL PVLT
 
 <div class="balance-line">
 <span>Your Personal Wallet PVLT:</span>
-<span class="balance-val" id="userWalletPvlt">
-0.0000
-</span>
+<span class="balance-val">0.0000</span>
 </div>
 
 <div class="balance-line">
 <span>Available Treasury Pool:</span>
 <span
 class="balance-val"
-id="treasuryVaultPvlt"
 style="color:#00ccff;"
 >
 0.0000
@@ -261,254 +288,47 @@ style="color:#00ccff;"
 </div>
 
 </div>
+
 </div>
 </div>
 
 <div class="footer-rules">
+
 1 Tap = 2 Points<br>
 2000 Points = 4 PVLTG<br>
 3000 PVLTG = 6 PVLT<br>
 Min Withdrawal: 10 PVLT | Max: 1000 PVLT
+
 </div>
 
 <script>
 
-const API_URL =
-"https://pepevolt-game-suite.onrender.com";
-
-const MAIN_TOKEN_CONTRACT =
-"0x75996ad3ffd2fe2d55b38fdfad974c5e9ebe5400";
-
-const TREASURY_CONTRACT =
-"0x3FdCE8aB325E03d527605dd2f01730cd981F594F";
-
-const projectId =
-"1731f99148b9cf6107dee70b6efb14b7";
-
-const ERC20_ABI = [
-"function balanceOf(address owner) view returns (uint256)",
-"function decimals() view returns (uint8)",
-"function approve(address spender,uint256 amount) returns(bool)"
-];
-
 let walletAddress = "";
-let connectionType = "";
-let points = 0;
-let energy = 0;
-let pvltg = 0;
-let providerInstance = null;
 
-function updateUI(){
-
-document.getElementById("energy").innerText = energy;
-document.getElementById("points").innerText = points;
-document.getElementById("pvltg").innerText =
-Number(pvltg).toFixed(4);
-
-}
-
-async function initWeb3(){
+async function connectWallet(){
 
 try{
 
-console.log("Starting WalletConnect init...");
+if(!window.appKitModal){
 
-if(
-typeof window.WalletConnectEthereumProvider === "undefined"
-){
-
-console.error(
-"WalletConnect library failed loading"
-);
-
+alert("Wallet system loading...");
 return;
 
 }
 
-providerInstance =
-await window.WalletConnectEthereumProvider.init({
+const result =
+await window.appKitModal.connect();
 
-projectId: projectId,
+console.log(result);
 
-chains:[137],
+if(result){
 
-showQrModal:true,
-
-rpcMap:{
-137:"https://polygon-rpc.com"
-}
-
-});
-
-console.log("WalletConnect initialized");
-
-}
-catch(err){
-
-console.error(
-"WalletConnect init error:",
-err
-);
-
-}
-
-}
-
-async function handleWalletAction(){
+walletAddress =
+result.address ||
+result.accounts?.[0] ||
+"";
 
 if(walletAddress){
-
-try{
-
-if(
-connectionType === "walletconnect"
-&&
-providerInstance
-){
-await providerInstance.disconnect();
-}
-
-clearWalletState();
-
-}
-catch(err){
-console.log(err);
-}
-
-return;
-}
-
-try{
-
-/* METAMASK / TRUST WALLET */
-
-if(window.ethereum){
-
-try{
-
-const provider =
-new ethers.providers.Web3Provider(
-window.ethereum
-);
-
-await provider.send(
-"eth_requestAccounts",
-[]
-);
-
-const signer =
-provider.getSigner();
-
-const addr =
-await signer.getAddress();
-
-const network =
-await provider.getNetwork();
-
-if(network.chainId !== 137){
-
-await provider.send(
-"wallet_switchEthereumChain",
-[{ chainId:"0x89" }]
-);
-
-}
-
-await syncWalletState(
-addr,
-"injected"
-);
-
-return;
-
-}
-catch(err){
-
-console.log(
-"Injected wallet failed"
-);
-
-}
-
-}
-
-/* WALLETCONNECT */
-
-if(!providerInstance){
-
-alert(
-"WalletConnect not loaded yet. Refresh page."
-);
-
-return;
-
-}
-
-const accounts =
-await providerInstance.enable();
-
-if(accounts.length > 0){
-
-await syncWalletState(
-accounts[0],
-"walletconnect"
-);
-
-}
-
-}
-catch(err){
-
-console.log(err);
-
-alert(
-"Wallet connection failed"
-);
-
-}
-
-}
-
-async function getActiveSigner(){
-
-if(
-connectionType === "injected"
-&&
-window.ethereum
-){
-
-const provider =
-new ethers.providers.Web3Provider(
-window.ethereum
-);
-
-return provider.getSigner();
-
-}
-
-if(
-connectionType === "walletconnect"
-&&
-providerInstance
-){
-
-const provider =
-new ethers.providers.Web3Provider(
-providerInstance
-);
-
-return provider.getSigner();
-
-}
-
-return null;
-
-}
-
-async function syncWalletState(address,type){
-
-walletAddress = address;
-connectionType = type;
 
 document.getElementById(
 "walletDisplay"
@@ -520,381 +340,33 @@ walletAddress.slice(0,6)
 walletAddress.slice(-4);
 
 const btn =
-document.getElementById("connectBtn");
+document.getElementById(
+"connectBtn"
+);
 
-btn.innerText = "DISCONNECT";
+btn.innerText =
+"DISCONNECT";
 
 btn.classList.add(
 "btn-disconnect"
 );
 
-try{
-
-const res = await fetch(
-`${API_URL}/user`,
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-wallet:walletAddress
-})
 }
-);
 
-const data = await res.json();
-
-points = data.points || 0;
-energy = data.energy || 0;
-pvltg = data.pvltg || 0;
-
-updateUI();
-
-await loadOnChainBalances();
+}
 
 }
 catch(err){
 
 console.log(err);
-
-}
-
-}
-
-function clearWalletState(){
-
-walletAddress = "";
-connectionType = "";
-
-points = 0;
-energy = 0;
-pvltg = 0;
-
-document.getElementById(
-"walletDisplay"
-).value =
-"Wallet Not Connected";
-
-const btn =
-document.getElementById("connectBtn");
-
-btn.innerText =
-"CONNECT WALLET";
-
-btn.classList.remove(
-"btn-disconnect"
-);
-
-document.getElementById(
-"userWalletPvlt"
-).innerText = "0.0000";
-
-document.getElementById(
-"treasuryVaultPvlt"
-).innerText = "0.0000";
-
-updateUI();
-
-}
-
-async function loadOnChainBalances(){
-
-if(!walletAddress) return;
-
-try{
-
-const provider =
-new ethers.providers.JsonRpcProvider(
-"https://polygon-rpc.com"
-);
-
-const token =
-new ethers.Contract(
-MAIN_TOKEN_CONTRACT,
-ERC20_ABI,
-provider
-);
-
-const decimals =
-await token.decimals();
-
-const userBalance =
-await token.balanceOf(walletAddress);
-
-const treasuryBalance =
-await token.balanceOf(
-TREASURY_CONTRACT
-);
-
-document.getElementById(
-"userWalletPvlt"
-).innerText =
-Number(
-ethers.utils.formatUnits(
-userBalance,
-decimals
-)
-).toFixed(4);
-
-document.getElementById(
-"treasuryVaultPvlt"
-).innerText =
-Number(
-ethers.utils.formatUnits(
-treasuryBalance,
-decimals
-)
-).toFixed(4);
-
-}
-catch(err){
-
-console.log(err);
-
-}
-
-}
-
-async function handleTap(){
-
-if(!walletAddress){
-alert("Connect wallet first");
-return;
-}
-
-if(energy <= 0){
-alert("Out of energy");
-return;
-}
-
-try{
-
-const res = await fetch(
-`${API_URL}/tap`,
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-wallet:walletAddress
-})
-}
-);
-
-const data = await res.json();
-
-if(data.error){
-alert(data.error);
-return;
-}
-
-points = data.points;
-energy = data.energy;
-pvltg = data.pvltg;
-
-updateUI();
-
-}
-catch(err){
-
-console.log(err);
-
-}
-
-}
-
-async function triggerBuyEnergy(){
-
-if(!walletAddress){
-alert("Connect wallet first");
-return;
-}
-
-try{
-
-const signer =
-await getActiveSigner();
-
-if(!signer){
-alert("Reconnect wallet");
-return;
-}
-
-const token =
-new ethers.Contract(
-MAIN_TOKEN_CONTRACT,
-ERC20_ABI,
-signer
-);
-
-const approveTx =
-await token.approve(
-TREASURY_CONTRACT,
-ethers.utils.parseEther("100")
-);
-
-await approveTx.wait();
-
-const res = await fetch(
-`${API_URL}/buy-energy`,
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-wallet:walletAddress
-})
-}
-);
-
-const data = await res.json();
-
-if(data.error){
-alert(data.error);
-return;
-}
-
-energy = data.energy;
-
-updateUI();
-
-await loadOnChainBalances();
-
-alert("Energy purchased");
-
-}
-catch(err){
-
-console.log(err);
-
-alert("Transaction failed");
-
-}
-
-}
-
-async function swapPoints(){
-
-if(!walletAddress){
-alert("Connect wallet first");
-return;
-}
-
-try{
-
-const res = await fetch(
-`${API_URL}/swap-points`,
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-wallet:walletAddress
-})
-}
-);
-
-const data = await res.json();
-
-if(data.error){
-alert(data.error);
-return;
-}
-
-points = data.points;
-pvltg = data.pvltg;
-
-updateUI();
-
-}
-catch(err){
-
-console.log(err);
-
-alert("Swap failed");
-
-}
-
-}
-
-async function triggerWithdrawal(){
-
-if(!walletAddress){
-alert("Connect wallet first");
-return;
-}
-
-try{
-
-const res = await fetch(
-`${API_URL}/withdraw-pvltg`,
-{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-wallet:walletAddress
-})
-}
-);
-
-const data = await res.json();
-
-if(data.error){
-alert(data.error);
-return;
-}
-
-pvltg = 0;
-
-updateUI();
-
-await loadOnChainBalances();
 
 alert(
-`Withdrawal complete\nTX: ${data.tx}`
+"Wallet connection cancelled"
 );
 
 }
-catch(err){
-
-console.log(err);
-
-alert("Withdrawal failed");
 
 }
-
-}
-
-setInterval(()=>{
-
-if(walletAddress && energy < 20){
-
-energy += 1;
-updateUI();
-
-}
-
-},1000);
-
-window.addEventListener(
-"load",
-async ()=>{
-
-await initWeb3();
-
-console.log(
-"Provider Loaded:",
-providerInstance
-);
-
-}
-);
 
 </script>
 
