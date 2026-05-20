@@ -47,7 +47,8 @@
         .btn-blue-grad { background: linear-gradient(135deg, #182848 0%, #293a5a 100%); border: 1px solid #3b4e70; }
         .btn-purple { background: linear-gradient(135deg, #7b1fa2 0%, #5e1784 100%); }
         
-        .wallet-mount { display: flex; justify-content: center; margin-bottom: 5px; width: 100%; }
+        .wallet-mount { display: flex; flex-direction: column; justify-content: center; gap: 10px; width: 100%; }
+        .address-text { text-align: center; font-size: 13px; color: var(--text-muted); font-family: monospace; display: none; margin-top: 5px; }
         appkit-button { width: 100% !important; }
     </style>
 </head>
@@ -70,6 +71,9 @@
         <div class="panel-title">Identity & Access</div>
         <div class="wallet-mount">
             <appkit-button balance="show"></appkit-button>
+            
+            <button class="card-btn btn-outline-green" id="custom-connect-btn">CONNECT WALLET</button>
+            <div class="address-text" id="custom-addr-display">Not Connected</div>
         </div>
     </div>
 
@@ -95,8 +99,7 @@
     import { Ethers5Adapter } from 'https://unpkg.com/@reown/appkit-adapter-ethers5@1.1.0/dist/index.js'
     import { polygon } from 'https://unpkg.com/@reown/appkit/networks/dist/index.js'
 
-    // Configuration Config Objects
-    const REOWN_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7"; // Paste your project ID here
+    const REOWN_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7"; 
     const CONTRACT_PVLT = "0xE660068C739Ce9E6781f38B79da8012D1118c953";
     const CONTRACT_GPVLT = "0x5b8edda9D28C36c6696B956AcBD9D10a76CA1545";
     const CONTRACT_TREASURY = "0xcA1C48152dd7cc49FfA427532731aa8B0f3ef244";
@@ -113,7 +116,6 @@
         "function swapGpvltToPvlt(uint256, uint256, uint256, bytes) external"
     ];
 
-    // Initialize AppKit Integration
     const modal = createAppKit({
         adapters: [new Ethers5Adapter()],
         networks: [polygon],
@@ -127,14 +129,34 @@
         features: { analytics: false }
     });
 
-    // Reactive State Variables
     let userAddress = null, provider = null, signer = null;
     let energy = 50, points = 0, gpvltBalance = 0.0, lastTap = 0;
 
-    // Track active account state alterations via hook observers
+    const customConnectBtn = document.getElementById("custom-connect-btn");
+    const customAddrDisplay = document.getElementById("custom-addr-display");
+
+    // Intercept custom button clicks to toggle open/close UI panels via modal core framework 
+    customConnectBtn.addEventListener("click", () => {
+        if (!userAddress) {
+            modal.open();
+        } else {
+            modal.open({ view: 'Account' });
+        }
+    });
+
     modal.subscribeAccount(async (state) => {
         if (state.isConnected) {
             userAddress = state.address;
+            
+            // Adjust appearance metrics of custom action layouts
+            customConnectBtn.innerText = "DISCONNECT WALLET";
+            customConnectBtn.style.background = "#1a2638";
+            customConnectBtn.style.border = "1px solid #2d3f58";
+            customConnectBtn.style.color = "#8492a6";
+            
+            customAddrDisplay.innerText = `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+            customAddrDisplay.style.display = "block";
+
             const walletProvider = modal.getWalletProvider();
             if (walletProvider) {
                 provider = new ethers.providers.Web3Provider(walletProvider);
@@ -143,11 +165,19 @@
             }
         } else {
             userAddress = null; provider = null; signer = null;
+            
+            // Reset layout definitions upon network disconnection events
+            customConnectBtn.innerText = "CONNECT WALLET";
+            customConnectBtn.removeAttribute("style");
+            customConnectBtn.className = "card-btn btn-outline-green";
+            
+            customAddrDisplay.innerText = "Not Connected";
+            customAddrDisplay.style.display = "none";
+            
             document.getElementById("wallet-pvlt").innerText = "0.0000";
         }
     });
 
-    // Constant passive recovery clock loop
     setInterval(() => {
         if (energy < 50) {
             energy++;
@@ -184,7 +214,6 @@
         document.getElementById("top-points").innerText = points;
         document.getElementById("accum-points").innerText = points;
 
-        // Interactive dynamic point creation feedback positioning logic
         const pop = document.createElement("div");
         pop.className = "floating-pop"; pop.innerText = "+1";
         const clickX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : window.innerWidth/2);
@@ -202,7 +231,6 @@
         }
     }
 
-    // Points calculation pipeline execution button interface listener
     document.getElementById("convert-btn").addEventListener("click", () => {
         if (points < 100) return alert("Minimum milestone requires 100 points.");
         
@@ -282,7 +310,6 @@
         } catch (err) { alert("Verification transaction error"); }
     });
 
-    // Setup input listeners across platforms
     const target = document.getElementById("tap-target");
     target.addEventListener("touchstart", (e) => { e.preventDefault(); tap(e); });
     target.addEventListener("mousedown", tap);
