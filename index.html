@@ -18,9 +18,12 @@
         .card { width:100%; max-width:380px; margin-top:28px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:18px; display:flex; flex-direction:column; gap:14px; }
         input { width:100%; padding:15px; border:none; border-radius:12px; background:#0c1628; color:white; font-size:14px; outline:none; }
         .actionBtn { width:100%; padding:15px; border:none; border-radius:12px; font-size:15px; font-weight:bold; background:linear-gradient(90deg,#00ff99,#00ccff); color:black; cursor:pointer; }
+        
+        /* DYNAMIC TOGGLE OVERRIDES FOR RED DISCONNECT THEME */
+        .actionBtn.disconnect-style { background: linear-gradient(90deg, #ff3366, #ff6630) !important; color: white !important; }
+        
         .status { text-align:center; font-size:12px; opacity:0.8; display:none; }
         
-        /* DUAL TRACKING DISPLAY GRID */
         .metrics-container { display: flex; flex-direction: column; gap: 8px; background:rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius:12px; padding:12px; }
         .metric-row { display: flex; justify-content: space-between; align-items: center; font-size:13px; font-weight: bold; }
         .treasury-color { color: #00ff99; }
@@ -53,7 +56,8 @@
 
     <div class="card">
         <input id="walletInput" placeholder="Connect Polygon Wallet" readonly>
-        <button class="actionBtn" id="walletBtn" onclick="connectWallet()">CONNECT WALLET</button>
+        
+        <button class="actionBtn" id="walletBtn" onclick="toggleWalletConnection()">CONNECT WALLET</button>
         <div class="status" id="walletStatus">Wallet Connected</div>
         
         <div class="metrics-container">
@@ -104,7 +108,8 @@ const TOKEN_DECIMALS = 18;
 
 /* ================= STATE ================= */
 let web3Provider;
-let wallet = "";
+let rawWcInstance; // Stores internal walletconnect context for clean terminates
+let wallet = ""; 
 let points = 0; 
 let energy = 50;
 let pvltBalance = 0.00; 
@@ -126,7 +131,6 @@ function closeBuyModal() {
     document.getElementById("buyModal").classList.remove("active");
 }
 
-/* ================= COMPREHENSIVE ON-CHAIN STATE EXTRACTOR ================= */
 async function refreshOnChainBalances() {
     try {
         const queryProvider = web3Provider || new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
@@ -134,14 +138,12 @@ async function refreshOnChainBalances() {
             "function balanceOf(address owner) external view returns (uint256)"
         ], queryProvider);
         
-        // 1. Read Treasury Pool Size
         const rawTreasury = await tokenContract.balanceOf(GAME_TREASURY_ADDRESS);
         const formattedTreasury = ethers.utils.formatUnits(rawTreasury, TOKEN_DECIMALS);
         document.getElementById("treasuryCapacity").innerText = parseFloat(formattedTreasury).toLocaleString(undefined, {
             minimumFractionDigits: 2, maximumFractionDigits: 2
         });
 
-        // 2. Read Connected User Wallet Holdings if online
         if (wallet) {
             const rawUser = await tokenContract.balanceOf(wallet);
             const formattedUser = ethers.utils.formatUnits(rawUser, TOKEN_DECIMALS);
@@ -156,12 +158,22 @@ async function refreshOnChainBalances() {
     }
 }
 
-/* ================= ACTIONS ================= */
+/* ================= ROUTING CONTROLLER BUTTON MANAGER ================= */
+function toggleWalletConnection() {
+    if (!wallet) {
+        connectWallet();
+    } else {
+        disconnectWallet();
+    }
+}
+
+/* ================= ACTIONS: CONNECT ROUTINE ================= */
 async function connectWallet() {
     try {
         if (window.ethereum) {
             await window.ethereum.request({ method: "eth_requestAccounts" });
             web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+            rawWcInstance = null;
         } else {
             const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
             const wcProvider = await WalletConnectProvider.init({
@@ -171,13 +183,19 @@ async function connectWallet() {
             });
             await wcProvider.connect();
             web3Provider = new ethers.providers.Web3Provider(wcProvider);
+            rawWcInstance = wcProvider;
         }
 
         const signer = web3Provider.getSigner();
         wallet = await signer.getAddress();
 
+        // Adjust UI components into a Connected Mode State
         document.getElementById("walletInput").value = wallet.slice(0,6) + "..." + wallet.slice(-4);
-        document.getElementById("walletBtn").innerText = "CONNECTED";
+        
+        const btn = document.getElementById("walletBtn");
+        btn.innerText = "DISCONNECT WALLET";
+        btn.classList.add("disconnect-style"); // Changes green/blue gradient to warm orange/red
+        
         document.getElementById("walletStatus").style.display = "block";
 
         const res = await fetch(API + "/user", {
@@ -190,14 +208,45 @@ async function connectWallet() {
         points = data.points || 0;
         energy = data.energy || 50;
         updateUI();
-        
-        // Populate dynamic chain properties immediately post-handshake
         refreshOnChainBalances();
 
     } catch (err) {
         console.error(err);
         alert("Wallet connection failed");
     }
+}
+
+/* ================= ACTIONS: DISCONNECT ROUTINE ================= */
+async function disconnectWallet() {
+    try {
+        // If logged in via mobile deep links (WalletConnect), sever connection natively
+        if (rawWcInstance && typeof rawWcInstance.disconnect === "function") {
+            await rawWcInstance.disconnect();
+        }
+    } catch (e) {
+        console.warn("WalletConnect session disconnect warning:", e);
+    }
+
+    // Reset runtime memory structures back to zero baseline profiles
+    wallet = "";
+    web3Provider = null;
+    rawWcInstance = null;
+    points = 0;
+    energy = 50;
+    pvltBalance = 0.00;
+
+    // Reset inputs, button layouts, text configurations, and status items back to default styles
+    document.getElementById("walletInput").value = "";
+    
+    const btn = document.getElementById("walletBtn");
+    btn.innerText = "CONNECT WALLET";
+    btn.classList.remove("disconnect-style");
+    
+    document.getElementById("walletStatus").style.display = "none";
+
+    // Sync views
+    updateUI();
+    refreshOnChainBalances();
 }
 
 async function tap() {
@@ -299,7 +348,7 @@ async function executeEnergyPurchase() {
 
         energy = refillData.energy;
         updateUI();
-        refreshOnChainBalances(); // Sync data layout following spent tokens
+        refreshOnChainBalances();
         alert("Payment Successful! 10,000 Energy added to your profile.");
 
     } catch (err) {
@@ -332,7 +381,7 @@ async function claimPVLT() {
 
         points = data.remainingPoints;
         updateUI();
-        refreshOnChainBalances(); // Sync data layout following incoming tokens
+        refreshOnChainBalances();
         alert(`Tokens claimed successfully! Sent directly from treasury.\nTx Hash: ${data.tx}`);
     } catch (err) {
         console.error(err);
