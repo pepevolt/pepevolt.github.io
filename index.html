@@ -109,13 +109,10 @@
             background: linear-gradient(90deg, #00ff99, #00ccff);
             color: black;
             cursor: pointer;
-            transition: opacity 0.2s;
         }
         .actionBtn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            background: #223147;
-            color: #7a8b9e;
         }
         .withdrawBtn {
             background: linear-gradient(90deg, #ffcc00, #ff6600);
@@ -241,9 +238,8 @@
     </div>
 
     <div class="card">
-        <input id="walletInput" value="Connecting to network..." readonly>
-        
-        <button class="actionBtn" id="walletBtn" onclick="connectWallet()" disabled>LOADING ENGINE...</button>
+        <input id="walletInput" value="Loading Connection Engine..." readonly>
+        <button class="actionBtn" id="walletBtn" onclick="connectWallet()" disabled>INITIALIZING...</button>
         <div class="status" id="walletStatus">CONNECTED</div>
 
         <div class="balance-box">
@@ -310,12 +306,12 @@
         icons: ['https://pepevolt.github.io/images/IMG_1850.png']
     };
 
-    // Engine self-healing boot cycle
-    window.addEventListener('load', () => {
-        setTimeout(initAppKitEngine, 500); 
+    // Safely check and wait for script dependencies to boot up completely
+    window.addEventListener('DOMContentLoaded', () => {
+        initializeEngineWithRetry();
     });
 
-    function initAppKitEngine() {
+    function initializeEngineWithRetry() {
         try {
             if (window.AppKitEthers && window.AppKitEthers.createAppKit) {
                 appKitInstance = window.AppKitEthers.createAppKit({
@@ -325,23 +321,23 @@
                     features: { analytics: false }
                 });
 
-                // Subscribe to connection provider states natively
                 appKitInstance.subscribeProvider((state) => {
                     if (state.isConnected && state.provider) {
                         syncConnectedWallet(state.provider);
                     }
                 });
 
-                // Ready! Activate custom styling buttons
-                const btn = document.getElementById("walletBtn");
-                btn.innerText = "CONNECT WALLET";
-                btn.disabled = false;
+                // Activation Lifecycle complete -> Unlock UI Button
+                const walletBtn = document.getElementById("walletBtn");
+                walletBtn.innerText = "CONNECT WALLET";
+                walletBtn.disabled = false;
                 document.getElementById("walletInput").value = "Connect Polygon Wallet";
             } else {
-                setTimeout(initAppKitEngine, 1000);
+                // If script injection isn't fully compiled by browser, look again in 300ms
+                setTimeout(initializeEngineWithRetry, 300);
             }
         } catch (initErr) {
-            console.error("Framework configuration exception caught:", initErr);
+            console.error("AppKit framework configuration failure:", initErr);
         }
     }
 
@@ -372,18 +368,18 @@
             document.getElementById("userPvltBalance").innerText = Number(ethers.utils.formatUnits(userBalRaw, TOKEN_DECIMALS)).toFixed(4);
             document.getElementById("treasuryPvltPool").innerText = Number(ethers.utils.formatUnits(treasuryBalRaw, TOKEN_DECIMALS)).toFixed(4);
         } catch (e) {
-            console.error("Balance synchronization failed:", e);
+            console.error("Balance collection fail:", e);
         }
     }
 
-    // Programmatic popup activation method
+    // Programmatic activation of the multi-wallet pop-up listing modal interface
     async function connectWallet() {
         if (!appKitInstance) return;
         try { 
-            // This triggers the complete interactive popup sheet with all wallets
+            // Opens the complete dynamic native wallet popup checklist
             await appKitInstance.open(); 
         } catch (err) { 
-            console.error("UI overlay display interrupted:", err);
+            console.error("Modal initialization dropped:", err); 
         }
     }
 
@@ -411,7 +407,7 @@
             updateUI();
             await fetchOnChainBalances();
         } catch (syncErr) {
-            console.error("User match extraction failure:", syncErr);
+            console.error("Profile matching error:", syncErr);
         }
     }
 
