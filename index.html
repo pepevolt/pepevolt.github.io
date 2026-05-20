@@ -241,7 +241,8 @@
     </div>
 
     <div class="card">
-        <input id="walletInput" value="Connecting to Network..." readonly>
+        <input id="walletInput" value="Connecting to network..." readonly>
+        
         <button class="actionBtn" id="walletBtn" onclick="connectWallet()" disabled>LOADING ENGINE...</button>
         <div class="status" id="walletStatus">CONNECTED</div>
 
@@ -309,7 +310,7 @@
         icons: ['https://pepevolt.github.io/images/IMG_1850.png']
     };
 
-    // Safe Engine Initialization Lifecycle
+    // Engine self-healing boot cycle
     window.addEventListener('load', () => {
         setTimeout(initAppKitEngine, 500); 
     });
@@ -324,23 +325,23 @@
                     features: { analytics: false }
                 });
 
+                // Subscribe to connection provider states natively
                 appKitInstance.subscribeProvider((state) => {
                     if (state.isConnected && state.provider) {
                         syncConnectedWallet(state.provider);
                     }
                 });
 
-                // AppKit Engine Loaded - Enable UI Interactions Safely
-                const wBtn = document.getElementById("walletBtn");
-                wBtn.innerText = "CONNECT WALLET";
-                wBtn.disabled = false;
+                // Ready! Activate custom styling buttons
+                const btn = document.getElementById("walletBtn");
+                btn.innerText = "CONNECT WALLET";
+                btn.disabled = false;
                 document.getElementById("walletInput").value = "Connect Polygon Wallet";
             } else {
-                // Retry if scripts are taking extra long to parse
                 setTimeout(initAppKitEngine, 1000);
             }
         } catch (initErr) {
-            console.error("AppKit script framework configuration failure:", initErr);
+            console.error("Framework configuration exception caught:", initErr);
         }
     }
 
@@ -371,16 +372,18 @@
             document.getElementById("userPvltBalance").innerText = Number(ethers.utils.formatUnits(userBalRaw, TOKEN_DECIMALS)).toFixed(4);
             document.getElementById("treasuryPvltPool").innerText = Number(ethers.utils.formatUnits(treasuryBalRaw, TOKEN_DECIMALS)).toFixed(4);
         } catch (e) {
-            console.error("Balance tracking exception trace:", e);
+            console.error("Balance synchronization failed:", e);
         }
     }
 
+    // Programmatic popup activation method
     async function connectWallet() {
         if (!appKitInstance) return;
         try { 
+            // This triggers the complete interactive popup sheet with all wallets
             await appKitInstance.open(); 
         } catch (err) { 
-            console.error("Launch interface runtime tracking error:", err);
+            console.error("UI overlay display interrupted:", err);
         }
     }
 
@@ -408,7 +411,7 @@
             updateUI();
             await fetchOnChainBalances();
         } catch (syncErr) {
-            console.error("Profile matching error:", syncErr);
+            console.error("User match extraction failure:", syncErr);
         }
     }
 
