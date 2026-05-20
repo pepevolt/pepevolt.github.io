@@ -250,8 +250,8 @@
         </div>
 
         <button class="actionBtn" onclick="openBuyModal()">BUY INSTANT ENERGY</button>
-        <button class="actionBtn" onclick="swapPoints()">SWAP POINTS → PVLTG</button>
-        <button class="actionBtn withdrawBtn" onclick="claimPVLT()">WITHDRAW PVLT</button>
+        <button class="actionBtn" id="swapBtn" onclick="swapPoints()">SWAP POINTS → PVLTG</button>
+        <button class="actionBtn withdrawBtn" id="withdrawBtn" onclick="claimPVLT()">WITHDRAW PVLT</button>
     </div>
 
     <div class="info">
@@ -274,8 +274,6 @@
 
 <script>
     const API = "https://pepevolt-game-suite.onrender.com/";
-    const REOWN_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
-
     const PVLT_TOKEN_ADDRESS = "0xf4c400280f0d6aF9340fCD491F0cb5A7b51f70F1";
     const GAME_TREASURY_ADDRESS = "0x1dC8375d5D8C3fbCBaD85417ce66E9740D6b05e7";
     const TOKEN_DECIMALS = 18;
@@ -287,7 +285,6 @@
     let energy = 50;
     let pvltg = 0;
 
-    // Direct configuration build to avoid initialization lag or racing conditions
     window.addEventListener('DOMContentLoaded', () => {
         try {
             const providerOptions = {
@@ -306,7 +303,7 @@
                 theme: "dark"
             });
         } catch (err) {
-            console.error("Web3Modal setup failed to compile:", err);
+            console.error("Web3Modal initialization failure:", err);
         }
     });
 
@@ -337,14 +334,13 @@
             document.getElementById("userPvltBalance").innerText = Number(ethers.utils.formatUnits(userBalRaw, TOKEN_DECIMALS)).toFixed(4);
             document.getElementById("treasuryPvltPool").innerText = Number(ethers.utils.formatUnits(treasuryBalRaw, TOKEN_DECIMALS)).toFixed(4);
         } catch (e) {
-            console.error("Balance collection fail:", e);
+            console.error("Balance tracking error:", e);
         }
     }
 
     async function connectWallet() {
         try {
             let instance;
-            // Native Browser Check: direct bypass when inside embedded web3 containers (UXUY App, MetaMask Browser, etc.)
             if (window.ethereum && (window.ethereum.isUXUY || window.ethereum.isMetaMask || navigator.userAgent.includes("Web3"))) {
                 await window.ethereum.request({ method: "eth_requestAccounts" });
                 instance = window.ethereum;
@@ -361,7 +357,6 @@
             document.getElementById("walletBtn").style.display = "none";
             document.getElementById("walletStatus").style.display = "block";
 
-            // Post request payload parameters mapping sync
             let res = await fetch(API + "user", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -382,8 +377,8 @@
             }
 
         } catch (err) {
-            console.error("Root execution catch block:", err);
-            alert("Wallet connection dropped: " + (err.message || "Rejected"));
+            console.error("Connection error:", err);
+            alert("Wallet connection dropped.");
         }
     }
 
@@ -410,6 +405,68 @@
         tap();
     });
 
+    async function swapPoints() {
+        if (!wallet) { alert("Connect wallet first!"); return; }
+        const btn = document.getElementById("swapBtn");
+        
+        try {
+            btn.innerText = "SWAPPING...";
+            btn.disabled = true;
+
+            const res = await fetch(API + "swap-points", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ wallet })
+            });
+            
+            const data = await res.json();
+            if (data.error) { alert("Server Error: " + data.error); return; }
+            
+            points = data.points;
+            pvltg = data.pvltg;
+            updateUI();
+            alert("Points converted to PVLTG successfully!");
+        } catch (err) {
+            console.error(err);
+            alert("Network connection error to API suite.");
+        } finally {
+            btn.innerText = "SWAP POINTS → PVLTG";
+            btn.disabled = false;
+        }
+    }
+
+    async function claimPVLT() {
+        if (!wallet) { alert("Connect wallet first!"); return; }
+        if (pvltg < 100) { alert("Need minimum 100 PVLTG to withdraw real tokens."); return; }
+        
+        const btn = document.getElementById("withdrawBtn");
+        try {
+            btn.innerText = "WITHDRAWING...";
+            btn.disabled = true;
+
+            // Direct pass to your backend pipeline endpoint to handle token drop fulfillment
+            const res = await fetch(API + "claim-pvltg", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ wallet })
+            });
+            
+            const data = await res.json();
+            if (data.error) { alert("Withdrawal Denied: " + data.error); return; }
+            
+            pvltg = data.pvltg;
+            updateUI();
+            await fetchOnChainBalances();
+            alert("Withdrawal Complete! PVLT sent directly to your wallet address.");
+        } catch (err) {
+            console.error(err);
+            alert("Failed to reach withdrawal server router.");
+        } finally {
+            btn.innerText = "WITHDRAWAL PVLT";
+            btn.disabled = false;
+        }
+    }
+
     async function executeEnergyPurchase() {
         const confirmBtn = document.getElementById("confirmPaymentBtn");
         try {
@@ -418,7 +475,7 @@
 
             const network = await web3Provider.getNetwork();
             if (network.chainId !== 137) {
-                alert("Switch network to Polygon Mainnet inside your wallet application UI.");
+                alert("Switch network to Polygon Mainnet inside your wallet.");
                 return;
             }
 
@@ -459,54 +516,6 @@
             confirmBtn.innerText = "Confirm";
             confirmBtn.disabled = false;
             closeBuyModal();
-        }
-    }
-
-    async function swapPoints() {
-        if (!wallet) { alert("Connect wallet first"); return; }
-        try {
-            const res = await fetch(API + "swap-points", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ wallet })
-            });
-            const data = await res.json();
-            if (data.error) { alert(data.error); return; }
-            points = data.points;
-            pvltg = data.pvltg;
-            updateUI();
-            alert("Points converted to PVLTG successfully.");
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    async function claimPVLT() {
-        if (!wallet) { alert("Connect wallet first"); return; }
-        if (pvltg < 100) { alert("Need minimum 100 PVLTG to withdraw real tokens."); return; }
-        try {
-            const signer = web3Provider.getSigner();
-            const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, [
-                "function approve(address spender, uint256 amount) external returns (bool)"
-            ], signer);
-
-            const amount = ethers.utils.parseUnits(pvltg.toString(), TOKEN_DECIMALS);
-            const approveTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, amount);
-            await approveTx.wait();
-
-            const res = await fetch(API + "claim-pvltg", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ wallet })
-            });
-            const data = await res.json();
-            if (data.error) { alert(data.error); return; }
-            pvltg = data.pvltg;
-            updateUI();
-            await fetchOnChainBalances();
-            alert("Withdrawal Complete! PVLT sent directly to your wallet.");
-        } catch (err) {
-            console.error(err);
         }
     }
 
