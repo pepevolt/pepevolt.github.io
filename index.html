@@ -97,6 +97,7 @@ color:#8fa3bf;
 font-weight:bold;
 text-align:center;
 font-size:14px;
+outline:none;
 }
 
 .btn{
@@ -155,54 +156,58 @@ margin-bottom:24px;
 <!-- ETHERS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
-<!-- REOWN APPKIT -->
+<!-- WALLETCONNECT MODAL -->
 <script type="module">
 
 import {
-createAppKit
-} from 'https://esm.sh/@reown/appkit';
+EthereumProvider
+} from 'https://esm.sh/@walletconnect/ethereum-provider@2.11.0';
 
-import {
-EthersAdapter
-} from 'https://esm.sh/@reown/appkit-adapter-ethers';
+window.walletProvider = null;
 
-import {
-polygon
-} from 'https://esm.sh/@reown/appkit/networks';
+window.initWalletSystem = async ()=>{
 
-window.createWalletSystem = async ()=>{
+try{
 
-const projectId =
-'1731f99148b9cf6107dee70b6efb14b7';
+window.walletProvider =
+await EthereumProvider.init({
 
-const metadata = {
-name:'PEPEVOLT',
-description:'PEPEVOLT BOT',
-url:'https://pepevolt.github.io',
-icons:['https://pepevolt.github.io/images/IMG_1850.png']
-};
+projectId:
+'1731f99148b9cf6107dee70b6efb14b7',
 
-const ethersAdapter =
-new EthersAdapter();
+chains:[137],
 
-const modal =
-createAppKit({
-adapters:[ethersAdapter],
-networks:[polygon],
-metadata,
-projectId,
-features:{
-analytics:false
+showQrModal:true,
+
+methods:[
+"eth_sendTransaction",
+"personal_sign",
+"eth_signTypedData"
+],
+
+rpcMap:{
+137:"https://polygon-rpc.com"
 }
+
 });
 
-window.appKitModal = modal;
+console.log(
+"WalletConnect Ready"
+);
 
-console.log("Wallet system ready");
+}
+catch(err){
+
+console.log(
+"Wallet init failed",
+err
+);
+
+}
 
 };
 
-window.createWalletSystem();
+window.initWalletSystem();
 
 </script>
 
@@ -251,7 +256,7 @@ CONNECT WALLET
 
 <button
 class="btn"
-onclick="alert('Energy purchase system ready')"
+onclick="alert('Energy system ready')"
 >
 BUY INSTANT ENERGY
 </button>
@@ -274,7 +279,9 @@ WITHDRAWAL PVLT
 
 <div class="balance-line">
 <span>Your Personal Wallet PVLT:</span>
-<span class="balance-val">0.0000</span>
+<span class="balance-val">
+0.0000
+</span>
 </div>
 
 <div class="balance-line">
@@ -309,26 +316,80 @@ async function connectWallet(){
 
 try{
 
-if(!window.appKitModal){
+/* METAMASK / TRUST WALLET DIRECT */
 
-alert("Wallet system loading...");
+if(window.ethereum){
+
+try{
+
+const provider =
+new ethers.providers.Web3Provider(
+window.ethereum
+);
+
+await provider.send(
+"eth_requestAccounts",
+[]
+);
+
+const signer =
+provider.getSigner();
+
+walletAddress =
+await signer.getAddress();
+
+document.getElementById(
+"walletDisplay"
+).value =
+walletAddress.slice(0,6)
++
+"..."
++
+walletAddress.slice(-4);
+
+const btn =
+document.getElementById(
+"connectBtn"
+);
+
+btn.innerText =
+"DISCONNECT";
+
+btn.classList.add(
+"btn-disconnect"
+);
+
+return;
+
+}
+catch(err){
+
+console.log(
+"Injected wallet skipped"
+);
+
+}
+
+}
+
+/* WALLETCONNECT QR */
+
+if(!window.walletProvider){
+
+alert(
+"Wallet system still loading..."
+);
+
 return;
 
 }
 
-const result =
-await window.appKitModal.connect();
+const accounts =
+await window.walletProvider.enable();
 
-console.log(result);
+if(accounts.length > 0){
 
-if(result){
-
-walletAddress =
-result.address ||
-result.accounts?.[0] ||
-"";
-
-if(walletAddress){
+walletAddress = accounts[0];
 
 document.getElementById(
 "walletDisplay"
@@ -354,8 +415,6 @@ btn.classList.add(
 }
 
 }
-
-}
 catch(err){
 
 console.log(err);
@@ -367,6 +426,19 @@ alert(
 }
 
 }
+
+window.addEventListener("load",()=>{
+
+setTimeout(()=>{
+
+console.log(
+"Wallet Provider:",
+window.walletProvider
+);
+
+},2000);
+
+});
 
 </script>
 
