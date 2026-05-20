@@ -34,14 +34,12 @@
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
     <div>🔋 <span id="energy">50</span></div>
     <div>⚡ <span id="points">0</span></div>
     <div>💎 <span id="pvlt">0.00</span></div>
 </div>
 
-<!-- MAIN -->
 <div class="main">
     <button class="tapBtn" onclick="tap()">
         <img src="images/IMG_1850.png" alt="Tap">
@@ -52,11 +50,11 @@
         <button class="actionBtn" id="walletBtn" onclick="connectWallet()">CONNECT WALLET</button>
         <div class="status" id="walletStatus">Wallet Connected</div>
         
-        <!-- LIVE TREASURY CAPACITY RUNTIME DISPLAY -->
         <div class="treasury-display">
             🏛️ Treasury Vault: <span id="treasuryCapacity">Loading...</span> PVLT
         </div>
 
+        <button class="actionBtn" style="background: linear-gradient(90deg, #00ffcc, #0099ff);" onclick="convertGPVLT()">CONVERT gPVLT</button>
         <button class="actionBtn" onclick="openBuyModal()">BUY ENERGY</button>
         <button class="actionBtn" onclick="claimPVLT()">CLAIM PVLT</button>
     </div>
@@ -70,7 +68,6 @@
     </div>
 </div>
 
-<!-- MODAL -->
 <div class="modal-overlay" id="buyModal">
     <div class="modal-box">
         <h3>Buy Energy Pack</h3>
@@ -95,15 +92,15 @@ const TOKEN_DECIMALS = 18;
 /* ================= STATE ================= */
 let web3Provider;
 let wallet = "";
-let points = 0; // Tracks gPVLT Points
+let points = 0; // Tracks gPVLT
 let energy = 50;
-let pvltBalance = 0.00; // Tracked calculated PVLT conversions
+let pvltBalance = 0.00; // Tracked internal balance sheet profile calculation values
 
 function updateUI() {
     document.getElementById("energy").innerText = energy;
     document.getElementById("points").innerText = points;
     
-    // Dynamic real-time calculation: 10,000 Points = 1 PVLT
+    // Calculated dynamically to display raw conversion potential values on screen
     pvltBalance = points / 10000;
     document.getElementById("pvlt").innerText = pvltBalance.toFixed(4);
 }
@@ -117,10 +114,8 @@ function closeBuyModal() {
     document.getElementById("buyModal").classList.remove("active");
 }
 
-/* ================= READ ON-CHAIN TREASURY BALANCE ================= */
 async function fetchOnChainTreasuryFunds() {
     try {
-        // Fallback reading provider if wallet is not connected yet
         const queryProvider = web3Provider || new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
         const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, [
             "function balanceOf(address owner) external view returns (uint256)"
@@ -129,13 +124,12 @@ async function fetchOnChainTreasuryFunds() {
         const rawBalance = await tokenContract.balanceOf(GAME_TREASURY_ADDRESS);
         const formattedBalance = ethers.utils.formatUnits(rawBalance, TOKEN_DECIMALS);
         
-        // Display with comma separators for clean aesthetics
         document.getElementById("treasuryCapacity").innerText = parseFloat(formattedBalance).toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
     } catch (e) {
-        console.error("Could not fetch pool balances:", e);
+        console.error(e);
         document.getElementById("treasuryCapacity").innerText = "0.00";
     }
 }
@@ -174,8 +168,6 @@ async function connectWallet() {
         points = data.points || 0;
         energy = data.energy || 50;
         updateUI();
-        
-        // Refresh vault context post-connection
         fetchOnChainTreasuryFunds();
 
     } catch (err) {
@@ -206,6 +198,43 @@ async function tap() {
     }
 }
 
+/* ================= NEW CONVERT FUNCTION ROUTINE ================= */
+async function convertGPVLT() {
+    if (!wallet) { alert("Connect wallet first"); return; }
+    if (points < 10000) {
+        alert("Need a minimum of 10,000 gPVLT to convert into real balance assets.");
+        return;
+    }
+
+    try {
+        // Triggers the backend transaction endpoint structure to log the change
+        const res = await fetch(API + "/swap-points", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet })
+        });
+        const data = await res.json();
+
+        if (data.error) { alert(data.error); return; }
+
+        // Fetch user data post conversion to sync state cleanly
+        const userRes = await fetch(API + "/user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet })
+        });
+        const userData = await userRes.json();
+        
+        points = userData.points;
+        updateUI();
+        alert("Conversion Successful! Your off-chain claim balance sheet updated.");
+
+    } catch (err) {
+        console.error(err);
+        alert("Conversion processing execution failed.");
+    }
+}
+
 async function executeEnergyPurchase() {
     const confirmBtn = document.getElementById("confirmPaymentBtn");
     try {
@@ -232,14 +261,12 @@ async function executeEnergyPurchase() {
             return;
         }
 
-        // Transfer 100 PVLT from User directly to the Treasury address
         const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount);
         closeBuyModal();
         alert("Transaction submitted! Please wait for verification confirmations.");
         
         await tx.wait();
 
-        // Update server account tracking states
         const refillRes = await fetch(API + "/refill", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -251,7 +278,7 @@ async function executeEnergyPurchase() {
 
         energy = refillData.energy;
         updateUI();
-        fetchOnChainTreasuryFunds(); // Refresh numbers upon deposit completion
+        fetchOnChainTreasuryFunds();
         alert("Payment Successful! 10,000 Energy added to your profile.");
 
     } catch (err) {
@@ -267,7 +294,6 @@ async function executeEnergyPurchase() {
 async function claimPVLT() {
     if (!wallet) { alert("Connect wallet first"); return; }
     
-    // Check bounds: 10,000 points = 1 PVLT. 100-500 PVLT means 1,000,000 to 5,000,000 gPVLT points.
     if (pvltBalance < 100 || pvltBalance > 500) {
         alert(`Claim Restricted: Your balance is ${pvltBalance.toFixed(2)} PVLT.\nYou can only claim when your balance is between 100 and 500 PVLT.`);
         return;
@@ -285,7 +311,7 @@ async function claimPVLT() {
 
         points = data.remainingPoints;
         updateUI();
-        fetchOnChainTreasuryFunds(); // Refresh numbers upon withdrawal completion
+        fetchOnChainTreasuryFunds();
         alert(`Tokens claimed successfully! Sent directly from treasury.\nTx Hash: ${data.tx}`);
     } catch (err) {
         console.error(err);
@@ -294,7 +320,6 @@ async function claimPVLT() {
 }
 
 /* ================= QUICK BASELINE FREE REFILL ================= */
-// Restores 1 basic energy tick every 3 seconds
 setInterval(() => {
     if (wallet && energy < 50) {
         energy += 1;
@@ -302,7 +327,6 @@ setInterval(() => {
     }
 }, 3000);
 
-// Initialize UI layout states
 updateUI();
 fetchOnChainTreasuryFunds();
 </script>
