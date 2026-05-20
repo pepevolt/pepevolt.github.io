@@ -7,8 +7,8 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     
-    <script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
-    <script src="https://umd.unpkg.com/web3modal@1.9.12/dist/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.12/dist/index.js"></script>
 
     <style>
         * {
@@ -287,25 +287,27 @@
     let energy = 50;
     let pvltg = 0;
 
-    // Initialize Web3Modal Setup on window load
+    // Direct configuration build to avoid initialization lag or racing conditions
     window.addEventListener('DOMContentLoaded', () => {
-        const providerOptions = {
-            walletconnect: {
-                package: window.WalletConnectProvider.default,
-                options: {
-                    rpc: {
-                        137: "https://polygon-rpc.com"
-                    },
-                    chainId: 137
+        try {
+            const providerOptions = {
+                walletconnect: {
+                    package: window.WalletConnectProvider ? window.WalletConnectProvider.default : null,
+                    options: {
+                        rpc: { 137: "https://polygon-rpc.com" },
+                        chainId: 137
+                    }
                 }
-            }
-        };
+            };
 
-        web3Modal = new window.Web3Modal.default({
-            cacheProvider: false, 
-            providerOptions,
-            theme: "dark"
-        });
+            web3Modal = new window.Web3Modal.default({
+                cacheProvider: false, 
+                providerOptions,
+                theme: "dark"
+            });
+        } catch (err) {
+            console.error("Web3Modal setup failed to compile:", err);
+        }
     });
 
     function updateUI() {
@@ -340,12 +342,18 @@
     }
 
     async function connectWallet() {
-        if (!web3Modal) { alert("Web3 Core is initializing. Try again in a second."); return; }
         try {
-            // This triggers injection instantly if inside UXUY/MetaMask App, otherwise prompts clear QR list overlay.
-            const instance = await web3Modal.connect();
+            let instance;
+            // Native Browser Check: direct bypass when inside embedded web3 containers (UXUY App, MetaMask Browser, etc.)
+            if (window.ethereum && (window.ethereum.isUXUY || window.ethereum.isMetaMask || navigator.userAgent.includes("Web3"))) {
+                await window.ethereum.request({ method: "eth_requestAccounts" });
+                instance = window.ethereum;
+            } else {
+                if (!web3Modal) { alert("Core elements loading. Try again."); return; }
+                instance = await web3Modal.connect();
+            }
+
             web3Provider = new ethers.providers.Web3Provider(instance);
-            
             const signer = web3Provider.getSigner();
             wallet = await signer.getAddress();
 
@@ -353,7 +361,7 @@
             document.getElementById("walletBtn").style.display = "none";
             document.getElementById("walletStatus").style.display = "block";
 
-            // Pull profile stats from backend suite
+            // Post request payload parameters mapping sync
             let res = await fetch(API + "user", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -368,16 +376,14 @@
             updateUI();
             await fetchOnChainBalances();
 
-            // Listen for structural account changes
-            instance.on("accountsChanged", (accounts) => {
-                if(accounts.length > 0) {
-                    location.reload();
-                }
-            });
+            if (instance.on) {
+                instance.on("accountsChanged", () => location.reload());
+                instance.on("chainChanged", () => location.reload());
+            }
 
         } catch (err) {
-            console.error("Connection failure:", err);
-            alert("Wallet connection dropped or rejected.");
+            console.error("Root execution catch block:", err);
+            alert("Wallet connection dropped: " + (err.message || "Rejected"));
         }
     }
 
@@ -412,7 +418,7 @@
 
             const network = await web3Provider.getNetwork();
             if (network.chainId !== 137) {
-                alert("Switch network to Polygon Mainnet inside your wallet app.");
+                alert("Switch network to Polygon Mainnet inside your wallet application UI.");
                 return;
             }
 
@@ -448,7 +454,7 @@
             alert("100,000 Energy Refilled!");
         } catch (err) {
             console.error(err);
-            alert("Transaction processing failed or was canceled.");
+            alert("Transaction processing failed or timed out.");
         } finally {
             confirmBtn.innerText = "Confirm";
             confirmBtn.disabled = false;
