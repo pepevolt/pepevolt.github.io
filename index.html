@@ -514,27 +514,25 @@ try{
     ).style.display =
     "block";
 
-    /* LOAD USER */
-
-    const res =
-    await fetch(
-    API + "/user",
-    {
-
-    method:"POST",
-
-    headers:{
-    "Content-Type":"application/json"
-    },
-
-    body:JSON.stringify({
-    wallet
-    })
+    /* LOAD USER SERVER STATE - WRAPPED FOR RENDER FREE-TIER SPIN UP WALKS */
+    let res;
+    try {
+        res = await fetch(API + "user", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ wallet })
+        });
+    } catch (networkErr) {
+        throw new Error("Your backend API on Render is spinning up from its sleep mode. Please open the game again in 30 seconds!");
     }
-    );
 
-    const data =
-    await res.json();
+    if (!res.ok) {
+        throw new Error(`Backend returned a response code: ${res.status}`);
+    }
+
+    const data = await res.json();
 
     points =
     data.points || 0;
@@ -550,7 +548,6 @@ try{
 }catch(err){
 
     console.error("Connection Debug Error:", err);
-    // Alerts the explicit technical code issue to prevent guessing why it failed
     alert("Wallet connection failed:\n" + (err.message || err));
 
 }
@@ -574,7 +571,7 @@ try{
 
 const res =
 await fetch(
-API + "/tap",
+API + "tap",
 {
 
 method:"POST",
@@ -669,7 +666,7 @@ new ethers.Contract(
 PVLT_TOKEN_ADDRESS,
 
 [
-"function transfer(address to,uint256 amount) external returns(bool)",
+"function transfer(address to,uint226 amount) external returns(bool)",
 "function balanceOf(address owner) external view returns(uint256)"
 ],
 
@@ -733,7 +730,7 @@ await tx.wait();
 
 const refillRes =
 await fetch(
-API + "/refill",
+API + "refill",
 {
 
 method:"POST",
@@ -817,7 +814,7 @@ try{
 
 const res =
 await fetch(
-API + "/swap-points",
+API + "swap-points",
 {
 
 method:"POST",
@@ -920,7 +917,7 @@ await approveTx.wait();
 
 const res =
 await fetch(
-API + "/claim-pvltg",
+API + "claim-pvltg",
 {
 
 method:"POST",
