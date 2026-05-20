@@ -250,7 +250,7 @@
         </div>
 
         <button class="actionBtn" onclick="openBuyModal()">BUY INSTANT ENERGY</button>
-        <button class="actionBtn" id="swapBtn" onclick="swapPoints()">SWAP POINTS → PVLTG</button>
+        <button class="actionBtn" id="swapBtn" onclick="openSwapModal()">SWAP POINTS → PVLTG</button>
         <button class="actionBtn withdrawBtn" id="withdrawBtn" onclick="claimPVLT()">WITHDRAW PVLT</button>
     </div>
 
@@ -268,6 +268,17 @@
         <div class="modal-buttons">
             <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
             <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="swapModal">
+    <div class="modal-box">
+        <h3>Swap Points</h3>
+        <p id="swapModalText">Convert your points into PVLTG tokens.</p>
+        <div class="modal-buttons">
+            <button class="modal-btn btn-cancel" onclick="closeSwapModal()">Cancel</button>
+            <button class="modal-btn btn-confirm" id="confirmSwapBtn" onclick="executePointsSwap()">Confirm Swap</button>
         </div>
     </div>
 </div>
@@ -320,6 +331,22 @@
 
     function closeBuyModal() {
         document.getElementById("buyModal").classList.remove("active");
+    }
+
+    // Modal control handlers for Point Swapping feature
+    function openSwapModal() {
+        if (!wallet) { alert("Connect wallet first!"); return; }
+        if (points <= 0) { alert("You don't have any points to swap yet!"); return; }
+        
+        // Calculate dynamic conversion rate display
+        const expectedPvltg = (points / 10000).toFixed(4);
+        document.getElementById("swapModalText").innerHTML = `Swap <b>${points} Points</b> for roughly <b>${expectedPvltg} PVLTG</b>?<br><br><span style='font-size:11px; opacity:0.7;'>Rate: 10,000 Points = 1 PVLTG</span>`;
+        
+        document.getElementById("swapModal").classList.add("active");
+    }
+
+    function closeSwapModal() {
+        document.getElementById("swapModal").classList.remove("active");
     }
 
     async function fetchOnChainBalances() {
@@ -405,13 +432,11 @@
         tap();
     });
 
-    async function swapPoints() {
-        if (!wallet) { alert("Connect wallet first!"); return; }
-        const btn = document.getElementById("swapBtn");
-        
+    async function executePointsSwap() {
+        const confirmBtn = document.getElementById("confirmSwapBtn");
         try {
-            btn.innerText = "SWAPPING...";
-            btn.disabled = true;
+            confirmBtn.innerText = "Processing...";
+            confirmBtn.disabled = true;
 
             const res = await fetch(API + "swap-points", {
                 method: "POST",
@@ -425,13 +450,16 @@
             points = data.points;
             pvltg = data.pvltg;
             updateUI();
+            
+            closeSwapModal();
             alert("Points converted to PVLTG successfully!");
         } catch (err) {
             console.error(err);
             alert("Network connection error to API suite.");
         } finally {
-            btn.innerText = "SWAP POINTS → PVLTG";
-            btn.disabled = false;
+            confirmBtn.innerText = "Confirm Swap";
+            confirmBtn.disabled = false;
+            closeSwapModal();
         }
     }
 
@@ -444,7 +472,6 @@
             btn.innerText = "WITHDRAWING...";
             btn.disabled = true;
 
-            // Direct pass to your backend pipeline endpoint to handle token drop fulfillment
             const res = await fetch(API + "claim-pvltg", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -462,7 +489,7 @@
             console.error(err);
             alert("Failed to reach withdrawal server router.");
         } finally {
-            btn.innerText = "WITHDRAWAL PVLT";
+            btn.innerText = "WITHDRAW PVLT";
             btn.disabled = false;
         }
     }
