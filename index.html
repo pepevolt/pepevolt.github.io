@@ -1,444 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-name="viewport"
-content="width=device-width,
-initial-scale=1,
-maximum-scale=1,
-user-scalable=no,
-viewport-fit=cover"
->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>PEPEVOLT BOT</title>
 
-<style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
--webkit-tap-highlight-color:transparent;
-}
-
-body{
-background:#050f1e;
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-color:white;
-display:flex;
-flex-direction:column;
-align-items:center;
-min-height:100vh;
-overflow-x:hidden;
-}
-
-.topbar{
-position:sticky;
-top:0;
-z-index:999;
-background:#050f1e;
-width:100%;
-display:flex;
-justify-content:space-between;
-padding:18px 24px;
-font-weight:bold;
-border-bottom:1px solid rgba(255,255,255,.05);
-}
-
-.stat-item{
-display:flex;
-gap:6px;
-align-items:center;
-font-size:18px;
-}
-
-.main-container{
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-flex-grow:1;
-width:100%;
-padding:30px 0;
-gap:25px;
-}
-
-.character-btn{
-background:none;
-border:none;
-}
-
-.character-btn img{
-width:220px;
-height:220px;
-border-radius:50%;
-object-fit:cover;
-box-shadow:0 0 50px rgba(0,255,150,.35);
-}
-
-.ui-card{
-width:90%;
-max-width:360px;
-display:flex;
-flex-direction:column;
-gap:14px;
-}
-
-.address-display{
-width:100%;
-padding:15px;
-border:none;
-border-radius:14px;
-background:#0a182c;
-color:#8fa3bf;
-font-weight:bold;
-text-align:center;
-font-size:14px;
-outline:none;
-}
-
-.btn{
-width:100%;
-padding:16px;
-border:none;
-border-radius:14px;
-font-size:16px;
-font-weight:bold;
-cursor:pointer;
-background:linear-gradient(90deg,#00ff99,#00ccff);
-color:black;
-}
-
-.btn-withdraw{
-background:linear-gradient(90deg,#ffcc00,#ff3300);
-color:white;
-}
-
-.btn-disconnect{
-background:linear-gradient(90deg,#ff3333,#990000)!important;
-color:white!important;
-}
-
-.live-balances-box{
-background:rgba(255,255,255,.02);
-padding:14px;
-border-radius:14px;
-font-size:13px;
-display:flex;
-flex-direction:column;
-gap:8px;
-border:1px solid rgba(255,255,255,.03);
-}
-
-.balance-line{
-display:flex;
-justify-content:space-between;
-}
-
-.balance-val{
-font-weight:bold;
-color:#00ff99;
-}
-
-.footer-rules{
-font-size:12px;
-line-height:1.7;
-text-align:center;
-color:#7186a3;
-margin-bottom:24px;
-}
-
-</style>
-
-<!-- ETHERS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
-<!-- WALLETCONNECT MODAL -->
-<script type="module">
-
-import {
-EthereumProvider
-} from 'https://esm.sh/@walletconnect/ethereum-provider@2.11.0';
-
-window.walletProvider = null;
-
-window.initWalletSystem = async ()=>{
-
-try{
-
-window.walletProvider =
-await EthereumProvider.init({
-
-projectId:
-'1731f99148b9cf6107dee70b6efb14b7',
-
-chains:[137],
-
-showQrModal:true,
-
-methods:[
-"eth_sendTransaction",
-"personal_sign",
-"eth_signTypedData"
-],
-
-rpcMap:{
-137:"https://polygon-rpc.com"
-}
-
-});
-
-console.log(
-"WalletConnect Ready"
-);
-
-}
-catch(err){
-
-console.log(
-"Wallet init failed",
-err
-);
-
-}
-
-};
-
-window.initWalletSystem();
-
-</script>
-
+<style>
+body{margin:0;background:#050f1e;color:white;font-family:sans-serif;text-align:center}
+button{padding:14px;margin:8px;border-radius:10px;border:none;font-weight:bold}
+.connect{background:linear-gradient(90deg,#00ff99,#00ccff)}
+.action{background:linear-gradient(90deg,#ffcc00,#ff6600)}
+.danger{background:linear-gradient(90deg,#ff3333,#990000)}
+input{padding:12px;width:80%;border-radius:10px;text-align:center}
+</style>
 </head>
 
 <body>
 
-<div class="topbar">
+<h2>PEPEVOLT GAME</h2>
 
-<div class="stat-item">
-🛢️ <span id="energy">0</span>
-</div>
+<input id="walletDisplay" value="Wallet Not Connected" readonly />
 
-<div class="stat-item">
-⚡ <span id="points">0</span>
-</div>
+<br>
 
-<div class="stat-item">
-💎 <span id="pvltg">0.0000</span>
-</div>
-
-</div>
-
-<div class="main-container">
-
-<button class="character-btn">
-<img src="images/IMG_1850.png">
-</button>
-
-<div class="ui-card">
-
-<input
-class="address-display"
-id="walletDisplay"
-value="Wallet Not Connected"
-readonly
->
-
-<button
-class="btn"
-id="connectBtn"
-onclick="connectWallet()"
->
+<button class="connect" onclick="connectWallet()" id="connectBtn">
 CONNECT WALLET
 </button>
 
-<button
-class="btn"
-onclick="alert('Energy system ready')"
->
-BUY INSTANT ENERGY
-</button>
+<br>
 
-<button
-class="btn"
-onclick="alert('Swap system ready')"
->
-SWAP POINTS → PVLTG
-</button>
-
-<button
-class="btn btn-withdraw"
-onclick="alert('Withdrawal system ready')"
->
-WITHDRAWAL PVLT
-</button>
-
-<div class="live-balances-box">
-
-<div class="balance-line">
-<span>Your Personal Wallet PVLT:</span>
-<span class="balance-val">
-0.0000
-</span>
-</div>
-
-<div class="balance-line">
-<span>Available Treasury Pool:</span>
-<span
-class="balance-val"
-style="color:#00ccff;"
->
-0.0000
-</span>
-</div>
-
-</div>
-
-</div>
-</div>
-
-<div class="footer-rules">
-
-1 Tap = 2 Points<br>
-2000 Points = 4 PVLTG<br>
-3000 PVLTG = 6 PVLT<br>
-Min Withdrawal: 10 PVLT | Max: 1000 PVLT
-
-</div>
+<button class="action" onclick="buyEnergy()">BUY ENERGY</button>
+<button class="action" onclick="swapPoints()">SWAP POINTS</button>
+<button class="danger" onclick="withdraw()">WITHDRAW</button>
 
 <script>
 
 let walletAddress = "";
+let CONFIG = {};
+
+async function loadConfig(){
+  const res = await fetch("/config");
+  CONFIG = await res.json();
+  console.log("Contracts:", CONFIG);
+}
+
+loadConfig();
 
 async function connectWallet(){
 
-try{
+  if(walletAddress){
+    walletAddress = "";
+    document.getElementById("walletDisplay").value = "Wallet Not Connected";
+    document.getElementById("connectBtn").innerText = "CONNECT WALLET";
+    return;
+  }
 
-/* METAMASK / TRUST WALLET DIRECT */
+  if(!window.ethereum){
+    alert("Install MetaMask");
+    return;
+  }
 
-if(window.ethereum){
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  const signer = provider.getSigner();
 
-try{
+  walletAddress = await signer.getAddress();
 
-const provider =
-new ethers.providers.Web3Provider(
-window.ethereum
-);
+  document.getElementById("walletDisplay").value =
+    walletAddress.slice(0,6)+"..."+walletAddress.slice(-4);
 
-await provider.send(
-"eth_requestAccounts",
-[]
-);
-
-const signer =
-provider.getSigner();
-
-walletAddress =
-await signer.getAddress();
-
-document.getElementById(
-"walletDisplay"
-).value =
-walletAddress.slice(0,6)
-+
-"..."
-+
-walletAddress.slice(-4);
-
-const btn =
-document.getElementById(
-"connectBtn"
-);
-
-btn.innerText =
-"DISCONNECT";
-
-btn.classList.add(
-"btn-disconnect"
-);
-
-return;
-
-}
-catch(err){
-
-console.log(
-"Injected wallet skipped"
-);
-
+  document.getElementById("connectBtn").innerText = "DISCONNECT";
 }
 
+async function buyEnergy(){
+  alert("Would call ENGINE contract: " + CONFIG.engine);
 }
 
-/* WALLETCONNECT QR */
-
-if(!window.walletProvider){
-
-alert(
-"Wallet system still loading..."
-);
-
-return;
-
+async function swapPoints(){
+  alert("Would call TOKEN contract: " + CONFIG.token);
 }
 
-const accounts =
-await window.walletProvider.enable();
-
-if(accounts.length > 0){
-
-walletAddress = accounts[0];
-
-document.getElementById(
-"walletDisplay"
-).value =
-walletAddress.slice(0,6)
-+
-"..."
-+
-walletAddress.slice(-4);
-
-const btn =
-document.getElementById(
-"connectBtn"
-);
-
-btn.innerText =
-"DISCONNECT";
-
-btn.classList.add(
-"btn-disconnect"
-);
-
+async function withdraw(){
+  alert("Would call TREASURY contract: " + CONFIG.treasury);
 }
-
-}
-catch(err){
-
-console.log(err);
-
-alert(
-"Wallet connection cancelled"
-);
-
-}
-
-}
-
-window.addEventListener("load",()=>{
-
-setTimeout(()=>{
-
-console.log(
-"Wallet Provider:",
-window.walletProvider
-);
-
-},2000);
-
-});
 
 </script>
 
