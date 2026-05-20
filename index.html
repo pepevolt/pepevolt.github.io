@@ -213,7 +213,6 @@
         const pop = document.createElement("div");
         pop.className = "floating-pop"; pop.innerText = "+1";
         
-        // Accurate location fetching for pops across screen types
         const clickX = e.clientX || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : window.innerWidth/2);
         const clickY = e.clientY || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : window.innerHeight/2);
         
@@ -248,7 +247,7 @@
     });
 
     document.getElementById("buy-energy-btn").addEventListener("click", async () => {
-        if (!signer) return alert("Connect your hardware/extension wallet via AppKit");
+        if (!signer) return alert("Connect your wallet via AppKit");
         try {
             const pvlt = new ethers.Contract(CONTRACT_PVLT, ERC20_ABI, signer);
             const treasury = new ethers.Contract(CONTRACT_TREASURY, TREASURY_ABI, signer);
@@ -271,7 +270,7 @@
     });
 
     document.getElementById("claim-reward-btn").addEventListener("click", async () => {
-        if (!signer) return alert("Connect your hardware/extension wallet via AppKit");
+        if (!signer) return alert("Connect your wallet via AppKit");
         
         const claimCalculated = gpvltBalance / 1000;
         if (claimCalculated < 10) return alert("Minimum claim boundary limit rule is 10 PVLT");
@@ -309,7 +308,6 @@
         } catch (err) { alert("Verification transaction error"); }
     });
 
-    // FIXED: Unified event setup that will not freeze execution runtimes
     const target = document.getElementById("tap-target");
     target.addEventListener("pointerdown", tap);
 </script>
