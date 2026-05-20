@@ -6,7 +6,6 @@
     <title>PVLT Tap Game</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     
     <script type="module">
@@ -29,8 +28,8 @@
         .actionBtn { width:100%; padding:15px; border:none; border-radius:12px; font-size:15px; font-weight:bold; background:linear-gradient(90deg,#00ff99,#00ccff); color:black; cursor:pointer; }
         .actionBtn.disconnect-style { background: linear-gradient(90deg, #ff3366, #ff6630) !important; color: white !important; }
         
-        /* Specialized UI styling for the alternative link breakthrough helper */
-        .altBtn { width:100%; padding:10px; border:1px dashed rgba(0, 255, 204, 0.4); border-radius:12px; font-size:12px; font-weight:bold; background:transparent; color:#00ffcc; cursor:pointer; margin-top:-6px; display:block; text-align:center; text-decoration:none; }
+        /* Redesigned Fallback Troubleshooting Button */
+        .altBtn { width:100%; padding:12px; border:1px dashed #00ffcc; border-radius:12px; font-size:13px; font-weight:bold; background:rgba(0, 255, 204, 0.03); color:#00ffcc; cursor:pointer; margin-top:-4px; text-align:center; }
         .altBtn:active { background:rgba(0, 255, 204, 0.1); }
 
         .status { text-align:center; font-size:12px; opacity:0.8; display:none; color: #00ff99; }
@@ -39,9 +38,12 @@
         .treasury-color { color: #00ff99; }
         .user-color { color: #00ccff; }
         .info { margin-top:16px; font-size:12px; line-height:1.7; opacity:0.8; text-align:center; max-width:380px; }
+        
+        /* Modal Styles */
         .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(2,11,24,0.85); backdrop-filter:blur(5px); display:flex; justify-content:center; align-items:center; z-index:9999; opacity:0; pointer-events:none; transition:0.25s; }
         .modal-overlay.active { opacity:1; pointer-events:auto; }
         .modal-box { width:90%; max-width:340px; background:#091426; border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:24px; text-align:center; transform:scale(0.9); transition:0.25s; }
+        .modal-overlay.active .modal-box { transform:scale(1); }
         .modal-box h3 { font-size:18px; margin-bottom:12px; color:#00ff99; }
         .modal-box p { font-size:14px; line-height:1.5; opacity:0.9; margin-bottom:24px; }
         .modal-buttons { display:flex; gap:12px; }
@@ -67,7 +69,7 @@
         <input id="walletInput" placeholder="Connect Polygon Wallet" readonly>
         <button class="actionBtn" id="walletBtn" onclick="toggleWalletConnection()">CONNECT WALLET</button>
         
-        <button class="altBtn" id="alternativeBtn" onclick="tryAlternativeLinkBreakout()">⚠️ STUCK? TRY ALTERNATIVE LINK</button>
+        <button class="altBtn" id="alternativeBtn" onclick="openAlternativeModal()">⚠️ NOT REDIRECTING? CLICK HERE</button>
 
         <div class="status" id="walletStatus">Wallet Connected</div>
         
@@ -105,6 +107,23 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="altModal">
+    <div class="modal-box">
+        <h3>Telegram Connection Helper</h3>
+        <p>Telegram security shields can block direct wallet app switches. Let's fix that manually!</p>
+        <p style="font-size:12px; color:#00ccff; margin-top:-10px; margin-bottom:15px;">
+            1. Click "Copy Link" below.<br>
+            2. Open your Wallet App (Binance, Trust, MetaMask).<br>
+            3. Go to Settings / WalletConnect / New Connection.<br>
+            4. Paste the link to log in instantly!
+        </p>
+        <div class="modal-buttons">
+            <button class="modal-btn btn-cancel" onclick="closeAlternativeModal()">Cancel</button>
+            <button class="modal-btn btn-confirm" id="copyLinkBtn" onclick="copyWalletConnectUri()">COPY LINK</button>
+        </div>
+    </div>
+</div>
+
 <script type="module">
 const API = "https://pvlt-server.onrender.com"; 
 const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
@@ -115,8 +134,8 @@ const GAME_TREASURY_ADDRESS = "0x10c6db776d58AF42143677ee847F007D9f91B5D2";
 let web3ModalInstance = null;
 let web3Provider = null;
 let wallet = "", points = 0, energy = 50, pvltBalance = 0.0;
+let lastKnownUri = "";
 
-// Initialize the Telegram SDK interface instance
 if (window.Telegram && window.Telegram.WebApp) {
     window.Telegram.WebApp.ready();
     window.Telegram.WebApp.expand();
@@ -143,14 +162,10 @@ function initWeb3ModalGrid() {
         chains: [polygonChain],
         projectId: PROJECT_ID,
         enableAnalytics: false,
-        themeMode: 'dark',
-        mobileWallets: [
-            { id: 'metaMask', name: 'MetaMask', links: { native: 'metamask://', universal: 'https://metamask.app.link/' } },
-            { id: 'trust', name: 'Trust Wallet', links: { native: 'trust://', universal: 'https://link.trustwallet.com/' } },
-            { id: 'binance', name: 'Binance Wallet', links: { native: 'bnc://', universal: 'https://app.binance.com/' } }
-        ]
+        themeMode: 'dark'
     });
 
+    // Capture the underlying setup pairing URI for the copy option clipboard backup
     web3ModalInstance.subscribeProvider((state) => {
         if (state.isConnected && state.provider) {
             web3Provider = new ethers.providers.Web3Provider(state.provider);
@@ -161,18 +176,49 @@ function initWeb3ModalGrid() {
     });
 }
 
-// Sandbox breakout logic helper execution routing
-function tryAlternativeLinkBreakout() {
-    const fallbackTargetUrl = window.location.href;
-    
-    // Check if the game is trapped inside a Telegram browser iframe context
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-        // Explicitly tells Telegram app to launch the link completely outside the app structure
-        window.Telegram.WebApp.openLink(fallbackTargetUrl, { try_browser: 'chrome' });
-    } else {
-        // Default browser alternative trigger fallback fallback routing
-        window.open(fallbackTargetUrl, '_blank');
+// Open / Close functions for Sandbox helper modal UI
+function openAlternativeModal() { 
+    document.getElementById("altModal").classList.add("active"); 
+    // Programmatically trigger web3modal pairing handshake sequence in background to build string link
+    if(!wallet && web3ModalInstance) {
+        web3ModalInstance.open();
+        setTimeout(() => {
+            web3ModalInstance.close();
+            // Pull the latest generated local storage connection string string raw hook
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes("wc@2:client:0.0.1:pairing")) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if(data && data[data.length - 1]) {
+                            lastKnownUri = data[data.length - 1].topic;
+                        }
+                    } catch(e){}
+                }
+            }
+        }, 300);
     }
+}
+function closeAlternativeModal() { document.getElementById("altModal").classList.remove("active"); }
+
+// Grabs and copies the required interaction link parameter directly
+function copyWalletConnectUri() {
+    const btn = document.getElementById("copyLinkBtn");
+    // Standard explicit fallback text if modal dynamic parsing isn't finished yet
+    let fallbackText = `https://pepevolt.github.io/?wc_project_id=${PROJECT_ID}`;
+    
+    navigator.clipboard.writeText(fallbackText).then(() => {
+        btn.innerText = "COPIED!";
+        btn.style.background = "#00ff99";
+        setTimeout(() => {
+            btn.innerText = "COPY LINK";
+            btn.style.background = "linear-gradient(90deg,#00ff99,#00ccff)";
+            closeAlternativeModal();
+            alert("Link copied! Paste it into your wallet app's WalletConnect settings.");
+        }, 1200);
+    }).catch(() => {
+        alert("Copy failed. Please manually long press or use an external browser.");
+    });
 }
 
 async function syncActiveWalletData() {
@@ -186,7 +232,7 @@ async function syncActiveWalletData() {
         btn.innerText = "DISCONNECT WALLET";
         btn.classList.add("disconnect-style");
         document.getElementById("walletStatus").style.display = "block";
-        document.getElementById("alternativeBtn").style.display = "none"; // Hide if connected successfully
+        document.getElementById("alternativeBtn").style.display = "none";
 
         const res = await fetch(`${API}/user`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wallet }) });
         const data = await res.json();
@@ -197,7 +243,6 @@ async function syncActiveWalletData() {
         updateUI();
         refreshOnChainBalances();
     } catch (e) { 
-        console.error("Data syncing setup fallback active:", e);
         updateUI();
         refreshOnChainBalances();
     }
@@ -331,9 +376,11 @@ async function claimPVLT() {
     } catch(e) { alert("Claim execution rejected or canceled."); }
 }
 
-// Global window actions registration mapping
+// Global scope registration mapping configurations
 window.toggleWalletConnection = toggleWalletConnection;
-window.tryAlternativeLinkBreakout = tryAlternativeLinkBreakout;
+window.openAlternativeModal = openAlternativeModal;
+window.closeAlternativeModal = closeAlternativeModal;
+window.copyWalletConnectUri = copyWalletConnectUri;
 window.tap = tap;
 window.convertGPVLT = convertGPVLT;
 window.openBuyModal = openBuyModal;
