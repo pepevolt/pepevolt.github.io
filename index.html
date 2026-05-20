@@ -12,7 +12,7 @@
         body { display:flex; flex-direction:column; }
         .topbar { width:100%; padding:14px 18px; background:#091426; display:flex; justify-content:space-between; align-items:center; font-size:14px; font-weight:bold; }
         .main { flex:1; display:flex; flex-direction:column; align-items:center; padding:20px; overflow-y:auto; }
-        .tapBtn { width:240px; height:240px; border:none; border-radius:50%; overflow:hidden; margin-top:20px; background:linear-gradient(135deg,#00ff99,#00ccff); display:flex; justify-content:center; align-items:center; box-shadow:0 0 30px rgba(0,255,180,0.25); cursor:pointer; touch-action: manipulation; user-select: none; }
+        .tapBtn { width:240px; height:240px; border:none; border-radius:50%; overflow:hidden; margin-top:20px; background:linear-gradient(135deg,#00ff99,#00ccff); display:flex; justify-content:center; align-items:center; box-shadow:0 0 30px rgba(0,255,180,0.25); cursor:pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
         .tapBtn:active { transform:scale(0.96); }
         .tapBtn img { width:78%; height:78%; object-fit:contain; pointer-events:none; }
         .card { width:100%; max-width:380px; margin-top:28px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:18px; display:flex; flex-direction:column; gap:14px; }
@@ -41,7 +41,7 @@
 <div class="topbar">
     <div>🔋 <span id="energy">50</span></div>
     <div>⚡ <span id="points">0</span></div>
-    <div>💎 <span id="pvlt">0.00</span></div>
+    <div>💎 <span id="pvlt">0.0000</span></div>
 </div>
 
 <div class="main">
@@ -92,6 +92,7 @@
 const API = "https://pvlt-server.onrender.com"; 
 const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
+// Synchronized production mainnet parameters
 const PVLT_TOKEN_ADDRESS = "0xce363c769BA1A1CDf2A7500B39CB996856E81D16"; 
 const GAME_TREASURY_ADDRESS = "0x10c6db776d58AF42143677ee847F007D9f91B5D2"; 
 
@@ -120,7 +121,7 @@ async function refreshOnChainBalances() {
         } else {
             document.getElementById("userHolding").innerText = "0.00";
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Balance synchronization pending:", e); }
 }
 
 function toggleWalletConnection() { if(!wallet) connectWallet(); else disconnectWallet(); }
@@ -137,6 +138,13 @@ async function connectWallet() {
             web3Provider = new ethers.providers.Web3Provider(wcProvider);
             rawWcInstance = wcProvider;
         }
+        
+        const network = await web3Provider.getNetwork();
+        if(network.chainId !== 137) {
+            alert("Please switch your network interface to Polygon Mainnet");
+            return;
+        }
+
         wallet = await web3Provider.getSigner().getAddress();
         document.getElementById("walletInput").value = wallet.slice(0,6) + "..." + wallet.slice(-4);
         
@@ -153,7 +161,7 @@ async function connectWallet() {
         
         updateUI();
         refreshOnChainBalances();
-    } catch (err) { alert("Connection failed"); }
+    } catch (err) { alert("Wallet connection initialization failed."); }
 }
 
 async function disconnectWallet() {
@@ -167,8 +175,8 @@ async function disconnectWallet() {
 }
 
 async function tap() {
-    if(!wallet) return;
-    if(energy <= 0) { alert("Out of energy!"); return; }
+    if(!wallet) { alert("Connect wallet first"); return; }
+    if(energy <= 0) return;
     try {
         const res = await fetch(`${API}/tap`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wallet }) });
         const data = await res.json();
@@ -203,13 +211,13 @@ async function executeEnergyPurchase() {
         const cost = ethers.utils.parseUnits("100", 18);
 
         const bal = await tokenContract.balanceOf(wallet);
-        if(bal.lt(cost)) { alert("Insufficient PVLT"); return; }
+        if(bal.lt(cost)) { alert("Transaction Failed: Insufficient PVLT balance to cover cost."); return; }
 
-        // Step 1: ERC20 Token Approval Call
+        // Core ERC20 Token Approval Call
         const appTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, cost);
         await appTx.wait();
 
-        // Step 2: Core Treasury Execution Call
+        // Core Treasury Engine Transfer Execution Call
         const buyTx = await vaultContract.buyEnergyPack();
         await buyTx.wait();
 
@@ -218,8 +226,8 @@ async function executeEnergyPurchase() {
         energy = data.energy;
         
         updateUI(); refreshOnChainBalances(); closeBuyModal();
-        alert("Energy purchased successfully!");
-    } catch (err) { alert("Transaction Failed"); }
+        alert("Payment Successful! 10,000 Energy added to your profile.");
+    } catch (err) { alert("Transaction processing encountered errors."); }
     finally { confirmBtn.innerText = "Confirm"; confirmBtn.disabled = false; }
 }
 
@@ -238,10 +246,11 @@ async function claimPVLT() {
 
         pvltBalance = data.remainingPvlt;
         updateUI(); refreshOnChainBalances();
-        alert("Tokens Claimed Natively!");
-    } catch(e) { alert("Claim execution canceled."); }
+        alert("Tokens claimed successfully! Sent directly from treasury.");
+    } catch(e) { alert("Claim execution rejected or canceled."); }
 }
 
+// 3-second recovery tick loop
 setInterval(() => { if(wallet && energy < 50) { energy++; document.getElementById("energy").innerText = energy; } }, 3000);
 refreshOnChainBalances();
 </script>
