@@ -3,32 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>PEPEVOLT BOT</title>
+<title>PEPEVOLT GAME</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
 <style>
-body{margin:0;background:#050f1e;color:white;font-family:sans-serif;text-align:center}
-button{padding:14px;margin:8px;border-radius:10px;border:none;font-weight:bold}
+body{margin:0;background:#050f1e;color:#fff;font-family:sans-serif;text-align:center}
+button{padding:14px;margin:6px;border:none;border-radius:10px;font-weight:bold}
+input{padding:12px;width:80%;border-radius:10px;text-align:center}
 .connect{background:linear-gradient(90deg,#00ff99,#00ccff)}
 .action{background:linear-gradient(90deg,#ffcc00,#ff6600)}
 .danger{background:linear-gradient(90deg,#ff3333,#990000)}
-input{padding:12px;width:80%;border-radius:10px;text-align:center}
 </style>
+
 </head>
 
 <body>
 
-<h2>PEPEVOLT GAME</h2>
+<h2>PEPEVOLT WEB3 GAME</h2>
 
 <input id="walletDisplay" value="Wallet Not Connected" readonly />
 
-<br>
+<br><br>
 
-<button class="connect" onclick="connectWallet()" id="connectBtn">
-CONNECT WALLET
-</button>
+<button class="connect" id="connectBtn" onclick="connectWallet()">CONNECT WALLET</button>
 
 <br>
 
@@ -38,53 +36,92 @@ CONNECT WALLET
 
 <script>
 
-let walletAddress = "";
+let wallet = "";
+let provider, signer;
 let CONFIG = {};
 
+// load backend config
 async function loadConfig(){
   const res = await fetch("/config");
   CONFIG = await res.json();
-  console.log("Contracts:", CONFIG);
+  console.log("CONFIG:", CONFIG);
 }
-
 loadConfig();
 
+// WALLET CONNECT
 async function connectWallet(){
 
-  if(walletAddress){
-    walletAddress = "";
+  if(wallet){
+    wallet = "";
     document.getElementById("walletDisplay").value = "Wallet Not Connected";
     document.getElementById("connectBtn").innerText = "CONNECT WALLET";
     return;
   }
 
-  if(!window.ethereum){
-    alert("Install MetaMask");
+  if(window.ethereum){
+
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+
+    wallet = await signer.getAddress();
+
+    document.getElementById("walletDisplay").value =
+      wallet.slice(0,6)+"..."+wallet.slice(-4);
+
+    document.getElementById("connectBtn").innerText = "DISCONNECT";
+
     return;
   }
 
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  const signer = provider.getSigner();
-
-  walletAddress = await signer.getAddress();
-
-  document.getElementById("walletDisplay").value =
-    walletAddress.slice(0,6)+"..."+walletAddress.slice(-4);
-
-  document.getElementById("connectBtn").innerText = "DISCONNECT";
+  alert("Install MetaMask or use WalletConnect");
 }
 
+// CONTRACT HELPERS (minimal ABI placeholders)
+const ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function transfer(address,uint256) returns (bool)"
+];
+
+// GET CONTRACT
+function getContract(address){
+  return new ethers.Contract(address, ABI, signer);
+}
+
+// BUY ENERGY → ENGINE CONTRACT
 async function buyEnergy(){
-  alert("Would call ENGINE contract: " + CONFIG.engine);
+  if(!signer) return alert("Connect wallet first");
+
+  const engine = getContract(CONFIG.engine);
+
+  alert("Would call ENGINE contract:\n" + CONFIG.engine);
+
+  // Example placeholder:
+  // await engine.buyEnergy();
 }
 
+// SWAP → TOKEN CONTRACT
 async function swapPoints(){
-  alert("Would call TOKEN contract: " + CONFIG.token);
+  if(!signer) return alert("Connect wallet first");
+
+  const token = getContract(CONFIG.token);
+
+  alert("Would call TOKEN contract:\n" + CONFIG.token);
+
+  // Example:
+  // await token.swapPoints();
 }
 
+// WITHDRAW → TREASURY CONTRACT
 async function withdraw(){
-  alert("Would call TREASURY contract: " + CONFIG.treasury);
+  if(!signer) return alert("Connect wallet first");
+
+  const treasury = getContract(CONFIG.treasury);
+
+  alert("Would call TREASURY contract:\n" + CONFIG.treasury);
+
+  // Example:
+  // await treasury.withdraw();
 }
 
 </script>
