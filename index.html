@@ -5,15 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>PVLT Tap Game</title>
     
-    <!-- ETHERS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-
-<!-- WALLET CONNECT -->
-<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     
-    <script src="https://cdn.jsdelivr.net/npm/@reown/appkit-ethers5@1.1.0/dist/umd/index.min.js"></script>
+    <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
 
     <style>
         * {
@@ -287,48 +281,11 @@
     const GAME_TREASURY_ADDRESS = "0x1dC8375d5D8C3fbCBaD85417ce66E9740D6b05e7";
     const TOKEN_DECIMALS = 18;
 
-    let appKitInstance = null;
     let web3Provider = null;
     let wallet = "";
     let points = 0;
     let energy = 50;
     let pvltg = 0;
-
-    const polygonMainnet = {
-        chainId: 137,
-        name: 'Polygon',
-        currency: 'MATIC',
-        explorerUrl: 'https://polygonscan.com',
-        rpcUrl: 'https://polygon-rpc.com'
-    };
-
-    const metadata = {
-        name: 'PepeVolt',
-        description: 'PVLT Tap Token Game Ecosystem',
-        url: 'https://pepevolt.github.io',
-        icons: ['https://pepevolt.github.io/images/IMG_1850.png']
-    };
-
-    window.addEventListener('DOMContentLoaded', () => {
-        try {
-            if (window.AppKitEthers && window.AppKitEthers.createAppKit) {
-                appKitInstance = window.AppKitEthers.createAppKit({
-                    ethersConfig: window.AppKitEthers.defaultEthersConfig({ metadata }),
-                    chains: [polygonMainnet],
-                    projectId: REOWN_PROJECT_ID,
-                    features: { analytics: false }
-                });
-
-                appKitInstance.subscribeProvider((state) => {
-                    if (state.isConnected && state.provider) {
-                        syncConnectedWallet(state.provider);
-                    }
-                });
-            }
-        } catch (initErr) {
-            console.error("AppKit failed configuration:", initErr);
-        }
-    });
 
     function updateUI() {
         document.getElementById("energy").innerText = energy;
@@ -361,21 +318,35 @@
         }
     }
 
+    /* ================= INTEGRATED CONNECT WALLET LOGIC FROM DRAFT ================= */
     async function connectWallet() {
-        if (!appKitInstance) { alert("AppKit client initialization running."); return; }
-        try { await appKitInstance.open(); } catch (err) { alert("Modal layout initialization crash."); }
-    }
-
-    async function syncConnectedWallet(rawProvider) {
         try {
-            web3Provider = new ethers.providers.Web3Provider(rawProvider);
+            if (window.ethereum) {
+                // Try injection (MetaMask desktop extension, internal dApp browsers)
+                await window.ethereum.request({ method: "eth_requestAccounts" });
+                web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+            } else {
+                // Pull initialization logic for the explicit multi-wallet popup sheet list
+                const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
+                const wcProvider = await WalletConnectProvider.init({
+                    projectId: REOWN_PROJECT_ID,
+                    chains: [137],
+                    showQrModal: true // Forces the pop-up modal selection overlay list to load
+                });
+
+                await wcProvider.connect();
+                web3Provider = new ethers.providers.Web3Provider(wcProvider);
+            }
+
             const signer = web3Provider.getSigner();
             wallet = await signer.getAddress();
 
+            // Adjust elements according to Code 1 styling targets
             document.getElementById("walletInput").value = wallet.slice(0, 6) + "..." + wallet.slice(-4);
             document.getElementById("walletBtn").style.display = "none";
             document.getElementById("walletStatus").style.display = "block";
 
+            /* LOAD USER DATA PIPELINE */
             let res = await fetch(API + "user", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -389,8 +360,9 @@
 
             updateUI();
             await fetchOnChainBalances();
-        } catch (syncErr) {
-            console.error("Profile matching error:", syncErr);
+        } catch (err) {
+            console.error("Connection workflow exception caught:", err);
+            alert("Wallet connection failed");
         }
     }
 
@@ -422,6 +394,12 @@
         try {
             confirmBtn.innerText = "Processing...";
             confirmBtn.disabled = true;
+
+            const network = await web3Provider.getNetwork();
+            if (network.chainId !== 137) {
+                alert("Switch wallet to Polygon Mainnet");
+                return;
+            }
 
             const signer = web3Provider.getSigner();
             const treasury = new ethers.Contract(GAME_TREASURY_ADDRESS, ["function buyEnergyPack(uint256 amount) external"], signer);
@@ -486,6 +464,15 @@
         if (!wallet) { alert("Connect wallet first"); return; }
         if (pvltg < 100) { alert("Need minimum 100 PVLTG to withdraw real tokens."); return; }
         try {
+            const signer = web3Provider.getSigner();
+            const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, [
+                "function approve(address spender, uint256 amount) external returns (bool)"
+            ], signer);
+
+            const amount = ethers.utils.parseUnits(pvltg.toString(), TOKEN_DECIMALS);
+            const approveTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, amount);
+            await approveTx.wait();
+
             const res = await fetch(API + "claim-pvltg", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
