@@ -15,10 +15,8 @@ user-scalable=no"
 
 <title>PVLT Tap Game</title>
 
-<!-- ETHERS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
-<!-- WALLET CONNECT -->
 <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
 
 <style>
@@ -231,8 +229,6 @@ color:white;
 
 <body>
 
-<!-- TOPBAR -->
-
 <div class="topbar">
 
 <div>
@@ -248,8 +244,6 @@ color:white;
 </div>
 
 </div>
-
-<!-- MAIN -->
 
 <div class="main">
 
@@ -324,8 +318,6 @@ CLAIM PVLT
 </div>
 
 </div>
-
-<!-- MODAL -->
 
 <div
 class="modal-overlay"
@@ -458,107 +450,108 @@ async function connectWallet(){
 
 try{
 
-if(window.ethereum){
+    // Check if we are executing inside an in-app Web3 dapp browser (MetaMask Mobile, Trust Browser, etc.)
+    if(window.ethereum && (window.ethereum.isMetaMask || typeof window.ethereum.request !== 'undefined')){
 
-await window.ethereum.request({
-method:"eth_requestAccounts"
-});
+        await window.ethereum.request({
+            method:"eth_requestAccounts"
+        });
 
-web3Provider =
-new ethers.providers.Web3Provider(
-window.ethereum
-);
+        web3Provider =
+        new ethers.providers.Web3Provider(
+            window.ethereum
+        );
 
-}else{
+    } else {
+        // Standard mobile browser fallback -> Use WalletConnect v2
+        if (!window["@walletconnect/ethereum-provider"]) {
+            throw new Error("WalletConnect library failed to load via CDN.");
+        }
 
-const WalletConnectProvider =
-window[
-"@walletconnect/ethereum-provider"
-].EthereumProvider;
+        const EthereumProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
 
-const wcProvider =
-await WalletConnectProvider.init({
+        const wcProvider = await EthereumProvider.init({
+            projectId: PROJECT_ID,
+            chains: [137], // Polygon Mainnet
+            showQrModal: true,
+            qrModalOptions: {
+                themeMode: "dark"
+            }
+        });
 
-projectId: PROJECT_ID,
+        await wcProvider.connect();
 
-chains:[137],
+        web3Provider = new ethers.providers.Web3Provider(
+            wcProvider
+        );
 
-showQrModal:true
+        // Dynamically handle accidental disconnects or session closures
+        wcProvider.on("disconnect", () => {
+            window.location.reload();
+        });
+    }
 
-});
+    const signer =
+    web3Provider.getSigner();
 
-await wcProvider.connect();
+    wallet =
+    await signer.getAddress();
 
-web3Provider =
-new ethers.providers.Web3Provider(
-wcProvider
-);
+    document.getElementById(
+    "walletInput"
+    ).value =
+    wallet.slice(0,6)
+    + "..."
+    + wallet.slice(-4);
 
-}
+    document.getElementById(
+    "walletBtn"
+    ).innerText =
+    "CONNECTED";
 
-const signer =
-web3Provider.getSigner();
+    document.getElementById(
+    "walletStatus"
+    ).style.display =
+    "block";
 
-wallet =
-await signer.getAddress();
+    /* LOAD USER */
 
-document.getElementById(
-"walletInput"
-).value =
-wallet.slice(0,6)
-+ "..."
-+ wallet.slice(-4);
+    const res =
+    await fetch(
+    API + "/user",
+    {
 
-document.getElementById(
-"walletBtn"
-).innerText =
-"CONNECTED";
+    method:"POST",
 
-document.getElementById(
-"walletStatus"
-).style.display =
-"block";
+    headers:{
+    "Content-Type":"application/json"
+    },
 
-/* LOAD USER */
+    body:JSON.stringify({
+    wallet
+    })
+    }
+    );
 
-const res =
-await fetch(
-API + "/user",
-{
+    const data =
+    await res.json();
 
-method:"POST",
+    points =
+    data.points || 0;
 
-headers:{
-"Content-Type":"application/json"
-},
+    energy =
+    data.energy || 50;
 
-body:JSON.stringify({
-wallet
-})
-}
-);
+    pvltg =
+    data.pvltg || 0;
 
-const data =
-await res.json();
-
-points =
-data.points || 0;
-
-energy =
-data.energy || 50;
-
-pvltg =
-data.pvltg || 0;
-
-updateUI();
+    updateUI();
 
 }catch(err){
 
-console.error(err);
-
-alert(
-"Wallet connection failed"
-);
+    console.error("Connection Debug Error:", err);
+    // Alerts the explicit technical code issue to prevent guessing why it failed
+    alert("Wallet connection failed:\n" + (err.message || err));
 
 }
 
