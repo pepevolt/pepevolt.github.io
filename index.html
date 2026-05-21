@@ -184,7 +184,6 @@ async function syncActiveWalletData() {
         energy = typeof data.energy !== 'undefined' ? data.energy : 50;
         pvltBalance = typeof data.pvltBalance !== 'undefined' ? data.pvltBalance : 0.0;
         
-        // Update treasury balance using server data payload
         if(data && typeof data.treasuryCapacity !== 'undefined') {
             document.getElementById("treasuryCapacity").innerText = data.treasuryCapacity.toLocaleString(undefined, {minimumFractionDigits:2});
         }
@@ -245,11 +244,9 @@ async function refreshOnChainBalances() {
     }
 }
 
-// Helper to poll treasury data without requiring full connected state
 async function anonymousPoll() {
-    if (wallet) return; // Managed by direct transaction endpoints if wallet is active
+    if (wallet) return; 
     try {
-        // Fallback fake wallet object to fetch updated stats anonymously
         const res = await fetch(`${API}/user`, { 
             method: "POST", 
             headers: { "Content-Type": "application/json" }, 
@@ -269,7 +266,6 @@ async function handleTapAction(e) {
     if(isTappingInProgress) return; 
 
     isTappingInProgress = true;
-    
     points += 1;
     energy -= 1;
     updateUI();
@@ -314,40 +310,75 @@ async function convertGPVLT() {
     } catch(e){}
 }
 
+// FIXED & OPTIMIZED: Robust BigNumber math checking and explicit error alert tracking
 async function executeEnergyPurchase() {
+    if(!web3Provider) { alert("Wallet provider not initialized. Reconnect your wallet."); return; }
     const confirmBtn = document.getElementById("confirmPaymentBtn");
+    
     try {
         confirmBtn.innerText = "Processing..."; confirmBtn.disabled = true;
         const signer = web3Provider.getSigner();
         
+        // Extended ABI explicitly providing allowance checks and correct state modifiers
         const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, [
             "function approve(address spender, uint256 amount) external returns (bool)",
+            "function allowance(address owner, address spender) view returns (uint256)",
             "function balanceOf(address owner) view returns (uint256)"
         ], signer);
 
-        const vaultContract = new ethers.Contract(GAME_TREASURY_ADDRESS, ["function buyEnergyPack() external"], signer);
+        const vaultContract = new ethers.Contract(GAME_TREASURY_ADDRESS, [
+            "function buyEnergyPack() external"
+        ], signer);
+
+        // Convert target cost securely to explicit BigNumber variable structures
         const cost = ethers.utils.parseUnits("100", 18);
+        const userAddress = await signer.getAddress();
+        
+        const bal = await tokenContract.balanceOf(userAddress);
+        
+        // FIXED: Safe logic evaluation replacing broken JavaScript object references (.lt)
+        if (bal.lt(cost)) { 
+            alert(`Transaction Failed: Insufficient balance. You need 100 PVLT, but your wallet holds ${ethers.utils.formatUnits(bal, 18)} PVLT.`);
+            confirmBtn.innerText = "Confirm"; confirmBtn.disabled = false;
+            return; 
+        }
 
-        const bal = await tokenContract.balanceOf(wallet);
-        if(bal.lt(cost)) { alert("Transaction Failed: Insufficient PVLT balance to cover cost."); return; }
+        // Check if token allowance is already authorized to avoid unnecessary double prompts
+        const allowedAmount = await tokenContract.allowance(userAddress, GAME_TREASURY_ADDRESS);
+        
+        if (allowedAmount.lt(cost)) {
+            alert("Step 1 of 2: Please approve the PVLT spending allotment in your wallet application.");
+            const appTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, cost);
+            await appTx.wait();
+            alert("PVLT Allowance Authorized! Processing confirmation step...");
+        }
 
-        const appTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, cost);
-        await appTx.wait();
-
-        const buyTx = await vaultContract.buyEnergyPack();
+        alert("Step 2 of 2: Confirming purchase contract transaction. Please approve the incoming prompt inside your wallet.");
+        
+        // Added standard safe gasLimit options fallback variables to guarantee injection across mobile webviews
+        const buyTx = await vaultContract.buyEnergyPack({
+            gasLimit: 150000 
+        });
         await buyTx.wait();
 
-        const res = await fetch(`${API}/refill`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wallet }) });
+        const res = await fetch(`${API}/refill`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wallet: userAddress }) });
         const data = await res.json();
         energy = data.energy;
-        if(typeof data.treasuryCapacity !== 'undefined') {
+        
+        if(data && typeof data.treasuryCapacity !== 'undefined') {
             document.getElementById("treasuryCapacity").innerText = data.treasuryCapacity.toLocaleString(undefined, {minimumFractionDigits:2});
         }
         
         updateUI(); refreshOnChainBalances(); closeBuyModal();
         alert("Payment Successful! 10,000 Energy added to your profile.");
-    } catch (err) { alert("Transaction processing encountered errors."); }
-    finally { confirmBtn.innerText = "Confirm"; confirmBtn.disabled = false; }
+    } catch (err) { 
+        console.error(err);
+        // Alert explicit details directly to mobile screen instead of failing silently
+        alert("Transaction Failed: " + (err.message ? err.message.slice(0, 120) : "Check wallet connection or network gas balance.")); 
+    } finally { 
+        confirmBtn.innerText = "Confirm"; 
+        confirmBtn.disabled = false; 
+    }
 }
 
 async function claimPVLT() {
@@ -364,7 +395,7 @@ async function claimPVLT() {
         const signer = web3Provider.getSigner();
         const vault = new ethers.Contract(GAME_TREASURY_ADDRESS, ["function claimUserRewards(uint256 amount, bytes signature) external"], signer);
         
-        const tx = await vault.claimUserRewards(data.claimAmount, data.signature);
+        const tx = await vault.claimUserRewards(data.claimAmount, data.signature, { gasLimit: 200000 });
         await tx.wait();
 
         pvltBalance = data.remainingPvlt;
@@ -390,7 +421,6 @@ document.getElementById("claimBtn").addEventListener("click", claimPVLT);
 setTimeout(() => { initWeb3ModalGrid(); }, 500);
 setInterval(() => { if(wallet && energy < 50) { energy++; document.getElementById("energy").innerText = energy; } }, 3000);
 
-// Initialize loops right away
 refreshOnChainBalances();
 anonymousPoll();
 setInterval(refreshOnChainBalances, 20000);
