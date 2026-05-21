@@ -5,80 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Tap Tap Game</title>
     <style>
-        /* CSS Styling */
         body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a2e;
-            color: #ffffff;
-            overflow: hidden;
+            margin: 0; padding: 0; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #1a1a2e; color: #ffffff; overflow: hidden;
         }
 
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+        .game-container { display: flex; flex-direction: column; height: 100vh; }
+
+        /* Updated Header for 3 Assets */
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            padding: 15px 10px;
+            background: #16213e;
+            font-size: 0.9rem;
             text-align: center;
         }
+        .stat-item { display: flex; flex-direction: column; align-items: center; }
+        .emoji { font-size: 1.2rem; margin-bottom: 2px; }
 
-        .stats {
-            padding: 20px;
-            font-size: 1.8rem;
-            font-weight: bold;
-            background: #16213e;
-        }
-
-        .interaction-area {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        .interaction-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
 
         .tap-circle {
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            border: none;
+            width: 200px; height: 200px; border-radius: 50%; border: none;
             background: radial-gradient(circle, #4ecca3, #45b791);
-            color: white;
-            font-size: 2.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            transition: transform 0.05s, box-shadow 0.05s;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            color: white; font-size: 2rem; font-weight: bold;
+            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transition: transform 0.05s;
         }
+        .tap-circle:active { transform: scale(0.92); }
 
-        .tap-circle:active {
-            transform: scale(0.92);
-            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
-        }
-
-        .shop-panel {
-            padding: 20px;
-            background: #0f3460;
-        }
-
-        .upgrade-btn {
-            padding: 10px 25px;
-            font-size: 1rem;
-            background: #e94560;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+        .shop-panel { padding: 20px; background: #0f3460; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="game-container">
+        <!-- New 3-Asset Header -->
         <header class="stats">
-            Score: <span id="score">0</span>
+            <div class="stat-item">
+                <span class="emoji">💎</span>
+                <span id="points">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="emoji">🎲</span>
+                <span id="chips">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="emoji">💰</span>
+                <span id="currency">0.00</span>
+            </div>
         </header>
 
         <main class="interaction-area">
@@ -86,34 +64,32 @@
         </main>
 
         <footer class="shop-panel">
-            <button class="upgrade-btn" onclick="buyUpgrade()">Upgrade Power (+1)</button>
+            <button onclick="convertPoints()">Convert 💎 to 🎲</button>
         </footer>
     </div>
 
     <script>
-        // Game Logic
-        let score = 0;
-        let clickPower = 1;
+        let points = 0;
+        let chips = 0;
+        let currency = 0;
 
-        const scoreDisplay = document.getElementById('score');
-        const tapButton = document.getElementById('tap-button');
+        const pDisplay = document.getElementById('points');
+        const cDisplay = document.getElementById('chips');
+        const curDisplay = document.getElementById('currency');
 
-        tapButton.addEventListener('click', () => {
-            score += clickPower;
-            scoreDisplay.innerText = score;
-            
-            // Optional: Vibrate on mobile
-            if (navigator.vibrate) navigator.vibrate(20);
+        document.getElementById('tap-button').addEventListener('click', () => {
+            points += 1;
+            pDisplay.innerText = points;
         });
 
-        function buyUpgrade() {
-            if (score >= 10) {
-                score -= 10;
-                clickPower += 1;
-                scoreDisplay.innerText = score;
-                alert("Upgrade purchased!");
+        function convertPoints() {
+            if (points >= 10) {
+                points -= 10;
+                chips += 1;
+                pDisplay.innerText = points;
+                cDisplay.innerText = chips;
             } else {
-                alert("Not enough score!");
+                alert("Need 10 💎 to get 1 🎲");
             }
         }
     </script>
