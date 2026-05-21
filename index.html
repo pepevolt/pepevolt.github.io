@@ -48,7 +48,7 @@
 
     <br>
     <button onclick="connectWallet()">Connect Wallet</button>
-    <div id="wallet" class="balance"></div>
+    <div id="wallet" class="balance">Please connect wallet...</div>
 
     <div class="tap-btn" onclick="tap()">TAP</div>
 
@@ -59,12 +59,10 @@
     </div>
 
 <script>
-    // ==========================================
-    // REPLACE THESE CONFIG DETAILS POST-DEPLOY
-    // ==========================================
-    const PVLT_CONTRACT = "0xe2Ee94817203b24BA47FCccCF83781Dd28e92F5e";
-    const TREASURY_CONTRACT = "0x558B8684CC4e706BB86EB3c8166031c698Ab551D";
-    const GAME_CONTRACT = "0x7b9AE92f09b323E1909AecC555f652abef631734";
+    // Addresses are empty strings initially; populated dynamically by the live Render server
+    let PVLT_CONTRACT = "";
+    let TREASURY_CONTRACT = "";
+    let GAME_CONTRACT = "";
 
     let provider;
     let signer;
@@ -88,9 +86,28 @@
         "function treasuryBalance() view returns(uint256)"
     ];
 
+    // Queries live backend values directly from your deployment instance on loading window
+    async function initConfig() {
+        try {
+            const response = await fetch("https://pvlt-server.onrender.com/api/config");
+            const config = await response.json();
+            
+            PVLT_CONTRACT = config.pvlt;
+            TREASURY_CONTRACT = config.treasury;
+            GAME_CONTRACT = config.game;
+            console.log("Production Configuration Loaded Safely.");
+        } catch (err) {
+            console.error("Critical: Could not resolve production backend configs:", err);
+        }
+    }
+
     async function connectWallet() {
         if (!window.ethereum) {
             alert("Please install MetaMask!");
+            return;
+        }
+        if(!GAME_CONTRACT) {
+            alert("Render Backend configurations are loading or waking up from sleep mode. Try again in a few seconds.");
             return;
         }
         provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -109,24 +126,22 @@
         const treasury = new ethers.Contract(TREASURY_CONTRACT, TREASURY_ABI, signer);
 
         try {
-            // Energy (Raw Number Format Fix)
+            // Displays string values without applying division decimals (preserves units)
             const energy = await game.energy(userAddress);
             document.getElementById("energy").innerHTML = energy.toString();
 
-            // gPVLT Balance
+            // Formats from 18 decimals down to standard tokens
             const gpvlt = await game.gPVLT(userAddress);
             document.getElementById("gpvlt").innerHTML = ethers.utils.formatEther(gpvlt);
 
-            // Personal Wallet Balances
             const walletPVLT = await pvlt.balanceOf(userAddress);
             document.getElementById("walletBalance").innerHTML = ethers.utils.formatEther(walletPVLT);
             document.getElementById("pvlt").innerHTML = ethers.utils.formatEther(walletPVLT);
 
-            // Vault Balances
             const treasuryPVLT = await treasury.treasuryBalance();
             document.getElementById("treasuryBalance").innerHTML = ethers.utils.formatEther(treasuryPVLT);
         } catch (err) {
-            console.error("Data loading failed:", err);
+            console.error("Data tracking failed:", err);
         }
     }
 
@@ -146,7 +161,6 @@
             const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, signer);
             const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
 
-            // Approve contract to pull 300 tokens
             const approveTx = await pvlt.approve(GAME_CONTRACT, ethers.utils.parseEther("300"));
             await approveTx.wait();
 
@@ -188,6 +202,8 @@
             alert(err.data?.message || err.message);
         }
     }
+
+    window.addEventListener("load", initConfig);
 </script>
 </body>
 </html>
