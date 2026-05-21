@@ -10,6 +10,7 @@
             --card-color: #0f141c;
             --accent-color: #00ff66; /* PVLT Green */
             --gov-color: #ffaa00;    /* gPVLT Gold */
+            --energy-color: #00e5ff;  /* Cyan Energy */
             --text-color: #ffffff;
         }
 
@@ -138,7 +139,7 @@
             box-shadow: none;
         }
 
-        /* Top HUD Configuration */
+        /* Top HUD Layout Split */
         .hud {
             width: 100%;
             display: grid;
@@ -168,20 +169,47 @@
             margin-top: 2px;
         }
 
+        /* Full Width Web3 Energy Bar HUD */
         .hud-full {
             grid-column: span 2;
-            padding: 6px;
-            font-size: 0.85rem;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .energy-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
             font-weight: bold;
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.05);
-            border: 1px solid rgba(239, 68, 68, 0.15);
+            color: var(--energy-color);
+        }
+
+        .energy-bar-container {
+            width: 100%;
+            height: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .energy-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #0077ff, var(--energy-color));
+            border-radius: 10px;
+            transition: width 0.1s linear;
         }
 
         /* Target Spawning Canvas */
         .play-area {
             position: absolute;
-            top: 130px; 
+            top: 155px; /* Pushed deeper down to accommodate the Energy bar setup */
             bottom: 0;
             left: 0;
             width: 100%;
@@ -214,7 +242,7 @@
             box-shadow: 0 0 40px rgba(255, 170, 0, 0.8), inset 0 0 15px rgba(255,255,255,0.6);
         }
 
-        /* Floating Node Animations */
+        /* Floating Text Effects */
         .pop {
             position: absolute;
             font-weight: 800;
@@ -233,7 +261,7 @@
             100% { transform: translate(-50%, -50%) translateY(-80px) scale(1.3); opacity: 0; }
         }
 
-        /* Yield Summary Modules */
+        /* Settlement Yield Boxes */
         .stat-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -268,7 +296,7 @@
         <div id="start-screen" class="screen">
             <div style="font-size: 4.5rem; margin-bottom: 1rem;">⚡🐸</div>
             <h1>PEPEVOLT</h1>
-            <p>Tap the Pepe coin to mine allocation blocks. Keep an eye out for high-value governance rounds.</p>
+            <p>Mine tokens before your energy hits empty! Every tap consumes 1 Energy. Pacing your taps allows structural cooling recharges.</p>
             <div class="ratio-tag">EXCHANGE RATE: 100 gPVLT = 1 PVLT</div>
             <button class="btn" onclick="startGame()">Start Mining</button>
         </div>
@@ -277,7 +305,16 @@
             <div class="hud">
                 <div class="hud-item">PVLT Block: <strong id="score-display">0</strong></div>
                 <div class="hud-item">gPVLT Block: <strong id="gov-display">0</strong></div>
-                <div class="hud-item hud-full">Time Remaining: <span id="time-display">15s</span></div>
+                
+                <div class="hud-full">
+                    <div class="energy-header">
+                        <span>⚡ MINING ENERGY</span>
+                        <span id="energy-text">50/50</span>
+                    </div>
+                    <div class="energy-bar-container">
+                        <div id="energy-fill" class="energy-bar-fill"></div>
+                    </div>
+                </div>
             </div>
             <div class="play-area" id="play-area">
                 <div id="target" class="token-target coin-pvlt">🐸</div>
@@ -285,9 +322,9 @@
         </div>
 
         <div id="end-screen" class="screen hidden">
-            <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🎉</div>
-            <h1>Mining Complete</h1>
-            <p>Session summary locked successfully.</p>
+            <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🪫</div>
+            <h1>Energy Depleted</h1>
+            <p>Session closed. Conversion weights computed successfully.</p>
             
             <div class="stat-grid">
                 <div class="stat-box">
@@ -317,9 +354,11 @@
     <script>
         let pvltScore = 0;
         let gpvltScore = 0;
-        let timeLeft = 15; 
-        let gameInterval;
-        const gameDuration = 15; 
+        
+        // Energy Mechanics Settings
+        let energy = 50;
+        const maxEnergy = 50;
+        let regenInterval;
 
         const startScreen = document.getElementById('start-screen');
         const gameScreen = document.getElementById('game-screen');
@@ -329,7 +368,9 @@
         const playArea = document.getElementById('play-area');
         const scoreDisplay = document.getElementById('score-display');
         const govDisplay = document.getElementById('gov-display');
-        const timeDisplay = document.getElementById('time-display');
+        const energyText = document.getElementById('energy-text');
+        const energyFill = document.getElementById('energy-fill');
+        
         const finalScore = document.getElementById('final-score');
         const finalGov = document.getElementById('final-gov');
         const consolidatedValue = document.getElementById('consolidated-value');
@@ -345,24 +386,31 @@
         function startGame() {
             pvltScore = 0;
             gpvltScore = 0;
-            timeLeft = gameDuration;
+            energy = maxEnergy;
             
             scoreDisplay.textContent = pvltScore;
             govDisplay.textContent = gpvltScore;
-            timeDisplay.textContent = `${timeLeft}s`;
+            updateEnergyBar();
+            
             claimBtn.textContent = "Claim Rewards";
             claimBtn.disabled = false;
             
             showScreen('game-screen');
             moveTarget();
             
-            gameInterval = setInterval(() => {
-                timeLeft--;
-                timeDisplay.textContent = `${timeLeft}s`;
-                if (timeLeft <= 0) {
-                    endGame();
+            // Passive Energy Regeneration loop: Adds +3 Energy every second
+            regenInterval = setInterval(() => {
+                if (energy < maxEnergy) {
+                    energy = Math.min(maxEnergy, energy + 3);
+                    updateEnergyBar();
                 }
             }, 1000);
+        }
+
+        function updateEnergyBar() {
+            energyText.textContent = `${energy}/${maxEnergy}`;
+            const percentage = (energy / maxEnergy) * 100;
+            energyFill.style.width = `${percentage}%`;
         }
 
         function moveTarget() {
@@ -390,8 +438,15 @@
 
         target.addEventListener('pointerdown', (e) => {
             e.preventDefault();
-            const type = target.dataset.tokenType;
             
+            // Check if user has energy available to tap
+            if (energy <= 0) return;
+
+            // Burn 1 Energy unit per tap interaction
+            energy--;
+            updateEnergyBar();
+
+            const type = target.dataset.tokenType;
             if(type === "gpvlt") {
                 gpvltScore += 1;
                 govDisplay.textContent = gpvltScore;
@@ -402,7 +457,12 @@
                 createPopEffect(e.clientX, e.clientY, "+1 PVLT", "pop-pvlt");
             }
             
-            moveTarget();
+            // Check Game Over Condition
+            if (energy <= 0) {
+                setTimeout(endGame, 200); // Small visual delay so the user sees bar hit 0
+            } else {
+                moveTarget();
+            }
         });
 
         function createPopEffect(x, y, text, customClass) {
@@ -417,9 +477,8 @@
         }
 
         function endGame() {
-            clearInterval(gameInterval);
+            clearInterval(regenInterval);
             
-            // Run economic conversion math: Total PVLT value = PVLT + (gPVLT / 100)
             const totalConvertedValue = pvltScore + (gpvltScore / 100);
             
             finalScore.textContent = pvltScore;
