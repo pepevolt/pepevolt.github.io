@@ -223,8 +223,9 @@ function closeBuyModal() { document.getElementById("buyModal").classList.remove(
 
 async function refreshOnChainBalances() {
     try {
-        const queryProvider = web3Provider || new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
-        const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function balanceOf(address owner) view returns (uint256)"], queryProvider);
+        // FIXED: Force a clean, dedicated read-only provider instance so it queries correctly before the user connects a wallet
+        const publicReaderProvider = new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
+        const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function balanceOf(address owner) view returns (uint256)"], publicReaderProvider);
         
         const rawTreasury = await tokenContract.balanceOf(GAME_TREASURY_ADDRESS);
         document.getElementById("treasuryCapacity").innerText = parseFloat(ethers.utils.formatUnits(rawTreasury, 18)).toLocaleString(undefined, {minimumFractionDigits:2});
@@ -235,7 +236,9 @@ async function refreshOnChainBalances() {
         } else {
             document.getElementById("userHolding").innerText = "0.00";
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("Error reading smart contract values:", e); 
+    }
 }
 
 async function handleTapAction(e) {
@@ -272,7 +275,6 @@ async function handleTapAction(e) {
 async function convertGPVLT() {
     if(!wallet) { alert("Connect wallet first!"); return; }
     if(points < 10000) {
-        // FIXED: Replaced confusing string terminology 'lightning points' with explicit 'gPVLT' token values
         alert(`Conversion Denied: You currently have ${points} gPVLT. You need at least 10,000 gPVLT before you can swap into a diamond asset value.`);
         return;
     }
@@ -354,7 +356,11 @@ document.getElementById("claimBtn").addEventListener("click", claimPVLT);
 
 setTimeout(() => { initWeb3ModalGrid(); }, 500);
 setInterval(() => { if(wallet && energy < 50) { energy++; document.getElementById("energy").innerText = energy; } }, 3000);
+
+// Initialize the display loop right away when the document script fires up
 refreshOnChainBalances();
+// Keep the public counters completely updated in the background every 15 seconds
+setInterval(refreshOnChainBalances, 15000);
 </script>
 </body>
 </html>
