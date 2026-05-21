@@ -2,280 +2,119 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Pepevolt Token Miner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Tap Tap Game</title>
     <style>
-        :root {
-            --bg-color: #080b10;
-            --card-color: #0f141c;
-            --accent-color: #00ff66; /* PVLT Green */
-            --gov-color: #ffaa00;    /* gPVLT Gold */
-            --energy-color: #00e5ff;  /* Cyan Energy */
-            --text-color: #ffffff;
-        }
-
-        * {
-            box-sizing: border-box;
+        /* CSS Styling */
+        body, html {
             margin: 0;
             padding: 0;
-            font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html, body {
-            width: 100%;
             height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #ffffff;
             overflow: hidden;
-            background-color: var(--bg-color);
-        }
-
-        body {
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
         .game-container {
-            width: 100%;
-            height: 100%;
-            background-color: var(--card-color);
-            position: relative;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
-            padding-top: env(safe-area-inset-top);
+            height: 100vh;
+            text-align: center;
         }
 
-        @media (min-width: 480px) {
-            .game-container {
-                max-width: 430px;
-                max-height: 850px;
-                border-radius: 32px;
-                height: 92vh;
-                box-shadow: 0 0 40px rgba(0, 255, 102, 0.15);
-                border: 1px solid rgba(0, 255, 102, 0.1);
-            }
+        .stats {
+            padding: 20px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: #16213e;
         }
 
-        .screen {
-            position: absolute;
-            top: env(safe-area-inset-top, 0);
-            bottom: env(safe-area-inset-bottom, 0);
-            left: 0;
-            width: 100%;
+        .interaction-area {
+            flex-grow: 1;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
-            z-index: 5;
         }
 
-        .hidden {
-            display: none !important;
+        .tap-circle {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            border: none;
+            background: radial-gradient(circle, #4ecca3, #45b791);
+            color: white;
+            font-size: 2.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transition: transform 0.05s, box-shadow 0.05s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        h1 {
-            font-size: 2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-align: center;
-            background: linear-gradient(45deg, var(--accent-color), #00e5ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
+        .tap-circle:active {
+            transform: scale(0.92);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
         }
 
-        /* Dashboard Header */
-        .dashboard-header {
-            width: 100%;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: rgba(8, 11, 16, 0.8);
-            z-index: 20;
+        .shop-panel {
+            padding: 20px;
+            background: #0f3460;
         }
 
-        .wallet-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .wallet-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            padding: 10px;
-            border-radius: 14px;
-            text-align: center;
-        }
-
-        .wallet-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
-        .wallet-balance { font-size: 1.1rem; font-weight: 800; color: #fff; }
-
-        .energy-hud {
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .energy-bar-container {
-            width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-
-        .energy-bar-fill { height: 100%; background: var(--energy-color); width: 100%; transition: width 0.1s; }
-
-        .dashboard-content { flex: 1; width: 100%; position: relative; }
-
-        .token-target {
-            width: 110px; height: 110px; border-radius: 50%;
-            position: absolute; transform: translate(-50%, -50%);
-            cursor: pointer; display: flex; justify-content: center; align-items: center;
-            font-size: 2.5rem; border: 4px solid #fff;
-            background: radial-gradient(circle, #00ff66 0%, #054019 100%);
-            box-shadow: 0 0 30px rgba(0, 255, 102, 0.4);
-            transition: transform 0.1s;
-        }
-        
-        .token-target:active { transform: translate(-50%, -50%) scale(0.9); }
-
-        .action-overlay {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; background: rgba(15, 20, 28, 0.98);
-            border: 1px solid rgba(0, 229, 255, 0.2);
-            padding: 20px; border-radius: 20px; z-index: 30;
-            text-align: center; backdrop-filter: blur(10px);
-        }
-
-        .btn {
-            background: var(--accent-color); color: #000; border: none; padding: 12px;
-            border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px;
-        }
-
-        .pop {
-            position: absolute; font-weight: 800; font-size: 1.4rem; color: #fff;
-            animation: floatUp 0.5s ease-out forwards; pointer-events: none; z-index: 40;
-        }
-        @keyframes floatUp {
-            to { transform: translate(-50%, -50%) translateY(-60px); opacity: 0; }
+        .upgrade-btn {
+            padding: 10px 25px;
+            font-size: 1rem;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
     <div class="game-container">
-        <div id="start-screen" class="screen">
-            <div style="font-size: 4rem;">⚡🐸</div>
-            <h1>PEPEVOLT</h1>
-            <button class="btn" onclick="showDashboard()">Play</button>
-        </div>
+        <header class="stats">
+            Score: <span id="score">0</span>
+        </header>
 
-        <div id="dashboard-screen" class="screen hidden" style="padding: 0; justify-content: flex-start;">
-            <div class="dashboard-header">
-                <div class="wallet-grid">
-                    <div class="wallet-card">
-                        <div class="wallet-label">PVLT</div>
-                        <div class="wallet-balance" id="dash-pvlt">0.0000</div>
-                    </div>
-                    <div class="wallet-card">
-                        <div class="wallet-label">gPVLT</div>
-                        <div class="wallet-balance" id="dash-gpvlt" style="color:var(--gov-color);">0.00</div>
-                    </div>
-                </div>
-                <div class="energy-hud">
-                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--energy-color);">
-                        <span>STAMINA</span><span id="energy-text">50/50</span>
-                    </div>
-                    <div class="energy-bar-container"><div id="energy-fill" class="energy-bar-fill"></div></div>
-                </div>
-            </div>
+        <main class="interaction-area">
+            <button id="tap-button" class="tap-circle">TAP!</button>
+        </main>
 
-            <div class="dashboard-content" id="play-area">
-                <div id="target" class="token-target">🐸</div>
-
-                <div id="swap-modal" class="action-overlay hidden">
-                    <h3 style="color:var(--gov-color);">Stamina Expired</h3>
-                    <button class="btn" onclick="swapPointsToGov()" style="background:var(--gov-color);">Swap Points to gPVLT</button>
-                </div>
-                <div id="bridge-modal" class="action-overlay hidden">
-                    <h3 style="color:var(--accent-color);">Ecosystem Bridge</h3>
-                    <button class="btn" id="convert-bridge-btn" onclick="convertGovToPvlt()">Convert gPVLT to PVLT</button>
-                    <button class="btn" id="final-claim-btn" onclick="executeWeb3Claim()" style="display:none;">Execute Final Claim</button>
-                </div>
-            </div>
-        </div>
+        <footer class="shop-panel">
+            <button class="upgrade-btn" onclick="buyUpgrade()">Upgrade Power (+1)</button>
+        </footer>
     </div>
 
     <script>
-        let totalPvlt = 0, totalGpvlt = 0, points = 0, energy = 50;
+        // Game Logic
+        let score = 0;
+        let clickPower = 1;
 
-        function showDashboard() {
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('dashboard-screen').classList.remove('hidden');
-            moveTarget();
-        }
+        const scoreDisplay = document.getElementById('score');
+        const tapButton = document.getElementById('tap-button');
 
-        function updateEnergyBar() {
-            document.getElementById('energy-text').textContent = `${energy}/50`;
-            document.getElementById('energy-fill').style.width = `${(energy/50)*100}%`;
-        }
-
-        function moveTarget() {
-            const area = document.getElementById('play-area');
-            const target = document.getElementById('target');
-            target.style.left = `${Math.random() * (area.clientWidth - 100) + 50}px`;
-            target.style.top = `${Math.random() * (area.clientHeight - 100) + 50}px`;
-        }
-
-        document.getElementById('target').addEventListener('pointerdown', (e) => {
-            if (energy <= 0) return;
-            energy--; points++;
-            updateEnergyBar();
-            createPop(e.clientX, e.clientY, "+1");
-            if (energy <= 0) document.getElementById('swap-modal').classList.remove('hidden');
-            else moveTarget();
+        tapButton.addEventListener('click', () => {
+            score += clickPower;
+            scoreDisplay.innerText = score;
+            
+            // Optional: Vibrate on mobile
+            if (navigator.vibrate) navigator.vibrate(20);
         });
 
-        function swapPointsToGov() {
-            totalGpvlt += (points / 10) * 0.1;
-            points = 0;
-            document.getElementById('dash-gpvlt').textContent = totalGpvlt.toFixed(2);
-            document.getElementById('swap-modal').classList.add('hidden');
-            document.getElementById('bridge-modal').classList.remove('hidden');
-        }
-
-        function convertGovToPvlt() {
-            document.getElementById('convert-bridge-btn').style.display = 'none';
-            document.getElementById('final-claim-btn').style.display = 'block';
-        }
-
-        function executeWeb3Claim() {
-            totalPvlt += totalGpvlt / 100;
-            totalGpvlt = 0;
-            document.getElementById('dash-pvlt').textContent = totalPvlt.toFixed(4);
-            document.getElementById('dash-gpvlt').textContent = totalGpvlt.toFixed(2);
-            document.getElementById('bridge-modal').classList.add('hidden');
-            energy = 50; updateEnergyBar();
-            document.getElementById('target').style.opacity = '1';
-            moveTarget();
-        }
-
-        function createPop(x, y, text) {
-            const p = document.createElement('div');
-            p.className = 'pop'; p.textContent = text;
-            p.style.left = `${x}px`; p.style.top = `${y}px`;
-            document.body.appendChild(p);
-            setTimeout(() => p.remove(), 500);
+        function buyUpgrade() {
+            if (score >= 10) {
+                score -= 10;
+                clickPower += 1;
+                scoreDisplay.innerText = score;
+                alert("Upgrade purchased!");
+            } else {
+                alert("Not enough score!");
+            }
         }
     </script>
 </body>
