@@ -1,457 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>PEPEVOLT GAME</title>
-
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-
-<style>
-
-body{
-margin:0;
-padding:0;
-background:#000;
-color:#fff;
-font-family:Arial;
-text-align:center;
-}
-
-.topbar{
-display:flex;
-justify-content:space-around;
-align-items:center;
-padding:15px;
-background:#111;
-font-size:24px;
-font-weight:bold;
-position:sticky;
-top:0;
-z-index:999;
-}
-
-.info{
-margin-top:10px;
-font-size:14px;
-color:#aaa;
-}
-
-.tap-btn{
-width:240px;
-height:240px;
-border-radius:50%;
-background:#151515;
-display:flex;
-align-items:center;
-justify-content:center;
-margin:40px auto;
-font-size:42px;
-font-weight:bold;
-cursor:pointer;
-transition:0.2s;
-border:4px solid #333;
-}
-
-.tap-btn:active{
-transform:scale(0.95);
-}
-
-.buttons{
-margin-top:30px;
-}
-
-button{
-padding:14px 22px;
-margin:10px;
-font-size:18px;
-border:none;
-border-radius:12px;
-background:#222;
-color:#fff;
-cursor:pointer;
-}
-
-button:hover{
-background:#333;
-}
-
-.balance{
-margin-top:10px;
-font-size:16px;
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEPEVOLT GAME</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            background: #000; color: #fff;
+            font-family: Arial, sans-serif; text-align: center;
+        }
+        .topbar {
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 15px; background: #111; font-size: 24px; font-weight: bold;
+            position: sticky; top: 0; z-index: 999;
+        }
+        .info { margin-top: 10px; font-size: 14px; color: #aaa; }
+        .tap-btn {
+            width: 240px; height: 240px; border-radius: 50%;
+            background: #151515; display: flex; align-items: center; justify-content: center;
+            margin: 40px auto; font-size: 42px; font-weight: bold; cursor: pointer;
+            transition: 0.2s; border: 4px solid #333; user-select: none;
+        }
+        .tap-btn:active { transform: scale(0.95); }
+        .buttons { margin-top: 30px; }
+        button {
+            padding: 14px 22px; margin: 10px; font-size: 18px;
+            border: none; border-radius: 12px; background: #222; color: #fff; cursor: pointer;
+        }
+        button:hover { background: #333; }
+        .balance { margin-top: 10px; font-size: 16px; word-break: break-all; }
+    </style>
 </head>
-
 <body>
 
-<div class="topbar">
+    <div class="topbar">
+        <div>⚡ <span id="energy">0</span></div>
+        <div>🪙 <span id="gpvlt">0</span></div>
+        <div>💰 <span id="pvlt">0</span></div>
+    </div>
 
-<div>
-⚡ <span id="energy">0</span>
-</div>
+    <div class="info">
+        <div>TreasuryVolt: <span id="treasuryBalance">0</span> PVLT</div>
+        <div>Wallet: <span id="walletBalance">0</span> PVLT</div>
+    </div>
 
-<div>
-🪙 <span id="gpvlt">0</span>
-</div>
+    <br>
+    <button onclick="connectWallet()">Connect Wallet</button>
+    <div id="wallet" class="balance"></div>
 
-<div>
-💰 <span id="pvlt">0</span>
-</div>
+    <div class="tap-btn" onclick="tap()">TAP</div>
 
-</div>
-
-<div class="info">
-
-<div>
-TreasuryVolt:
-<span id="treasuryBalance">0</span> PVLT
-</div>
-
-<div>
-Wallet:
-<span id="walletBalance">0</span> PVLT
-</div>
-
-</div>
-
-<br>
-
-<button onclick="connectWallet()">
-Connect Wallet
-</button>
-
-<div id="wallet" class="balance"></div>
-
-<div class="tap-btn" onclick="tap()">
-TAP
-</div>
-
-<div class="buttons">
-
-<button onclick="buyEnergy()">
-Buy Energy
-</button>
-
-<button onclick="convertGPVLT()">
-Convert
-</button>
-
-<button onclick="claimReward()">
-Claim
-</button>
-
-</div>
+    <div class="buttons">
+        <button onclick="buyEnergy()">Buy Energy</button>
+        <button onclick="convertGPVLT()">Convert</button>
+        <button onclick="claimReward()">Claim</button>
+    </div>
 
 <script>
-
-// ===============================
-// CONFIG
-// ===============================
-
-const REOWN_PROJECT_ID = "YOUR_REOWN_PROJECT_ID";
-
-const PVLT_CONTRACT =
-"0xYOUR_PVLT_CONTRACT";
-
-const TREASURY_CONTRACT =
-"0xYOUR_TREASURY_CONTRACT";
-
-const GAME_CONTRACT =
-"0xYOUR_GAME_CONTRACT";
-
-// ===============================
-// PROVIDER
-// ===============================
-
-let provider;
-let signer;
-let userAddress;
-
-// ===============================
-// ABI
-// ===============================
-
-const GAME_ABI = [
-
-"function tap() external",
-
-"function refillEnergy() external",
-
-"function convertToPVLT(uint256 amount) external",
-
-"function claimPVLT(uint256 amount) external",
-
-"function energy(address) view returns(uint256)",
-
-"function gPVLT(address) view returns(uint256)"
-
-];
-
-const ERC20_ABI = [
-
-"function balanceOf(address owner) view returns(uint256)",
-
-"function approve(address spender,uint256 amount) external returns(bool)"
-
-];
-
-const TREASURY_ABI = [
-
-"function treasuryBalance() view returns(uint256)"
-
-];
-
-// ===============================
-// CONNECT WALLET
-// ===============================
-
-async function connectWallet(){
-
-if(!window.ethereum){
-alert("Install MetaMask");
-return;
-}
-
-provider = new ethers.providers.Web3Provider(window.ethereum);
-
-await provider.send("eth_requestAccounts", []);
-
-signer = provider.getSigner();
-
-userAddress = await signer.getAddress();
-
-document.getElementById("wallet").innerHTML =
-userAddress;
-
-loadAllData();
-
-}
-
-// ===============================
-// LOAD DATA
-// ===============================
-
-async function loadAllData(){
-
-const game = new ethers.Contract(
-GAME_CONTRACT,
-GAME_ABI,
-signer
-);
-
-const pvlt = new ethers.Contract(
-PVLT_CONTRACT,
-ERC20_ABI,
-signer
-);
-
-const treasury = new ethers.Contract(
-TREASURY_CONTRACT,
-TREASURY_ABI,
-signer
-);
-
-// Energy
-
-const energy =
-await game.energy(userAddress);
-
-document.getElementById("energy").innerHTML =
-ethers.utils.formatEther(energy);
-
-// gPVLT
-
-const gpvlt =
-await game.gPVLT(userAddress);
-
-document.getElementById("gpvlt").innerHTML =
-ethers.utils.formatEther(gpvlt);
-
-// Wallet PVLT
-
-const walletPVLT =
-await pvlt.balanceOf(userAddress);
-
-document.getElementById("walletBalance").innerHTML =
-ethers.utils.formatEther(walletPVLT);
-
-// Treasury PVLT
-
-const treasuryPVLT =
-await treasury.treasuryBalance();
-
-document.getElementById("treasuryBalance").innerHTML =
-ethers.utils.formatEther(treasuryPVLT);
-
-// Top Navbar PVLT
-
-document.getElementById("pvlt").innerHTML =
-ethers.utils.formatEther(walletPVLT);
-
-}
-
-// ===============================
-// TAP
-// 1 TAP = 1 gPVLT
-// ===============================
-
-async function tap(){
-
-try{
-
-const game = new ethers.Contract(
-GAME_CONTRACT,
-GAME_ABI,
-signer
-);
-
-const tx = await game.tap();
-
-await tx.wait();
-
-loadAllData();
-
-}catch(err){
-
-alert(err.message);
-
-}
-
-}
-
-// ===============================
-// BUY ENERGY
-// 10000 ENERGY = 300 PVLT
-// ===============================
-
-async function buyEnergy(){
-
-try{
-
-const pvlt = new ethers.Contract(
-PVLT_CONTRACT,
-ERC20_ABI,
-signer
-);
-
-const game = new ethers.Contract(
-GAME_CONTRACT,
-GAME_ABI,
-signer
-);
-
-// Approve 300 PVLT
-
-const approveTx = await pvlt.approve(
-GAME_CONTRACT,
-ethers.utils.parseEther("300")
-);
-
-await approveTx.wait();
-
-// Auto refill energy
-
-const tx = await game.refillEnergy();
-
-await tx.wait();
-
-alert("10000 Energy Added");
-
-loadAllData();
-
-}catch(err){
-
-alert(err.message);
-
-}
-
-}
-
-// ===============================
-// CONVERT
-// 1 gPVLT = 0.5 PVLT
-// ===============================
-
-async function convertGPVLT(){
-
-try{
-
-const amount =
-prompt("Enter gPVLT Amount");
-
-if(!amount) return;
-
-const game = new ethers.Contract(
-GAME_CONTRACT,
-GAME_ABI,
-signer
-);
-
-const tx =
-await game.convertToPVLT(
-ethers.utils.parseEther(amount)
-);
-
-await tx.wait();
-
-alert("Converted Successfully");
-
-loadAllData();
-
-}catch(err){
-
-alert(err.message);
-
-}
-
-}
-
-// ===============================
-// CLAIM
-// Min 10
-// Max 1000/day
-// ===============================
-
-async function claimReward(){
-
-try{
-
-const amount =
-prompt("Enter Claim Amount");
-
-if(!amount) return;
-
-const game = new ethers.Contract(
-GAME_CONTRACT,
-GAME_ABI,
-signer
-);
-
-const tx =
-await game.claimPVLT(
-ethers.utils.parseEther(amount)
-);
-
-await tx.wait();
-
-alert("Claim Successful");
-
-loadAllData();
-
-}catch(err){
-
-alert(err.message);
-
-}
-
-}
-
+    // ==========================================
+    // REPLACE THESE CONFIG DETAILS POST-DEPLOY
+    // ==========================================
+    const PVLT_CONTRACT = "0xe2Ee94817203b24BA47FCccCF83781Dd28e92F5e";
+    const TREASURY_CONTRACT = "0x558B8684CC4e706BB86EB3c8166031c698Ab551D";
+    const GAME_CONTRACT = "0x7b9AE92f09b323E1909AecC555f652abef631734";
+
+    let provider;
+    let signer;
+    let userAddress;
+
+    const GAME_ABI = [
+        "function tap() external",
+        "function refillEnergy() external",
+        "function convertToPVLT(uint256 amount) external",
+        "function claimPVLT(uint256 amount) external",
+        "function energy(address) view returns(uint256)",
+        "function gPVLT(address) view returns(uint256)"
+    ];
+
+    const ERC20_ABI = [
+        "function balanceOf(address owner) view returns(uint256)",
+        "function approve(address spender, uint256 amount) external returns(bool)"
+    ];
+
+    const TREASURY_ABI = [
+        "function treasuryBalance() view returns(uint256)"
+    ];
+
+    async function connectWallet() {
+        if (!window.ethereum) {
+            alert("Please install MetaMask!");
+            return;
+        }
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        userAddress = await signer.getAddress();
+        document.getElementById("wallet").innerHTML = "Connected: " + userAddress;
+        loadAllData();
+    }
+
+    async function loadAllData() {
+        if (!signer) return;
+
+        const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
+        const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, signer);
+        const treasury = new ethers.Contract(TREASURY_CONTRACT, TREASURY_ABI, signer);
+
+        try {
+            // Energy (Raw Number Format Fix)
+            const energy = await game.energy(userAddress);
+            document.getElementById("energy").innerHTML = energy.toString();
+
+            // gPVLT Balance
+            const gpvlt = await game.gPVLT(userAddress);
+            document.getElementById("gpvlt").innerHTML = ethers.utils.formatEther(gpvlt);
+
+            // Personal Wallet Balances
+            const walletPVLT = await pvlt.balanceOf(userAddress);
+            document.getElementById("walletBalance").innerHTML = ethers.utils.formatEther(walletPVLT);
+            document.getElementById("pvlt").innerHTML = ethers.utils.formatEther(walletPVLT);
+
+            // Vault Balances
+            const treasuryPVLT = await treasury.treasuryBalance();
+            document.getElementById("treasuryBalance").innerHTML = ethers.utils.formatEther(treasuryPVLT);
+        } catch (err) {
+            console.error("Data loading failed:", err);
+        }
+    }
+
+    async function tap() {
+        try {
+            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
+            const tx = await game.tap();
+            await tx.wait();
+            loadAllData();
+        } catch(err) {
+            alert(err.data?.message || err.message);
+        }
+    }
+
+    async function buyEnergy() {
+        try {
+            const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, signer);
+            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
+
+            // Approve contract to pull 300 tokens
+            const approveTx = await pvlt.approve(GAME_CONTRACT, ethers.utils.parseEther("300"));
+            await approveTx.wait();
+
+            const tx = await game.refillEnergy();
+            await tx.wait();
+            alert("10,000 Energy added successfully!");
+            loadAllData();
+        } catch(err) {
+            alert(err.data?.message || err.message);
+        }
+    }
+
+    async function convertGPVLT() {
+        try {
+            const amount = prompt("Enter gPVLT Amount to Convert:");
+            if (!amount) return;
+
+            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
+            const tx = await game.convertToPVLT(ethers.utils.parseEther(amount));
+            await tx.wait();
+            alert("Converted successfully!");
+            loadAllData();
+        } catch(err) {
+            alert(err.data?.message || err.message);
+        }
+    }
+
+    async function claimReward() {
+        try {
+            const amount = prompt("Enter PVLT Amount to Claim:");
+            if (!amount) return;
+
+            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
+            const tx = await game.claimPVLT(ethers.utils.parseEther(amount));
+            await tx.wait();
+            alert("Claim successful!");
+            loadAllData();
+        } catch(err) {
+            alert(err.data?.message || err.message);
+        }
+    }
 </script>
-
 </body>
 </html>
