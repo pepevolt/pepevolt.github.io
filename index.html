@@ -4,17 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PEPEVOLT GAME</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     
-    <script type="module">
-        import { AppKitModal } from 'https://esm.sh/@reown/appkit';
-        import { Ethers5Adapter } from 'https://esm.sh/@reown/appkit-adapter-ethers5';
-        import { polygon } from 'https://esm.sh/@reown/appkit/networks';
-
-        window.AppKitModal = AppKitModal;
-        window.Ethers5Adapter = Ethers5Adapter;
-        window.polygonNetwork = polygon;
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@web3modal/standalone@2.4.3/dist/index.umd.js"></script>
 
     <style>
         body {
@@ -74,13 +68,15 @@
     let TREASURY_CONTRACT = "";
     let GAME_CONTRACT = "";
     
-    // Using your configured Reown Project ID
-    const REOWN_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
+    // Configured Reown project ID
+    const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7"; 
 
     let provider;
     let signer;
     let userAddress;
-    let modal;
+    
+    let wcProvider;
+    let web3Modal;
 
     const GAME_ABI = [
         "function tap() external",
@@ -100,6 +96,7 @@
         "function treasuryBalance() view returns(uint256)"
     ];
 
+    // Grabs values directly from your working server
     async function initConfig() {
         try {
             const response = await fetch("https://pvlt-server.onrender.com/api/config");
@@ -108,63 +105,104 @@
             PVLT_CONTRACT = config.pvlt;
             TREASURY_CONTRACT = config.treasury;
             GAME_CONTRACT = config.game;
-            console.log("Production Configuration Loaded Safely.");
+            console.log("Production Configurations Loaded Safely.");
             
-            // Setup the Multi-wallet Modal connection interface
-            setupWalletModal();
+            initUniversalWalletConnect();
         } catch (err) {
-            console.error("Critical: Could not resolve production backend configs:", err);
+            console.error("Critical configuration endpoint read error:", err);
         }
     }
 
-    function setupWalletModal() {
-        // Interval checks until external ESM dependencies finish landing in window space
-        const checkLibrary = setInterval(() => {
-            if (window.AppKitModal && window.Ethers5Adapter) {
-                clearInterval(checkLibrary);
-                
-                const ethers5Adapter = new window.Ethers5Adapter();
-                
-                modal = window.AppKitModal.create({
-                    adapters: [ethers5Adapter],
-                    networks: [window.polygonNetwork],
-                    metadata: {
-                        name: 'PEPEVOLT GAME',
-                        description: 'PepeVolt Tap Engine Ecosystem',
-                        url: 'https://pepevolt.github.io',
-                        icons: ['https://pepevolt.github.io/images/logo.png']
-                    },
-                    projectId: REOWN_PROJECT_ID
-                });
+    async function initUniversalWalletConnect() {
+        try {
+            // 1. Setup the standard standalone Web3Modal view layout
+            web3Modal = new window.Web3ModalStandalone.Web3Modal({
+                projectId: PROJECT_ID,
+                walletConnectVersion: 2,
+                standaloneChains: ["eip155:137"], // Polygon Mainnet Namespace standard
+                themeMode: "dark"
+            });
 
-                // Listen for wallet connections or modifications
-                modal.subscribeProviders((state) => {
-                    if (state && state['eip155']) {
-                        handleWalletConnected(state['eip155']);
-                    }
-                });
-            }
-        }, 100);
+            // 2. Initialize the Raw Ethereum Provider interface
+            wcProvider = await window.WalletConnectEthereumProvider.EthereumProvider.init({
+                projectId: PROJECT_ID,
+                chains: [137], 
+                showQrModal: false, // Disables internal modal to let Web3Modal handle the wallet list grid layout UI
+                metadata: {
+                    name: "PepeVolt Game",
+                    description: "PepeVolt Ecosystem",
+                    url: "https://pepevolt.github.io",
+                    icons: ["https://pepevolt.github.io/favicon.ico"]
+                }
+            });
+
+            // Listeners for sync updates
+            wcProvider.on("display_uri", (uri) => {
+                web3Modal.openModal({ uri });
+            });
+
+            wcProvider.on("accountsChanged", (accounts) => {
+                if (accounts.length > 0) {
+                    web3Modal.closeModal();
+                    setupBlockchainConnection(wcProvider);
+                }
+            });
+
+            wcProvider.on("disconnect", () => {
+                document.getElementById("wallet").innerHTML = "Disconnected.";
+                document.getElementById("connectBtn").innerText = "Connect Wallet";
+                signer = null;
+            });
+
+        } catch (err) {
+            console.error("Failed to link WalletConnect Core Provider:", err);
+        }
     }
 
     async function connectWallet() {
         if (!GAME_CONTRACT) {
-            alert("Configurations are updating from your live server. Please wait a brief moment.");
+            alert("Render Backend is wake up from sleep mode. Try again in a minute.");
             return;
         }
-        if (!modal) {
-            alert("Wallet connection module initializing. Try again in an instant.");
+
+        // Direct injection detection (MetaMask In-App Browser)
+        if (window.ethereum) {
+            try {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                document.getElementById("wallet").innerHTML = "Connected: " + userAddress;
+                document.getElementById("connectBtn").innerText = "Wallet Connected ✅";
+                loadAllData();
+                return;
+            } catch (e) {
+                console.error("In-app injection error", e);
+            }
+        }
+
+        // Fallback for regular browsers (Safari, Chrome) to trigger the beautiful Grid UI
+        if (!wcProvider || !web3Modal) {
+            alert("Engine setting up. Please try again in 2 seconds.");
             return;
         }
-        // Opens up the multi-wallet choice interface selection window panel
-        modal.open();
+
+        try {
+            if (wcProvider.connected) {
+                setupBlockchainConnection(wcProvider);
+            } else {
+                await wcProvider.connect();
+            }
+        } catch (err) {
+            console.log("User closed connection window framework:", err);
+            web3Modal.closeModal();
+        }
     }
 
-    async function handleWalletConnected(web3Provider) {
-        provider = new ethers.providers.Web3Provider(web3Provider);
+    async function setupBlockchainConnection(rawProvider) {
+        provider = new ethers.providers.Web3Provider(rawProvider);
         signer = provider.getSigner();
         userAddress = await signer.getAddress();
-        
         document.getElementById("wallet").innerHTML = "Connected: " + userAddress;
         document.getElementById("connectBtn").innerText = "Wallet Connected ✅";
         loadAllData();
