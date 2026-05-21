@@ -6,9 +6,6 @@
     <title>PEPEVOLT GAME</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     
-    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@web3modal/standalone@2.4.3/dist/index.umd.js"></script>
-
     <style>
         body {
             margin: 0; padding: 0;
@@ -62,20 +59,64 @@
         <button onclick="claimReward()">Claim</button>
     </div>
 
+    <script type="module">
+        import { createAppKit } from 'https://esm.sh/@reown/appkit?bundle';
+        import { Ethers5Adapter } from 'https://esm.sh/@reown/appkit-adapter-ethers5?bundle';
+        import { polygon } from 'https://esm.sh/@reown/appkit/networks?bundle';
+
+        const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
+
+        window.appKitModal = null;
+
+        async function initModalFallback() {
+            try {
+                window.appKitModal = createAppKit({
+                    adapters: [new Ethers5Adapter()],
+                    networks: [polygon],
+                    metadata: {
+                        name: 'PepeVolt Game',
+                        description: 'PepeVolt Tap Ecosystem',
+                        url: 'https://pepevolt.github.io',
+                        icons: ['https://pepevolt.github.io/favicon.ico']
+                    },
+                    projectId: PROJECT_ID,
+                    features: { analytics: false }
+                });
+
+                window.appKitModal.subscribeAccount(async (state) => {
+                    if (state.isConnected && state.address) {
+                        window.userAddress = state.address;
+                        document.getElementById("wallet").innerHTML = "Connected: " + window.userAddress;
+                        
+                        const baseWalletProvider = window.appKitModal.getWalletProvider();
+                        if (baseWalletProvider) {
+                            window.provider = new ethers.providers.Web3Provider(baseWalletProvider);
+                            window.signer = window.provider.getSigner();
+                            window.loadAllData();
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("AppKit framework loading failure:", e);
+            }
+        }
+
+        window.addEventListener("load", initModalFallback);
+    </script>
+
 <script>
     let PVLT_CONTRACT = "";
     let TREASURY_CONTRACT = "";
     let GAME_CONTRACT = "";
-    
-    // Project configuration parameters
-    const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
     let provider;
     let signer;
     let userAddress;
-    
-    let wcProvider;
-    let web3Modal;
+
+    // Local application performance optimization trackers
+    let localGPVLT = 0;
+    let localEnergy = 0;
+    let saveTimeout = null;
 
     const GAME_ABI = [
         "function tap() external",
@@ -104,48 +145,8 @@
             TREASURY_CONTRACT = config.treasury;
             GAME_CONTRACT = config.game;
             console.log("Production Configuration Loaded Safely.");
-            
-            // Seamlessly initialize the wallet selection modal packages in the background
-            initExternalModal();
         } catch (err) {
             console.error("Critical: Could not resolve production backend configs:", err);
-        }
-    }
-
-    async function initExternalModal() {
-        try {
-            // Setup the styling structure for the wallet choice layout grid
-            web3Modal = new window.Web3ModalStandalone.Web3Modal({
-                projectId: PROJECT_ID,
-                walletConnectVersion: 2,
-                standaloneChains: ["eip155:137"], // Targets Polygon Mainnet environment
-                themeMode: "dark"
-            });
-
-            // Spin up the core connection listener channels
-            wcProvider = await window.WalletConnectEthereumProvider.EthereumProvider.init({
-                projectId: PROJECT_ID,
-                chains: [137],
-                showQrModal: false, // Disables raw QR layouts to let the Grid template take over
-                metadata: {
-                    name: "PepeVolt Game",
-                    description: "PepeVolt Tap Engine Ecosystem",
-                    url: "https://pepevolt.github.io"
-                }
-            });
-
-            wcProvider.on("display_uri", (uri) => {
-                web3Modal.openModal({ uri });
-            });
-
-            wcProvider.on("accountsChanged", (accounts) => {
-                if (accounts.length > 0) {
-                    web3Modal.closeModal();
-                    assignConnectedProvider(wcProvider);
-                }
-            });
-        } catch(e) {
-            console.log("Modal initialization skipped or already running.", e);
         }
     }
 
@@ -155,87 +156,116 @@
             return;
         }
 
-        // SCENARIO 1: If user is inside MetaMask App Browser, connect instantly (your original logic)
+        // SCENARIO 1: Direct MetaMask App Browser native environment configuration check
         if (window.ethereum) {
             try {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                userAddress = await signer.getAddress();
-                document.getElementById("wallet").innerHTML = "Connected: " + userAddress;
+                window.provider = new ethers.providers.Web3Provider(window.ethereum);
+                await window.provider.send("eth_requestAccounts", []);
+                window.signer = window.provider.getSigner();
+                window.userAddress = await window.signer.getAddress();
+                document.getElementById("wallet").innerHTML = "Connected: " + window.userAddress;
                 loadAllData();
-                return; // Exit out, connection completed!
+                return;
             } catch (err) {
-                console.error("Internal injection connection rejected:", err);
+                console.error("In-app context assignment bypass error:", err);
             }
         }
 
-        // SCENARIO 2: Fallback for Safari/Chrome browsers - opens the wallet choice selection window
-        if (!wcProvider || !web3Modal) {
-            alert("External browser link frameworks are establishing connectivity profiles. Please try again.");
-            return;
-        }
-
-        try {
-            if (wcProvider.connected) {
-                assignConnectedProvider(wcProvider);
-            } else {
-                await wcProvider.connect();
+        // SCENARIO 2: External Standard Browser redirection mapping layout interface trigger
+        if (window.appKitModal) {
+            try {
+                await window.appKitModal.open();
+            } catch (err) {
+                console.error("Multi-wallet display layer invocation failure:", err);
             }
-        } catch (err) {
-            console.log("User closed connect prompt panel grid template manually.");
-            web3Modal.closeModal();
+        } else {
+            alert("Connection layer initialization processing. Tap again in an instant.");
         }
-    }
-
-    async function assignConnectedProvider(selectedProvider) {
-        provider = new ethers.providers.Web3Provider(selectedProvider);
-        signer = provider.getSigner();
-        userAddress = await signer.getAddress();
-        document.getElementById("wallet").innerHTML = "Connected: " + userAddress;
-        loadAllData();
     }
 
     async function loadAllData() {
-        if (!signer) return;
+        const activeSigner = window.signer || signer;
+        const activeAddress = window.userAddress || userAddress;
+        
+        if (!activeSigner || !activeAddress) return;
 
-        const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
-        const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, signer);
-        const treasury = new ethers.Contract(TREASURY_CONTRACT, TREASURY_ABI, signer);
+        const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, activeSigner);
+        const treasury = new ethers.Contract(TREASURY_CONTRACT, TREASURY_ABI, activeSigner);
 
         try {
-            const energy = await game.energy(userAddress);
-            document.getElementById("energy").innerHTML = energy.toString();
+            // Retrieve off-chain accumulated database progress statistics from Render 
+            const response = await fetch(`https://pvlt-server.onrender.com/api/user-stats?address=${activeAddress}`);
+            const stats = await response.json();
 
-            const gpvlt = await game.gPVLT(userAddress);
-            document.getElementById("gpvlt").innerHTML = ethers.utils.formatEther(gpvlt);
+            localEnergy = stats.energy;
+            localGPVLT = stats.gPVLT;
 
-            const walletPVLT = await pvlt.balanceOf(userAddress);
+            // Sync structural parameters directly to layout view indicators
+            document.getElementById("energy").innerHTML = localEnergy.toString();
+            document.getElementById("gpvlt").innerHTML = localGPVLT.toFixed(2);
+
+            // Fetch live parameters demanding real block inspection contexts
+            const walletPVLT = await pvlt.balanceOf(activeAddress);
             document.getElementById("walletBalance").innerHTML = ethers.utils.formatEther(walletPVLT);
             document.getElementById("pvlt").innerHTML = ethers.utils.formatEther(walletPVLT);
 
             const treasuryPVLT = await treasury.treasuryBalance();
             document.getElementById("treasuryBalance").innerHTML = ethers.utils.formatEther(treasuryPVLT);
         } catch (err) {
-            console.error("Data tracking failed:", err);
+            console.error("Data tracking initialization sync failure:", err);
         }
     }
 
-    async function tap() {
+    window.loadAllData = loadAllData;
+
+    // Free local tapping handling execution pipeline
+    function tap() {
+        const activeAddress = window.userAddress || userAddress;
+        if (!activeAddress) return alert("Please connect your wallet first!");
+
+        if (localEnergy <= 0) {
+            alert("You run out of Energy! Replenish stats or wait for automated server refilling routines.");
+            return;
+        }
+
+        // Modify variables locally without causing a gas prompt window lookup
+        localEnergy -= 1;
+        localGPVLT += 1;
+
+        document.getElementById("energy").innerHTML = localEnergy.toString();
+        document.getElementById("gpvlt").innerHTML = localGPVLT.toFixed(2);
+
+        // Clear ongoing debounce counters to delay batching triggers while clicks remain active
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(syncTapsToBackend, 1500);
+    }
+
+    async function syncTapsToBackend() {
+        const activeAddress = window.userAddress || userAddress;
+        if (!activeAddress) return;
+
         try {
-            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
-            const tx = await game.tap();
-            await tx.wait();
-            loadAllData();
-        } catch(err) {
-            alert(err.data?.message || err.message);
+            await fetch("https://pvlt-server.onrender.com/api/sync-progress", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    walletAddress: activeAddress,
+                    currentGPVLT: localGPVLT,
+                    currentEnergy: localEnergy
+                })
+            });
+            console.log("Session click tracking milestones synchronized to server database.");
+        } catch (err) {
+            console.error("Automated tracking checkpoint broadcast sync failure:", err);
         }
     }
 
     async function buyEnergy() {
+        const activeSigner = window.signer || signer;
+        if (!activeSigner) return alert("Connect wallet first!");
         try {
-            const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, signer);
-            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
+            const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, activeSigner);
+            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, activeSigner);
 
             const approveTx = await pvlt.approve(GAME_CONTRACT, ethers.utils.parseEther("300"));
             await approveTx.wait();
@@ -250,11 +280,13 @@
     }
 
     async function convertGPVLT() {
+        const activeSigner = window.signer || signer;
+        if (!activeSigner) return alert("Connect wallet first!");
         try {
             const amount = prompt("Enter gPVLT Amount to Convert:");
             if (!amount) return;
 
-            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
+            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, activeSigner);
             const tx = await game.convertToPVLT(ethers.utils.parseEther(amount));
             await tx.wait();
             alert("Converted successfully!");
@@ -265,11 +297,13 @@
     }
 
     async function claimReward() {
+        const activeSigner = window.signer || signer;
+        if (!activeSigner) return alert("Connect wallet first!");
         try {
             const amount = prompt("Enter PVLT Amount to Claim:");
             if (!amount) return;
 
-            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
+            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, activeSigner);
             const tx = await game.claimPVLT(ethers.utils.parseEther(amount));
             await tx.wait();
             alert("Claim successful!");
