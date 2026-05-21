@@ -246,7 +246,6 @@ async function handleTapAction(e) {
 
     isTappingInProgress = true;
     
-    // Optimistic UI updates makes tapping register instantly
     points += 1;
     energy -= 1;
     updateUI();
@@ -273,7 +272,8 @@ async function handleTapAction(e) {
 async function convertGPVLT() {
     if(!wallet) { alert("Connect wallet first!"); return; }
     if(points < 10000) {
-        alert(`Conversion Denied: You currently have ${points} gPVLT. You need at least 10,000 lightning points before you can swap into a diamond asset value.`);
+        // FIXED: Replaced confusing string terminology 'lightning points' with explicit 'gPVLT' token values
+        alert(`Conversion Denied: You currently have ${points} gPVLT. You need at least 10,000 gPVLT before you can swap into a diamond asset value.`);
         return;
     }
     try {
@@ -341,7 +341,6 @@ async function claimPVLT() {
     } catch(e) { alert("Claim execution rejected or canceled."); }
 }
 
-// Bind cross-platform inputs cleanly without using risky HTML inline declarations
 const tapSurface = document.getElementById("mainTapSurface");
 tapSurface.addEventListener("touchstart", handleTapAction, { passive: false });
 tapSurface.addEventListener("click", handleTapAction);
