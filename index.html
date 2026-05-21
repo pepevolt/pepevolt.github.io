@@ -11,16 +11,18 @@
         .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: #16213e; text-align: center; }
         .stat-item { display: flex; flex-direction: column; font-size: 0.75rem; }
         .emoji { font-size: 1.2rem; margin-bottom: 4px; }
-        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
         .tap-circle { width: 180px; height: 180px; border-radius: 50%; border: none; background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; cursor: pointer; transition: transform 0.05s; box-shadow: 0 8px 0 #3a9b7c; }
         .tap-circle:active { transform: scale(0.95); box-shadow: 0 4px 0 #3a9b7c; }
-        .tap-circle:disabled { background: #555; box-shadow: none; cursor: not-allowed; }
-        .energy-bar { margin: 20px 0; width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
+        .energy-bar { margin: 10px 0; width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
         .energy-fill { height: 100%; background: #4ecca3; width: 100%; transition: width 0.3s; }
+        
+        /* Buttons */
         .footer-panel { padding: 15px; background: #0f3460; text-align: center; display: flex; flex-direction: column; gap: 10px; }
         button { padding: 12px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
         .btn-convert { background: #e94560; color: white; }
-        .btn-claim { background: #f39c12; color: #1a1a2e; font-size: 1.1rem; }
+        .btn-claim { background: #f39c12; color: #1a1a2e; font-size: 1.1rem; width: 80%; }
+        .btn-buy-energy { background: #4ecca3; color: #1a1a2e; font-size: 1.1rem; width: 80%; }
     </style>
 </head>
 <body>
@@ -35,9 +37,11 @@
         <main class="interaction-area">
             <button id="tap-button" class="tap-circle">TAP!</button>
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
-            <div id="pvlt-display" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 10px;">Balance: 0.000 PVLT</div>
-            <!-- Claim Button -->
+            <div id="pvlt-display" style="font-size: 1.2rem; font-weight: bold;">Balance: 0.000 PVLT</div>
+            
+            <!-- Claim and Buy Buttons -->
             <button class="btn-claim" onclick="claimReward()">Claim Reward</button>
+            <button class="btn-buy-energy" onclick="buyEnergy()">Buy Energy (1 gPVLT)</button>
         </main>
 
         <footer class="footer-panel">
@@ -47,7 +51,6 @@
     </div>
 
     <script>
-        // Load data from localStorage
         let energy = parseInt(localStorage.getItem('energy')) || 50;
         let points = parseInt(localStorage.getItem('points')) || 0;
         let gpvlt = parseFloat(localStorage.getItem('gpvlt')) || 0;
@@ -74,7 +77,6 @@
             document.getElementById('points').innerText = points;
             document.getElementById('gpvlt').innerText = gpvlt.toFixed(2);
             document.getElementById('pvlt-display').innerText = `Balance: ${pvlt.toFixed(3)} PVLT`;
-            document.getElementById('tap-button').disabled = (energy === 0);
         }
 
         document.getElementById('tap-button').addEventListener('click', () => {
@@ -85,6 +87,17 @@
                 saveGame();
             }
         });
+
+        function buyEnergy() {
+            if (gpvlt >= 1) {
+                gpvlt -= 1;
+                energy = 50;
+                updateUI();
+                saveGame();
+            } else {
+                alert("Need 1 gPVLT to refill energy!");
+            }
+        }
 
         function convertPoints() {
             if (points >= 100) {
@@ -104,15 +117,12 @@
 
         function claimReward() {
             if (pvlt > 0) {
-                alert(`Success! You have claimed ${pvlt.toFixed(3)} PVLT.`);
-                pvlt = 0; // Reset balance after claiming
+                alert(`Success! Claimed ${pvlt.toFixed(3)} PVLT.`);
+                pvlt = 0;
                 updateUI(); saveGame();
-            } else {
-                alert("No PVLT available to claim.");
-            }
+            } else { alert("No PVLT available."); }
         }
 
-        // Initialize UI on load
         updateUI();
     </script>
 </body>
