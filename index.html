@@ -6,9 +6,19 @@
     <title>Tap Tap Game</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body, html { margin: 0; padding: 0; height: 100%; background: #1a1a2e; color: #ffffff; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
-        .game-container { display: flex; flex-direction: column; height: 100vh; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: #16213e; text-align: center; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; }
+        
+        /* Background Animation Layer */
+        .bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #1a1a2e; overflow: hidden; }
+        .particle { position: absolute; border-radius: 50%; opacity: 0.3; animation: float 10s infinite linear; }
+        @keyframes float { 
+            0% { transform: translateY(100vh) scale(0); }
+            50% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) scale(1); }
+        }
+
+        .game-container { display: flex; flex-direction: column; height: 100vh; background: transparent; color: #ffffff; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: rgba(22, 33, 62, 0.8); text-align: center; backdrop-filter: blur(5px); }
         .stat-item { display: flex; flex-direction: column; font-size: 0.75rem; }
         .emoji { font-size: 1.2rem; margin-bottom: 4px; }
         .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
@@ -27,11 +37,13 @@
         .btn-wallet.connected { background: #e74c3c; }
         .game-btn { background: #4ecca3; color: #1a1a2e; width: 80%; }
         
-        .buy-menu { background: #16213e; padding: 15px; border-radius: 10px; width: 90%; text-align: center; }
-        .footer-panel { padding: 10px; background: #0f3460; text-align: center; display: flex; flex-direction: column; gap: 5px; }
+        .buy-menu { background: rgba(22, 33, 62, 0.8); padding: 15px; border-radius: 10px; width: 90%; text-align: center; backdrop-filter: blur(5px); }
+        .footer-panel { padding: 10px; background: rgba(15, 52, 96, 0.8); text-align: center; display: flex; flex-direction: column; gap: 5px; backdrop-filter: blur(5px); }
     </style>
 </head>
 <body>
+
+    <div class="bg-animation" id="bg-animation"></div>
 
     <div class="game-container">
         <header class="stats">
@@ -62,6 +74,18 @@
     </div>
 
     <script>
+        // Generate Background Particles
+        const bg = document.getElementById('bg-animation');
+        for(let i=0; i<20; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + "%";
+            p.style.width = p.style.height = (Math.random() * 30 + 10) + "px";
+            p.style.backgroundColor = i % 2 === 0 ? '#4ecca3' : '#3498db';
+            p.style.animationDelay = (Math.random() * 10) + "s";
+            bg.appendChild(p);
+        }
+
         let energy = 50, points = 0, gpvlt = 0, pvlt = 0, isWalletConnected = false;
         const FREE_CAP = 50;
 
@@ -95,10 +119,10 @@
             }
         }
 
-        // Logic
         document.getElementById('tap-button').addEventListener('click', () => {
             if (isWalletConnected && energy > 0) { energy--; points++; updateUI(); }
         });
+
         function confirmRefill() { if (pvlt >= 100) { pvlt -= 100; energy += 10000; updateUI(); } else alert("Need 100 PVLT!"); }
         function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } }
         function convertGPVLT() { if (gpvlt >= 100) { gpvlt -= 100; pvlt += 1; updateUI(); } }
