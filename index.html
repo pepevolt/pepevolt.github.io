@@ -18,16 +18,13 @@
         .tap-circle:active:not(:disabled) { transform: scale(0.95); }
         
         .energy-bar { width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
-        .energy-fill { height: 100%; background: #4ecca3; width: 50%; transition: width 0.3s; }
+        .energy-fill { height: 100%; background: #4ecca3; width: 0%; transition: width 0.3s; }
         
-        /* Themed Buttons */
         button { padding: 12px; margin: 5px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        .btn-wallet { background: #3498db; color: white; width: 80%; transition: background 0.3s; }
+        .btn-wallet { background: #3498db; color: white; width: 80%; }
         .btn-wallet.connected { background: #e74c3c; }
-        
-        /* Green theme for all interaction buttons */
         .game-btn { background: #4ecca3; color: #1a1a2e; width: 80%; }
         
         .buy-menu { background: #16213e; padding: 15px; border-radius: 10px; width: 90%; text-align: center; }
@@ -47,14 +44,14 @@
             <button id="tap-button" class="tap-circle" disabled>TAP!</button>
             <button id="wallet-btn" class="btn-wallet" onclick="toggleWallet()">Connect Wallet</button>
             
-            <div class="energy-bar"><div id="energy-fill" class="energy-fill" style="width: 0%;"></div></div>
+            <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
             <div id="pvlt-display" style="font-weight: bold;">Balance: Locked</div>
             
             <button class="game-btn" onclick="convertPoints()" disabled>Convert 100 💎 → 1 gPVLT</button>
             <button class="game-btn" onclick="claimReward()" disabled>Claim Reward</button>
 
             <div class="buy-menu">
-                <div style="margin-bottom: 8px; font-size: 0.9rem;">10,000 Energy = 100 PVLT</div>
+                <div id="refill-text" style="margin-bottom: 8px; font-size: 0.9rem;">Locked</div>
                 <button class="game-btn" onclick="confirmRefill()" disabled>Confirm Refill</button>
             </div>
         </main>
@@ -86,25 +83,26 @@
                 document.getElementById('points').innerText = "Locked";
                 document.getElementById('gpvlt').innerText = "Locked";
                 document.getElementById('pvlt-display').innerText = "Balance: Locked";
+                document.getElementById('refill-text').innerText = "Locked";
                 document.getElementById('energy-fill').style.width = "0%";
             } else {
                 document.getElementById('energy').innerText = `${energy > FREE_CAP ? FREE_CAP : energy}/${FREE_CAP}`;
                 document.getElementById('points').innerText = points;
                 document.getElementById('gpvlt').innerText = gpvlt.toFixed(2);
                 document.getElementById('pvlt-display').innerText = `Balance: ${pvlt.toFixed(3)} PVLT`;
+                document.getElementById('refill-text').innerText = "10,000 Energy = 100 PVLT";
                 document.getElementById('energy-fill').style.width = (Math.min(energy, FREE_CAP) / FREE_CAP * 100) + "%";
             }
         }
 
+        // Logic
         document.getElementById('tap-button').addEventListener('click', () => {
             if (isWalletConnected && energy > 0) { energy--; points++; updateUI(); }
         });
-
-        function confirmRefill() { if (pvlt >= 100) { pvlt -= 100; energy += 10000; updateUI(); } }
+        function confirmRefill() { if (pvlt >= 100) { pvlt -= 100; energy += 10000; updateUI(); } else alert("Need 100 PVLT!"); }
         function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } }
         function convertGPVLT() { if (gpvlt >= 100) { gpvlt -= 100; pvlt += 1; updateUI(); } }
         function claimReward() { if (pvlt > 0) { alert("Claimed: " + pvlt.toFixed(3) + " PVLT"); pvlt = 0; updateUI(); } }
-
         setInterval(() => { if (isWalletConnected && energy < FREE_CAP) { energy++; updateUI(); } }, 1000);
     </script>
 </body>
