@@ -2,159 +2,81 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- This meta tag is critical to prevent zooming/scaling -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tap Tap Game</title>
     <style>
-        /* Force layout stability */
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #1a1a2e;
-            color: #ffffff;
-            overflow: hidden; /* Prevents bounce scrolling */
-            touch-action: manipulation; /* Disables zoom on tap */
-        }
-
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            width: 100%;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            padding: 15px 5px;
-            background: #16213e;
-            text-align: center;
-        }
-
-        .stat-item { 
-            display: flex; 
-            flex-direction: column; 
-            font-size: 0.75rem;
-            align-items: center;
-        }
-
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #1a1a2e; color: #ffffff; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
+        .game-container { display: flex; flex-direction: column; height: 100vh; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: #16213e; text-align: center; }
+        .stat-item { display: flex; flex-direction: column; font-size: 0.75rem; }
         .emoji { font-size: 1.2rem; margin-bottom: 4px; }
-
-        .interaction-area {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-        }
-
-        .tap-circle {
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            border: none;
-            background: #4ecca3;
-            color: #1a1a2e;
-            font-size: 2rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.05s;
-            outline: none;
-            box-shadow: 0 8px 0 #3a9b7c; /* Adds depth without layout shift */
-        }
-
-        .tap-circle:active {
-            transform: scale(0.95);
-            box-shadow: 0 4px 0 #3a9b7c;
-        }
-
-        .footer-panel {
-            padding: 20px;
-            background: #0f3460;
-            text-align: center;
-        }
-
-        .convert-btn {
-            padding: 12px 25px;
-            background: #e94560;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-        }
+        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .tap-circle { width: 180px; height: 180px; border-radius: 50%; border: none; background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; cursor: pointer; transition: transform 0.05s; box-shadow: 0 8px 0 #3a9b7c; }
+        .tap-circle:active { transform: scale(0.95); box-shadow: 0 4px 0 #3a9b7c; }
+        .tap-circle:disabled { background: #555; box-shadow: none; cursor: not-allowed; }
+        .energy-bar { margin-top: 20px; width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
+        .energy-fill { height: 100%; background: #4ecca3; width: 100%; transition: width 0.3s; }
+        .footer-panel { padding: 20px; background: #0f3460; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="game-container">
         <header class="stats">
-            <div class="stat-item">
-                <span class="emoji">⚡</span>
-                <span id="energy">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="emoji">💎</span>
-                <span id="points">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="emoji">🪙</span>
-                <span id="gpvlt">0.00</span>
-            </div>
+            <div class="stat-item"><span class="emoji">⚡</span><span id="energy">50/50</span></div>
+            <div class="stat-item"><span class="emoji">💎</span><span id="points">0</span></div>
+            <div class="stat-item"><span class="emoji">🪙</span><span id="gpvlt">0.00</span></div>
         </header>
 
         <main class="interaction-area">
             <button id="tap-button" class="tap-circle">TAP!</button>
+            <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
+            <div id="pvlt-display" style="margin-top: 20px; font-weight: bold;">Claimable: 0.000 PVLT</div>
         </main>
 
         <footer class="footer-panel">
-            <div id="pvlt-display" style="margin-bottom: 10px; font-weight: bold;">Claimable: 0.000 PVLT</div>
-            <button class="convert-btn" onclick="convertPoints()">Convert 50 💎 to 0.5 gPVLT</button>
+            <button class="convert-btn" onclick="convertPoints()">Convert 100 💎 to 1 gPVLT</button>
         </footer>
     </div>
 
     <script>
-        let energy = 0;
+        let energy = 50;
         let points = 0;
         let gpvlt = 0;
 
-        const eEl = document.getElementById('energy');
-        const pEl = document.getElementById('points');
-        const gEl = document.getElementById('gpvlt');
-        const cEl = document.getElementById('pvlt-display');
+        // Energy Refill Logic (1 per second)
+        setInterval(() => {
+            if (energy < 50) {
+                energy++;
+                updateUI();
+            }
+        }, 1000);
 
         function updateUI() {
-            eEl.innerText = energy;
-            pEl.innerText = points;
-            gEl.innerText = gpvlt.toFixed(2);
-            let pvlt = gpvlt / 1000;
-            cEl.innerText = `Claimable: ${pvlt.toFixed(3)} PVLT`;
+            document.getElementById('energy').innerText = `${energy}/50`;
+            document.getElementById('energy-fill').style.width = (energy / 50 * 100) + "%";
+            document.getElementById('points').innerText = points;
+            document.getElementById('gpvlt').innerText = gpvlt.toFixed(2);
+            document.getElementById('pvlt-display').innerText = `Claimable: ${(gpvlt / 100).toFixed(3)} PVLT`;
+            document.getElementById('tap-button').disabled = (energy === 0);
         }
 
         document.getElementById('tap-button').addEventListener('click', () => {
-            energy += 1;
-            points += 1;
-            updateUI();
+            if (energy > 0) {
+                energy--;
+                points += 1;
+                updateUI();
+            }
         });
 
         function convertPoints() {
-            if (points >= 50) {
-                points -= 50;
-                gpvlt += 0.5;
+            if (points >= 100) {
+                points -= 100;
+                gpvlt += 1;
                 updateUI();
             } else {
-                alert("Need 50 Points!");
+                alert("Need 100 Points!");
             }
         }
     </script>
