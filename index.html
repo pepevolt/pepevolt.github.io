@@ -8,10 +8,9 @@
         :root {
             --bg-color: #080b10;
             --card-color: #0f141c;
-            --accent-color: #00ff66; /* Pepe Green */
-            --accent-hover: #33ff88;
+            --accent-color: #00ff66; /* PVLT Green */
+            --gov-color: #ffaa00;    /* gPVLT Gold */
             --text-color: #ffffff;
-            --gold-color: #00ff66;
         }
 
         * {
@@ -24,7 +23,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Fixed viewport handling for modern mobile browsers */
         html, body {
             width: 100%;
             height: 100%;
@@ -39,7 +37,6 @@
             align-items: center;
         }
 
-        /* Container scales nicely on desktop, but goes true full-screen on mobile */
         .game-container {
             width: 100%;
             height: 100%;
@@ -63,7 +60,6 @@
             }
         }
 
-        /* Screen standardizations */
         .screen {
             position: absolute;
             top: env(safe-area-inset-top, 0);
@@ -96,14 +92,25 @@
 
         p {
             color: #64748b;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             text-align: center;
             line-height: 1.5;
             max-width: 85%;
             font-size: 0.95rem;
         }
 
-        /* Buttons */
+        .ratio-tag {
+            background: rgba(255, 170, 0, 0.1);
+            color: var(--gov-color);
+            border: 1px solid rgba(255, 170, 0, 0.2);
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.5px;
+        }
+
         .btn {
             background-color: var(--accent-color);
             color: #000;
@@ -131,12 +138,12 @@
             box-shadow: none;
         }
 
-        /* Fixed Top HUD System */
+        /* Top HUD Configuration */
         .hud {
             width: 100%;
-            display: flex;
-            justify-between;
-            gap: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
             padding: 16px;
             z-index: 20;
             position: absolute;
@@ -145,46 +152,48 @@
         }
 
         .hud-item {
-            flex: 1;
             background: rgba(255, 255, 255, 0.03);
-            padding: 12px;
+            padding: 10px 12px;
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.06);
             text-align: center;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #94a3b8;
         }
 
         .hud-item strong {
             display: block;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #fff;
             margin-top: 2px;
         }
 
-        #score-display {
-            color: var(--accent-color);
+        .hud-full {
+            grid-column: span 2;
+            padding: 6px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.15);
         }
 
-        /* True Play Area Mechanics */
+        /* Target Spawning Canvas */
         .play-area {
             position: absolute;
-            top: 90px; /* Safe padding below HUD layout */
+            top: 130px; 
             bottom: 0;
             left: 0;
             width: 100%;
             z-index: 10;
         }
 
-        /* Beautiful Neon Pepe Coin Target */
         .token-target {
-            width: 95px;
-            height: 95px;
-            background: radial-gradient(circle, #00ff66 0%, #054019 100%);
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             position: absolute;
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 35px rgba(0, 255, 102, 0.6), inset 0 0 15px rgba(255,255,255,0.4);
             cursor: pointer;
             display: flex;
             justify-content: center;
@@ -192,12 +201,22 @@
             font-size: 2.2rem;
             border: 3px solid #ffffff;
             touch-action: manipulation;
+            transition: background 0.1s, box-shadow 0.1s;
         }
 
-        /* Dynamic Pop Element */
+        .coin-pvlt {
+            background: radial-gradient(circle, #00ff66 0%, #054019 100%);
+            box-shadow: 0 0 35px rgba(0, 255, 102, 0.6), inset 0 0 15px rgba(255,255,255,0.4);
+        }
+
+        .coin-gpvlt {
+            background: radial-gradient(circle, #ffaa00 0%, #78350f 100%);
+            box-shadow: 0 0 40px rgba(255, 170, 0, 0.8), inset 0 0 15px rgba(255,255,255,0.6);
+        }
+
+        /* Floating Node Animations */
         .pop {
             position: absolute;
-            color: var(--accent-color);
             font-weight: 800;
             font-size: 1.5rem;
             animation: floatUp 0.5s ease-out forwards;
@@ -206,17 +225,37 @@
             z-index: 30;
         }
 
+        .pop-pvlt { color: var(--accent-color); }
+        .pop-gpvlt { color: var(--gov-color); font-size: 1.7rem; }
+
         @keyframes floatUp {
             0% { transform: translate(-50%, -50%) translateY(0) scale(1); opacity: 1; }
             100% { transform: translate(-50%, -50%) translateY(-80px) scale(1.3); opacity: 0; }
         }
 
+        /* Yield Summary Modules */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 85%;
+            margin-bottom: 1rem;
+        }
+
         .stat-box {
             background: rgba(255, 255, 255, 0.02);
-            width: 85%;
-            padding: 24px;
-            border-radius: 24px;
+            padding: 14px;
+            border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: center;
+        }
+
+        .total-valuation-box {
+            background: linear-gradient(135deg, rgba(0,255,102,0.03) 0%, rgba(255,170,0,0.03) 100%);
+            width: 85%;
+            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 102, 0.15);
             text-align: center;
             margin-bottom: 2rem;
         }
@@ -229,30 +268,44 @@
         <div id="start-screen" class="screen">
             <div style="font-size: 4.5rem; margin-bottom: 1rem;">⚡🐸</div>
             <h1>PEPEVOLT</h1>
-            <p>Tap the lightning Pepe coin before the timer runs dry to claim your allocation!</p>
+            <p>Tap the Pepe coin to mine allocation blocks. Keep an eye out for high-value governance rounds.</p>
+            <div class="ratio-tag">EXCHANGE RATE: 100 gPVLT = 1 PVLT</div>
             <button class="btn" onclick="startGame()">Start Mining</button>
         </div>
 
         <div id="game-screen" class="screen hidden" style="padding: 0;">
             <div class="hud">
-                <div class="hud-item">Mined: <strong id="score-display">0 $VOLT</strong></div>
-                <div class="hud-item">Time Left: <strong id="time-display">15s</strong></div>
+                <div class="hud-item">PVLT Block: <strong id="score-display">0</strong></div>
+                <div class="hud-item">gPVLT Block: <strong id="gov-display">0</strong></div>
+                <div class="hud-item hud-full">Time Remaining: <span id="time-display">15s</span></div>
             </div>
             <div class="play-area" id="play-area">
-                <div id="target" class="token-target">🐸</div>
+                <div id="target" class="token-target coin-pvlt">🐸</div>
             </div>
         </div>
 
         <div id="end-screen" class="screen hidden">
-            <div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>
-            <h1>Round Done</h1>
-            <p>Your mining session secure. Claim your $VOLT tokens directly to your web3 stack.</p>
+            <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🎉</div>
+            <h1>Mining Complete</h1>
+            <p>Session summary locked successfully.</p>
             
-            <div class="stat-box">
-                <div style="color: #64748b; font-size: 0.9rem; font-weight: 600; letter-spacing: 1px; margin-bottom: 5px;">ACCUMULATED BALANCE</div>
-                <div style="font-size: 2.5rem; font-weight: 800; color: var(--accent-color);">
-                    <span id="final-score">0</span> $VOLT
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; margin-bottom: 4px;">RAW PVLT</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-color);" id="final-score">0</div>
                 </div>
+                <div class="stat-box">
+                    <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; margin-bottom: 4px;">RAW gPVLT</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--gov-color);" id="final-gov">0</div>
+                </div>
+            </div>
+
+            <div class="total-valuation-box">
+                <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px;">CONSOLIDATED NET VALUE</div>
+                <div style="font-size: 2rem; font-weight: 900; color: #ffffff;">
+                    <span id="consolidated-value" style="color: var(--accent-color);">0.00</span> <span style="font-size: 1.2rem; font-weight: 700;">PVLT</span>
+                </div>
+                <div style="color: #64748b; font-size: 0.7rem; margin-top: 4px;">(Includes converted gPVLT balance)</div>
             </div>
 
             <button class="btn" id="claim-btn" onclick="claimTokens()">Claim Rewards</button>
@@ -262,7 +315,8 @@
     </div>
 
     <script>
-        let score = 0;
+        let pvltScore = 0;
+        let gpvltScore = 0;
         let timeLeft = 15; 
         let gameInterval;
         const gameDuration = 15; 
@@ -274,8 +328,11 @@
         const target = document.getElementById('target');
         const playArea = document.getElementById('play-area');
         const scoreDisplay = document.getElementById('score-display');
+        const govDisplay = document.getElementById('gov-display');
         const timeDisplay = document.getElementById('time-display');
         const finalScore = document.getElementById('final-score');
+        const finalGov = document.getElementById('final-gov');
+        const consolidatedValue = document.getElementById('consolidated-value');
         const claimBtn = document.getElementById('claim-btn');
 
         function showScreen(screenId) {
@@ -286,9 +343,12 @@
         }
 
         function startGame() {
-            score = 0;
+            pvltScore = 0;
+            gpvltScore = 0;
             timeLeft = gameDuration;
-            scoreDisplay.textContent = `${score} $VOLT`;
+            
+            scoreDisplay.textContent = pvltScore;
+            govDisplay.textContent = gpvltScore;
             timeDisplay.textContent = `${timeLeft}s`;
             claimBtn.textContent = "Claim Rewards";
             claimBtn.disabled = false;
@@ -309,8 +369,7 @@
             const areaWidth = playArea.clientWidth;
             const areaHeight = playArea.clientHeight;
             
-            // Safe bounds margins so it never overlaps edges or the HUD container top boundary
-            const paddingX = 55;
+            const paddingX = 60;
             const paddingY = 60; 
             
             const randomX = Math.random() * (areaWidth - paddingX * 2) + paddingX;
@@ -318,23 +377,38 @@
 
             target.style.left = `${randomX}px`;
             target.style.top = `${randomY}px`;
+
+            // 20% Probability window for gPVLT spawning loops
+            if(Math.random() < 0.20) {
+                target.className = "token-target coin-gpvlt";
+                target.dataset.tokenType = "gpvlt";
+            } else {
+                target.className = "token-target coin-pvlt";
+                target.dataset.tokenType = "pvlt";
+            }
         }
 
-        // Pointerdown handles modern mobile touch intervals much faster than 'click'
         target.addEventListener('pointerdown', (e) => {
             e.preventDefault();
-            score += 1;
-            scoreDisplay.textContent = `${score} $VOLT`;
+            const type = target.dataset.tokenType;
             
-            // Calculate absolute coords inside viewport
-            createPopEffect(e.clientX, e.clientY);
+            if(type === "gpvlt") {
+                gpvltScore += 1;
+                govDisplay.textContent = gpvltScore;
+                createPopEffect(e.clientX, e.clientY, "+1 gPVLT", "pop-gpvlt");
+            } else {
+                pvltScore += 1;
+                scoreDisplay.textContent = pvltScore;
+                createPopEffect(e.clientX, e.clientY, "+1 PVLT", "pop-pvlt");
+            }
+            
             moveTarget();
         });
 
-        function createPopEffect(x, y) {
+        function createPopEffect(x, y, text, customClass) {
             const pop = document.createElement('div');
-            pop.classList.add('pop');
-            pop.textContent = '+1 $VOLT';
+            pop.className = `pop ${customClass}`;
+            pop.textContent = text;
             pop.style.left = `${x}px`;
             pop.style.top = `${y}px`;
             
@@ -344,17 +418,25 @@
 
         function endGame() {
             clearInterval(gameInterval);
-            finalScore.textContent = score;
+            
+            // Run economic conversion math: Total PVLT value = PVLT + (gPVLT / 100)
+            const totalConvertedValue = pvltScore + (gpvltScore / 100);
+            
+            finalScore.textContent = pvltScore;
+            finalGov.textContent = gpvltScore;
+            consolidatedValue.textContent = totalConvertedValue.toFixed(2);
+            
             showScreen('end-screen');
         }
 
         function claimTokens() {
-            claimBtn.textContent = "Signing Block Transaction...";
+            claimBtn.textContent = "Processing Conversion...";
             claimBtn.disabled = true;
 
             setTimeout(() => {
-                claimBtn.textContent = "Success! Deposited";
-                alert(`Successfully minted and pushed ${score} $VOLT to your linked application profile!`);
+                const total = pvltScore + (gpvltScore / 100);
+                claimBtn.textContent = "Success! Credited";
+                alert(`Conversion Settlement Complete!\n\nRaw Mining Totals:\n• ${pvltScore} PVLT\n• ${gpvltScore} gPVLT\n\nTotal Net Allocation Added:\n• ${total.toFixed(2)} PVLT`);
             }, 1600);
         }
     </script>
