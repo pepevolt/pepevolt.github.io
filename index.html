@@ -280,12 +280,11 @@
             if (!amount || parseFloat(amount) <= 0) return;
 
             if (parseFloat(amount) > localGPVLT) {
-                alert("Insufficient gPVLT balance stored locally.");
+                alert("Insufficient local gPVLT balance.");
                 return;
             }
 
-            // Sync score from Render database to contract ledger using backend administrator key first
-            alert("Verifying score points with network nodes... please stand by.");
+            // Sync score from backend validation checkpoint
             const syncResponse = await fetch("https://pvlt-server.onrender.com/api/blockchain-sync", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -298,7 +297,7 @@
                 return;
             }
 
-            // Proceed with contract conversion execution
+            // Proceed with contract execution directly
             const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, activeSigner);
             const tx = await game.convertToPVLT(ethers.utils.parseEther(amount));
             await tx.wait();
@@ -318,8 +317,6 @@
             const amount = prompt("Enter PVLT Amount to Claim:");
             if (!amount || parseFloat(amount) <= 0) return;
 
-            // Sync scores to prevent contract balance shortfalls
-            alert("Verifying rewards with network nodes... please stand by.");
             const syncResponse = await fetch("https://pvlt-server.onrender.com/api/blockchain-sync", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
