@@ -12,7 +12,6 @@
         .particle { position: absolute; border-radius: 50%; opacity: 0.15; animation: float 15s infinite linear; }
         @keyframes float { 0% { transform: translateY(100vh) scale(0); } 50% { opacity: 0.25; } 100% { transform: translateY(-10vh) scale(1.5); } }
 
-        /* Added padding-bottom for the requested gap */
         .game-container { display: flex; flex-direction: column; height: 100vh; padding-bottom: 30px; background: transparent; color: #ffffff; }
         
         .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: rgba(255, 255, 255, 0.1); text-align: center; backdrop-filter: blur(10px); }
@@ -21,8 +20,19 @@
         
         .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
         
-        .tap-circle { width: 160px; height: 160px; border-radius: 50%; border: none; background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; cursor: pointer; transition: transform 0.05s, opacity 0.3s; box-shadow: 0 8px 0 #3a9b7c; }
-        .tap-circle:disabled { background: #7f8c8d; box-shadow: none; opacity: 0.4; cursor: not-allowed; }
+        /* Updated Tap Circle Styles */
+        .tap-circle { 
+            width: 160px; height: 160px; border-radius: 50%; border: none; 
+            font-size: 2rem; font-weight: bold; cursor: pointer; 
+            transition: all 0.3s ease; box-shadow: 0 8px 0 #3a9b7c; 
+            background: #4ecca3; /* Default fully green */
+        }
+        /* Half-color state when disconnected */
+        .tap-circle.disconnected { 
+            background: linear-gradient(180deg, #4ecca3 50%, #4a4a4a 50%);
+            box-shadow: 0 8px 0 #333;
+        }
+        .tap-circle:disabled { opacity: 0.7; cursor: not-allowed; }
         .tap-circle:active:not(:disabled) { transform: scale(0.95); }
         
         .energy-bar { width: 80%; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
@@ -51,7 +61,7 @@
         </header>
 
         <main class="interaction-area">
-            <button id="tap-button" class="tap-circle" disabled>TAP!</button>
+            <button id="tap-button" class="tap-circle disconnected" disabled>TAP!</button>
             <button id="wallet-btn" class="btn-wallet" onclick="toggleWallet()">Connect Wallet</button>
             
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
@@ -72,7 +82,6 @@
     </div>
 
     <script>
-        // Init background particles
         const bg = document.getElementById('bg-animation');
         for(let i=0; i<15; i++) {
             const p = document.createElement('div');
@@ -90,10 +99,20 @@
         function toggleWallet() {
             isWalletConnected = !isWalletConnected;
             const btn = document.getElementById('wallet-btn');
-            const gameBtns = document.querySelectorAll('.game-btn, #tap-button');
+            const tapBtn = document.getElementById('tap-button');
+            const gameBtns = document.querySelectorAll('.game-btn');
             
             btn.innerText = isWalletConnected ? "Disconnect Wallet" : "Connect Wallet";
             btn.className = isWalletConnected ? "btn-wallet connected" : "btn-wallet";
+            
+            // Toggle Tap Circle class
+            if (isWalletConnected) {
+                tapBtn.classList.remove('disconnected');
+                tapBtn.disabled = false;
+            } else {
+                tapBtn.classList.add('disconnected');
+                tapBtn.disabled = true;
+            }
             
             gameBtns.forEach(b => b.disabled = !isWalletConnected);
             updateUI();
