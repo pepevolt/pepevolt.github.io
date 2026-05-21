@@ -11,7 +11,7 @@
         .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: #16213e; text-align: center; }
         .stat-item { display: flex; flex-direction: column; font-size: 0.75rem; }
         .emoji { font-size: 1.2rem; margin-bottom: 4px; }
-        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; padding: 10px; }
+        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
         .tap-circle { width: 160px; height: 160px; border-radius: 50%; border: none; background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; cursor: pointer; transition: transform 0.05s; box-shadow: 0 8px 0 #3a9b7c; }
         .tap-circle:active { transform: scale(0.95); }
         .energy-bar { width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
@@ -21,6 +21,7 @@
         button { padding: 12px; margin: 5px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
         .btn-claim { background: #f39c12; color: #1a1a2e; width: 80%; }
         .btn-confirm { background: #4ecca3; color: #1a1a2e; width: 80%; }
+        .btn-fast-convert { background: #e94560; color: white; width: 80%; }
         .footer-panel { padding: 10px; background: #0f3460; text-align: center; display: flex; flex-direction: column; gap: 5px; }
         .btn-convert { background: #e94560; color: white; }
     </style>
@@ -39,6 +40,8 @@
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
             <div id="pvlt-display" style="font-weight: bold;">Balance: 0.000 PVLT</div>
             
+            <!-- Added Convert Button here -->
+            <button class="btn-fast-convert" onclick="convertPoints()">Convert 100 💎 → 1 gPVLT</button>
             <button class="btn-claim" onclick="claimReward()">Claim Reward</button>
 
             <div class="buy-menu">
@@ -48,7 +51,6 @@
         </main>
 
         <footer class="footer-panel">
-            <button class="btn-convert" onclick="convertPoints()">Convert 100 💎 → 1 gPVLT</button>
             <button class="btn-convert" style="background: #f1c40f; color: #1a1a2e;" onclick="convertGPVLT()">Convert 100 gPVLT → 1 PVLT</button>
         </footer>
     </div>
@@ -68,6 +70,11 @@
             if (energy > 0) { energy--; points++; updateUI(); }
         });
 
+        function convertPoints() { 
+            if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } 
+            else { alert("Need 100 💎!"); } 
+        }
+
         function confirmRefill() {
             if (pvlt >= 100) { 
                 pvlt -= 100; 
@@ -79,7 +86,6 @@
             }
         }
 
-        function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } else alert("Need 100 💎!"); }
         function convertGPVLT() { if (gpvlt >= 100) { gpvlt -= 100; pvlt += 1; updateUI(); } else alert("Need 100 gPVLT!"); }
         function claimReward() { if (pvlt > 0) { alert("Claimed: " + pvlt.toFixed(3) + " PVLT"); pvlt = 0; updateUI(); } else alert("No PVLT to claim."); }
 
