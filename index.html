@@ -284,7 +284,7 @@
                 return;
             }
 
-            // Sync score from backend validation checkpoint
+            // High-speed verification request sent directly to backend application memory storage
             const syncResponse = await fetch("https://pvlt-server.onrender.com/api/blockchain-sync", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -297,7 +297,7 @@
                 return;
             }
 
-            // Proceed with contract execution directly
+            // Directly invoke contract translation function
             const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, activeSigner);
             const tx = await game.convertToPVLT(ethers.utils.parseEther(amount));
             await tx.wait();
