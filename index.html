@@ -18,8 +18,9 @@
         .energy-bar { margin: 20px 0; width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
         .energy-fill { height: 100%; background: #4ecca3; width: 100%; transition: width 0.3s; }
         .footer-panel { padding: 15px; background: #0f3460; text-align: center; display: flex; flex-direction: column; gap: 10px; }
-        button { padding: 10px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
+        button { padding: 12px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
         .btn-convert { background: #e94560; color: white; }
+        .btn-claim { background: #f39c12; color: #1a1a2e; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -34,7 +35,9 @@
         <main class="interaction-area">
             <button id="tap-button" class="tap-circle">TAP!</button>
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
-            <div id="pvlt-display" style="font-size: 1.2rem; font-weight: bold;">Balance: 0.000 PVLT</div>
+            <div id="pvlt-display" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 10px;">Balance: 0.000 PVLT</div>
+            <!-- Claim Button -->
+            <button class="btn-claim" onclick="claimReward()">Claim Reward</button>
         </main>
 
         <footer class="footer-panel">
@@ -44,15 +47,24 @@
     </div>
 
     <script>
-        let energy = 50;
-        let points = 0;
-        let gpvlt = 0;
-        let pvlt = 0;
+        // Load data from localStorage
+        let energy = parseInt(localStorage.getItem('energy')) || 50;
+        let points = parseInt(localStorage.getItem('points')) || 0;
+        let gpvlt = parseFloat(localStorage.getItem('gpvlt')) || 0;
+        let pvlt = parseFloat(localStorage.getItem('pvlt')) || 0;
+
+        function saveGame() {
+            localStorage.setItem('energy', energy);
+            localStorage.setItem('points', points);
+            localStorage.setItem('gpvlt', gpvlt);
+            localStorage.setItem('pvlt', pvlt);
+        }
 
         setInterval(() => {
             if (energy < 50) {
                 energy++;
                 updateUI();
+                saveGame();
             }
         }, 1000);
 
@@ -70,6 +82,7 @@
                 energy--;
                 points += 1;
                 updateUI();
+                saveGame();
             }
         });
 
@@ -77,21 +90,30 @@
             if (points >= 100) {
                 points -= 100;
                 gpvlt += 1;
-                updateUI();
-            } else {
-                alert("Need 100 💎!");
-            }
+                updateUI(); saveGame();
+            } else { alert("Need 100 💎!"); }
         }
 
         function convertGPVLT() {
             if (gpvlt >= 100) {
                 gpvlt -= 100;
                 pvlt += 1;
-                updateUI();
+                updateUI(); saveGame();
+            } else { alert("Need 100 gPVLT!"); }
+        }
+
+        function claimReward() {
+            if (pvlt > 0) {
+                alert(`Success! You have claimed ${pvlt.toFixed(3)} PVLT.`);
+                pvlt = 0; // Reset balance after claiming
+                updateUI(); saveGame();
             } else {
-                alert("Need 100 gPVLT!");
+                alert("No PVLT available to claim.");
             }
         }
+
+        // Initialize UI on load
+        updateUI();
     </script>
 </body>
 </html>
