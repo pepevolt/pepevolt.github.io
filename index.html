@@ -313,7 +313,7 @@
                 💎 100 gPVLT = 1 PVLT
             </div>
 
-            <button class="btn" onclick="startGame()">Start Mining</button>
+            <button class="btn" onclick="startGame()">Play</button>
         </div>
 
         <div id="game-screen" class="screen hidden" style="padding: 0;">
@@ -382,14 +382,13 @@
     </div>
 
     <script>
-        // Core game metrics
         let points = 0;
         let gpvlt = 0;
         let pvlt = 0;
         
         let energy = 50;
         const maxEnergy = 50;
-        const energyRefillCostPoints = 10; // Costs 10 hard points to re-purchase 50 energy units
+        const energyRefillCostPoints = 10;
 
         const startScreen = document.getElementById('start-screen');
         const gameScreen = document.getElementById('game-screen');
@@ -431,7 +430,6 @@
             target.style.opacity = "1";
             target.style.pointerEvents = "auto";
             
-            // Reset extraction system actions
             convertBridgeBtn.style.display = "block";
             convertBridgeBtn.disabled = false;
             finalClaimBtn.style.display = "none";
@@ -460,7 +458,6 @@
             target.style.top = `${randomY}px`;
         }
 
-        // Tap Core Process
         target.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             if (energy <= 0) return;
@@ -468,7 +465,6 @@
             energy--;
             updateEnergyBar();
 
-            // 1 tap = 1 point
             points += 1;
             scoreDisplay.textContent = `${points} POINTS`;
             
@@ -485,13 +481,11 @@
             target.style.opacity = "0.15";
             target.style.pointerEvents = "none";
             
-            // Calculate potential swap conversion fields (10 points = 0.1 gPVLT)
             const calculatedGov = (points / 10) * 0.1;
             
             modalPointsYield.textContent = `${points} Points`;
             modalGpvltYield.textContent = `${calculatedGov.toFixed(2)} gPVLT`;
             
-            // Manage refill visibility
             if (points < energyRefillCostPoints) {
                 buyRefillBtn.disabled = true;
                 buyRefillBtn.style.opacity = "0.3";
@@ -520,31 +514,23 @@
             }
         }
 
-        // Step 1: Swap Points to gPVLT
         function swapPointsToGov() {
-            // Formula Execution: 10 points = 0.1 gPVLT
             gpvlt = (points / 10) * 0.1;
-            points = 0; // Clear point ledger
+            points = 0;
             
-            // Push values forward to the Settlement screen layout
             settleGovBal.textContent = gpvlt.toFixed(2);
             settlePvltBal.textContent = pvlt.toFixed(4);
             
             showScreen('end-screen');
         }
 
-        // Step 2: Convert gPVLT to PVLT
         function convertGovToPvlt() {
             convertBridgeBtn.disabled = true;
             convertBridgeBtn.textContent = "Bridging Token Protocols...";
 
             setTimeout(() => {
-                // Formula Execution: 100 gPVLT = 1 PVLT
                 pvlt = gpvlt / 100;
-                
                 settlePvltBal.textContent = pvlt.toFixed(4);
-                
-                // Swap the functional operational buttons
                 convertBridgeBtn.style.display = "none";
                 finalClaimBtn.style.display = "block";
             }, 1200);
