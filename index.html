@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TapTap Blitz!</title>
+    <title>Tap2Earn - Token Clicker</title>
     <style>
         :root {
-            --bg-color: #121214;
-            --card-color: #1e1e24;
-            --accent-color: #ff4757;
-            --accent-hover: #ff6b81;
+            --bg-color: #0b0e14;
+            --card-color: #151a26;
+            --accent-color: #00ffcc;
+            --accent-hover: #33ffdd;
             --text-color: #ffffff;
+            --gold-color: #f1c40f;
         }
 
         * {
@@ -39,7 +40,8 @@
             max-height: 750px;
             background-color: var(--card-color);
             border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 0 40px rgba(0, 255, 204, 0.15);
+            border: 1px solid rgba(0, 255, 204, 0.1);
             position: relative;
             overflow: hidden;
             display: flex;
@@ -58,7 +60,6 @@
             justify-content: center;
             align-items: center;
             padding: 2rem;
-            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
         .hidden {
@@ -72,36 +73,52 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             text-align: center;
-            background: linear-gradient(45deg, #ff4757, #ffa502);
+            background: linear-gradient(45deg, var(--accent-color), #0077ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
         p {
-            color: #a4b0be;
+            color: #7f8c8d;
             margin-bottom: 2rem;
             text-align: center;
+            line-height: 1.4;
         }
 
         .btn {
             background-color: var(--accent-color);
-            color: white;
+            color: #000;
             border: none;
-            padding: 12px 36px;
-            font-size: 1.2rem;
+            padding: 14px 40px;
+            font-size: 1.1rem;
             font-weight: bold;
-            border-radius: 50px;
+            border-radius: 16px;
             cursor: pointer;
-            transition: transform 0.1s, background-color 0.2s;
-            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+            transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(0, 255, 204, 0.3);
+            width: 80%;
+            text-align: center;
         }
 
         .btn:hover {
             background-color: var(--accent-hover);
+            box-shadow: 0 4px 25px rgba(0, 255, 204, 0.5);
         }
 
         .btn:active {
             transform: scale(0.95);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #7f8c8d;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-top: 1rem;
+            box-shadow: none;
+        }
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #fff;
         }
 
         /* Game HUD */
@@ -110,19 +127,23 @@
             display: flex;
             justify-content: space-between;
             padding: 1.5rem;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             z-index: 10;
         }
 
         .hud-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        /* Play Area & Target */
+        #score-display {
+            color: var(--gold-color);
+        }
+
+        /* Play Area & Token Target */
         .play-area {
             flex: 1;
             width: 100%;
@@ -130,35 +151,50 @@
             cursor: pointer;
         }
 
-        .target {
-            width: 80px;
-            height: 80px;
-            background: radial-gradient(circle, #ff4757 0%, #ff6b81 70%, #ff4757 100%);
+        .token-target {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, var(--gold-color) 0%, #d35400 100%);
             border-radius: 50%;
             position: absolute;
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+            box-shadow: 0 0 30px rgba(241, 196, 15, 0.5);
             cursor: pointer;
-            transition: width 0.1s, height 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.8rem;
+            color: #fff;
+            border: 4px solid #fff;
+            transition: width 0.05s, height 0.05s;
         }
 
-        .target:active {
-            width: 70px;
-            height: 70px;
-        }
-
-        /* Pop effect for score */
+        /* Floating +Token Pop Effect */
         .pop {
             position: absolute;
-            color: #ffa502;
-            font-weight: bold;
+            color: var(--gold-color);
+            font-weight: 800;
+            font-size: 1.4rem;
             animation: floatUp 0.6s ease-out forwards;
             pointer-events: none;
+            text-shadow: 0 0 8px rgba(0,0,0,0.8);
         }
 
         @keyframes floatUp {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-50px); opacity: 0; }
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-70px) scale(1.2); opacity: 0; }
+        }
+
+        /* Token Stat Grid */
+        .stat-box {
+            background: rgba(255, 255, 255, 0.03);
+            width: 80%;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: center;
+            margin-bottom: 2rem;
         }
     </style>
 </head>
@@ -168,42 +204,49 @@
         
         <!-- START SCREEN -->
         <div id="start-screen" class="screen">
-            <h1>TapTap Blitz</h1>
-            <p>Tap the red target as many times as you can before the timer runs out!</p>
-            <button class="btn" onclick="startGame()">Start Game</button>
+            <h1>$TAP Blitz</h1>
+            <p>Mine as many tokens as you can before the mining pool locks for the round!</p>
+            <button class="btn" onclick="startGame()">Start Mining</button>
         </div>
 
         <!-- GAME SCREEN -->
         <div id="game-screen" class="screen hidden" style="padding: 0; justify-content: flex-start;">
             <div class="hud">
-                <div class="hud-item">Score: <span id="score-display">0</span></div>
-                <div class="hud-item">Time: <span id="time-display">20</span>s</div>
+                <div class="hud-item">Mined: <span id="score-display">0</span> $TAP</div>
+                <div class="hud-item">Pool Closes: <span id="time-display">15</span>s</div>
             </div>
             <div class="play-area" id="play-area">
-                <div id="target" class="target"></div>
+                <!-- Main Crypto Coin Target -->
+                <div id="target" class="token-target">🪙</div>
             </div>
         </div>
 
-        <!-- GAME OVER SCREEN -->
+        <!-- END SCREEN (CLAIM TOKENS) -->
         <div id="end-screen" class="screen hidden">
-            <h1>Game Over</h1>
-            <p>Great effort! Here is how you did:</p>
-            <div style="font-size: 1.5rem; margin-bottom: 2rem;">
-                Final Score: <strong id="final-score" style="color: var(--accent-color);">0</strong>
+            <h1>Session Ended</h1>
+            <p>Your mining session is complete. Claim your block rewards to your wallet.</p>
+            
+            <div class="stat-box">
+                <div style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 5px;">TOTAL MINED</div>
+                <div style="font-size: 2.2rem; font-weight: bold; color: var(--gold-color);">
+                    <span id="final-score">0</span> $TAP
+                </div>
             </div>
-            <button class="btn" onclick="showScreen('start-screen')">Main Menu</button>
+
+            <button class="btn" id="claim-btn" onclick="claimTokens()">Claim Rewards</button>
+            <button class="btn btn-secondary" onclick="showScreen('start-screen')">Mine Again</button>
         </div>
 
     </div>
 
     <script>
-        // Game State Variables
+        // Game Settings
         let score = 0;
-        let timeLeft = 20;
+        let timeLeft = 15; // 15-second blitz rounds work best for micro-games
         let gameInterval;
-        const gameDuration = 20; // 20 seconds game
+        const gameDuration = 15; 
 
-        // DOM Elements
+        // DOM elements
         const startScreen = document.getElementById('start-screen');
         const gameScreen = document.getElementById('game-screen');
         const endScreen = document.getElementById('end-screen');
@@ -213,44 +256,40 @@
         const scoreDisplay = document.getElementById('score-display');
         const timeDisplay = document.getElementById('time-display');
         const finalScore = document.getElementById('final-score');
+        const claimBtn = document.getElementById('claim-btn');
 
-        // Navigation Helper
         function showScreen(screenId) {
             startScreen.classList.add('hidden');
             gameScreen.classList.add('hidden');
             endScreen.classList.add('hidden');
-
             document.getElementById(screenId).classList.remove('hidden');
         }
 
-        // Initialize and Start Game
         function startGame() {
             score = 0;
             timeLeft = gameDuration;
             scoreDisplay.textContent = score;
             timeDisplay.textContent = timeLeft;
+            claimBtn.textContent = "Claim Rewards";
+            claimBtn.disabled = false;
             
             showScreen('game-screen');
             moveTarget();
             
-            // Start Countdown Timer
             gameInterval = setInterval(() => {
                 timeLeft--;
                 timeDisplay.textContent = timeLeft;
-
                 if (timeLeft <= 0) {
                     endGame();
                 }
             }, 1000);
         }
 
-        // Move target to a random spot within the bounds of the play area
+        // Randomly moves the coin inside the layout boundaries
         function moveTarget() {
             const areaWidth = playArea.clientWidth;
             const areaHeight = playArea.clientHeight;
-
-            // Give padding so the button doesn't spawn halfway off-screen
-            const padding = 50; 
+            const padding = 60; 
             
             const randomX = Math.random() * (areaWidth - padding * 2) + padding;
             const randomY = Math.random() * (areaHeight - padding * 2) + padding;
@@ -259,41 +298,43 @@
             target.style.top = `${randomY}px`;
         }
 
-        // Handle Tap / Click on Target
-        target.addEventListener('click', (e) => {
-            score++;
+        // Tap Event
+        target.addEventListener('pointerdown', (e) => {
+            score += 1; // You can change this to a dynamic tap-multiplier later
             scoreDisplay.textContent = score;
             
-            // Create a floating score indicator (+1)
             createPopEffect(e.clientX, e.clientY);
-            
-            // Move target to next position
             moveTarget();
         });
 
-        // Add a nice visual indicator where the player clicked
+        // Floating +1 $TAP text dynamic effect
         function createPopEffect(x, y) {
             const pop = document.createElement('div');
             pop.classList.add('pop');
-            pop.textContent = '+1';
-            
-            // Absolute positioning relative to the whole page for simplicity
+            pop.textContent = '+1 $TAP';
             pop.style.left = `${x}px`;
             pop.style.top = `${y}px`;
             
             document.body.appendChild(pop);
-            
-            // Clean up element after animation finishes
-            setTimeout(() => {
-                pop.remove();
-            }, 600);
+            setTimeout(() => pop.remove(), 600);
         }
 
-        // Handle Game Over
         function endGame() {
             clearInterval(gameInterval);
             finalScore.textContent = score;
             showScreen('end-screen');
+        }
+
+        // Web3 Sandbox Placeholder Interaction
+        function claimTokens() {
+            claimBtn.textContent = "Connecting & Signing...";
+            claimBtn.disabled = true;
+
+            // Simulating smart contract execution delays
+            setTimeout(() => {
+                claimBtn.textContent = "Success! Tokens Deposited";
+                alert(`Successfully sent ${score} $TAP tokens to your wallet stack!`);
+            }, 1500);
         }
     </script>
 </body>
