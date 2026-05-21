@@ -3,336 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PEPEVOLT GAME</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-    
+    <title>TapTap Blitz!</title>
     <style>
+        :root {
+            --bg-color: #121214;
+            --card-color: #1e1e24;
+            --accent-color: #ff4757;
+            --accent-hover: #ff6b81;
+            --text-color: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
         body {
-            margin: 0; padding: 0;
-            background: #000; color: #fff;
-            font-family: Arial, sans-serif; text-align: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
         }
-        .topbar {
-            display: flex; justify-content: space-around; align-items: center;
-            padding: 15px; background: #111; font-size: 24px; font-weight: bold;
-            position: sticky; top: 0; z-index: 999;
+
+        .game-container {
+            width: 100%;
+            max-width: 450px;
+            height: 90vh;
+            max-height: 750px;
+            background-color: var(--card-color);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        .info { margin-top: 10px; font-size: 14px; color: #aaa; }
-        .tap-btn {
-            width: 240px; height: 240px; border-radius: 50%;
-            background: #151515; display: flex; align-items: center; justify-content: center;
-            margin: 40px auto; font-size: 42px; font-weight: bold; cursor: pointer;
-            transition: 0.2s; border: 4px solid #333; user-select: none;
+
+        /* Screens styling */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
-        .tap-btn:active { transform: scale(0.95); }
-        .buttons { margin-top: 30px; }
-        button {
-            padding: 14px 22px; margin: 10px; font-size: 18px;
-            border: none; border-radius: 12px; background: #222; color: #fff; cursor: pointer;
+
+        .hidden {
+            display: none !important;
         }
-        button:hover { background: #333; }
-        .balance { margin-top: 10px; font-size: 16px; word-break: break-all; }
+
+        /* Typography & Buttons */
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            background: linear-gradient(45deg, #ff4757, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: #a4b0be;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 36px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Game HUD */
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .hud-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Play Area & Target */
+        .play-area {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .target {
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, #ff4757 0%, #ff6b81 70%, #ff4757 100%);
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+            cursor: pointer;
+            transition: width 0.1s, height 0.1s;
+        }
+
+        .target:active {
+            width: 70px;
+            height: 70px;
+        }
+
+        /* Pop effect for score */
+        .pop {
+            position: absolute;
+            color: #ffa502;
+            font-weight: bold;
+            animation: floatUp 0.6s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="topbar">
-        <div>⚡ <span id="energy">0</span></div>
-        <div>🪙 <span id="points">0</span></div>
-        <div>⛓️ <span id="gpvlt">0</span></div>
+    <div class="game-container">
+        
+        <!-- START SCREEN -->
+        <div id="start-screen" class="screen">
+            <h1>TapTap Blitz</h1>
+            <p>Tap the red target as many times as you can before the timer runs out!</p>
+            <button class="btn" onclick="startGame()">Start Game</button>
+        </div>
+
+        <!-- GAME SCREEN -->
+        <div id="game-screen" class="screen hidden" style="padding: 0; justify-content: flex-start;">
+            <div class="hud">
+                <div class="hud-item">Score: <span id="score-display">0</span></div>
+                <div class="hud-item">Time: <span id="time-display">20</span>s</div>
+            </div>
+            <div class="play-area" id="play-area">
+                <div id="target" class="target"></div>
+            </div>
+        </div>
+
+        <!-- GAME OVER SCREEN -->
+        <div id="end-screen" class="screen hidden">
+            <h1>Game Over</h1>
+            <p>Great effort! Here is how you did:</p>
+            <div style="font-size: 1.5rem; margin-bottom: 2rem;">
+                Final Score: <strong id="final-score" style="color: var(--accent-color);">0</strong>
+            </div>
+            <button class="btn" onclick="showScreen('start-screen')">Main Menu</button>
+        </div>
+
     </div>
 
-    <div class="info">
-        <div>TreasuryVolt: <span id="treasuryBalance">0</span> PVLT</div>
-        <div>Wallet Balance: <span id="walletBalance">0</span> PVLT</div>
-    </div>
+    <script>
+        // Game State Variables
+        let score = 0;
+        let timeLeft = 20;
+        let gameInterval;
+        const gameDuration = 20; // 20 seconds game
 
-    <br>
-    <button onclick="connectWallet()">Connect Wallet</button>
-    <div id="wallet" class="balance">Please connect wallet...</div>
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        
+        const target = document.getElementById('target');
+        const playArea = document.getElementById('play-area');
+        const scoreDisplay = document.getElementById('score-display');
+        const timeDisplay = document.getElementById('time-display');
+        const finalScore = document.getElementById('final-score');
 
-    <div class="tap-btn" onclick="tap()">TAP</div>
+        // Navigation Helper
+        function showScreen(screenId) {
+            startScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
 
-    <div class="buttons">
-        <button onclick="buyEnergy()">Buy Energy</button>
-        <button onclick="convertPointsToGPVLT()">Convert Points to gPVLT</button>
-        <button onclick="claimReward()">Claim PVLT</button>
-    </div>
-
-    <script type="module">
-        import { createAppKit } from 'https://esm.sh/@reown/appkit?bundle';
-        import { Ethers5Adapter } from 'https://esm.sh/@reown/appkit-adapter-ethers5?bundle';
-        import { polygon } from 'https://esm.sh/@reown/appkit/networks?bundle';
-
-        const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
-        window.appKitModal = null;
-
-        async function initModalFallback() {
-            try {
-                window.appKitModal = createAppKit({
-                    adapters: [new Ethers5Adapter()],
-                    networks: [polygon],
-                    metadata: {
-                        name: 'PepeVolt Game',
-                        description: 'PepeVolt Tap Ecosystem',
-                        url: 'https://pepevolt.github.io',
-                        icons: ['https://pepevolt.github.io/favicon.ico']
-                    },
-                    projectId: PROJECT_ID,
-                    features: { analytics: false }
-                });
-
-                window.appKitModal.subscribeAccount(async (state) => {
-                    if (state.isConnected && state.address) {
-                        window.userAddress = state.address;
-                        document.getElementById("wallet").innerHTML = "Connected: " + window.userAddress;
-                        
-                        const baseWalletProvider = window.appKitModal.getWalletProvider();
-                        if (baseWalletProvider) {
-                            window.provider = new ethers.providers.Web3Provider(baseWalletProvider);
-                            window.signer = window.provider.getSigner();
-                            window.loadAllData();
-                        }
-                    }
-                });
-            } catch (e) {
-                console.error("AppKit framework loading failure:", e);
-            }
+            document.getElementById(screenId).classList.remove('hidden');
         }
-        window.addEventListener("load", initModalFallback);
+
+        // Initialize and Start Game
+        function startGame() {
+            score = 0;
+            timeLeft = gameDuration;
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft;
+            
+            showScreen('game-screen');
+            moveTarget();
+            
+            // Start Countdown Timer
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timeDisplay.textContent = timeLeft;
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // Move target to a random spot within the bounds of the play area
+        function moveTarget() {
+            const areaWidth = playArea.clientWidth;
+            const areaHeight = playArea.clientHeight;
+
+            // Give padding so the button doesn't spawn halfway off-screen
+            const padding = 50; 
+            
+            const randomX = Math.random() * (areaWidth - padding * 2) + padding;
+            const randomY = Math.random() * (areaHeight - padding * 2) + padding;
+
+            target.style.left = `${randomX}px`;
+            target.style.top = `${randomY}px`;
+        }
+
+        // Handle Tap / Click on Target
+        target.addEventListener('click', (e) => {
+            score++;
+            scoreDisplay.textContent = score;
+            
+            // Create a floating score indicator (+1)
+            createPopEffect(e.clientX, e.clientY);
+            
+            // Move target to next position
+            moveTarget();
+        });
+
+        // Add a nice visual indicator where the player clicked
+        function createPopEffect(x, y) {
+            const pop = document.createElement('div');
+            pop.classList.add('pop');
+            pop.textContent = '+1';
+            
+            // Absolute positioning relative to the whole page for simplicity
+            pop.style.left = `${x}px`;
+            pop.style.top = `${y}px`;
+            
+            document.body.appendChild(pop);
+            
+            // Clean up element after animation finishes
+            setTimeout(() => {
+                pop.remove();
+            }, 600);
+        }
+
+        // Handle Game Over
+        function endGame() {
+            clearInterval(gameInterval);
+            finalScore.textContent = score;
+            showScreen('end-screen');
+        }
     </script>
-
-<script>
-    let PVLT_CONTRACT = "";
-    let TREASURY_CONTRACT = "";
-    let GAME_CONTRACT = "";
-
-    let provider;
-    let signer;
-    let userAddress;
-
-    let localPoints = 0;
-    let localEnergy = 0;
-    let saveTimeout = null;
-
-    const GAME_ABI = [
-        "function tap() external",
-        "function refillEnergy() external",
-        "function convertToPVLT(uint256 amount) external",
-        "function claimPVLT(uint256 amount) external",
-        "function gPVLT(address) view returns(uint256)"
-    ];
-
-    const ERC20_ABI = [
-        "function balanceOf(address owner) view returns(uint256)",
-        "function approve(address spender, uint256 amount) external returns(bool)"
-    ];
-
-    const TREASURY_ABI = [
-        "function treasuryBalance() view returns(uint256)"
-    ];
-
-    async function initConfig() {
-        try {
-            const response = await fetch("https://pvlt-server.onrender.com/api/config");
-            const config = await response.json();
-            
-            PVLT_CONTRACT = config.pvlt;
-            TREASURY_CONTRACT = config.treasury;
-            GAME_CONTRACT = config.game;
-            console.log("Production Configurations Loaded Safely.");
-        } catch (err) {
-            console.error("Critical configuration retrieval problem:", err);
-        }
-    }
-
-    async function connectWallet() {
-        if (!GAME_CONTRACT) {
-            alert("Backend configurations are waking up. Try again in a few seconds.");
-            return;
-        }
-
-        if (window.ethereum) {
-            try {
-                window.provider = new ethers.providers.Web3Provider(window.ethereum);
-                await window.provider.send("eth_requestAccounts", []);
-                window.signer = window.provider.getSigner();
-                window.userAddress = await window.signer.getAddress();
-                document.getElementById("wallet").innerHTML = "Connected: " + window.userAddress;
-                loadAllData();
-                return;
-            } catch (err) {
-                console.error("Wallet injection bypass error:", err);
-            }
-        }
-
-        if (window.appKitModal) {
-            try {
-                await window.appKitModal.open();
-            } catch (err) {
-                console.error("Multi-wallet activation failure:", err);
-            }
-        }
-    }
-
-    async function loadAllData() {
-        const activeSigner = window.signer || signer;
-        const activeAddress = window.userAddress || userAddress;
-        
-        if (!activeSigner || !activeAddress) return;
-
-        const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, activeSigner);
-        const treasury = new ethers.Contract(TREASURY_CONTRACT, TREASURY_ABI, activeSigner);
-        const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, activeSigner);
-
-        try {
-            // Load off-chain stats (Energy & Points) from server database
-            const response = await fetch(`https://pvlt-server.onrender.com/api/user-stats?address=${activeAddress}`);
-            const stats = await response.json();
-
-            localEnergy = stats.energy;
-            localPoints = stats.points;
-
-            document.getElementById("energy").innerHTML = localEnergy.toString();
-            document.getElementById("points").innerHTML = localPoints.toFixed(2);
-
-            // Load on-chain smart contract data (gPVLT)
-            const gPvltBalance = await game.gPVLT(activeAddress);
-            document.getElementById("gpvlt").innerHTML = ethers.utils.formatEther(gPvltBalance);
-
-            // Load ERC20 token ledger totals
-            const walletPVLT = await pvlt.balanceOf(activeAddress);
-            document.getElementById("walletBalance").innerHTML = ethers.utils.formatEther(walletPVLT);
-
-            const treasuryPVLT = await treasury.treasuryBalance();
-            document.getElementById("treasuryBalance").innerHTML = ethers.utils.formatEther(treasuryPVLT);
-        } catch (err) {
-            console.error("Data visualization sync breakdown:", err);
-        }
-    }
-
-    window.loadAllData = loadAllData;
-
-    function tap() {
-        const activeAddress = window.userAddress || userAddress;
-        if (!activeAddress) return alert("Please connect your wallet first!");
-
-        if (localEnergy <= 0) {
-            alert("Out of Energy! Wait for replenishment or buy a refill pack.");
-            return;
-        }
-
-        localEnergy -= 1;
-        localPoints += 1;
-
-        document.getElementById("energy").innerHTML = localEnergy.toString();
-        document.getElementById("points").innerHTML = localPoints.toFixed(2);
-
-        clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(syncTapsToBackend, 1500);
-    }
-
-    async function syncTapsToBackend() {
-        const activeAddress = window.userAddress || userAddress;
-        if (!activeAddress) return;
-
-        try {
-            await fetch("https://pvlt-server.onrender.com/api/sync-progress", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    walletAddress: activeAddress,
-                    currentPoints: localPoints,
-                    currentEnergy: localEnergy
-                })
-            });
-            console.log("Progress saved on backend database server.");
-        } catch (err) {
-            console.error("Tracking checkpoint synchronization issue:", err);
-        }
-    }
-
-    async function buyEnergy() {
-        const activeSigner = window.signer || signer;
-        if (!activeSigner) return alert("Connect wallet first!");
-        try {
-            const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, activeSigner);
-            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, activeSigner);
-
-            const approveTx = await pvlt.approve(GAME_CONTRACT, ethers.utils.parseEther("300"));
-            await approveTx.wait();
-
-            const tx = await game.refillEnergy();
-            await tx.wait();
-            alert("10,000 Energy added successfully!");
-            loadAllData();
-        } catch(err) {
-            alert(err.data?.message || err.message);
-        }
-    }
-
-    // Step 1: Submit accumulated points to smart contract ledger state as gPVLT
-    async function convertPointsToGPVLT() {
-        const activeSigner = window.signer || signer;
-        const activeAddress = window.userAddress || userAddress;
-        if (!activeSigner || !activeAddress) return alert("Connect wallet first!");
-        
-        try {
-            if (localPoints <= 0) {
-                alert("No points available to synchronize on-chain.");
-                return;
-            }
-
-            alert("Syncing game points onto the blockchain ledger... Stand by.");
-            
-            const syncResponse = await fetch("https://pvlt-server.onrender.com/api/blockchain-sync", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ walletAddress: activeAddress })
-            });
-            const syncResult = await syncResponse.json();
-
-            if (!syncResult.success) {
-                alert("Verification failed: " + syncResult.error);
-                return;
-            }
-
-            alert("Points converted to gPVLT on-chain successfully!");
-            loadAllData();
-        } catch(err) {
-            alert(err.message);
-        }
-    }
-
-    // Step 2: Swap finalized on-chain gPVLT score states directly for deployable PVLT ERC20 tokens
-    async function claimReward() {
-        const activeSigner = window.signer || signer;
-        const activeAddress = window.userAddress || userAddress;
-        if (!activeSigner || !activeAddress) return alert("Connect wallet first!");
-        
-        try {
-            const amount = prompt("Enter gPVLT Amount to Convert into PVLT Tokens:");
-            if (!amount || parseFloat(amount) <= 0) return;
-
-            const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, activeSigner);
-            
-            // Check contract state before prompting MetaMask validation
-            const currentGPvlt = await game.gPVLT(activeAddress);
-            if (ethers.utils.parseEther(amount).gt(currentGPvlt)) {
-                alert("Insufficient gPVLT balance on-chain to handle token conversion.");
-                return;
-            }
-
-            const tx = await game.convertToPVLT(ethers.utils.parseEther(amount));
-            await tx.wait();
-            alert("Tokens successfully claimed into your wallet!");
-            loadAllData();
-        } catch(err) {
-            alert(err.data?.message || err.message);
-        }
-    }
-
-    window.addEventListener("load", initConfig);
-</script>
 </body>
 </html>
