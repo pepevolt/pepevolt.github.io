@@ -2,21 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tap Tap Game</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; 
-            /* Lighter background */
+        /* This rule prevents double-tap zoom and sets tap behavior */
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            user-select: none; 
+            touch-action: manipulation; 
+        }
+        
+        body, html { 
+            margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; 
             background: radial-gradient(circle at center, #2c3e50, #1a1a2e); 
         }
         
         .bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
-        .particle { position: absolute; border-radius: 50%; 
-            /* More transparent particles */
-            opacity: 0.15; 
-            animation: float 15s infinite linear; 
-        }
+        .particle { position: absolute; border-radius: 50%; opacity: 0.15; animation: float 15s infinite linear; }
         @keyframes float { 
             0% { transform: translateY(100vh) scale(0); }
             50% { opacity: 0.25; }
@@ -124,7 +127,7 @@
             }
         }
 
-        document.getElementById('tap-button').addEventListener('click', () => {
+        document.getElementById('tap-button').addEventListener('click', (e) => {
             if (isWalletConnected && energy > 0) { energy--; points++; updateUI(); }
         });
 
