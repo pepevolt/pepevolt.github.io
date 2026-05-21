@@ -8,22 +8,29 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
         body, html { margin: 0; padding: 0; height: 100%; background: #1a1a2e; color: #ffffff; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
         .game-container { display: flex; flex-direction: column; height: 100vh; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: #16213e; text-align: center; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 10px 5px; background: #16213e; text-align: center; }
         .stat-item { display: flex; flex-direction: column; font-size: 0.75rem; }
         .emoji { font-size: 1.2rem; margin-bottom: 4px; }
-        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
-        .tap-circle { width: 160px; height: 160px; border-radius: 50%; border: none; background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; cursor: pointer; transition: transform 0.05s; box-shadow: 0 8px 0 #3a9b7c; }
-        .tap-circle:active { transform: scale(0.95); }
+        
+        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; }
+        
+        .tap-circle { 
+            width: 160px; height: 160px; border-radius: 50%; border: none; 
+            background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; 
+            cursor: pointer; transition: transform 0.05s, background 0.3s;
+            box-shadow: 0 8px 0 #3a9b7c; 
+        }
+        .tap-circle:disabled { background: #555; box-shadow: none; cursor: not-allowed; opacity: 0.6; }
+        .tap-circle:active:not(:disabled) { transform: scale(0.95); }
+
+        .wallet-btn { background: #3498db; color: white; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        
         .energy-bar { width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
         .energy-fill { height: 100%; background: #4ecca3; width: 50%; transition: width 0.3s; }
         
-        .buy-menu { background: #16213e; padding: 15px; border-radius: 10px; width: 90%; text-align: center; }
-        button { padding: 12px; margin: 5px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-claim { background: #f39c12; color: #1a1a2e; width: 80%; }
-        .btn-confirm { background: #4ecca3; color: #1a1a2e; width: 80%; }
-        .btn-fast-convert { background: #e94560; color: white; width: 80%; }
+        .btn-confirm { background: #4ecca3; color: #1a1a2e; padding: 12px; border: none; border-radius: 5px; font-weight: bold; width: 80%; }
         .footer-panel { padding: 10px; background: #0f3460; text-align: center; display: flex; flex-direction: column; gap: 5px; }
-        .btn-convert { background: #e94560; color: white; }
+        .btn-convert { background: #e94560; color: white; padding: 10px; border: none; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -36,71 +43,61 @@
         </header>
 
         <main class="interaction-area">
-            <button id="tap-button" class="tap-circle">TAP!</button>
+            <button id="connect-wallet" class="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+            
+            <button id="tap-button" class="tap-circle" disabled>TAP!</button>
+            
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
             <div id="pvlt-display" style="font-weight: bold;">Balance: 0.000 PVLT</div>
             
-            <button class="btn-fast-convert" onclick="convertPoints()">Convert 100 💎 → 1 gPVLT</button>
-            <button class="btn-claim" onclick="claimReward()">Claim Reward</button>
-
-            <div class="buy-menu">
+            <div class="buy-menu" style="text-align: center;">
                 <div style="margin-bottom: 8px; font-size: 0.9rem;">10,000 Energy = 100 PVLT</div>
                 <button class="btn-confirm" onclick="confirmRefill()">Confirm Refill</button>
             </div>
         </main>
 
         <footer class="footer-panel">
-            <button class="btn-convert" style="background: #f1c40f; color: #1a1a2e;" onclick="convertGPVLT()">Convert 100 gPVLT → 1 PVLT</button>
+            <button class="btn-convert" onclick="convertPoints()">Convert 100 💎 → 1 gPVLT</button>
         </footer>
     </div>
 
     <script>
-        // Energy is unlimited, but free users cap at 50 for the UI
         let energy = 50, points = 0, gpvlt = 0, pvlt = 0;
-        const FREE_CAP = 50;
+        let isWalletConnected = false;
+
+        function connectWallet() {
+            // Simulated connection
+            alert("Wallet Connected!");
+            isWalletConnected = true;
+            document.getElementById('connect-wallet').innerText = "Wallet Connected";
+            document.getElementById('connect-wallet').disabled = true;
+            document.getElementById('tap-button').disabled = false;
+        }
 
         function updateUI() {
-            // Display logic: show the cap for free users
-            document.getElementById('energy').innerText = `${energy > FREE_CAP ? FREE_CAP : energy}/${FREE_CAP}`;
-            document.getElementById('energy-fill').style.width = (Math.min(energy, FREE_CAP) / FREE_CAP * 100) + "%";
+            document.getElementById('energy').innerText = `${energy > 50 ? 50 : energy}/50`;
+            document.getElementById('energy-fill').style.width = (Math.min(energy, 50) / 50 * 100) + "%";
             document.getElementById('points').innerText = points;
             document.getElementById('gpvlt').innerText = gpvlt.toFixed(2);
             document.getElementById('pvlt-display').innerText = `Balance: ${pvlt.toFixed(3)} PVLT`;
         }
 
         document.getElementById('tap-button').addEventListener('click', () => {
-            if (energy > 0) { 
-                energy--; 
-                points++; 
-                updateUI(); 
-            } else {
-                alert("Out of energy! Wait for it to refill.");
+            if (isWalletConnected && energy > 0) {
+                energy--;
+                points++;
+                updateUI();
             }
         });
 
         function confirmRefill() {
-            if (pvlt >= 100) { 
-                pvlt -= 100; 
-                energy += 10000; // Add 10,000 to the unlimited pool
-                updateUI();
-                alert("10,000 Energy added to your pool!");
-            } else { 
-                alert("Need 100 PVLT!"); 
-            }
+            if (pvlt >= 100) { pvlt -= 100; energy += 10000; updateUI(); alert("Refilled!"); }
+            else { alert("Need 100 PVLT!"); }
         }
 
         function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } else alert("Need 100 💎!"); }
-        function convertGPVLT() { if (gpvlt >= 100) { gpvlt -= 100; pvlt += 1; updateUI(); } else alert("Need 100 gPVLT!"); }
-        function claimReward() { if (pvlt > 0) { alert("Claimed: " + pvlt.toFixed(3) + " PVLT"); pvlt = 0; updateUI(); } else alert("No PVLT to claim."); }
 
-        // Refill logic: Energy regenerates if you are under the cap
-        setInterval(() => { 
-            if (energy < FREE_CAP) { 
-                energy++; 
-                updateUI(); 
-            } 
-        }, 1000);
-        
+        setInterval(() => { if (energy < 50) { energy++; updateUI(); } }, 1000);
         updateUI();
     </script>
 </body>
