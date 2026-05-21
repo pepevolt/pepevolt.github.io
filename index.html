@@ -13,8 +13,10 @@
         .emoji { font-size: 1.2rem; margin-bottom: 4px; }
         .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
         
+        /* Buttons - Default disabled style */
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        
         .tap-circle { width: 160px; height: 160px; border-radius: 50%; border: none; background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; cursor: pointer; transition: transform 0.05s, opacity 0.3s; box-shadow: 0 8px 0 #3a9b7c; }
-        .tap-circle:disabled { background: #555; box-shadow: none; opacity: 0.5; cursor: not-allowed; }
         .tap-circle:active:not(:disabled) { transform: scale(0.95); }
         
         .energy-bar { width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
@@ -22,8 +24,8 @@
         
         .buy-menu { background: #16213e; padding: 15px; border-radius: 10px; width: 90%; text-align: center; }
         button { padding: 12px; margin: 5px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-wallet { background: #3498db; color: white; width: 80%; transition: background 0.3s; }
-        .btn-wallet.connected { background: #e74c3c; } 
+        .btn-wallet { background: #3498db; color: white; width: 80%; }
+        .btn-wallet.connected { background: #e74c3c; }
         .btn-claim { background: #f39c12; color: #1a1a2e; width: 80%; }
         .btn-confirm { background: #4ecca3; color: #1a1a2e; width: 80%; }
         .btn-fast-convert { background: #e94560; color: white; width: 80%; }
@@ -42,23 +44,22 @@
 
         <main class="interaction-area">
             <button id="tap-button" class="tap-circle" disabled>TAP!</button>
-            
             <button id="wallet-btn" class="btn-wallet" onclick="toggleWallet()">Connect Wallet</button>
             
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
             <div id="pvlt-display" style="font-weight: bold;">Balance: 0.000 PVLT</div>
             
-            <button class="btn-fast-convert" onclick="convertPoints()">Convert 100 💎 → 1 gPVLT</button>
-            <button class="btn-claim" onclick="claimReward()">Claim Reward</button>
+            <button class="btn-fast-convert game-btn" onclick="convertPoints()" disabled>Convert 100 💎 → 1 gPVLT</button>
+            <button class="btn-claim game-btn" onclick="claimReward()" disabled>Claim Reward</button>
 
             <div class="buy-menu">
                 <div style="margin-bottom: 8px; font-size: 0.9rem;">10,000 Energy = 100 PVLT</div>
-                <button class="btn-confirm" onclick="confirmRefill()">Confirm Refill</button>
+                <button class="btn-confirm game-btn" onclick="confirmRefill()" disabled>Confirm Refill</button>
             </div>
         </main>
 
         <footer class="footer-panel">
-            <button class="btn-convert" style="background: #f1c40f; color: #1a1a2e;" onclick="convertGPVLT()">Convert 100 gPVLT → 1 PVLT</button>
+            <button class="btn-convert game-btn" style="background: #f1c40f; color: #1a1a2e;" onclick="convertGPVLT()" disabled>Convert 100 gPVLT → 1 PVLT</button>
         </footer>
     </div>
 
@@ -68,19 +69,22 @@
 
         function toggleWallet() {
             const btn = document.getElementById('wallet-btn');
-            const tapBtn = document.getElementById('tap-button');
+            const gameBtns = document.querySelectorAll('.game-btn, #tap-button');
+            
             isWalletConnected = !isWalletConnected;
+
             if (isWalletConnected) {
                 btn.innerText = "Disconnect Wallet";
                 btn.classList.add('connected');
-                tapBtn.disabled = false;
+                gameBtns.forEach(b => b.disabled = false);
             } else {
                 btn.innerText = "Connect Wallet";
                 btn.classList.remove('connected');
-                tapBtn.disabled = true;
+                gameBtns.forEach(b => b.disabled = true);
             }
         }
 
+        // Logic functions check connection state as a safety measure
         function updateUI() {
             document.getElementById('energy').innerText = `${energy > FREE_CAP ? FREE_CAP : energy}/${FREE_CAP}`;
             document.getElementById('energy-fill').style.width = (Math.min(energy, FREE_CAP) / FREE_CAP * 100) + "%";
@@ -90,16 +94,4 @@
         }
 
         document.getElementById('tap-button').addEventListener('click', () => {
-            if (isWalletConnected && energy > 0) { energy--; points++; updateUI(); }
-        });
-
-        function confirmRefill() { if (pvlt >= 100) { pvlt -= 100; energy += 10000; updateUI(); alert("10,000 Energy added!"); } else { alert("Need 100 PVLT!"); } }
-        function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } else alert("Need 100 💎!"); }
-        function convertGPVLT() { if (gpvlt >= 100) { gpvlt -= 100; pvlt += 1; updateUI(); } else alert("Need 100 gPVLT!"); }
-        function claimReward() { if (pvlt > 0) { alert("Claimed: " + pvlt.toFixed(3) + " PVLT"); pvlt = 0; updateUI(); } else alert("No PVLT to claim."); }
-
-        setInterval(() => { if (energy < FREE_CAP) { energy++; updateUI(); } }, 1000);
-        updateUI();
-    </script>
-</body>
-</html>
+            if (isWalletConnected && energy > 0) { energy
