@@ -2,94 +2,63 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tap Tap Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tap Tap PVLT</title>
     <style>
-        body, html {
-            margin: 0; padding: 0; height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #1a1a2e; color: #ffffff; overflow: hidden;
-        }
-
-        .game-container { display: flex; flex-direction: column; height: 100vh; }
-
-        /* Updated Header for 3 Assets */
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 5px;
-            padding: 15px 10px;
-            background: #16213e;
-            font-size: 0.9rem;
-            text-align: center;
-        }
-        .stat-item { display: flex; flex-direction: column; align-items: center; }
-        .emoji { font-size: 1.2rem; margin-bottom: 2px; }
-
-        .interaction-area { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
-
-        .tap-circle {
-            width: 200px; height: 200px; border-radius: 50%; border: none;
-            background: radial-gradient(circle, #4ecca3, #45b791);
-            color: white; font-size: 2rem; font-weight: bold;
-            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            transition: transform 0.05s;
-        }
-        .tap-circle:active { transform: scale(0.92); }
-
-        .shop-panel { padding: 20px; background: #0f3460; text-align: center; }
+        body { margin: 0; font-family: sans-serif; background: #1a1a2e; color: #fff; text-align: center; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px; background: #16213e; border-bottom: 2px solid #0f3460; }
+        .stat-item { display: flex; flex-direction: column; font-size: 0.8rem; }
+        .emoji { font-size: 1.4rem; margin-bottom: 5px; }
+        .tap-circle { width: 200px; height: 200px; border-radius: 50%; border: none; background: #4ecca3; font-size: 2rem; margin: 50px auto; cursor: pointer; color: #1a1a2e; font-weight: bold; }
+        .controls { padding: 20px; }
+        button { padding: 12px 20px; cursor: pointer; border: none; border-radius: 5px; background: #e94560; color: white; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <!-- New 3-Asset Header -->
-        <header class="stats">
-            <div class="stat-item">
-                <span class="emoji">💎</span>
-                <span id="points">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="emoji">🎲</span>
-                <span id="chips">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="emoji">💰</span>
-                <span id="currency">0.00</span>
-            </div>
-        </header>
+    <header class="stats">
+        <div class="stat-item"><span class="emoji">⚡</span><span id="energy">0</span></div>
+        <div class="stat-item"><span class="emoji">💎</span><span id="points">0</span></div>
+        <div class="stat-item"><span class="emoji">🪙</span><span id="gpvlt">0.00</span></div>
+    </header>
 
-        <main class="interaction-area">
-            <button id="tap-button" class="tap-circle">TAP!</button>
-        </main>
+    <main>
+        <button id="tap-button" class="tap-circle">TAP!</button>
+        <div id="pvlt-display">Total Claimable: 0.000 PVLT</div>
+    </main>
 
-        <footer class="shop-panel">
-            <button onclick="convertPoints()">Convert 💎 to 🎲</button>
-        </footer>
+    <div class="controls">
+        <button onclick="convertPoints()">Convert 50 💎 to 0.5 gPVLT</button>
     </div>
 
     <script>
+        let energy = 0;
         let points = 0;
-        let chips = 0;
-        let currency = 0;
+        let gpvlt = 0;
 
-        const pDisplay = document.getElementById('points');
-        const cDisplay = document.getElementById('chips');
-        const curDisplay = document.getElementById('currency');
+        function updateUI() {
+            document.getElementById('energy').innerText = energy;
+            document.getElementById('points').innerText = points;
+            document.getElementById('gpvlt').innerText = gpvlt.toFixed(2);
+            
+            // 1,000 gPVLT = 1 PVLT. So, gPVLT / 1000 = PVLT
+            let pvlt = gpvlt / 1000;
+            document.getElementById('pvlt-display').innerText = `Total Claimable: ${pvlt.toFixed(3)} PVLT`;
+        }
 
         document.getElementById('tap-button').addEventListener('click', () => {
+            energy += 1;
             points += 1;
-            pDisplay.innerText = points;
+            updateUI();
         });
 
         function convertPoints() {
-            if (points >= 10) {
-                points -= 10;
-                chips += 1;
-                pDisplay.innerText = points;
-                cDisplay.innerText = chips;
+            if (points >= 50) {
+                points -= 50;
+                gpvlt += 0.5;
+                updateUI();
             } else {
-                alert("Need 10 💎 to get 1 🎲");
+                alert("Need at least 50 Points to convert!");
             }
         }
     </script>
