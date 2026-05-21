@@ -15,9 +15,11 @@
         .tap-circle { width: 180px; height: 180px; border-radius: 50%; border: none; background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; cursor: pointer; transition: transform 0.05s; box-shadow: 0 8px 0 #3a9b7c; }
         .tap-circle:active { transform: scale(0.95); box-shadow: 0 4px 0 #3a9b7c; }
         .tap-circle:disabled { background: #555; box-shadow: none; cursor: not-allowed; }
-        .energy-bar { margin-top: 20px; width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
+        .energy-bar { margin: 20px 0; width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
         .energy-fill { height: 100%; background: #4ecca3; width: 100%; transition: width 0.3s; }
-        .footer-panel { padding: 20px; background: #0f3460; text-align: center; }
+        .footer-panel { padding: 15px; background: #0f3460; text-align: center; display: flex; flex-direction: column; gap: 10px; }
+        button { padding: 10px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
+        .btn-convert { background: #e94560; color: white; }
     </style>
 </head>
 <body>
@@ -32,11 +34,12 @@
         <main class="interaction-area">
             <button id="tap-button" class="tap-circle">TAP!</button>
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
-            <div id="pvlt-display" style="margin-top: 20px; font-weight: bold;">Claimable: 0.000 PVLT</div>
+            <div id="pvlt-display" style="font-size: 1.2rem; font-weight: bold;">Balance: 0.000 PVLT</div>
         </main>
 
         <footer class="footer-panel">
-            <button class="convert-btn" onclick="convertPoints()">Convert 100 💎 to 1 gPVLT</button>
+            <button class="btn-convert" onclick="convertPoints()">Convert 100 💎 → 1 gPVLT</button>
+            <button class="btn-convert" style="background: #f1c40f; color: #1a1a2e;" onclick="convertGPVLT()">Convert 100 gPVLT → 1 PVLT</button>
         </footer>
     </div>
 
@@ -44,8 +47,8 @@
         let energy = 50;
         let points = 0;
         let gpvlt = 0;
+        let pvlt = 0;
 
-        // Energy Refill Logic (1 per second)
         setInterval(() => {
             if (energy < 50) {
                 energy++;
@@ -58,7 +61,7 @@
             document.getElementById('energy-fill').style.width = (energy / 50 * 100) + "%";
             document.getElementById('points').innerText = points;
             document.getElementById('gpvlt').innerText = gpvlt.toFixed(2);
-            document.getElementById('pvlt-display').innerText = `Claimable: ${(gpvlt / 100).toFixed(3)} PVLT`;
+            document.getElementById('pvlt-display').innerText = `Balance: ${pvlt.toFixed(3)} PVLT`;
             document.getElementById('tap-button').disabled = (energy === 0);
         }
 
@@ -76,7 +79,17 @@
                 gpvlt += 1;
                 updateUI();
             } else {
-                alert("Need 100 Points!");
+                alert("Need 100 💎!");
+            }
+        }
+
+        function convertGPVLT() {
+            if (gpvlt >= 100) {
+                gpvlt -= 100;
+                pvlt += 1;
+                updateUI();
+            } else {
+                alert("Need 100 gPVLT!");
             }
         }
     </script>
