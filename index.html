@@ -80,7 +80,7 @@
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             margin-bottom: 0.5rem;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -112,55 +112,166 @@
             line-height: 1.6;
         }
 
-        /* Home Wallet Asset Card Style */
+        /* Persistent Dashboard Header Units */
+        .dashboard-header {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+            z-index: 20;
+            background: rgba(8, 11, 16, 0.5);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            backdrop-filter: blur(10px);
+        }
+
         .wallet-card {
-            background: linear-gradient(135deg, rgba(15, 20, 28, 0.9) 0%, rgba(5, 64, 25, 0.2) 100%);
-            border: 1px solid rgba(0, 255, 102, 0.15);
-            box-shadow: 0 8px 32px rgba(0, 255, 102, 0.05);
-            padding: 24px 16px;
-            border-radius: 24px;
-            width: 85%;
+            background: linear-gradient(135deg, rgba(15, 20, 28, 0.9) 0%, rgba(5, 64, 25, 0.15) 100%);
+            border: 1px solid rgba(0, 255, 102, 0.12);
+            padding: 14px;
+            border-radius: 18px;
             text-align: center;
-            margin-bottom: 2.5rem;
         }
 
         .wallet-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             color: #64748b;
             letter-spacing: 1px;
             font-weight: 700;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .wallet-balance {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             font-weight: 900;
             color: #ffffff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: 1fr;
             gap: 8px;
-            text-shadow: 0 0 20px rgba(0,255,102,0.2);
+        }
+
+        .hud-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .hud-item strong {
+            font-size: 1.1rem;
+            color: #fff;
+            margin-left: 4px;
+        }
+
+        .energy-hud {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .energy-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--energy-color);
+        }
+
+        .energy-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .energy-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #0077ff, var(--energy-color));
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+
+        /* Dashboard Core Tapping Arena */
+        .dashboard-content {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        .token-target {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.8rem;
+            border: 4px solid #ffffff;
+            touch-action: manipulation;
+            background: radial-gradient(circle, #00ff66 0%, #054019 100%);
+            box-shadow: 0 0 35px rgba(0, 255, 102, 0.5), inset 0 0 15px rgba(255,255,255,0.4);
+            transition: transform 0.05s ease, opacity 0.2s;
+        }
+        
+        .token-target:active {
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+
+        /* Action Sheet Panel Modals (Overlay Styles) */
+        .action-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 88%;
+            background: rgba(15, 20, 28, 0.98);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.9);
+            border-radius: 24px;
+            padding: 20px;
+            text-align: center;
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(10px);
         }
 
         .btn {
             background-color: var(--accent-color);
             color: #000;
             border: none;
-            padding: 16px 40px;
-            font-size: 1.1rem;
+            padding: 14px 30px;
+            font-size: 1rem;
             font-weight: 700;
-            border-radius: 20px;
+            border-radius: 16px;
             cursor: pointer;
             transition: transform 0.1s, background-color 0.2s;
-            box-shadow: 0 4px 20px rgba(0, 255, 102, 0.3);
-            width: 85%;
+            box-shadow: 0 4px 15px rgba(0, 255, 102, 0.25);
+            width: 100%;
             text-align: center;
         }
 
         .btn:active {
-            transform: scale(0.96);
+            transform: scale(0.97);
         }
 
         .btn:disabled {
@@ -174,124 +285,8 @@
             background-color: transparent;
             color: #64748b;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-top: 1rem;
+            margin-top: 0.5rem;
             box-shadow: none;
-        }
-
-        /* Top HUD Configuration */
-        .hud {
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            padding: 16px;
-            z-index: 20;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        .hud-item {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 12px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            text-align: center;
-            font-size: 0.85rem;
-            color: #94a3b8;
-        }
-
-        .hud-item strong {
-            font-size: 1.4rem;
-            color: #fff;
-            margin-left: 6px;
-        }
-
-        .hud-full {
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .energy-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            font-weight: bold;
-            color: var(--energy-color);
-        }
-
-        .energy-bar-container {
-            width: 100%;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .energy-bar-fill {
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(90deg, #0077ff, var(--energy-color));
-            border-radius: 10px;
-            transition: width 0.1s linear;
-        }
-
-        /* Spawning Arena Canvas */
-        .play-area {
-            position: absolute;
-            top: 155px; 
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            z-index: 10;
-        }
-
-        .token-target {
-            width: 110px;
-            height: 110px;
-            border-radius: 50%;
-            position: absolute;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2.5rem;
-            border: 4px solid #ffffff;
-            touch-action: manipulation;
-            background: radial-gradient(circle, #00ff66 0%, #054019 100%);
-            box-shadow: 0 0 35px rgba(0, 255, 102, 0.6), inset 0 0 15px rgba(255,255,255,0.4);
-            transition: transform 0.05s ease;
-        }
-        
-        .token-target:active {
-            transform: translate(-50%, -50%) scale(0.9);
-        }
-
-        /* Modular Action Sheets */
-        .action-modal {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 88%;
-            background: rgba(15, 20, 28, 0.98);
-            border: 1px solid rgba(0, 229, 255, 0.15);
-            box-shadow: 0 15px 50px rgba(0,0,0,0.9);
-            border-radius: 28px;
-            padding: 24px;
-            text-align: center;
-            z-index: 30;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 14px;
-            backdrop-filter: blur(10px);
         }
 
         /* Floating pops */
@@ -311,12 +306,11 @@
             100% { transform: translate(-50%, -50%) translateY(-70px) scale(1.2); opacity: 0; }
         }
 
-        /* Flow Process Nodes */
         .flow-box {
             background: rgba(255,255,255,0.02);
             border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 18px;
-            padding: 12px;
+            border-radius: 14px;
+            padding: 10px;
             width: 100%;
             display: flex;
             justify-content: space-between;
@@ -325,8 +319,8 @@
 
         .flow-arrow {
             color: #64748b;
-            font-size: 1.2rem;
-            margin: 4px 0;
+            font-size: 1rem;
+            margin: 2px 0;
         }
     </style>
 </head>
@@ -335,7 +329,7 @@
     <div class="game-container">
         
         <div id="start-screen" class="screen">
-            <div style="font-size: 4.5rem; margin-bottom: 1rem;">⚡🐸</div>
+            <div style="font-size: 4rem; margin-bottom: 1rem;">⚡🐸</div>
             <h1>PEPEVOLT</h1>
             <p>Tap to accumulate core points, swap them down the line to gPVLT governance vectors, and extract pure $PVLT blocks.</p>
             
@@ -345,31 +339,27 @@
                 💎 100 gPVLT = 1 PVLT
             </div>
 
-            <button class="btn" onclick="showScreen('home-screen')">Play</button>
+            <button class="btn" style="width: 85%;" onclick="showDashboard()">Play</button>
         </div>
 
-        <div id="home-screen" class="screen hidden">
-            <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🏠</div>
-            <h1 style="font-size: 2rem; margin-bottom: 1.5rem;">Miner Dashboard</h1>
+        <div id="dashboard-screen" class="screen hidden" style="padding: 0; justify-content: flex-start;">
             
-            <div class="wallet-card">
-                <div class="wallet-label">Total Accumulated Assets</div>
-                <div class="wallet-balance">
-                    <span id="home-pvlt-balance" style="color: var(--accent-color);">0.0000</span>
-                    <span style="font-size: 1.1rem; font-weight: 700; color: #94a3b8;">PVLT</span>
+            <div class="dashboard-header">
+                <div class="wallet-card">
+                    <div class="wallet-label">Total Accumulated Assets</div>
+                    <div class="wallet-balance">
+                        <span id="dash-pvlt-balance" style="color: var(--accent-color);">0.0000</span>
+                        <span style="font-size: 1rem; font-weight: 700; color: #64748b; margin-left: 4px;">PVLT</span>
+                    </div>
                 </div>
-            </div>
 
-            <button class="btn" onclick="startGameArena()">Enter Mining Field</button>
-        </div>
+                <div class="stats-bar">
+                    <div class="hud-item">Current Session: <strong id="score-display" style="color: var(--energy-color);">0 POINTS</strong></div>
+                </div>
 
-        <div id="game-screen" class="screen hidden" style="padding: 0;">
-            <div class="hud">
-                <div class="hud-item">Mined: <strong id="score-display" style="color: var(--energy-color);">0 POINTS</strong></div>
-                
-                <div class="hud-full">
+                <div class="energy-hud">
                     <div class="energy-header">
-                        <span>⚡ MINING STAMINA CAP</span>
+                        <span>⚡ STAMINA CAP</span>
                         <span id="energy-text">50/50</span>
                     </div>
                     <div class="energy-bar-container">
@@ -378,61 +368,58 @@
                 </div>
             </div>
             
-            <div class="play-area" id="play-area">
+            <div class="dashboard-content" id="play-area">
+                
                 <div id="target" class="token-target">🐸</div>
                 
-                <div id="swap-modal" class="action-modal hidden">
-                    <div style="font-size: 2.5rem;">🔄</div>
-                    <h3 style="color: var(--gov-color); font-size: 1.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Stamina Expired</h3>
-                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.5rem;">Your capacity hit 0/50. You must swap your raw points into Governance gPVLT tokens to unlock your rewards panel.</p>
+                <div id="swap-modal" class="action-overlay hidden">
+                    <div style="font-size: 2.2rem;">🔄</div>
+                    <h3 style="color: var(--gov-color); font-size: 1.2rem; text-transform: uppercase;">Stamina Expired</h3>
+                    <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.2rem;">Your capacity hit 0/50. Swap your core points into Governance gPVLT tokens to move to settlement.</p>
                     
                     <div class="flow-box">
-                        <span style="color:#94a3b8; font-size:0.85rem;">Raw Yield:</span>
+                        <span style="color:#94a3b8; font-size:0.8rem;">Session Score:</span>
                         <span style="font-weight:700; color:var(--energy-color);" id="modal-points-yield">0 Points</span>
                     </div>
                     <div class="flow-arrow">⬇️</div>
                     <div class="flow-box">
-                        <span style="color:#94a3b8; font-size:0.85rem;">Estimated gPVLT:</span>
+                        <span style="color:#94a3b8; font-size:0.8rem;">Conversion Yield:</span>
                         <span style="font-weight:700; color:var(--gov-color);" id="modal-gpvlt-yield">0.0 gPVLT</span>
                     </div>
 
-                    <button class="btn" onclick="swapPointsToGov()" style="width: 100%; font-size: 1rem; padding: 14px; background-color: var(--gov-color); margin-top: 0.5rem;">Swap Points ➡️ gPVLT</button>
-                    <button class="btn btn-secondary" onclick="buyRefillEnergy()" id="buy-refill-btn" style="width: 100%; margin-top: 0; padding: 10px; font-size: 0.85rem;">Refill Energy (-10 Points)</button>
+                    <button class="btn" onclick="swapPointsToGov()" style="background-color: var(--gov-color);">Swap Points ➡️ gPVLT</button>
+                    <button class="btn btn-secondary" onclick="buyRefillEnergy()" id="buy-refill-btn">Refill Energy (-10 Points)</button>
                 </div>
-            </div>
-        </div>
 
-        <div id="end-screen" class="screen hidden">
-            <div style="font-size: 3rem; margin-bottom: 0.5rem;">💎</div>
-            <h1>Ecosystem Bridge</h1>
-            <p>Convert your governance gPVLT storage layers into market-ready asset pools ($PVLT) to claim.</p>
-            
-            <div style="width: 85%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1.5rem;">
-                <div class="flow-box">
-                    <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">gPVLT BALANCE</span>
-                    <span style="font-size: 1.3rem; font-weight: 800; color: var(--gov-color);" id="settle-gov-bal">0.0</span>
-                </div>
-                
-                <div class="flow-arrow" style="margin: 6px 0;">⬇️</div>
-                
-                <div class="flow-box" style="border-color: rgba(0,255,102,0.15); background: linear-gradient(135deg, rgba(0,255,102,0.02) 0%, transparent 100%);">
-                    <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">PVLT EXTRACTED</span>
-                    <span style="font-size: 1.5rem; font-weight: 900; color: var(--accent-color);" id="settle-pvlt-bal">0.0000</span>
-                </div>
-            </div>
+                <div id="bridge-modal" class="action-overlay hidden">
+                    <div style="font-size: 2.2rem;">💎</div>
+                    <h3 style="color: var(--accent-color); font-size: 1.2rem; text-transform: uppercase;">Ecosystem Bridge</h3>
+                    <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.2rem;">Bridge your gPVLT storage layers into market-ready asset pools ($PVLT) to complete claims.</p>
+                    
+                    <div class="flow-box">
+                        <span style="color: #64748b; font-size: 0.8rem;">gPVLT Balance:</span>
+                        <span style="font-size: 1.1rem; font-weight: 800; color: var(--gov-color);" id="settle-gov-bal">0.0</span>
+                    </div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">
+                        <span style="color: #64748b; font-size: 0.8rem;">PVLT Extracted:</span>
+                        <span style="font-size: 1.2rem; font-weight: 800; color: var(--accent-color);" id="settle-pvlt-bal">0.0000</span>
+                    </div>
 
-            <button class="btn" id="convert-bridge-btn" onclick="convertGovToPvlt()">Convert gPVLT ➡️ PVLT</button>
-            <button class="btn" id="final-claim-btn" onclick="executeWeb3Claim()" style="margin-top: 0.8rem; display: none;">Execute Final Claim</button>
-            <button class="btn btn-secondary" onclick="showScreen('home-screen')">Back to Home</button>
+                    <button class="btn" id="convert-bridge-btn" onclick="convertGovToPvlt()">Convert gPVLT ➡️ PVLT</button>
+                    <button class="btn" id="final-claim-btn" onclick="executeWeb3Claim()" style="display: none;">Execute Final Claim</button>
+                </div>
+
+            </div>
         </div>
 
     </div>
 
     <script>
-        // Persistent Profile State Variables
+        // Global Wallet Pool Metrics
         let totalAccumulatedPvlt = 0.0000;
 
-        // Session metrics
+        // Active Mining Session metrics
         let points = 0;
         let gpvlt = 0;
         let pvlt = 0;
@@ -442,12 +429,11 @@
         const energyRefillCostPoints = 10;
 
         const startScreen = document.getElementById('start-screen');
-        const homeScreen = document.getElementById('home-screen');
-        const gameScreen = document.getElementById('game-screen');
-        const endScreen = document.getElementById('end-screen');
+        const dashboardScreen = document.getElementById('dashboard-screen');
         const swapModal = document.getElementById('swap-modal');
+        const bridgeModal = document.getElementById('bridge-modal');
         
-        const homePvltBalance = document.getElementById('home-pvlt-balance');
+        const dashPvltBalance = document.getElementById('dash-pvlt-balance');
         const target = document.getElementById('target');
         const playArea = document.getElementById('play-area');
         const scoreDisplay = document.getElementById('score-display');
@@ -465,18 +451,17 @@
 
         function showScreen(screenId) {
             startScreen.classList.add('hidden');
-            homeScreen.classList.add('hidden');
-            gameScreen.classList.add('hidden');
-            endScreen.classList.add('hidden');
+            dashboardScreen.classList.add('hidden');
             document.getElementById(screenId).classList.remove('hidden');
-            
-            // Sync dashboard whenever user touches down on Home Screen Node
-            if(screenId === 'home-screen') {
-                homePvltBalance.textContent = totalAccumulatedPvlt.toFixed(4);
-            }
         }
 
-        function startGameArena() {
+        function showDashboard() {
+            dashPvltBalance.textContent = totalAccumulatedPvlt.toFixed(4);
+            showScreen('dashboard-screen');
+            resetMiningSession();
+        }
+
+        function resetMiningSession() {
             points = 0;
             gpvlt = 0;
             pvlt = 0;
@@ -486,6 +471,8 @@
             updateEnergyBar();
             
             swapModal.classList.add('hidden');
+            bridgeModal.classList.add('hidden');
+            
             target.style.opacity = "1";
             target.style.pointerEvents = "auto";
             
@@ -496,7 +483,6 @@
             finalClaimBtn.disabled = false;
             finalClaimBtn.textContent = "Execute Final Claim";
             
-            showScreen('game-screen');
             moveTarget();
         }
 
@@ -510,8 +496,9 @@
             const areaWidth = playArea.clientWidth;
             const areaHeight = playArea.clientHeight;
             
-            const paddingX = 65;
-            const paddingY = 65; 
+            // Boundary constraints
+            const paddingX = 70;
+            const paddingY = 70; 
             
             const randomX = Math.random() * (areaWidth - paddingX * 2) + paddingX;
             const randomY = Math.random() * (areaHeight - paddingY * 2) + paddingY;
@@ -520,6 +507,7 @@
             target.style.top = `${randomY}px`;
         }
 
+        // Tap Core Process Interceptor
         target.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             if (energy <= 0) return;
@@ -540,7 +528,7 @@
         });
 
         function handleOutofEnergy() {
-            target.style.opacity = "0.15";
+            target.style.opacity = "0.1";
             target.style.pointerEvents = "none";
             
             const calculatedGov = (points / 10) * 0.1;
@@ -576,16 +564,20 @@
             }
         }
 
+        // Conversion Phase 1: Points -> gPVLT
         function swapPointsToGov() {
             gpvlt = (points / 10) * 0.1;
             points = 0;
+            scoreDisplay.textContent = `${points} POINTS`;
             
             settleGovBal.textContent = gpvlt.toFixed(2);
             settlePvltBal.textContent = pvlt.toFixed(4);
             
-            showScreen('end-screen');
+            swapModal.classList.add('hidden');
+            bridgeModal.classList.remove('hidden');
         }
 
+        // Conversion Phase 2: gPVLT -> PVLT
         function convertGovToPvlt() {
             convertBridgeBtn.disabled = true;
             convertBridgeBtn.textContent = "Bridging Token Protocols...";
@@ -598,19 +590,19 @@
             }, 1200);
         }
 
+        // Phase 3: Final Mint and Update Global Wallet Base
         function executeWeb3Claim() {
-            finalClaimBtn.textContent = "Minting Contract Claims...";
+            finalClaimBtn.textContent = "Minting Ledger Claims...";
             finalClaimBtn.disabled = true;
 
             setTimeout(() => {
-                // Deposit extracted value into permanent wallet pool tracking
                 totalAccumulatedPvlt += pvlt;
+                dashPvltBalance.textContent = totalAccumulatedPvlt.toFixed(4);
                 
                 finalClaimBtn.textContent = "Success! Credited";
-                alert(`Claim Complete!\n\nExtracted Ledger:\n• Total Claimed Assets: ${pvlt.toFixed(4)} PVLT\n\nYour net global balance has updated!`);
+                alert(`Claim Complete!\n\nTransferred Assets:\n• +${pvlt.toFixed(4)} PVLT successfully added to your dashboard!`);
                 
-                // Return to home base dashboard
-                showScreen('home-screen');
+                resetMiningSession();
             }, 1400);
         }
 
