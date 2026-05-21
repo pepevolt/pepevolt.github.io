@@ -206,10 +206,20 @@ function processDisconnectState() {
     updateUI(); refreshOnChainBalances();
 }
 
-function toggleWalletConnection() {
+// FIXED: Asynchronous call path logic to process layout configuration inside First-Click
+async function toggleWalletConnection() {
     if(!web3ModalInstance) return;
     if(!wallet) {
-        web3ModalInstance.open();
+        try {
+            await web3ModalInstance.open();
+            const state = web3ModalInstance.getWalletProvider();
+            if (state) {
+                web3Provider = new ethers.providers.Web3Provider(state);
+                await syncActiveWalletData();
+            }
+        } catch (error) {
+            console.error("First-click structural handler failed:", error);
+        }
     } else {
         web3ModalInstance.disconnect();
         processDisconnectState();
@@ -310,7 +320,6 @@ async function convertGPVLT() {
     } catch(e){}
 }
 
-// FIXED & OPTIMIZED: Robust BigNumber math checking and explicit error alert tracking
 async function executeEnergyPurchase() {
     if(!web3Provider) { alert("Wallet provider not initialized. Reconnect your wallet."); return; }
     const confirmBtn = document.getElementById("confirmPaymentBtn");
@@ -319,7 +328,6 @@ async function executeEnergyPurchase() {
         confirmBtn.innerText = "Processing..."; confirmBtn.disabled = true;
         const signer = web3Provider.getSigner();
         
-        // Extended ABI explicitly providing allowance checks and correct state modifiers
         const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, [
             "function approve(address spender, uint256 amount) external returns (bool)",
             "function allowance(address owner, address spender) view returns (uint256)",
@@ -330,20 +338,16 @@ async function executeEnergyPurchase() {
             "function buyEnergyPack() external"
         ], signer);
 
-        // Convert target cost securely to explicit BigNumber variable structures
         const cost = ethers.utils.parseUnits("100", 18);
         const userAddress = await signer.getAddress();
-        
         const bal = await tokenContract.balanceOf(userAddress);
         
-        // FIXED: Safe logic evaluation replacing broken JavaScript object references (.lt)
         if (bal.lt(cost)) { 
             alert(`Transaction Failed: Insufficient balance. You need 100 PVLT, but your wallet holds ${ethers.utils.formatUnits(bal, 18)} PVLT.`);
             confirmBtn.innerText = "Confirm"; confirmBtn.disabled = false;
             return; 
         }
 
-        // Check if token allowance is already authorized to avoid unnecessary double prompts
         const allowedAmount = await tokenContract.allowance(userAddress, GAME_TREASURY_ADDRESS);
         
         if (allowedAmount.lt(cost)) {
@@ -355,7 +359,6 @@ async function executeEnergyPurchase() {
 
         alert("Step 2 of 2: Confirming purchase contract transaction. Please approve the incoming prompt inside your wallet.");
         
-        // Added standard safe gasLimit options fallback variables to guarantee injection across mobile webviews
         const buyTx = await vaultContract.buyEnergyPack({
             gasLimit: 150000 
         });
@@ -373,7 +376,6 @@ async function executeEnergyPurchase() {
         alert("Payment Successful! 10,000 Energy added to your profile.");
     } catch (err) { 
         console.error(err);
-        // Alert explicit details directly to mobile screen instead of failing silently
         alert("Transaction Failed: " + (err.message ? err.message.slice(0, 120) : "Check wallet connection or network gas balance.")); 
     } finally { 
         confirmBtn.innerText = "Confirm"; 
