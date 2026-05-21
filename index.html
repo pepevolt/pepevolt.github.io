@@ -112,6 +112,38 @@
             line-height: 1.6;
         }
 
+        /* Home Wallet Asset Card Style */
+        .wallet-card {
+            background: linear-gradient(135deg, rgba(15, 20, 28, 0.9) 0%, rgba(5, 64, 25, 0.2) 100%);
+            border: 1px solid rgba(0, 255, 102, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 255, 102, 0.05);
+            padding: 24px 16px;
+            border-radius: 24px;
+            width: 85%;
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .wallet-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .wallet-balance {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-shadow: 0 0 20px rgba(0,255,102,0.2);
+        }
+
         .btn {
             background-color: var(--accent-color);
             color: #000;
@@ -313,7 +345,22 @@
                 💎 100 gPVLT = 1 PVLT
             </div>
 
-            <button class="btn" onclick="startGame()">Play</button>
+            <button class="btn" onclick="showScreen('home-screen')">Play</button>
+        </div>
+
+        <div id="home-screen" class="screen hidden">
+            <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🏠</div>
+            <h1 style="font-size: 2rem; margin-bottom: 1.5rem;">Miner Dashboard</h1>
+            
+            <div class="wallet-card">
+                <div class="wallet-label">Total Accumulated Assets</div>
+                <div class="wallet-balance">
+                    <span id="home-pvlt-balance" style="color: var(--accent-color);">0.0000</span>
+                    <span style="font-size: 1.1rem; font-weight: 700; color: #94a3b8;">PVLT</span>
+                </div>
+            </div>
+
+            <button class="btn" onclick="startGameArena()">Enter Mining Field</button>
         </div>
 
         <div id="game-screen" class="screen hidden" style="padding: 0;">
@@ -370,18 +417,22 @@
                 
                 <div class="flow-box" style="border-color: rgba(0,255,102,0.15); background: linear-gradient(135deg, rgba(0,255,102,0.02) 0%, transparent 100%);">
                     <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">PVLT EXTRACTED</span>
-                    <span style="font-size: 1.5rem; font-weight: 900; color: var(--accent-color);" id="settle-pvlt-bal">0.000</span>
+                    <span style="font-size: 1.5rem; font-weight: 900; color: var(--accent-color);" id="settle-pvlt-bal">0.0000</span>
                 </div>
             </div>
 
             <button class="btn" id="convert-bridge-btn" onclick="convertGovToPvlt()">Convert gPVLT ➡️ PVLT</button>
             <button class="btn" id="final-claim-btn" onclick="executeWeb3Claim()" style="margin-top: 0.8rem; display: none;">Execute Final Claim</button>
-            <button class="btn btn-secondary" onclick="showScreen('start-screen')">Mine Again</button>
+            <button class="btn btn-secondary" onclick="showScreen('home-screen')">Back to Home</button>
         </div>
 
     </div>
 
     <script>
+        // Persistent Profile State Variables
+        let totalAccumulatedPvlt = 0.0000;
+
+        // Session metrics
         let points = 0;
         let gpvlt = 0;
         let pvlt = 0;
@@ -391,10 +442,12 @@
         const energyRefillCostPoints = 10;
 
         const startScreen = document.getElementById('start-screen');
+        const homeScreen = document.getElementById('home-screen');
         const gameScreen = document.getElementById('game-screen');
         const endScreen = document.getElementById('end-screen');
         const swapModal = document.getElementById('swap-modal');
         
+        const homePvltBalance = document.getElementById('home-pvlt-balance');
         const target = document.getElementById('target');
         const playArea = document.getElementById('play-area');
         const scoreDisplay = document.getElementById('score-display');
@@ -412,12 +465,18 @@
 
         function showScreen(screenId) {
             startScreen.classList.add('hidden');
+            homeScreen.classList.add('hidden');
             gameScreen.classList.add('hidden');
             endScreen.classList.add('hidden');
             document.getElementById(screenId).classList.remove('hidden');
+            
+            // Sync dashboard whenever user touches down on Home Screen Node
+            if(screenId === 'home-screen') {
+                homePvltBalance.textContent = totalAccumulatedPvlt.toFixed(4);
+            }
         }
 
-        function startGame() {
+        function startGameArena() {
             points = 0;
             gpvlt = 0;
             pvlt = 0;
@@ -432,7 +491,10 @@
             
             convertBridgeBtn.style.display = "block";
             convertBridgeBtn.disabled = false;
+            convertBridgeBtn.textContent = "Convert gPVLT ➡️ PVLT";
             finalClaimBtn.style.display = "none";
+            finalClaimBtn.disabled = false;
+            finalClaimBtn.textContent = "Execute Final Claim";
             
             showScreen('game-screen');
             moveTarget();
@@ -541,8 +603,14 @@
             finalClaimBtn.disabled = true;
 
             setTimeout(() => {
+                // Deposit extracted value into permanent wallet pool tracking
+                totalAccumulatedPvlt += pvlt;
+                
                 finalClaimBtn.textContent = "Success! Credited";
-                alert(`Claim Complete!\n\nExtracted Ledger:\n• Total Claimed Assets: ${pvlt.toFixed(4)} PVLT`);
+                alert(`Claim Complete!\n\nExtracted Ledger:\n• Total Claimed Assets: ${pvlt.toFixed(4)} PVLT\n\nYour net global balance has updated!`);
+                
+                // Return to home base dashboard
+                showScreen('home-screen');
             }, 1400);
         }
 
