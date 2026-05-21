@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PEPEVOLT GAME</title>
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    
+    <script type="module">
+        import { AppKitModal } from 'https://esm.sh/@reown/appkit';
+        import { Ethers5Adapter } from 'https://esm.sh/@reown/appkit-adapter-ethers5';
+        import { polygon } from 'https://esm.sh/@reown/appkit/networks';
+
+        window.AppKitModal = AppKitModal;
+        window.Ethers5Adapter = Ethers5Adapter;
+        window.polygonNetwork = polygon;
+    </script>
+
     <style>
         body {
             margin: 0; padding: 0;
@@ -47,7 +58,7 @@
     </div>
 
     <br>
-    <button onclick="connectWallet()">Connect Wallet</button>
+    <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
     <div id="wallet" class="balance">Please connect wallet...</div>
 
     <div class="tap-btn" onclick="tap()">TAP</div>
@@ -59,14 +70,17 @@
     </div>
 
 <script>
-    // Addresses are empty strings initially; populated dynamically by the live Render server
     let PVLT_CONTRACT = "";
     let TREASURY_CONTRACT = "";
     let GAME_CONTRACT = "";
+    
+    // Using your configured Reown Project ID
+    const REOWN_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
     let provider;
     let signer;
     let userAddress;
+    let modal;
 
     const GAME_ABI = [
         "function tap() external",
@@ -86,7 +100,6 @@
         "function treasuryBalance() view returns(uint256)"
     ];
 
-    // Queries live backend values directly from your deployment instance on loading window
     async function initConfig() {
         try {
             const response = await fetch("https://pvlt-server.onrender.com/api/config");
@@ -96,25 +109,64 @@
             TREASURY_CONTRACT = config.treasury;
             GAME_CONTRACT = config.game;
             console.log("Production Configuration Loaded Safely.");
+            
+            // Setup the Multi-wallet Modal connection interface
+            setupWalletModal();
         } catch (err) {
             console.error("Critical: Could not resolve production backend configs:", err);
         }
     }
 
+    function setupWalletModal() {
+        // Interval checks until external ESM dependencies finish landing in window space
+        const checkLibrary = setInterval(() => {
+            if (window.AppKitModal && window.Ethers5Adapter) {
+                clearInterval(checkLibrary);
+                
+                const ethers5Adapter = new window.Ethers5Adapter();
+                
+                modal = window.AppKitModal.create({
+                    adapters: [ethers5Adapter],
+                    networks: [window.polygonNetwork],
+                    metadata: {
+                        name: 'PEPEVOLT GAME',
+                        description: 'PepeVolt Tap Engine Ecosystem',
+                        url: 'https://pepevolt.github.io',
+                        icons: ['https://pepevolt.github.io/images/logo.png']
+                    },
+                    projectId: REOWN_PROJECT_ID
+                });
+
+                // Listen for wallet connections or modifications
+                modal.subscribeProviders((state) => {
+                    if (state && state['eip155']) {
+                        handleWalletConnected(state['eip155']);
+                    }
+                });
+            }
+        }, 100);
+    }
+
     async function connectWallet() {
-        if (!window.ethereum) {
-            alert("Please install MetaMask!");
+        if (!GAME_CONTRACT) {
+            alert("Configurations are updating from your live server. Please wait a brief moment.");
             return;
         }
-        if(!GAME_CONTRACT) {
-            alert("Render Backend configurations are loading or waking up from sleep mode. Try again in a few seconds.");
+        if (!modal) {
+            alert("Wallet connection module initializing. Try again in an instant.");
             return;
         }
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
+        // Opens up the multi-wallet choice interface selection window panel
+        modal.open();
+    }
+
+    async function handleWalletConnected(web3Provider) {
+        provider = new ethers.providers.Web3Provider(web3Provider);
         signer = provider.getSigner();
         userAddress = await signer.getAddress();
+        
         document.getElementById("wallet").innerHTML = "Connected: " + userAddress;
+        document.getElementById("connectBtn").innerText = "Wallet Connected ✅";
         loadAllData();
     }
 
@@ -126,11 +178,9 @@
         const treasury = new ethers.Contract(TREASURY_CONTRACT, TREASURY_ABI, signer);
 
         try {
-            // Displays string values without applying division decimals (preserves units)
             const energy = await game.energy(userAddress);
             document.getElementById("energy").innerHTML = energy.toString();
 
-            // Formats from 18 decimals down to standard tokens
             const gpvlt = await game.gPVLT(userAddress);
             document.getElementById("gpvlt").innerHTML = ethers.utils.formatEther(gpvlt);
 
@@ -147,6 +197,7 @@
 
     async function tap() {
         try {
+            if (!signer) return alert("Connect wallet first!");
             const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
             const tx = await game.tap();
             await tx.wait();
@@ -158,6 +209,7 @@
 
     async function buyEnergy() {
         try {
+            if (!signer) return alert("Connect wallet first!");
             const pvlt = new ethers.Contract(PVLT_CONTRACT, ERC20_ABI, signer);
             const game = new ethers.Contract(GAME_CONTRACT, GAME_ABI, signer);
 
@@ -175,6 +227,7 @@
 
     async function convertGPVLT() {
         try {
+            if (!signer) return alert("Connect wallet first!");
             const amount = prompt("Enter gPVLT Amount to Convert:");
             if (!amount) return;
 
@@ -190,6 +243,7 @@
 
     async function claimReward() {
         try {
+            if (!signer) return alert("Connect wallet first!");
             const amount = prompt("Enter PVLT Amount to Claim:");
             if (!amount) return;
 
