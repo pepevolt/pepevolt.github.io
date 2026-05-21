@@ -11,18 +11,18 @@
         .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: #16213e; text-align: center; }
         .stat-item { display: flex; flex-direction: column; font-size: 0.75rem; }
         .emoji { font-size: 1.2rem; margin-bottom: 4px; }
-        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
-        .tap-circle { width: 180px; height: 180px; border-radius: 50%; border: none; background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; cursor: pointer; transition: transform 0.05s; box-shadow: 0 8px 0 #3a9b7c; }
-        .tap-circle:active { transform: scale(0.95); box-shadow: 0 4px 0 #3a9b7c; }
-        .energy-bar { margin: 10px 0; width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
+        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
+        .tap-circle { width: 160px; height: 160px; border-radius: 50%; border: none; background: #4ecca3; color: #1a1a2e; font-size: 2rem; font-weight: bold; cursor: pointer; transition: transform 0.05s; box-shadow: 0 8px 0 #3a9b7c; }
+        .tap-circle:active { transform: scale(0.95); }
+        .energy-bar { width: 80%; height: 20px; background: #0f3460; border-radius: 10px; overflow: hidden; }
         .energy-fill { height: 100%; background: #4ecca3; width: 100%; transition: width 0.3s; }
         
-        /* Buttons */
-        .footer-panel { padding: 15px; background: #0f3460; text-align: center; display: flex; flex-direction: column; gap: 10px; }
-        button { padding: 12px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
+        .buy-menu { background: #16213e; padding: 15px; border-radius: 10px; width: 90%; text-align: center; }
+        select, button { padding: 10px; margin: 5px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-claim { background: #f39c12; color: #1a1a2e; width: 80%; }
+        .btn-confirm { background: #4ecca3; color: #1a1a2e; width: 80%; }
+        .footer-panel { padding: 10px; background: #0f3460; text-align: center; display: flex; flex-direction: column; gap: 5px; }
         .btn-convert { background: #e94560; color: white; }
-        .btn-claim { background: #f39c12; color: #1a1a2e; font-size: 1.1rem; width: 80%; }
-        .btn-buy-energy { background: #4ecca3; color: #1a1a2e; font-size: 1.1rem; width: 80%; }
     </style>
 </head>
 <body>
@@ -37,11 +37,18 @@
         <main class="interaction-area">
             <button id="tap-button" class="tap-circle">TAP!</button>
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
-            <div id="pvlt-display" style="font-size: 1.2rem; font-weight: bold;">Balance: 0.000 PVLT</div>
+            <div id="pvlt-display" style="font-weight: bold;">Balance: 0.000 PVLT</div>
             
-            <!-- Claim and Buy Buttons -->
             <button class="btn-claim" onclick="claimReward()">Claim Reward</button>
-            <button class="btn-buy-energy" onclick="buyEnergy()">Buy Energy (1 gPVLT)</button>
+
+            <div class="buy-menu">
+                <label>Buy Energy Refill:</label><br>
+                <select id="refill-option">
+                    <option value="gpvlt">10,000 Energy = 100 gPVLT</option>
+                    <option value="pvlt">10,000 Energy = 100 PVLT</option>
+                </select>
+                <button class="btn-confirm" onclick="confirmRefill()">Confirm Refill</button>
+            </div>
         </main>
 
         <footer class="footer-panel">
@@ -51,25 +58,7 @@
     </div>
 
     <script>
-        let energy = parseInt(localStorage.getItem('energy')) || 50;
-        let points = parseInt(localStorage.getItem('points')) || 0;
-        let gpvlt = parseFloat(localStorage.getItem('gpvlt')) || 0;
-        let pvlt = parseFloat(localStorage.getItem('pvlt')) || 0;
-
-        function saveGame() {
-            localStorage.setItem('energy', energy);
-            localStorage.setItem('points', points);
-            localStorage.setItem('gpvlt', gpvlt);
-            localStorage.setItem('pvlt', pvlt);
-        }
-
-        setInterval(() => {
-            if (energy < 50) {
-                energy++;
-                updateUI();
-                saveGame();
-            }
-        }, 1000);
+        let energy = 50, points = 0, gpvlt = 0, pvlt = 0;
 
         function updateUI() {
             document.getElementById('energy').innerText = `${energy}/50`;
@@ -80,49 +69,28 @@
         }
 
         document.getElementById('tap-button').addEventListener('click', () => {
-            if (energy > 0) {
-                energy--;
-                points += 1;
-                updateUI();
-                saveGame();
-            }
+            if (energy > 0) { energy--; points++; updateUI(); }
         });
 
-        function buyEnergy() {
-            if (gpvlt >= 1) {
-                gpvlt -= 1;
-                energy = 50;
-                updateUI();
-                saveGame();
+        function confirmRefill() {
+            let choice = document.getElementById('refill-option').value;
+            if (choice === 'gpvlt') {
+                if (gpvlt >= 100) { gpvlt -= 100; energy = 50; } 
+                else { alert("Need 100 gPVLT!"); return; }
             } else {
-                alert("Need 1 gPVLT to refill energy!");
+                if (pvlt >= 100) { pvlt -= 100; energy = 50; } 
+                else { alert("Need 100 PVLT!"); return; }
             }
+            updateUI();
+            alert("Energy Refilled to Full!");
         }
 
-        function convertPoints() {
-            if (points >= 100) {
-                points -= 100;
-                gpvlt += 1;
-                updateUI(); saveGame();
-            } else { alert("Need 100 💎!"); }
-        }
+        // Standard conversion functions remain the same
+        function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } else alert("Need 100 💎!"); }
+        function convertGPVLT() { if (gpvlt >= 100) { gpvlt -= 100; pvlt += 1; updateUI(); } else alert("Need 100 gPVLT!"); }
+        function claimReward() { if (pvlt > 0) { alert("Claimed: " + pvlt.toFixed(3) + " PVLT"); pvlt = 0; updateUI(); } else alert("No PVLT to claim."); }
 
-        function convertGPVLT() {
-            if (gpvlt >= 100) {
-                gpvlt -= 100;
-                pvlt += 1;
-                updateUI(); saveGame();
-            } else { alert("Need 100 gPVLT!"); }
-        }
-
-        function claimReward() {
-            if (pvlt > 0) {
-                alert(`Success! Claimed ${pvlt.toFixed(3)} PVLT.`);
-                pvlt = 0;
-                updateUI(); saveGame();
-            } else { alert("No PVLT available."); }
-        }
-
+        setInterval(() => { if (energy < 50) { energy++; updateUI(); } }, 1000);
         updateUI();
     </script>
 </body>
