@@ -184,6 +184,11 @@ async function syncActiveWalletData() {
         energy = typeof data.energy !== 'undefined' ? data.energy : 50;
         pvltBalance = typeof data.pvltBalance !== 'undefined' ? data.pvltBalance : 0.0;
         
+        // Update treasury balance using server data payload
+        if(data && typeof data.treasuryCapacity !== 'undefined') {
+            document.getElementById("treasuryCapacity").innerText = data.treasuryCapacity.toLocaleString(undefined, {minimumFractionDigits:2});
+        }
+        
         updateUI();
         refreshOnChainBalances();
     } catch (e) {
@@ -223,7 +228,6 @@ function closeBuyModal() { document.getElementById("buyModal").classList.remove(
 
 async function refreshOnChainBalances() {
     try {
-        // FIXED: Force a clean, dedicated read-only provider instance so it queries correctly before the user connects a wallet
         const publicReaderProvider = new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
         const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function balanceOf(address owner) view returns (uint256)"], publicReaderProvider);
         
@@ -237,8 +241,25 @@ async function refreshOnChainBalances() {
             document.getElementById("userHolding").innerText = "0.00";
         }
     } catch (e) { 
-        console.error("Error reading smart contract values:", e); 
+        console.error("Error reading smart contract values via fallback:", e); 
     }
+}
+
+// Helper to poll treasury data without requiring full connected state
+async function anonymousPoll() {
+    if (wallet) return; // Managed by direct transaction endpoints if wallet is active
+    try {
+        // Fallback fake wallet object to fetch updated stats anonymously
+        const res = await fetch(`${API}/user`, { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify({ wallet: "0x0000000000000000000000000000000000000000" }) 
+        });
+        const data = await res.json();
+        if(data && typeof data.treasuryCapacity !== 'undefined') {
+            document.getElementById("treasuryCapacity").innerText = data.treasuryCapacity.toLocaleString(undefined, {minimumFractionDigits:2});
+        }
+    } catch(e){}
 }
 
 async function handleTapAction(e) {
@@ -263,6 +284,9 @@ async function handleTapAction(e) {
         if(data && typeof data.points !== 'undefined') {
             points = data.points; 
             energy = data.energy;
+            if(typeof data.treasuryCapacity !== 'undefined') {
+                document.getElementById("treasuryCapacity").innerText = data.treasuryCapacity.toLocaleString(undefined, {minimumFractionDigits:2});
+            }
             updateUI();
         }
     } catch(e){
@@ -283,6 +307,9 @@ async function convertGPVLT() {
         const data = await res.json();
         if(data.error){ alert(data.error); return; }
         points = data.points; pvltBalance = data.pvltBalance;
+        if(typeof data.treasuryCapacity !== 'undefined') {
+            document.getElementById("treasuryCapacity").innerText = data.treasuryCapacity.toLocaleString(undefined, {minimumFractionDigits:2});
+        }
         updateUI();
     } catch(e){}
 }
@@ -313,6 +340,9 @@ async function executeEnergyPurchase() {
         const res = await fetch(`${API}/refill`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wallet }) });
         const data = await res.json();
         energy = data.energy;
+        if(typeof data.treasuryCapacity !== 'undefined') {
+            document.getElementById("treasuryCapacity").innerText = data.treasuryCapacity.toLocaleString(undefined, {minimumFractionDigits:2});
+        }
         
         updateUI(); refreshOnChainBalances(); closeBuyModal();
         alert("Payment Successful! 10,000 Energy added to your profile.");
@@ -338,6 +368,9 @@ async function claimPVLT() {
         await tx.wait();
 
         pvltBalance = data.remainingPvlt;
+        if(typeof data.treasuryCapacity !== 'undefined') {
+            document.getElementById("treasuryCapacity").innerText = data.treasuryCapacity.toLocaleString(undefined, {minimumFractionDigits:2});
+        }
         updateUI(); refreshOnChainBalances();
         alert("Tokens claimed successfully! Sent directly from treasury.");
     } catch(e) { alert("Claim execution rejected or canceled."); }
@@ -357,10 +390,11 @@ document.getElementById("claimBtn").addEventListener("click", claimPVLT);
 setTimeout(() => { initWeb3ModalGrid(); }, 500);
 setInterval(() => { if(wallet && energy < 50) { energy++; document.getElementById("energy").innerText = energy; } }, 3000);
 
-// Initialize the display loop right away when the document script fires up
+// Initialize loops right away
 refreshOnChainBalances();
-// Keep the public counters completely updated in the background every 15 seconds
-setInterval(refreshOnChainBalances, 15000);
+anonymousPoll();
+setInterval(refreshOnChainBalances, 20000);
+setInterval(anonymousPoll, 15000);
 </script>
 </body>
 </html>
