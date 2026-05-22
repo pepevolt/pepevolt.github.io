@@ -3,79 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PepeVolt Game</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
+    <title>Tap Tap Game</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: manipulation; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; background: radial-gradient(circle at center, #2c3e50, #1a1a2e); }
+        
         .bg-animation { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .particle { position: absolute; border-radius: 50%; opacity: 0.15; animation: float 15s infinite linear; }
+        @keyframes float { 0% { transform: translateY(100vh) scale(0); } 50% { opacity: 0.25; } 100% { transform: translateY(-10vh) scale(1.5); } }
+
         .game-container { display: flex; flex-direction: column; height: 100vh; padding-bottom: 30px; background: transparent; color: #ffffff; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
-        .tap-circle { width: 160px; height: 160px; border-radius: 50%; border: none; font-size: 2rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; background: #4ecca3; }
-        .tap-circle.disconnected { background: linear-gradient(180deg, #4ecca3 50%, #4a4a4a 50%); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-wallet { background: #3498db; color: white; width: 80%; padding: 15px; }
+        
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 15px 5px; background: rgba(255, 255, 255, 0.1); text-align: center; backdrop-filter: blur(10px); }
+        .stat-item { display: flex; flex-direction: column; font-size: 0.75rem; }
+        .emoji { font-size: 1.2rem; margin-bottom: 4px; }
+        
+        .interaction-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
+        
+        /* Updated Tap Circle Styles */
+        .tap-circle { 
+            width: 160px; height: 160px; border-radius: 50%; border: none; 
+            font-size: 2rem; font-weight: bold; cursor: pointer; 
+            transition: all 0.3s ease; box-shadow: 0 8px 0 #3a9b7c; 
+            background: #4ecca3; /* Default fully green */
+        }
+        /* Half-color state when disconnected */
+        .tap-circle.disconnected { 
+            background: linear-gradient(180deg, #4ecca3 50%, #4a4a4a 50%);
+            box-shadow: 0 8px 0 #333;
+        }
+        .tap-circle:disabled { opacity: 0.7; cursor: not-allowed; }
+        .tap-circle:active:not(:disabled) { transform: scale(0.95); }
+        
+        .energy-bar { width: 80%; height: 20px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+        .energy-fill { height: 100%; background: #4ecca3; width: 0%; transition: width 0.3s; }
+        
+        button { padding: 12px; margin: 5px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        
+        .btn-wallet { background: #3498db; color: white; width: 80%; }
         .btn-wallet.connected { background: #e74c3c; }
-        .game-btn { background: #4ecca3; color: #1a1a2e; width: 80%; padding: 12px; margin: 5px; }
+        .game-btn { background: #4ecca3; color: #1a1a2e; width: 80%; }
+        
+        .buy-menu { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px; width: 90%; text-align: center; backdrop-filter: blur(10px); }
+        .footer-panel { padding: 10px; background: rgba(255, 255, 255, 0.05); text-align: center; display: flex; flex-direction: column; gap: 5px; backdrop-filter: blur(10px); }
     </style>
 </head>
 <body>
+
+    <div class="bg-animation" id="bg-animation"></div>
+
     <div class="game-container">
         <header class="stats">
-            <div class="stat-item">⚡ <span id="energy">Locked</span></div>
-            <div class="stat-item">💎 <span id="points">Locked</span></div>
-            <div class="stat-item">🪙 <span id="gpvlt">Locked</span></div>
+            <div class="stat-item"><span class="emoji">⚡</span><span id="energy">Locked</span></div>
+            <div class="stat-item"><span class="emoji">💎</span><span id="points">Locked</span></div>
+            <div class="stat-item"><span class="emoji">🪙</span><span id="gpvlt">Locked</span></div>
         </header>
 
-        <main class="interaction-area" style="display:flex; flex-direction:column; align-items:center; flex:1; justify-content:center;">
+        <main class="interaction-area">
             <button id="tap-button" class="tap-circle disconnected" disabled>TAP!</button>
             <button id="wallet-btn" class="btn-wallet" onclick="toggleWallet()">Connect Wallet</button>
-            <div id="pvlt-display">Balance: Locked</div>
+            
+            <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
+            <div id="pvlt-display" style="font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5);">Balance: Locked</div>
+            
+            <button class="game-btn" onclick="convertPoints()" disabled>Convert 100 💎 → 1 gPVLT</button>
             <button class="game-btn" onclick="claimReward()" disabled>Claim Reward</button>
+
+            <div class="buy-menu">
+                <div id="refill-text" style="margin-bottom: 8px; font-size: 0.9rem;">Locked</div>
+                <button class="game-btn" onclick="confirmRefill()" disabled>Confirm Refill</button>
+            </div>
         </main>
+
+        <footer class="footer-panel">
+            <button class="game-btn" onclick="convertGPVLT()" disabled>Convert 100 gPVLT → 1 PVLT</button>
+        </footer>
     </div>
 
     <script>
-        let isConnected = false;
-        let points = 0;
-
-        async function toggleWallet() {
-            if (!isConnected) {
-                // Connect Logic
-                if (window.ethereum) {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    isConnected = true;
-                    document.getElementById('wallet-btn').innerText = "Disconnect Wallet";
-                    document.getElementById('wallet-btn').className = "btn-wallet connected";
-                    document.getElementById('tap-button').classList.remove('disconnected');
-                    document.getElementById('tap-button').disabled = false;
-                    updateUI();
-                }
-            } else {
-                isConnected = false;
-                window.location.reload(); // Simple reset
-            }
+        const bg = document.getElementById('bg-animation');
+        for(let i=0; i<15; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + "%";
+            p.style.width = p.style.height = (Math.random() * 50 + 20) + "px";
+            p.style.backgroundColor = i % 2 === 0 ? 'rgba(78, 204, 163, 0.5)' : 'rgba(52, 152, 219, 0.5)';
+            p.style.animationDelay = (Math.random() * 15) + "s";
+            bg.appendChild(p);
         }
 
-        async function claimReward() {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const address = await signer.getAddress();
+        let energy = 50, points = 0, gpvlt = 0, pvlt = 0, isWalletConnected = false;
+        const FREE_CAP = 50;
 
-            // Send to Render Server
-            const res = await fetch('https://pvlt-server.onrender.com/api/claim', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userAddress: address, amount: points })
-            });
-            const data = await res.json();
-            alert("Reward Claimed! Tx: " + data.tx);
+        function toggleWallet() {
+            isWalletConnected = !isWalletConnected;
+            const btn = document.getElementById('wallet-btn');
+            const tapBtn = document.getElementById('tap-button');
+            const gameBtns = document.querySelectorAll('.game-btn');
+            
+            btn.innerText = isWalletConnected ? "Disconnect Wallet" : "Connect Wallet";
+            btn.className = isWalletConnected ? "btn-wallet connected" : "btn-wallet";
+            
+            // Toggle Tap Circle class
+            if (isWalletConnected) {
+                tapBtn.classList.remove('disconnected');
+                tapBtn.disabled = false;
+            } else {
+                tapBtn.classList.add('disconnected');
+                tapBtn.disabled = true;
+            }
+            
+            gameBtns.forEach(b => b.disabled = !isWalletConnected);
+            updateUI();
         }
 
         function updateUI() {
-            document.getElementById('energy').innerText = isConnected ? "50/50" : "Locked";
-            document.getElementById('gpvlt').innerText = isConnected ? "0.00" : "Locked";
+            if (!isWalletConnected) {
+                document.getElementById('energy').innerText = "Locked";
+                document.getElementById('points').innerText = "Locked";
+                document.getElementById('gpvlt').innerText = "Locked";
+                document.getElementById('pvlt-display').innerText = "Balance: Locked";
+                document.getElementById('refill-text').innerText = "Locked";
+                document.getElementById('energy-fill').style.width = "0%";
+            } else {
+                document.getElementById('energy').innerText = `${energy > FREE_CAP ? FREE_CAP : energy}/${FREE_CAP}`;
+                document.getElementById('points').innerText = points;
+                document.getElementById('gpvlt').innerText = gpvlt.toFixed(2);
+                document.getElementById('pvlt-display').innerText = `Balance: ${pvlt.toFixed(3)} PVLT`;
+                document.getElementById('refill-text').innerText = "10,000 Energy = 100 PVLT";
+                document.getElementById('energy-fill').style.width = (Math.min(energy, FREE_CAP) / FREE_CAP * 100) + "%";
+            }
         }
+
+        document.getElementById('tap-button').addEventListener('click', () => {
+            if (isWalletConnected && energy > 0) { energy--; points++; updateUI(); }
+        });
+
+        function confirmRefill() { if (pvlt >= 100) { pvlt -= 100; energy += 10000; updateUI(); } else alert("Need 100 PVLT!"); }
+        function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } }
+        function convertGPVLT() { if (gpvlt >= 100) { gpvlt -= 100; pvlt += 1; updateUI(); } }
+        function claimReward() { if (pvlt > 0) { alert("Claimed: " + pvlt.toFixed(3) + " PVLT"); pvlt = 0; updateUI(); } }
+        setInterval(() => { if (isWalletConnected && energy < FREE_CAP) { energy++; updateUI(); } }, 1000);
     </script>
 </body>
 </html>
