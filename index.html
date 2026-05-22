@@ -33,11 +33,12 @@
         <main class="interaction-area">
             <button id="tap-button" class="tap-circle disconnected" disabled>TAP!</button>
             <button id="wallet-btn" class="btn-wallet" onclick="toggleWallet()">Connect Wallet</button>
-            
             <button id="buy-btn" class="game-btn" onclick="confirmRefill()" disabled>Buy 10,000 Energy (100 PVLT)</button>
             
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
             <div id="pvlt-display">Balance: Locked</div>
+            
+            <button id="convert-btn" class="game-btn" onclick="convertPVLT()" disabled>Convert</button>
         </main>
     </div>
 
@@ -66,7 +67,12 @@
             document.getElementById('wallet-btn').innerText = isWalletConnected ? "Disconnect" : "Connect Wallet";
             document.getElementById('tap-button').disabled = !isWalletConnected;
             document.getElementById('buy-btn').disabled = !isWalletConnected;
+            document.getElementById('convert-btn').disabled = !isWalletConnected;
             updateUI();
+        }
+
+        function convertPVLT() {
+            alert("Conversion triggered!");
         }
 
         updateUI();
