@@ -81,15 +81,16 @@
 
         function confirmRefill() {
             if (pvlt >= 100) {
-                document.getElementById('buy-btn').innerText = "Processing Polygon...";
-                document.getElementById('buy-btn').disabled = true;
+                const btn = document.getElementById('buy-btn');
+                btn.innerText = "Processing Polygon...";
+                btn.disabled = true;
                 
                 setTimeout(() => {
                     pvlt -= 100;
                     isPaidUser = true;
                     energy = PAID_CAP;
-                    document.getElementById('buy-btn').innerText = "Buy 10,000 Energy (100 PVLT)";
-                    document.getElementById('buy-btn').disabled = false;
+                    btn.innerText = "Buy 10,000 Energy (100 PVLT)";
+                    btn.disabled = false;
                     updateUI();
                     alert("Transaction Confirmed on Polygon! Energy refilled to 10,000.");
                 }, 2000);
@@ -100,9 +101,18 @@
 
         function convertPVLT() {
             if (points >= 100) {
-                points -= 100;
-                burnedGpvlt += 1;
-                updateUI();
+                const btn = document.getElementById('convert-btn');
+                btn.innerText = "Processing...";
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    points -= 100;
+                    burnedGpvlt += 1;
+                    btn.innerText = "Convert Points";
+                    btn.disabled = false;
+                    updateUI();
+                    alert("Points converted successfully on Polygon!");
+                }, 1500);
             } else { alert("Need 100 💎"); }
         }
 
@@ -111,11 +121,19 @@
             if (lastClaimDate === today) { alert("Already claimed today!"); return; }
             
             if (burnedGpvlt >= 100 && burnedGpvlt <= 1000) {
-                let reward = Math.floor(burnedGpvlt / 100); 
-                alert(`Success! Transferring ${reward} PVLT to your connected wallet.`);
-                burnedGpvlt = 0;
-                lastClaimDate = today;
-                updateUI();
+                const btn = document.getElementById('claim-btn');
+                btn.innerText = "Claiming on Polygon...";
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    let reward = Math.floor(burnedGpvlt / 100); 
+                    alert(`Success! Transferring ${reward} PVLT to your connected wallet.`);
+                    burnedGpvlt = 0;
+                    lastClaimDate = today;
+                    btn.innerText = "Claim Rewards";
+                    btn.disabled = false;
+                    updateUI();
+                }, 2000);
             } else {
                 alert("You need between 100 and 1000 gPVLT to claim.");
             }
