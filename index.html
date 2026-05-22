@@ -39,14 +39,15 @@
             
             <button id="convert-btn" class="game-btn" onclick="convertPVLT()" disabled>Convert</button>
             
-            <div id="pvlt-display">Balance: Locked</div>
+            <div id="pvlt-display">Balance: 0.00 gPVLT</div>
 
             <button id="claim-btn" class="game-btn" onclick="claimPVLT()" disabled>Claim</button>
         </main>
     </div>
 
     <script>
-        let energy = 0, points = 100, gpvlt = 0, pvlt = 200, isWalletConnected = false, isPaidUser = false;
+        let energy = 0, points = 500, gpvlt = 0, pvlt = 200, burnedGpvlt = 0;
+        let isWalletConnected = false, isPaidUser = false, lastClaimDate = null;
         const FREE_CAP = 50, PAID_CAP = 10000;
 
         function updateUI() {
@@ -61,7 +62,7 @@
                 document.getElementById('points-display').innerText = points;
                 document.getElementById('gpvlt-display').innerText = gpvlt.toFixed(2);
                 document.getElementById('energy-fill').style.width = (energy / cap * 100) + "%";
-                document.getElementById('pvlt-display').innerText = `Balance: ${pvlt.toFixed(2)} PVLT`;
+                document.getElementById('pvlt-display').innerText = `Balance: ${burnedGpvlt.toFixed(2)} gPVLT`;
             }
         }
 
@@ -87,18 +88,24 @@
         function convertPVLT() {
             if (points >= 100) {
                 points -= 100;
-                gpvlt += 1;
+                burnedGpvlt += 1; // Accumulate gPVLT to be burned/claimed
                 updateUI();
             } else { alert("Need 100 💎"); }
         }
 
         function claimPVLT() {
-            if (gpvlt > 0) {
-                pvlt += gpvlt; // Burn gPVLT and add to PVLT balance
-                alert("Burned " + gpvlt.toFixed(2) + " gPVLT and added to PVLT wallet!");
-                gpvlt = 0;
+            const today = new Date().toDateString();
+            if (lastClaimDate === today) { alert("Already claimed today!"); return; }
+            
+            if (burnedGpvlt >= 100 && burnedGpvlt <= 1000) {
+                let reward = Math.floor(burnedGpvlt / 100); 
+                alert(`Success! Transferring ${reward} PVLT to your connected wallet.`);
+                burnedGpvlt = 0; // Burned
+                lastClaimDate = today;
                 updateUI();
-            } else { alert("No gPVLT to claim."); }
+            } else {
+                alert("You need between 100 and 1000 gPVLT to claim.");
+            }
         }
 
         document.getElementById('tap-button').addEventListener('click', () => {
