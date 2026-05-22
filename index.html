@@ -3,87 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tap Game - Vibrant UI</title>
+    <title>PepeVolt UI</title>
     <style>
         :root {
-            --accent-purple: #8e44ad;
-            --accent-blue: #3498db;
-            --accent-green: #27ae60;
-            --accent-orange: #f39c12;
-            --bg: #fdfdfd;
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --primary-accent: #00ffcc;
+            --text-color: #ffffff;
         }
 
         body { 
-            margin: 0; font-family: 'Inter', sans-serif; 
-            background: #f0f2f5; color: #333;
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            display: flex; justify-content: center; padding: 20px;
         }
 
-        .game-container { padding: 20px; max-width: 400px; margin: auto; }
+        .game-container { width: 100%; max-width: 400px; }
 
-        /* Colorful Stats */
-        .stats-card { 
-            background: white; padding: 20px; border-radius: 28px; 
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-            margin-bottom: 30px; border: 4px solid #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
-        .stat-item { text-align: center; }
-        .stat-val { display: block; font-size: 1.2rem; font-weight: 800; }
-        #energy-display { color: var(--accent-orange); }
-        #points-display { color: var(--accent-purple); }
-        #burned-display { color: var(--accent-green); }
+        /* Top Stats Bar */
+        .stats-bar { display: flex; justify-content: space-between; margin-bottom: 20px; font-weight: bold; }
 
-        /* Colorful Tap Circle */
-        .tap-circle { 
-            width: 190px; height: 190px; border-radius: 50%; 
-            border: none; cursor: pointer;
-            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
-            color: white; font-size: 1.8rem; font-weight: 900;
-            box-shadow: 0 15px 30px rgba(250, 208, 196, 0.6);
-            margin: 0 auto 30px; display: block;
-            transition: transform 0.2s;
-        }
-        .tap-circle:active { transform: scale(0.9); }
-        .tap-circle:disabled { background: #e0e0e0; box-shadow: none; color: #999; }
-
-        /* Colorful Energy */
-        .energy-bar { height: 12px; background: #eee; border-radius: 6px; margin-bottom: 30px; overflow: hidden; }
-        .energy-fill { 
-            height: 100%; background: linear-gradient(90deg, var(--accent-orange), #ff4757); 
-            border-radius: 6px; width: 0%; transition: 0.3s; 
+        /* The Pepe Circle */
+        .pepe-circle { 
+            width: 200px; height: 100px; margin: 20px auto;
+            background: radial-gradient(circle, #00ffcc, #0099ff);
+            border-radius: 50% / 50%;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        /* Action Buttons */
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        /* Main Content Card */
+        .main-card { 
+            background: var(--card-bg); padding: 20px; border-radius: 20px; 
+            border: 1px solid #30363d;
+        }
+
+        .connect-text { margin-bottom: 15px; color: #8b949e; }
+
+        /* Buttons */
         .btn { 
-            padding: 14px; border-radius: 16px; border: none; font-weight: 700; 
-            cursor: pointer; color: white; transition: filter 0.2s;
+            width: 100%; padding: 18px; border-radius: 12px; border: none;
+            font-weight: 800; font-size: 1rem; cursor: pointer;
+            margin-bottom: 15px; text-transform: uppercase;
+            background: linear-gradient(90deg, #00ffcc, #0099ff);
+            color: black;
         }
-        .btn:active { filter: brightness(0.9); }
-        #wallet-btn { background: var(--accent-blue); grid-column: span 2; }
-        #buy-btn { background: var(--accent-orange); }
-        #convert-btn { background: var(--accent-purple); }
-        #claim-btn { background: var(--accent-green); grid-column: span 2; }
+
+        /* Treasury/Wallet Section */
+        .info-box { 
+            background: #0d1117; padding: 15px; border-radius: 12px;
+            margin-bottom: 20px; font-size: 0.9rem;
+        }
+        .info-row { display: flex; justify-content: space-between; margin: 5px 0; }
+        .highlight { color: var(--primary-accent); }
+
+        .footer-text { text-align: center; font-size: 0.8rem; color: #8b949e; line-height: 1.5; }
     </style>
 </head>
 <body>
 
     <div class="game-container">
-        <div class="stats-card">
-            <div class="stat-item"><span class="stat-val" id="energy-display">0</span><small>Energy</small></div>
-            <div class="stat-item"><span class="stat-val" id="points-display">0</span><small>Gems</small></div>
-            <div class="stat-item"><span class="stat-val" id="burned-display">0.0</span><small>Balance</small></div>
+        <div class="stats-bar">
+            <span>🔋 50</span> <span>⚡ 0</span> <span>💎 0.0000</span>
         </div>
 
-        <button id="tap-button" class="tap-circle" disabled>TAP!</button>
+        <div class="pepe-circle">
+            <img src="https://via.placeholder.com/60" alt="Pepe">
+        </div>
 
-        <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
+        <div class="main-card">
+            <div class="connect-text">Connect Polygon Wallet</div>
+            <button class="btn">Connect Wallet</button>
 
-        <div class="action-grid">
-            <button id="wallet-btn" class="btn" onclick="toggleWallet()">Connect Wallet</button>
-            <button id="buy-btn" class="btn" onclick="confirmRefill()" disabled>Refill</button>
-            <button id="convert-btn" class="btn" onclick="convertPVLT()" disabled>Convert</button>
-            <button id="claim-btn" class="btn" onclick="claimPVLT()" disabled>Claim Rewards</button>
+            <div class="info-box">
+                <div class="info-row"><span>🏛 Treasury Vault:</span> <span class="highlight">0.00 PVLT</span></div>
+                <div class="info-row"><span>💩 Your Wallet:</span> <span class="highlight">0.00 PVLT</span></div>
+            </div>
+
+            <button class="btn">Convert gPVLT</button>
+            <button class="btn">Buy Energy</button>
+            <button class="btn">Claim PVLT</button>
+        </div>
+
+        <div class="footer-text">
+            <p>1 Tap = 1 gPVLT<br>10,000 gPVLT = 1 PVLT Token</p>
+            <p style="color: var(--primary-accent);">Claim Limits: Minimum 100 PVLT - Maximum 500 PVLT</p>
         </div>
     </div>
 </body>
