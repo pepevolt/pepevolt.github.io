@@ -3,70 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tap Game - Clean UI</title>
+    <title>Tap Game - Vibrant UI</title>
     <style>
+        :root {
+            --accent-purple: #8e44ad;
+            --accent-blue: #3498db;
+            --accent-green: #27ae60;
+            --accent-orange: #f39c12;
+            --bg: #fdfdfd;
+        }
+
         body { 
-            margin: 0; font-family: 'Inter', -apple-system, sans-serif; 
-            background: #f4f7f6; color: #1a1a1a;
+            margin: 0; font-family: 'Inter', sans-serif; 
+            background: #f0f2f5; color: #333;
         }
 
         .game-container { padding: 20px; max-width: 400px; margin: auto; }
 
-        /* Stats Card */
+        /* Colorful Stats */
         .stats-card { 
-            background: white; padding: 20px; border-radius: 24px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            background: white; padding: 20px; border-radius: 28px; 
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 30px; border: 4px solid #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         }
         .stat-item { text-align: center; }
-        .stat-val { display: block; font-size: 1.1rem; font-weight: 700; color: #2d3436; }
-        .stat-label { font-size: 0.65rem; color: #b2bec3; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-val { display: block; font-size: 1.2rem; font-weight: 800; }
+        #energy-display { color: var(--accent-orange); }
+        #points-display { color: var(--accent-purple); }
+        #burned-display { color: var(--accent-green); }
 
-        /* Tap Circle */
+        /* Colorful Tap Circle */
         .tap-circle { 
-            width: 180px; height: 180px; border-radius: 40px; 
-            border: none; background: #2d3436; color: white;
-            font-size: 1.5rem; font-weight: 700; cursor: pointer;
-            box-shadow: 0 15px 35px rgba(45, 52, 54, 0.2);
+            width: 190px; height: 190px; border-radius: 50%; 
+            border: none; cursor: pointer;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+            color: white; font-size: 1.8rem; font-weight: 900;
+            box-shadow: 0 15px 30px rgba(250, 208, 196, 0.6);
             margin: 0 auto 30px; display: block;
             transition: transform 0.2s;
         }
-        .tap-circle:active { transform: translateY(5px); }
-        .tap-circle:disabled { background: #dfe6e9; color: #b2bec3; }
+        .tap-circle:active { transform: scale(0.9); }
+        .tap-circle:disabled { background: #e0e0e0; box-shadow: none; color: #999; }
 
-        /* Energy Bar */
-        .energy-bar { height: 8px; background: #dfe6e9; border-radius: 4px; margin-bottom: 30px; }
-        .energy-fill { height: 100%; background: #00b894; border-radius: 4px; width: 0%; transition: 0.3s; }
-
-        /* Actions */
-        .action-grid { display: flex; flex-direction: column; gap: 10px; }
-        .btn { 
-            padding: 16px; border-radius: 16px; border: none; font-weight: 600; 
-            background: #fff; cursor: pointer; border: 1px solid #eee;
-            transition: 0.2s;
+        /* Colorful Energy */
+        .energy-bar { height: 12px; background: #eee; border-radius: 6px; margin-bottom: 30px; overflow: hidden; }
+        .energy-fill { 
+            height: 100%; background: linear-gradient(90deg, var(--accent-orange), #ff4757); 
+            border-radius: 6px; width: 0%; transition: 0.3s; 
         }
-        .btn:hover { background: #f9f9f9; }
-        .btn-primary { background: #2d3436; color: white; }
+
+        /* Action Buttons */
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn { 
+            padding: 14px; border-radius: 16px; border: none; font-weight: 700; 
+            cursor: pointer; color: white; transition: filter 0.2s;
+        }
+        .btn:active { filter: brightness(0.9); }
+        #wallet-btn { background: var(--accent-blue); grid-column: span 2; }
+        #buy-btn { background: var(--accent-orange); }
+        #convert-btn { background: var(--accent-purple); }
+        #claim-btn { background: var(--accent-green); grid-column: span 2; }
     </style>
 </head>
 <body>
 
     <div class="game-container">
         <div class="stats-card">
-            <div class="stat-item"><span class="stat-label">Energy</span><span class="stat-val" id="energy-display">0</span></div>
-            <div class="stat-item"><span class="stat-label">Gems</span><span class="stat-val" id="points-display">0</span></div>
-            <div class="stat-item"><span class="stat-label">Balance</span><span class="stat-val" id="burned-display">0.0</span></div>
+            <div class="stat-item"><span class="stat-val" id="energy-display">0</span><small>Energy</small></div>
+            <div class="stat-item"><span class="stat-val" id="points-display">0</span><small>Gems</small></div>
+            <div class="stat-item"><span class="stat-val" id="burned-display">0.0</span><small>Balance</small></div>
         </div>
 
-        <button id="tap-button" class="tap-circle" disabled>TAP</button>
+        <button id="tap-button" class="tap-circle" disabled>TAP!</button>
 
         <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
 
         <div class="action-grid">
             <button id="wallet-btn" class="btn" onclick="toggleWallet()">Connect Wallet</button>
-            <button id="buy-btn" class="btn" onclick="confirmRefill()" disabled>Refill Energy</button>
-            <button id="claim-btn" class="btn btn-primary" onclick="claimPVLT()" disabled>Claim Rewards</button>
+            <button id="buy-btn" class="btn" onclick="confirmRefill()" disabled>Refill</button>
+            <button id="convert-btn" class="btn" onclick="convertPVLT()" disabled>Convert</button>
+            <button id="claim-btn" class="btn" onclick="claimPVLT()" disabled>Claim Rewards</button>
         </div>
     </div>
 </body>
