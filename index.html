@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tap Tap Game</title>
     <style>
-        /* (Styles remain the same as your previous code) */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: manipulation; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; background: radial-gradient(circle at center, #2c3e50, #1a1a2e); }
         .game-container { display: flex; flex-direction: column; height: 100vh; padding-bottom: 30px; color: #ffffff; }
@@ -27,7 +26,7 @@
 
     <div class="game-container">
         <header class="stats">
-            <div class="stat-item"><span class="emoji">⚡</span><span id="energy-display">0/0</span></div>
+            <div class="stat-item"><span class="emoji">⚡</span><span id="energy-display">0</span></div>
             <div class="stat-item"><span class="emoji">💎</span><span id="points-display">0</span></div>
             <div class="stat-item"><span class="emoji">🪙</span><span id="gpvlt-display">0.00</span></div>
         </header>
@@ -42,17 +41,17 @@
     </div>
 
     <script>
-        // Initializing all values to 0
         let energy = 0, points = 0, gpvlt = 0, pvlt = 150, isWalletConnected = false, isPaidUser = false;
         const FREE_CAP = 50, PAID_CAP = 10000;
 
         function updateUI() {
             const cap = isPaidUser ? PAID_CAP : FREE_CAP;
             if (!isWalletConnected) {
-                document.getElementById('energy-display').innerText = "0/0";
+                document.getElementById('energy-display').innerText = "0";
                 document.getElementById('points-display').innerText = "0";
                 document.getElementById('gpvlt-display').innerText = "0.00";
             } else {
+                // When connected, show the format "Energy/Max"
                 document.getElementById('energy-display').innerText = `${energy}/${cap}`;
                 document.getElementById('points-display').innerText = points;
                 document.getElementById('gpvlt-display').innerText = gpvlt.toFixed(2);
@@ -69,10 +68,7 @@
             updateUI();
         }
 
-        // Call once on startup to show 0s
         updateUI();
-
-        // ... (remaining logic for buttons and intervals)
     </script>
 </body>
 </html>
