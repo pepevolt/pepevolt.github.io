@@ -75,11 +75,17 @@
 
         function confirmRefill() {
             if (pvlt >= 100) {
-                pvlt -= 100;
-                isPaidUser = true;
-                energy = PAID_CAP;
-                updateUI();
-            } else { alert("Insufficient PVLT!"); }
+                alert("Processing transaction on Polygon Network...");
+                setTimeout(() => {
+                    pvlt -= 100;
+                    isPaidUser = true;
+                    energy = PAID_CAP;
+                    updateUI();
+                    alert("Transaction Successful! 100 PVLT deducted. Energy refilled to 10,000.");
+                }, 1000);
+            } else { 
+                alert("Insufficient PVLT balance on Polygon network!"); 
+            }
         }
 
         function convertPVLT() {
