@@ -19,7 +19,6 @@
         button:disabled { opacity: 0.3; cursor: not-allowed; }
         .btn-wallet { background: #3498db; color: white; width: 80%; padding: 12px; border-radius: 5px; border: none; font-weight: bold; }
         .game-btn { background: #4ecca3; color: #1a1a2e; width: 80%; padding: 12px; border-radius: 5px; border: none; font-weight: bold; }
-        .buy-menu { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px; width: 90%; text-align: center; }
     </style>
 </head>
 <body>
@@ -34,20 +33,20 @@
         <main class="interaction-area">
             <button id="tap-button" class="tap-circle disconnected" disabled>TAP!</button>
             <button id="wallet-btn" class="btn-wallet" onclick="toggleWallet()">Connect Wallet</button>
+            
+            <button id="buy-btn" class="game-btn" onclick="confirmRefill()" disabled>Buy 10,000 Energy (100 PVLT)</button>
+            
             <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
             <div id="pvlt-display">Balance: Locked</div>
-            <button id="buy-btn" class="game-btn" onclick="confirmRefill()" disabled>Buy 10,000 Energy (100 PVLT)</button>
         </main>
     </div>
 
     <script>
-        // Set everything to 0
         let energy = 0, points = 0, gpvlt = 0, pvlt = 0, isWalletConnected = false, isPaidUser = false;
         const FREE_CAP = 50, PAID_CAP = 10000;
 
         function updateUI() {
             const cap = isPaidUser ? PAID_CAP : FREE_CAP;
-            
             document.getElementById('energy-display').innerText = energy;
             
             if (!isWalletConnected) {
