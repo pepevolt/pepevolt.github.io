@@ -46,7 +46,7 @@
     </div>
 
     <script>
-        let energy = 0, points = 0, gpvlt = 0, pvlt = 0, isWalletConnected = false, isPaidUser = false;
+        let energy = 0, points = 100, gpvlt = 0, pvlt = 200, isWalletConnected = false, isPaidUser = false;
         const FREE_CAP = 50, PAID_CAP = 10000;
 
         function updateUI() {
@@ -75,8 +75,39 @@
             updateUI();
         }
 
-        function convertPVLT() { alert("Conversion triggered!"); }
-        function claimPVLT() { alert("Claim triggered!"); }
+        function confirmRefill() {
+            if (pvlt >= 100) {
+                pvlt -= 100;
+                isPaidUser = true;
+                energy = PAID_CAP;
+                updateUI();
+            } else { alert("Insufficient PVLT!"); }
+        }
+
+        function convertPVLT() {
+            if (points >= 100) {
+                points -= 100;
+                gpvlt += 1;
+                updateUI();
+            } else { alert("Need 100 💎"); }
+        }
+
+        function claimPVLT() {
+            if (pvlt > 0) {
+                alert("Claimed " + pvlt.toFixed(2) + " PVLT!");
+                pvlt = 0;
+                updateUI();
+            } else { alert("Nothing to claim."); }
+        }
+
+        document.getElementById('tap-button').addEventListener('click', () => {
+            if (energy > 0) { energy--; points++; updateUI(); }
+        });
+
+        setInterval(() => {
+            const cap = isPaidUser ? PAID_CAP : FREE_CAP;
+            if (isWalletConnected && energy < cap) { energy++; updateUI(); }
+        }, 1000);
 
         updateUI();
     </script>
