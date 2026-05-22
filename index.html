@@ -41,18 +41,19 @@
     </div>
 
     <script>
-        let energy = 0, points = 0, gpvlt = 0, pvlt = 150, isWalletConnected = false, isPaidUser = false;
+        // Set everything to 0
+        let energy = 0, points = 0, gpvlt = 0, pvlt = 0, isWalletConnected = false, isPaidUser = false;
         const FREE_CAP = 50, PAID_CAP = 10000;
 
         function updateUI() {
             const cap = isPaidUser ? PAID_CAP : FREE_CAP;
             
-            // Energy display is now just the energy variable
             document.getElementById('energy-display').innerText = energy;
             
             if (!isWalletConnected) {
                 document.getElementById('points-display').innerText = "0";
                 document.getElementById('gpvlt-display').innerText = "0.00";
+                document.getElementById('pvlt-display').innerText = "Balance: Locked";
             } else {
                 document.getElementById('points-display').innerText = points;
                 document.getElementById('gpvlt-display').innerText = gpvlt.toFixed(2);
