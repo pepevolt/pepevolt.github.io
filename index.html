@@ -2,81 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tap Tap Gaming</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tap Game - Clean UI</title>
     <style>
-        :root {
-            --primary: #00f2ff;
-            --bg-dark: #0a0b10;
-            --card-bg: rgba(255, 255, 255, 0.05);
-        }
-
         body { 
-            margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; 
-            background: #050505; color: white; overflow: hidden;
-            background: radial-gradient(circle at top, #1a1a2e, #000);
+            margin: 0; font-family: 'Inter', -apple-system, sans-serif; 
+            background: #f4f7f6; color: #1a1a1a;
         }
 
-        .game-container { display: flex; flex-direction: column; height: 100vh; padding: 20px; gap: 20px; }
+        .game-container { padding: 20px; max-width: 400px; margin: auto; }
 
-        /* Modern Dashboard Stats */
-        .stats { 
-            display: flex; justify-content: space-around; 
-            background: var(--card-bg); padding: 15px; border-radius: 20px; 
-            backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1);
+        /* Stats Card */
+        .stats-card { 
+            background: white; padding: 20px; border-radius: 24px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            margin-bottom: 30px;
         }
         .stat-item { text-align: center; }
-        .stat-val { display: block; font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        .stat-val { display: block; font-size: 1.1rem; font-weight: 700; color: #2d3436; }
+        .stat-label { font-size: 0.65rem; color: #b2bec3; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* The Interaction Area */
-        .interaction-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 25px; }
-
+        /* Tap Circle */
         .tap-circle { 
-            width: 200px; height: 200px; border-radius: 50%; border: 4px solid var(--primary);
-            background: transparent; color: var(--primary); font-size: 1.5rem; font-weight: 800;
-            cursor: pointer; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
-            transition: transform 0.1s, box-shadow 0.3s;
+            width: 180px; height: 180px; border-radius: 40px; 
+            border: none; background: #2d3436; color: white;
+            font-size: 1.5rem; font-weight: 700; cursor: pointer;
+            box-shadow: 0 15px 35px rgba(45, 52, 54, 0.2);
+            margin: 0 auto 30px; display: block;
+            transition: transform 0.2s;
         }
-        .tap-circle:active { transform: scale(0.95); box-shadow: 0 0 50px var(--primary); }
-        .tap-circle:disabled { border-color: #444; color: #444; box-shadow: none; }
+        .tap-circle:active { transform: translateY(5px); }
+        .tap-circle:disabled { background: #dfe6e9; color: #b2bec3; }
 
         /* Energy Bar */
-        .energy-wrapper { width: 100%; max-width: 300px; }
-        .energy-bar { height: 12px; background: #222; border-radius: 6px; overflow: hidden; }
-        .energy-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #7000ff); width: 0%; }
+        .energy-bar { height: 8px; background: #dfe6e9; border-radius: 4px; margin-bottom: 30px; }
+        .energy-fill { height: 100%; background: #00b894; border-radius: 4px; width: 0%; transition: 0.3s; }
 
-        /* Buttons Grid */
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 300px; }
-        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-main { background: var(--primary); color: #000; }
-        .btn-sec { background: var(--card-bg); color: white; border: 1px solid #444; }
+        /* Actions */
+        .action-grid { display: flex; flex-direction: column; gap: 10px; }
+        .btn { 
+            padding: 16px; border-radius: 16px; border: none; font-weight: 600; 
+            background: #fff; cursor: pointer; border: 1px solid #eee;
+            transition: 0.2s;
+        }
+        .btn:hover { background: #f9f9f9; }
+        .btn-primary { background: #2d3436; color: white; }
     </style>
 </head>
 <body>
 
     <div class="game-container">
-        <header class="stats">
-            <div class="stat-item">⚡ <span class="stat-val" id="energy-display">0</span></div>
-            <div class="stat-item">💎 <span class="stat-val" id="points-display">0</span></div>
-            <div class="stat-item">🪙 <span class="stat-val" id="burned-display">0.00</span></div>
-        </header>
+        <div class="stats-card">
+            <div class="stat-item"><span class="stat-label">Energy</span><span class="stat-val" id="energy-display">0</span></div>
+            <div class="stat-item"><span class="stat-label">Gems</span><span class="stat-val" id="points-display">0</span></div>
+            <div class="stat-item"><span class="stat-label">Balance</span><span class="stat-val" id="burned-display">0.0</span></div>
+        </div>
 
-        <main class="interaction-area">
-            <button id="tap-button" class="tap-circle" disabled>TAP</button>
-            
-            <div class="energy-wrapper">
-                <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
-            </div>
+        <button id="tap-button" class="tap-circle" disabled>TAP</button>
 
-            <div class="controls">
-                <button id="wallet-btn" class="btn btn-main" onclick="toggleWallet()">Connect</button>
-                <button id="buy-btn" class="btn btn-sec" onclick="confirmRefill()" disabled>Refill</button>
-                <button id="convert-btn" class="btn btn-sec" onclick="convertPVLT()" disabled>Convert</button>
-                <button id="claim-btn" class="btn btn-main" onclick="claimPVLT()" disabled>Claim</button>
-            </div>
-        </main>
+        <div class="energy-bar"><div id="energy-fill" class="energy-fill"></div></div>
+
+        <div class="action-grid">
+            <button id="wallet-btn" class="btn" onclick="toggleWallet()">Connect Wallet</button>
+            <button id="buy-btn" class="btn" onclick="confirmRefill()" disabled>Refill Energy</button>
+            <button id="claim-btn" class="btn btn-primary" onclick="claimPVLT()" disabled>Claim Rewards</button>
+        </div>
     </div>
-
-    <!-- Keep your existing script logic here -->
 </body>
 </html>
