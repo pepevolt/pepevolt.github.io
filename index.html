@@ -46,7 +46,6 @@
         .game-btn { background: #4ecca3; color: #1a1a2e; width: 80%; }
         
         .buy-menu { background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px; width: 90%; text-align: center; backdrop-filter: blur(10px); }
-        .footer-panel { padding: 10px; background: rgba(255, 255, 255, 0.05); text-align: center; display: flex; flex-direction: column; gap: 5px; backdrop-filter: blur(10px); }
     </style>
 </head>
 <body>
@@ -75,10 +74,6 @@
                 <button class="game-btn" onclick="confirmRefill()" disabled>Confirm Refill</button>
             </div>
         </main>
-
-        <footer class="footer-panel">
-            <button class="game-btn" onclick="convertGPVLT()" disabled>Convert 100 gPVLT → 1 PVLT</button>
-        </footer>
     </div>
 
     <script>
@@ -105,7 +100,6 @@
             btn.innerText = isWalletConnected ? "Disconnect Wallet" : "Connect Wallet";
             btn.className = isWalletConnected ? "btn-wallet connected" : "btn-wallet";
             
-            // Toggle Tap Circle class
             if (isWalletConnected) {
                 tapBtn.classList.remove('disconnected');
                 tapBtn.disabled = false;
@@ -142,7 +136,6 @@
 
         function confirmRefill() { if (pvlt >= 100) { pvlt -= 100; energy += 10000; updateUI(); } else alert("Need 100 PVLT!"); }
         function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } }
-        function convertGPVLT() { if (gpvlt >= 100) { gpvlt -= 100; pvlt += 1; updateUI(); } }
         function claimReward() { if (pvlt > 0) { alert("Claimed: " + pvlt.toFixed(3) + " PVLT"); pvlt = 0; updateUI(); } }
         setInterval(() => { if (isWalletConnected && energy < FREE_CAP) { energy++; updateUI(); } }, 1000);
     </script>
