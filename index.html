@@ -86,8 +86,8 @@
             bg.appendChild(p);
         }
 
-        let energy = 10000, points = 0, gpvlt = 0, pvlt = 0, isWalletConnected = false;
-        const FREE_CAP = 10000;
+        let energy = 50, points = 0, gpvlt = 0, pvlt = 0, isWalletConnected = false;
+        let maxEnergy = 50; // Dynamic capacity
 
         function toggleWallet() {
             isWalletConnected = !isWalletConnected;
@@ -119,12 +119,12 @@
                 document.getElementById('refill-text').innerText = "Locked";
                 document.getElementById('energy-fill').style.width = "0%";
             } else {
-                document.getElementById('energy').innerText = `${energy}/${FREE_CAP}`;
+                document.getElementById('energy').innerText = `${energy}/${maxEnergy}`;
                 document.getElementById('points').innerText = points;
                 document.getElementById('gpvlt').innerText = gpvlt.toFixed(2);
                 document.getElementById('pvlt-display').innerText = `Balance: ${pvlt.toFixed(3)} PVLT`;
                 document.getElementById('refill-text').innerText = "Marketplace";
-                document.getElementById('energy-fill').style.width = (energy / FREE_CAP * 100) + "%";
+                document.getElementById('energy-fill').style.width = (energy / maxEnergy * 100) + "%";
             }
         }
 
@@ -132,12 +132,24 @@
             if (isWalletConnected && energy > 0) { energy--; points++; updateUI(); }
         });
 
-        function confirmRefill() { if (pvlt >= 100) { pvlt -= 100; energy += 10000; if(energy > FREE_CAP) energy = FREE_CAP; updateUI(); } else alert("Need 100 PVLT!"); }
+        // Increases max capacity when buying
+        function confirmRefill() { 
+            if (pvlt >= 100) { 
+                pvlt -= 100; 
+                maxEnergy = 10000; 
+                energy = 10000; 
+                updateUI(); 
+            } else {
+                alert("Need 100 PVLT!"); 
+            }
+        }
+        
         function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } }
         function claimReward() { if (pvlt > 0) { alert("Claimed: " + pvlt.toFixed(3) + " PVLT"); pvlt = 0; updateUI(); } }
         
+        // Regenerates energy up to current maxEnergy
         setInterval(() => { 
-            if (isWalletConnected && energy < FREE_CAP) { energy++; updateUI(); } 
+            if (isWalletConnected && energy < maxEnergy) { energy++; updateUI(); } 
         }, 1000);
     </script>
 </body>
