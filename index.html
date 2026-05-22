@@ -86,8 +86,8 @@
             bg.appendChild(p);
         }
 
-        let energy = 50, points = 0, gpvlt = 0, pvlt = 0, isWalletConnected = false;
-        let maxEnergy = 50; // Dynamic capacity
+        let energy = 0, points = 0, gpvlt = 0, pvlt = 0, isWalletConnected = false;
+        let maxEnergy = 10000; // Default capacity set to 10000
 
         function toggleWallet() {
             isWalletConnected = !isWalletConnected;
@@ -132,12 +132,11 @@
             if (isWalletConnected && energy > 0) { energy--; points++; updateUI(); }
         });
 
-        // Increases max capacity when buying
         function confirmRefill() { 
             if (pvlt >= 100) { 
                 pvlt -= 100; 
-                maxEnergy = 10000; 
-                energy = 10000; 
+                energy += 10000; 
+                if(energy > maxEnergy) energy = maxEnergy;
                 updateUI(); 
             } else {
                 alert("Need 100 PVLT!"); 
@@ -147,7 +146,6 @@
         function convertPoints() { if (points >= 100) { points -= 100; gpvlt += 1; updateUI(); } }
         function claimReward() { if (pvlt > 0) { alert("Claimed: " + pvlt.toFixed(3) + " PVLT"); pvlt = 0; updateUI(); } }
         
-        // Regenerates energy up to current maxEnergy
         setInterval(() => { 
             if (isWalletConnected && energy < maxEnergy) { energy++; updateUI(); } 
         }, 1000);
