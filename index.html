@@ -40,6 +40,8 @@
             <button id="convert-btn" class="game-btn" onclick="convertPVLT()" disabled>Convert</button>
             
             <div id="pvlt-display">Balance: Locked</div>
+
+            <button id="claim-btn" class="game-btn" onclick="claimPVLT()" disabled>Claim</button>
         </main>
     </div>
 
@@ -69,12 +71,12 @@
             document.getElementById('tap-button').disabled = !isWalletConnected;
             document.getElementById('buy-btn').disabled = !isWalletConnected;
             document.getElementById('convert-btn').disabled = !isWalletConnected;
+            document.getElementById('claim-btn').disabled = !isWalletConnected;
             updateUI();
         }
 
-        function convertPVLT() {
-            alert("Conversion triggered!");
-        }
+        function convertPVLT() { alert("Conversion triggered!"); }
+        function claimPVLT() { alert("Claim triggered!"); }
 
         updateUI();
     </script>
