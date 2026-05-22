@@ -46,13 +46,14 @@
 
         function updateUI() {
             const cap = isPaidUser ? PAID_CAP : FREE_CAP;
+            
+            // Energy display is now just the energy variable
+            document.getElementById('energy-display').innerText = energy;
+            
             if (!isWalletConnected) {
-                document.getElementById('energy-display').innerText = "0";
                 document.getElementById('points-display').innerText = "0";
                 document.getElementById('gpvlt-display').innerText = "0.00";
             } else {
-                // When connected, show the format "Energy/Max"
-                document.getElementById('energy-display').innerText = `${energy}/${cap}`;
                 document.getElementById('points-display').innerText = points;
                 document.getElementById('gpvlt-display').innerText = gpvlt.toFixed(2);
                 document.getElementById('energy-fill').style.width = (energy / cap * 100) + "%";
