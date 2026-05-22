@@ -27,7 +27,7 @@
         <header class="stats">
             <div class="stat-item"><span class="emoji">⚡</span><span id="energy-display">0</span></div>
             <div class="stat-item"><span class="emoji">💎</span><span id="points-display">0</span></div>
-            <div class="stat-item"><span class="emoji">🪙</span><span id="gpvlt-display">0.00</span></div>
+            <div class="stat-item"><span id="burned-display">0.00</span></div>
         </header>
 
         <main class="interaction-area">
@@ -39,14 +39,12 @@
             
             <button id="convert-btn" class="game-btn" onclick="convertPVLT()" disabled>Convert</button>
             
-            <div id="pvlt-display">Balance: 0.00 gPVLT</div>
-
             <button id="claim-btn" class="game-btn" onclick="claimPVLT()" disabled>Claim</button>
         </main>
     </div>
 
     <script>
-        let energy = 0, points = 500, gpvlt = 0, pvlt = 200, burnedGpvlt = 0;
+        let energy = 0, points = 500, pvlt = 200, burnedGpvlt = 0;
         let isWalletConnected = false, isPaidUser = false, lastClaimDate = null;
         const FREE_CAP = 50, PAID_CAP = 10000;
 
@@ -56,13 +54,11 @@
             
             if (!isWalletConnected) {
                 document.getElementById('points-display').innerText = "0";
-                document.getElementById('gpvlt-display').innerText = "0.00";
-                document.getElementById('pvlt-display').innerText = "Balance: Locked";
+                document.getElementById('burned-display').innerText = "0.00";
             } else {
                 document.getElementById('points-display').innerText = points;
-                document.getElementById('gpvlt-display').innerText = gpvlt.toFixed(2);
+                document.getElementById('burned-display').innerText = burnedGpvlt.toFixed(2);
                 document.getElementById('energy-fill').style.width = (energy / cap * 100) + "%";
-                document.getElementById('pvlt-display').innerText = `Balance: ${burnedGpvlt.toFixed(2)} gPVLT`;
             }
         }
 
@@ -88,7 +84,7 @@
         function convertPVLT() {
             if (points >= 100) {
                 points -= 100;
-                burnedGpvlt += 1; // Accumulate gPVLT to be burned/claimed
+                burnedGpvlt += 1;
                 updateUI();
             } else { alert("Need 100 💎"); }
         }
@@ -100,7 +96,7 @@
             if (burnedGpvlt >= 100 && burnedGpvlt <= 1000) {
                 let reward = Math.floor(burnedGpvlt / 100); 
                 alert(`Success! Transferring ${reward} PVLT to your connected wallet.`);
-                burnedGpvlt = 0; // Burned
+                burnedGpvlt = 0;
                 lastClaimDate = today;
                 updateUI();
             } else {
