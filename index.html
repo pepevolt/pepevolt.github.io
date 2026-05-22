@@ -93,11 +93,12 @@
         }
 
         function claimPVLT() {
-            if (pvlt > 0) {
-                alert("Claimed " + pvlt.toFixed(2) + " PVLT!");
-                pvlt = 0;
+            if (gpvlt > 0) {
+                pvlt += gpvlt; // Burn gPVLT and add to PVLT balance
+                alert("Burned " + gpvlt.toFixed(2) + " gPVLT and added to PVLT wallet!");
+                gpvlt = 0;
                 updateUI();
-            } else { alert("Nothing to claim."); }
+            } else { alert("No gPVLT to claim."); }
         }
 
         document.getElementById('tap-button').addEventListener('click', () => {
