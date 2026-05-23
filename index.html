@@ -1,94 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background: #0f172a; 
-            color: white; 
-            font-family: sans-serif; 
-            height: 100vh;
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-        }
-        .app-container { 
-            width: 90%; 
-            max-width: 400px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px;
-        }
-        /* Top Stats Row */
-        .stats { 
-            display: flex; 
-            justify-content: space-around; 
-            background: #1e293b; 
-            padding: 15px; 
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-        /* Big Circle Button */
-        .tap-btn { 
-            width: 200px; 
-            height: 200px; 
-            border-radius: 50%; 
-            border: none; 
-            background: #334155; 
-            color: #38bdf8; 
-            font-size: 24px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin: 0 auto 20px auto; 
-            display: block;
-        }
-        /* General Buttons */
-        .action-btn { 
-            width: 100%; 
-            padding: 14px; 
-            border-radius: 8px; 
-            border: none; 
-            background: #3b82f6; 
-            color: white; 
-            font-weight: bold; 
-            cursor: pointer; 
-        }
-        .green-btn { background: #10b981; }
-        
-        /* Progress Bar */
-        .progress-container { width: 100%; height: 20px; background: #1e293b; border-radius: 10px; }
-        .progress-fill { width: 45%; height: 100%; background: #10b981; border-radius: 10px; }
-    </style>
+<meta charset="UTF-8" />
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+/>
+
+<title>PEPEVOLT TAP</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+body{
+    background:#04113a;
+    font-family:Arial,sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    color:white;
+    overflow-x:hidden;
+}
+
+.app{
+    width:100%;
+    max-width:430px;
+    min-height:100vh;
+    padding:
+    env(safe-area-inset-top)
+    20px
+    calc(25px + env(safe-area-inset-bottom));
+    
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+}
+
+/* TOP STATS */
+
+.stats{
+    margin-top:18px;
+    width:100%;
+    height:72px;
+    background:#162544;
+    border-radius:22px;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
+
+    box-shadow:
+    0 0 20px rgba(0,0,0,.15);
+}
+
+.stat{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:24px;
+    font-weight:600;
+}
+
+.stat span{
+    font-size:16px;
+}
+
+/* TAP SECTION */
+
+.tap-container{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-top:8px;
+    margin-bottom:10px;
+}
+
+.tap-circle{
+    width:250px;
+    height:250px;
+    border-radius:50%;
+    background:#36445c;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    font-size:46px;
+    font-weight:800;
+    color:#48b6ff;
+
+    cursor:pointer;
+
+    transition:.12s;
+
+    box-shadow:
+    inset 0 0 25px rgba(255,255,255,.03),
+    0 0 35px rgba(0,0,0,.25);
+}
+
+.tap-circle:active{
+    transform:scale(.95);
+}
+
+/* BUTTONS */
+
+.btn{
+    width:100%;
+    height:58px;
+
+    border:none;
+    border-radius:18px;
+
+    font-size:18px;
+    font-weight:700;
+
+    color:white;
+    cursor:pointer;
+
+    transition:.15s;
+}
+
+.btn:active{
+    transform:scale(.98);
+}
+
+.blue{
+    background:#4481f5;
+}
+
+.green{
+    background:#12c48b;
+}
+
+/* ENERGY BAR */
+
+.energy-wrap{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.energy-top{
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    opacity:.85;
+}
+
+.energy-bar{
+    width:100%;
+    height:22px;
+    background:#162544;
+    border-radius:999px;
+    overflow:hidden;
+}
+
+.energy-fill{
+    width:45%;
+    height:100%;
+    border-radius:999px;
+    background:#12c48b;
+
+    transition:.3s;
+}
+
+/* FOOTER */
+
+.footer-space{
+    height:10px;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:420px){
+
+    .tap-circle{
+        width:220px;
+        height:220px;
+        font-size:40px;
+    }
+
+    .btn{
+        height:54px;
+        font-size:16px;
+    }
+
+    .stat{
+        font-size:20px;
+    }
+}
+
+</style>
 </head>
+
 <body>
 
-<div class="app-container">
+<div class="app">
+
+    <!-- TOP STATS -->
+
     <div class="stats">
-        <div>⚡ 21</div>
-        <div>💎 63</div>
-        <div>🌕 5.00</div>
+
+        <div class="stat">
+            ⚡ <span id="energyText">21</span>
+        </div>
+
+        <div class="stat">
+            💎 <span id="diamondText">63</span>
+        </div>
+
+        <div class="stat">
+            🪙 <span id="coinText">5.00</span>
+        </div>
+
     </div>
 
-    <button class="tap-btn" onclick="tap()">TAP!</button>
+    <!-- TAP BUTTON -->
 
-    <button class="action-btn" onclick="disconnect()">Disconnect</button>
-    <button class="action-btn green-btn" onclick="buyEnergy()">Buy 10,000 Energy (100 PVLT)</button>
-    
-    <div class="progress-container"><div class="progress-fill"></div></div>
-    
-    <button class="action-btn green-btn" onclick="convert()">Convert</button>
-    <button class="action-btn green-btn" onclick="claim()">Claim</button>
+    <div class="tap-container">
+
+        <div class="tap-circle" id="tapBtn">
+            TAP!
+        </div>
+
+    </div>
+
+    <!-- DISCONNECT -->
+
+    <button class="btn blue">
+        Disconnect
+    </button>
+
+    <!-- BUY ENERGY -->
+
+    <button class="btn green">
+        Buy 10,000 Energy (100 PVLT)
+    </button>
+
+    <!-- ENERGY BAR -->
+
+    <div class="energy-wrap">
+
+        <div class="energy-top">
+            <span>Energy</span>
+            <span id="energyPercent">45%</span>
+        </div>
+
+        <div class="energy-bar">
+            <div class="energy-fill" id="energyFill"></div>
+        </div>
+
+    </div>
+
+    <!-- CONVERT -->
+
+    <button class="btn green">
+        Convert
+    </button>
+
+    <!-- CLAIM -->
+
+    <button class="btn green">
+        Claim
+    </button>
+
+    <div class="footer-space"></div>
+
 </div>
 
 <script>
-    function tap() { console.log("Tapping..."); }
-    function disconnect() { console.log("Disconnecting..."); }
-    function buyEnergy() { console.log("Buying..."); }
-    function convert() { console.log("Converting..."); }
-    function claim() { console.log("Claiming..."); }
+
+let energy = 21;
+let diamonds = 63;
+let coins = 5;
+
+const tapBtn = document.getElementById("tapBtn");
+const energyText = document.getElementById("energyText");
+const diamondText = document.getElementById("diamondText");
+const coinText = document.getElementById("coinText");
+const energyFill = document.getElementById("energyFill");
+const energyPercent = document.getElementById("energyPercent");
+
+tapBtn.addEventListener("click", ()=>{
+
+    if(energy <= 0){
+        return;
+    }
+
+    energy--;
+    diamonds += 1;
+    coins += 0.10;
+
+    energyText.innerText = energy;
+    diamondText.innerText = diamonds;
+    coinText.innerText = coins.toFixed(2);
+
+    let percent = (energy / 50) * 100;
+
+    energyFill.style.width = percent + "%";
+    energyPercent.innerText = Math.floor(percent) + "%";
+});
+
 </script>
+
 </body>
 </html>
