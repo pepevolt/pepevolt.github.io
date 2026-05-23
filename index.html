@@ -1,73 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+<html>
+<body>
+
+    <h2>PepeVolt Simple UI</h2>
+    
+    <button onclick="connect()">Connect Wallet</button>
+    <p id="status">Wallet: Not connected</p>
+
+    <hr>
+
+    <h3>Game Controls</h3>
+    <button onclick="tap()">Tap</button>
+    <button onclick="buyEnergy()">Buy Energy (100 PVLT)</button>
+    <button onclick="claim()">Claim Rewards</button>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-</head>
-<body class="bg-gray-900 text-white p-6">
+    <script>
+        const GAME_ADDR = "PASTE_GAME_CONTRACT_ADDRESS_HERE";
+        const ABI = ["function tap()", "function buyEnergy()", "function claimRewards()"];
+        let signer, contract;
 
-<div class="max-w-4xl mx-auto">
-    <h1 class="text-4xl font-bold mb-8 text-green-400">PepeVolt Ecosystem</h1>
-    
-    <!-- Connection Status -->
-    <div class="bg-gray-800 p-4 rounded-lg mb-6 flex justify-between items-center">
-        <span id="walletAddress">Not Connected</span>
-        <button onclick="connectWallet()" class="bg-green-600 px-4 py-2 rounded">Connect Wallet</button>
-    </div>
+        async function connect() {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            signer = await provider.getSigner();
+            contract = new ethers.Contract(GAME_ADDR, ABI, signer);
+            document.getElementById("status").innerText = "Wallet: " + signer.address;
+        }
 
-    <!-- Game Dashboard -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-gray-800 p-6 rounded-xl">
-            <h2 class="text-xl font-semibold mb-4">PepeVolt Game</h2>
-            <div id="playerStats" class="mb-4">
-                <p>Energy: <span id="energy">0</span></p>
-                <p>Points: <span id="points">0</span></p>
-            </div>
-            <div class="space-x-2">
-                <button onclick="tap()" class="bg-blue-600 px-4 py-2 rounded">Tap!</button>
-                <button onclick="buyEnergy()" class="bg-yellow-600 px-4 py-2 rounded">Buy Energy (100 PVLT)</button>
-            </div>
-        </div>
+        async function tap() {
+            await contract.tap();
+            alert("Tapped!");
+        }
 
-        <div class="bg-gray-800 p-6 rounded-xl">
-            <h2 class="text-xl font-semibold mb-4">Treasury Actions</h2>
-            <button onclick="claimRewards()" class="bg-green-600 w-full py-2 rounded mb-2">Claim Daily Rewards</button>
-            <button onclick="convertPoints()" class="bg-purple-600 w-full py-2 rounded">Convert Points (100 pts -> 1 gPVLT)</button>
-        </div>
-    </div>
-</div>
+        async function buyEnergy() {
+            // Note: You must run token.approve() first in a real app
+            await contract.buyEnergy();
+            alert("Energy Bought!");
+        }
 
-<script>
-    // Configuration - REPLACE WITH YOUR DEPLOYED ADDRESSES
-    const GAME_ADDRESS = "0x..."; 
-    const PVLT_ADDRESS = "0x...";
-    
-    let signer, gameContract;
-
-    async function connectWallet() {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        document.getElementById('walletAddress').innerText = await signer.getAddress();
-        
-        // Initialize contracts here using ABIs
-        // gameContract = new ethers.Contract(GAME_ADDRESS, ABI, signer);
-        // updateUI();
-    }
-
-    async function tap() {
-        try {
-            const tx = await gameContract.tap();
-            await tx.wait();
-            alert("Tapped successfully!");
-        } catch (e) { console.error(e); }
-    }
-
-    async function buyEnergy() {
-        // Implementation: 1. Approve PVLT to Game/Treasury, 2. Call buyEnergy()
-    }
-</script>
+        async function claim() {
+            await contract.claimRewards();
+            alert("Rewards Claimed!");
+        }
+    </script>
 </body>
 </html>
