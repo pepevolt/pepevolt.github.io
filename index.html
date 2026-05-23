@@ -1,47 +1,50 @@
 <!DOCTYPE html>
 <html>
 <body>
-
     <h2>PepeVolt Simple UI</h2>
-    
     <button onclick="connect()">Connect Wallet</button>
     <p id="status">Wallet: Not connected</p>
 
     <hr>
-
-    <h3>Game Controls</h3>
-    <button onclick="tap()">Tap</button>
+    <h3>Game Actions</h3>
+    <button onclick="tap()">Tap (Energy -1)</button>
     <button onclick="buyEnergy()">Buy Energy (100 PVLT)</button>
+    <button onclick="convert()">Convert 100 Pts to 1 gPVLT</button>
     <button onclick="claim()">Claim Rewards</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <script>
-        const GAME_ADDR = "PASTE_GAME_CONTRACT_ADDRESS_HERE";
-        const ABI = ["function tap()", "function buyEnergy()", "function claimRewards()"];
-        let signer, contract;
+        const GAME_ADDR = "YOUR_GAME_CONTRACT_ADDRESS";
+        const PVLT_ADDR = "YOUR_PVLT_TOKEN_ADDRESS";
+        const TREASURY_ADDR = "YOUR_TREASURY_CONTRACT_ADDRESS";
+
+        // ABIs (Minimal for functions used)
+        const GAME_ABI = ["function tap()", "function buyEnergy()", "function convertPoints()", "function claimRewards()"];
+        const ERC20_ABI = ["function approve(address spender, uint256 amount) external returns (bool)"];
+
+        let signer, gameContract, tokenContract;
 
         async function connect() {
             const provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
-            contract = new ethers.Contract(GAME_ADDR, ABI, signer);
+            gameContract = new ethers.Contract(GAME_ADDR, GAME_ABI, signer);
+            tokenContract = new ethers.Contract(PVLT_ADDR, ERC20_ABI, signer);
             document.getElementById("status").innerText = "Wallet: " + signer.address;
         }
 
-        async function tap() {
-            await contract.tap();
-            alert("Tapped!");
-        }
+        async function tap() { await gameContract.tap(); alert("Tapped!"); }
 
         async function buyEnergy() {
-            // Note: You must run token.approve() first in a real app
-            await contract.buyEnergy();
-            alert("Energy Bought!");
+            // 1. Approve 100 Tokens to the Treasury
+            const amount = ethers.parseEther("100");
+            await tokenContract.approve(TREASURY_ADDR, amount);
+            // 2. Buy Energy
+            await gameContract.buyEnergy();
+            alert("Energy Purchased!");
         }
 
-        async function claim() {
-            await contract.claimRewards();
-            alert("Rewards Claimed!");
-        }
+        async function convert() { await gameContract.convertPoints(); alert("Converted!"); }
+        async function claim() { await gameContract.claimRewards(); alert("Claimed!"); }
     </script>
 </body>
 </html>
