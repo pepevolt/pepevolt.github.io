@@ -1,50 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <style>
+        body { background: #111827; color: white; font-family: sans-serif; display: flex; justify-content: center; padding-top: 50px; }
+        .container { width: 90%; max-width: 400px; text-align: center; }
+        .stats { display: flex; justify-content: space-around; margin-bottom: 40px; }
+        .tap-btn { width: 200px; height: 200px; border-radius: 50%; border: none; background: #374151; color: #3b82f6; font-size: 24px; font-weight: bold; cursor: pointer; margin-bottom: 30px; }
+        .action-btn { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: none; background: #10b981; color: white; font-weight: bold; cursor: pointer; }
+        .progress-bar { width: 100%; height: 20px; background: #374151; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+        .progress { width: 40%; height: 100%; background: #10b981; }
+    </style>
+</head>
 <body>
-    <h2>PepeVolt Simple UI</h2>
-    <button onclick="connect()">Connect Wallet</button>
-    <p id="status">Wallet: Not connected</p>
 
-    <hr>
-    <h3>Game Actions</h3>
-    <button onclick="tap()">Tap (Energy -1)</button>
-    <button onclick="buyEnergy()">Buy Energy (100 PVLT)</button>
-    <button onclick="convert()">Convert 100 Pts to 1 gPVLT</button>
-    <button onclick="claim()">Claim Rewards</button>
+<div class="container">
+    <div class="stats">
+        <div>⚡ <br> 21</div>
+        <div>💎 <br> 63</div>
+        <div>🌕 <br> 5.00</div>
+    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-    <script>
-        const GAME_ADDR = "YOUR_GAME_CONTRACT_ADDRESS";
-        const PVLT_ADDR = "YOUR_PVLT_TOKEN_ADDRESS";
-        const TREASURY_ADDR = "YOUR_TREASURY_CONTRACT_ADDRESS";
+    <button class="tap-btn" onclick="tap()">TAP!</button>
 
-        // ABIs (Minimal for functions used)
-        const GAME_ABI = ["function tap()", "function buyEnergy()", "function convertPoints()", "function claimRewards()"];
-        const ERC20_ABI = ["function approve(address spender, uint256 amount) external returns (bool)"];
+    <button class="action-btn" onclick="disconnect()">Disconnect</button>
+    <button class="action-btn" onclick="buyEnergy()">Buy 10,000 Energy (100 PVLT)</button>
+    
+    <div class="progress-bar"><div class="progress"></div></div>
+    
+    <button class="action-btn" onclick="convert()">Convert</button>
+    <button class="action-btn" onclick="claim()">Claim</button>
+</div>
 
-        let signer, gameContract, tokenContract;
-
-        async function connect() {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            signer = await provider.getSigner();
-            gameContract = new ethers.Contract(GAME_ADDR, GAME_ABI, signer);
-            tokenContract = new ethers.Contract(PVLT_ADDR, ERC20_ABI, signer);
-            document.getElementById("status").innerText = "Wallet: " + signer.address;
-        }
-
-        async function tap() { await gameContract.tap(); alert("Tapped!"); }
-
-        async function buyEnergy() {
-            // 1. Approve 100 Tokens to the Treasury
-            const amount = ethers.parseEther("100");
-            await tokenContract.approve(TREASURY_ADDR, amount);
-            // 2. Buy Energy
-            await gameContract.buyEnergy();
-            alert("Energy Purchased!");
-        }
-
-        async function convert() { await gameContract.convertPoints(); alert("Converted!"); }
-        async function claim() { await gameContract.claimRewards(); alert("Claimed!"); }
-    </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<script>
+    // Replace with your logic
+    async function tap() { alert("Tapping..."); }
+    async function buyEnergy() { alert("Buying..."); }
+    async function convert() { alert("Converting..."); }
+    async function claim() { alert("Claiming..."); }
+    function disconnect() { location.reload(); }
+</script>
 </body>
 </html>
