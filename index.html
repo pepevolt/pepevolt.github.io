@@ -3,10 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-/>
+<!-- FIXED VIEWPORT (iOS STABLE) -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
 
 <title>PepeVolt Tap Game</title>
 
@@ -15,7 +13,7 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 <style>
 
 /* =========================
-   GLOBAL STABILITY FIX
+   HARD LAYOUT LOCK FIX
 ========================= */
 
 *{
@@ -26,21 +24,30 @@ box-sizing:border-box;
 }
 
 html, body{
+width:100%;
 height:100%;
 overflow:hidden;
-touch-action: manipulation;
-overscroll-behavior:none;
--webkit-user-select:none;
-user-select:none;
+position:fixed;   /* 🔥 IMPORTANT FIX */
+top:0;
+left:0;
+right:0;
+bottom:0;
+}
+
+body{
 font-family:'Poppins',sans-serif;
 background:#07111f;
 color:#fff;
 display:flex;
 justify-content:center;
 align-items:center;
+touch-action:none; /* 🔥 prevents zoom/scroll issues */
+overscroll-behavior:none;
+-webkit-user-select:none;
+user-select:none;
 }
 
-/* BACKGROUND */
+/* background */
 body::before{
 content:'';
 position:fixed;
@@ -51,15 +58,15 @@ radial-gradient(circle at bottom,#00b7ff25,transparent 40%);
 z-index:-1;
 }
 
-/* APP */
+/* APP CONTAINER (LOCKED HEIGHT) */
 .app{
 width:100%;
 max-width:450px;
-height:100vh;
-padding:16px;
+height:100dvh; /* 🔥 FIX for mobile dynamic viewport */
 display:flex;
 flex-direction:column;
 justify-content:space-between;
+padding:16px;
 }
 
 /* TOP */
@@ -67,11 +74,10 @@ justify-content:space-between;
 display:flex;
 justify-content:space-between;
 align-items:center;
-margin-top:10px;
 }
 
 .logo{
-font-size:24px;
+font-size:22px;
 font-weight:700;
 background:linear-gradient(90deg,#00ff99,#00d0ff);
 -webkit-background-clip:text;
@@ -80,12 +86,10 @@ background:linear-gradient(90deg,#00ff99,#00d0ff);
 
 .connect-btn{
 border:none;
-padding:12px 16px;
-border-radius:14px;
+padding:10px 14px;
+border-radius:12px;
 background:linear-gradient(90deg,#00ff99,#00d0ff);
-color:#000;
 font-weight:700;
-cursor:pointer;
 }
 
 /* STATS */
@@ -93,73 +97,69 @@ cursor:pointer;
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:12px;
-margin-top:20px;
+margin-top:12px;
 }
 
 .card{
 background:rgba(255,255,255,0.05);
 border:1px solid rgba(255,255,255,0.08);
-backdrop-filter:blur(10px);
-padding:14px;
-border-radius:18px;
+padding:12px;
+border-radius:16px;
 text-align:center;
 }
 
 .card h3{
-font-size:12px;
-opacity:0.7;
-margin-bottom:6px;
+font-size:11px;
+opacity:.7;
 }
 
 .card p{
-font-size:18px;
+font-size:16px;
 font-weight:700;
 }
 
-/* TAP */
+/* TAP AREA (CENTER FIXED) */
 .tap-wrapper{
 flex:1;
 display:flex;
 justify-content:center;
 align-items:center;
+position:relative;
 }
 
 .tap-btn{
-width:240px;
-height:240px;
+width:230px;
+height:230px;
 border-radius:50%;
 border:none;
-cursor:pointer;
 background:linear-gradient(145deg,#00ff99,#00b7ff);
-font-size:32px;
+font-size:30px;
 font-weight:700;
 color:#04111f;
-box-shadow:0 0 40px rgba(0,255,153,0.4),0 0 80px rgba(0,183,255,0.2);
+box-shadow:0 0 40px rgba(0,255,153,0.4);
 
-/* FIXED ANIMATION */
 transition:transform 0.08s ease;
 will-change:transform;
 }
 
 .tap-btn:active{
-transform:scale(0.97);
+transform:scale(0.96);
 }
 
 /* ENERGY */
 .energy-bar{
-width:100%;
-height:18px;
+height:16px;
 background:rgba(255,255,255,0.08);
 border-radius:999px;
 overflow:hidden;
-margin-top:20px;
+margin-top:10px;
 }
 
 .energy-fill{
 height:100%;
 width:100%;
 background:linear-gradient(90deg,#00ff99,#00d0ff);
-transition:0.3s;
+transition:0.2s;
 }
 
 /* NAV */
@@ -167,33 +167,30 @@ transition:0.3s;
 display:grid;
 grid-template-columns:repeat(4,1fr);
 gap:10px;
-margin-bottom:10px;
+margin-top:10px;
 }
 
 .nav-btn{
 background:rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.08);
 padding:12px;
-border-radius:16px;
+border-radius:14px;
 text-align:center;
-font-size:12px;
-font-weight:600;
-cursor:pointer;
+font-size:11px;
 }
 
 /* POPUP */
 .popup{
 position:absolute;
-font-size:22px;
+font-size:20px;
 font-weight:700;
 color:#00ff99;
-animation:floatUp 1s linear forwards;
+animation:floatUp 0.8s ease-out forwards;
 pointer-events:none;
 }
 
 @keyframes floatUp{
 0%{opacity:1;transform:translateY(0);}
-100%{opacity:0;transform:translateY(-80px) scale(1.5);}
+100%{opacity:0;transform:translateY(-70px) scale(1.4);}
 }
 
 /* MODAL */
@@ -205,23 +202,21 @@ display:none;
 justify-content:center;
 align-items:center;
 z-index:999;
-padding:20px;
 }
 
 .modal-content{
-width:100%;
-max-width:380px;
+width:90%;
+max-width:360px;
 background:#0c1728;
-border-radius:22px;
-padding:18px;
-border:1px solid rgba(255,255,255,0.08);
+padding:16px;
+border-radius:18px;
 }
 
 .info{
 background:rgba(255,255,255,0.04);
-padding:12px;
-border-radius:14px;
-margin-bottom:10px;
+padding:10px;
+border-radius:12px;
+margin-bottom:8px;
 font-size:12px;
 word-break:break-all;
 }
@@ -230,15 +225,9 @@ word-break:break-all;
 width:100%;
 padding:12px;
 border:none;
-border-radius:14px;
+border-radius:12px;
 background:linear-gradient(90deg,#00ff99,#00d0ff);
 font-weight:700;
-cursor:pointer;
-}
-
-@media(max-width:480px){
-.tap-btn{width:210px;height:210px;font-size:28px;}
-.logo{font-size:20px;}
 }
 
 </style>
@@ -252,14 +241,14 @@ cursor:pointer;
 <div>
 <div class="topbar">
 <div class="logo">PEPEVOLT</div>
-<button class="connect-btn" id="connectBtn">Connect Wallet</button>
+<button class="connect-btn" id="connectBtn">Connect</button>
 </div>
 
 <div class="stats">
-<div class="card"><h3>Balance</h3><p id="balance">0 PVLT</p></div>
+<div class="card"><h3>Balance</h3><p id="balance">0</p></div>
 <div class="card"><h3>Taps</h3><p id="taps">0</p></div>
-<div class="card"><h3>Energy</h3><p id="energyText">100/100</p></div>
-<div class="card"><h3>Reward</h3><p id="reward">0 PVLT</p></div>
+<div class="card"><h3>Energy</h3><p id="energyText">100</p></div>
+<div class="card"><h3>Reward</h3><p id="reward">0</p></div>
 </div>
 </div>
 
@@ -293,35 +282,17 @@ cursor:pointer;
 <div class="info">PepeVoltGame<br>0x151803532A33837E4bBc2Afc23c6b1f59039B82D</div>
 
 <button class="close-btn" id="closeBtn">Close</button>
+
 </div>
 </div>
 
-<!-- ETHERS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.min.js"></script>
-
-<!-- APPKIT (POLYGON ONLY) -->
-<script type="module">
-import { createAppKit } from "https://esm.sh/@reown/appkit";
-import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers";
-import { polygon } from "https://esm.sh/@reown/appkit/networks";
-
-const projectId = "1731f99148b9cf6107dee70b6efb14b7";
-
-const appKit = createAppKit({
-  adapters: [new EthersAdapter()],
-  networks: [polygon],
-  projectId
-});
-
-window.appKit = appKit;
-</script>
 
 <script>
 
-/* BLOCK ZOOM GESTURES */
+/* LOCK GESTURES */
 document.addEventListener("gesturestart", e => e.preventDefault());
 document.addEventListener("gesturechange", e => e.preventDefault());
-document.addEventListener("gestureend", e => e.preventDefault());
 
 let taps = 0;
 let energy = 100;
@@ -331,9 +302,7 @@ const tapBtn = document.getElementById("tapBtn");
 
 tapBtn.addEventListener("click", (e) => {
 
-if (energy <= 0) return;
-
-navigator.vibrate?.(25);
+if(energy <= 0) return;
 
 taps++;
 reward += 0.25;
@@ -341,7 +310,7 @@ energy--;
 
 document.getElementById("taps").innerText = taps;
 document.getElementById("reward").innerText = reward.toFixed(2);
-document.getElementById("energyText").innerText = energy + "/100";
+document.getElementById("energyText").innerText = energy;
 document.getElementById("energyFill").style.width = energy + "%";
 
 const popup = document.createElement("div");
@@ -351,14 +320,15 @@ popup.style.left = e.clientX + "px";
 popup.style.top = e.clientY + "px";
 
 document.body.appendChild(popup);
-setTimeout(() => popup.remove(), 900);
+setTimeout(() => popup.remove(), 800);
 
 });
 
+/* ENERGY REGEN */
 setInterval(() => {
-if (energy < 100) {
+if(energy < 100){
 energy++;
-document.getElementById("energyText").innerText = energy + "/100";
+document.getElementById("energyText").innerText = energy;
 document.getElementById("energyFill").style.width = energy + "%";
 }
 }, 1500);
