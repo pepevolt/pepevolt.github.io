@@ -2,132 +2,223 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+
 <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
 />
 
-<title>PepeVolt Game</title>
+<title>PEPEVOLT GAME</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
 
 <style>
+
 body{
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
+
 .glow{
-    box-shadow: 0 0 30px rgba(16,185,129,0.6);
+    box-shadow:
+        0 0 25px rgba(16,185,129,0.5),
+        0 0 60px rgba(16,185,129,0.25);
 }
+
+.loader{
+    width:18px;
+    height:18px;
+    border:2px solid rgba(255,255,255,0.3);
+    border-top:2px solid white;
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
 </style>
 </head>
 
 <body class="bg-slate-950 text-white min-h-screen flex flex-col items-center p-4 font-sans">
 
-<h1 class="text-3xl font-black mb-6 text-emerald-400">
+<!-- TITLE -->
+
+<h1 class="text-4xl font-black text-emerald-400 mt-4 mb-6">
 ⚡ PEPEVOLT
 </h1>
 
-<div
-    class="w-full max-w-md bg-slate-900 rounded-3xl p-5 border border-slate-800"
->
+<!-- MAIN CARD -->
+
+<div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-5">
 
     <!-- WALLET -->
-    <div class="flex flex-col gap-2 mb-5">
+
+    <div class="flex flex-col gap-3 mb-6">
+
         <button
             id="connectBtn"
-            class="bg-emerald-600 hover:bg-emerald-500 transition p-3 rounded-xl font-bold"
+            class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all rounded-2xl p-4 font-black text-lg"
         >
             Connect Wallet
         </button>
 
         <div
             id="walletText"
-            class="text-sm text-slate-400 break-all"
+            class="text-xs text-slate-400 break-all text-center"
         >
             Not Connected
         </div>
+
     </div>
 
     <!-- STATS -->
-    <div
-        class="grid grid-cols-3 gap-3 mb-6"
-    >
-        <div class="bg-slate-800 p-4 rounded-2xl text-center">
-            <div class="text-2xl">⚡</div>
-            <div id="energy" class="font-black text-xl">0</div>
-            <div class="text-xs text-slate-400">Energy</div>
+
+    <div class="grid grid-cols-3 gap-3 mb-6">
+
+        <div class="bg-slate-800 rounded-2xl p-4 text-center">
+            <div class="text-2xl mb-1">⚡</div>
+            <div id="energy" class="text-2xl font-black">0</div>
+            <div class="text-xs text-slate-400">
+                Energy
+            </div>
         </div>
 
-        <div class="bg-slate-800 p-4 rounded-2xl text-center">
-            <div class="text-2xl">💎</div>
-            <div id="points" class="font-black text-xl">0</div>
-            <div class="text-xs text-slate-400">Points</div>
+        <div class="bg-slate-800 rounded-2xl p-4 text-center">
+            <div class="text-2xl mb-1">💎</div>
+            <div id="points" class="text-2xl font-black">0</div>
+            <div class="text-xs text-slate-400">
+                Points
+            </div>
         </div>
 
-        <div class="bg-slate-800 p-4 rounded-2xl text-center">
-            <div class="text-2xl">🪙</div>
-            <div id="gpvlt" class="font-black text-xl">0</div>
-            <div class="text-xs text-slate-400">gPVLT</div>
+        <div class="bg-slate-800 rounded-2xl p-4 text-center">
+            <div class="text-2xl mb-1">🪙</div>
+            <div id="gpvlt" class="text-2xl font-black">0</div>
+            <div class="text-xs text-slate-400">
+                gPVLT
+            </div>
         </div>
+
     </div>
 
-    <!-- TAP BUTTON -->
-    <div class="flex justify-center mb-6">
+    <!-- TAP -->
+
+    <div class="flex justify-center mb-7">
+
         <button
             id="tapBtn"
-            class="w-56 h-56 rounded-full bg-emerald-600 active:scale-95 transition-all glow text-5xl font-black"
+            class="w-56 h-56 rounded-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all glow text-5xl font-black"
         >
             TAP
         </button>
+
     </div>
 
     <!-- STATUS -->
+
     <div
         id="status"
-        class="text-center text-sm text-slate-400 mb-5 min-h-[20px]"
+        class="min-h-[24px] text-center text-sm text-slate-400 mb-6"
     >
         Ready
     </div>
 
-    <!-- ACTIONS -->
+    <!-- BUTTONS -->
+
     <div class="flex flex-col gap-3">
 
         <button
             id="refillBtn"
-            class="bg-cyan-600 hover:bg-cyan-500 transition p-4 rounded-2xl font-bold"
+            class="bg-cyan-600 hover:bg-cyan-500 active:scale-95 transition-all rounded-2xl p-4 font-bold"
         >
             Refill Energy
         </button>
 
         <button
             id="buyBtn"
-            class="bg-blue-600 hover:bg-blue-500 transition p-4 rounded-2xl font-bold"
+            class="bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all rounded-2xl p-4 font-bold"
         >
             Buy 10,000 Energy (100 PVLT)
         </button>
 
         <button
             id="convertBtn"
-            class="bg-purple-600 hover:bg-purple-500 transition p-4 rounded-2xl font-bold disabled:opacity-40"
+            class="bg-purple-600 hover:bg-purple-500 active:scale-95 transition-all rounded-2xl p-4 font-bold disabled:opacity-40"
         >
             Convert 100 Points → 1 gPVLT
         </button>
 
         <button
             id="claimBtn"
-            class="bg-amber-600 hover:bg-amber-500 transition p-4 rounded-2xl font-bold disabled:opacity-40"
+            class="bg-amber-600 hover:bg-amber-500 active:scale-95 transition-all rounded-2xl p-4 font-bold disabled:opacity-40"
         >
             Claim Rewards
         </button>
 
     </div>
+
 </div>
 
-<script>
+<!-- ETHERS -->
 
-const GAME_ADDRESS = "YOUR_GAME_CONTRACT";
-const PVLT_ADDRESS = "YOUR_PVLT_CONTRACT";
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+<!-- WEB3MODAL -->
+
+<script type="module">
+
+import {
+    EthereumClient,
+    w3mConnectors,
+    w3mProvider
+}
+from
+"https://unpkg.com/@web3modal/ethereum@2.7.1/dist/index.js";
+
+import {
+    Web3Modal
+}
+from
+"https://unpkg.com/@web3modal/html@2.7.1/dist/index.js";
+
+import {
+    configureChains,
+    createConfig
+}
+from
+"https://esm.sh/wagmi";
+
+import {
+    bsc
+}
+from
+"https://esm.sh/wagmi/chains";
+
+/* =========================================================
+   CONTRACT SETTINGS
+========================================================= */
+
+const GAME_ADDRESS =
+    "YOUR_GAME_CONTRACT_ADDRESS";
+
+const PVLT_ADDRESS =
+    "YOUR_PVLT_CONTRACT_ADDRESS";
+
+/*
+GET PROJECT ID:
+https://cloud.walletconnect.com
+*/
+
+const PROJECT_ID =
+    "YOUR_WALLETCONNECT_PROJECT_ID";
+
+/* =========================================================
+   ABIs
+========================================================= */
 
 const ABI_GAME = [
 
@@ -149,80 +240,171 @@ const ABI_PVLT = [
     "function approve(address spender,uint256 amount) external returns(bool)"
 ];
 
+/* =========================================================
+   WEB3MODAL
+========================================================= */
+
+const chains = [bsc];
+
+const { publicClient } =
+    configureChains(
+        chains,
+        [
+            w3mProvider({
+                projectId: PROJECT_ID
+            })
+        ]
+    );
+
+const wagmiConfig =
+    createConfig({
+
+        autoConnect: true,
+
+        connectors:
+            w3mConnectors({
+                projectId: PROJECT_ID,
+                chains
+            }),
+
+        publicClient
+    });
+
+const ethereumClient =
+    new EthereumClient(
+        wagmiConfig,
+        chains
+    );
+
+const modal =
+    new Web3Modal(
+        {
+            projectId: PROJECT_ID,
+            themeMode: "dark",
+            themeVariables: {
+                "--w3m-accent-color": "#10b981"
+            }
+        },
+        ethereumClient
+    );
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+
 let provider;
 let signer;
-let gameContract;
-let pvltContract;
 let userAddress;
 
-const energyEl = document.getElementById("energy");
-const pointsEl = document.getElementById("points");
-const gpvltEl = document.getElementById("gpvlt");
+let gameContract;
+let pvltContract;
 
-const statusEl = document.getElementById("status");
+const energyEl =
+    document.getElementById("energy");
 
-function setStatus(msg){
-    statusEl.innerText = msg;
+const pointsEl =
+    document.getElementById("points");
+
+const gpvltEl =
+    document.getElementById("gpvlt");
+
+const walletText =
+    document.getElementById("walletText");
+
+const statusEl =
+    document.getElementById("status");
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function setStatus(message){
+
+    statusEl.innerHTML = message;
 }
+
+/* =========================================================
+   SHORT ADDRESS
+========================================================= */
+
+function shortAddress(address){
+
+    return
+        address.slice(0,6)
+        + "..."
+        + address.slice(-4);
+}
+
+/* =========================================================
+   CONNECT WALLET
+========================================================= */
 
 async function connectWallet(){
 
     try{
 
-        if(!window.ethereum){
-            alert("Install MetaMask");
-            return;
-        }
-
-        setStatus("Connecting wallet...");
-
-        provider =
-            new window.ethers.providers.Web3Provider(
-                window.ethereum
-            );
-
-        await provider.send(
-            "eth_requestAccounts",
-            []
+        setStatus(
+            "Opening wallet selector..."
         );
 
-        signer = provider.getSigner();
+        await modal.openModal();
+
+        const walletProvider =
+            await modal.getWalletProvider();
+
+        provider =
+            new ethers.providers.Web3Provider(
+                walletProvider
+            );
+
+        signer =
+            provider.getSigner();
 
         userAddress =
             await signer.getAddress();
 
         gameContract =
-            new window.ethers.Contract(
+            new ethers.Contract(
                 GAME_ADDRESS,
                 ABI_GAME,
                 signer
             );
 
         pvltContract =
-            new window.ethers.Contract(
+            new ethers.Contract(
                 PVLT_ADDRESS,
                 ABI_PVLT,
                 signer
             );
 
+        walletText.innerText =
+            shortAddress(userAddress);
+
         document.getElementById(
-            "walletText"
+            "connectBtn"
         ).innerText =
-            userAddress;
+            "Wallet Connected";
 
-        setStatus("Wallet Connected");
+        setStatus(
+            "Wallet connected successfully"
+        );
 
-        updateStats();
+        await updateStats();
 
     }catch(err){
 
         console.log(err);
 
         setStatus(
-            err.message || "Connection failed"
+            err.message ||
+            "Connection failed"
         );
     }
 }
+
+/* =========================================================
+   UPDATE STATS
+========================================================= */
 
 async function updateStats(){
 
@@ -244,13 +426,19 @@ async function updateStats(){
         const gpvlt =
             Number(p[2]);
 
-        energyEl.innerText = energy;
-        pointsEl.innerText = points;
-        gpvltEl.innerText = gpvlt;
+        energyEl.innerText =
+            energy;
+
+        pointsEl.innerText =
+            points;
+
+        gpvltEl.innerText =
+            gpvlt;
 
         document.getElementById(
             "convertBtn"
-        ).disabled = points < 100;
+        ).disabled =
+            points < 100;
 
         document.getElementById(
             "claimBtn"
@@ -261,119 +449,162 @@ async function updateStats(){
 
         console.log(err);
 
-        setStatus("Failed loading stats");
+        setStatus(
+            "Failed loading stats"
+        );
     }
 }
 
-async function execute(fn, text){
+/* =========================================================
+   TRANSACTION HANDLER
+========================================================= */
+
+async function execute(fn, message){
 
     try{
 
-        setStatus(text);
+        setStatus(
+            `<div class="flex justify-center">
+                <div class="loader"></div>
+            </div>
+            <div class="mt-2">${message}</div>`
+        );
 
-        const tx = await fn();
+        const tx =
+            await fn();
 
-        setStatus("Waiting confirmation...");
+        setStatus(
+            "Waiting for blockchain confirmation..."
+        );
 
         await tx.wait();
 
-        setStatus("Transaction Success");
+        setStatus(
+            "Transaction successful"
+        );
 
-        updateStats();
+        await updateStats();
 
     }catch(err){
 
         console.log(err);
 
-        if(err?.data?.message){
-            setStatus(err.data.message);
+        if(
+            err?.data?.message
+        ){
+            setStatus(
+                err.data.message
+            );
         }
         else{
-            setStatus(err.message || "Transaction failed");
+            setStatus(
+                err.message ||
+                "Transaction failed"
+            );
         }
     }
 }
 
+/* =========================================================
+   BUTTON EVENTS
+========================================================= */
+
 document.getElementById(
     "connectBtn"
-).onclick = connectWallet;
+).onclick =
+    connectWallet;
 
 document.getElementById(
     "tapBtn"
-).onclick = async () => {
+).onclick =
+    async () => {
 
-    execute(
-        () => gameContract.tap(),
-        "Tapping..."
-    );
+        await execute(
+            () =>
+                gameContract.tap(),
+            "Tapping..."
+        );
 };
 
 document.getElementById(
     "refillBtn"
-).onclick = async () => {
+).onclick =
+    async () => {
 
-    execute(
-        () => gameContract.refillEnergy(),
-        "Refilling energy..."
-    );
+        await execute(
+            () =>
+                gameContract.refillEnergy(),
+            "Refilling energy..."
+        );
 };
 
 document.getElementById(
     "buyBtn"
-).onclick = async () => {
+).onclick =
+    async () => {
 
-    const amount =
-        window.ethers.utils.parseEther("100");
+        const amount =
+            ethers.utils.parseEther(
+                "100"
+            );
 
-    await execute(
-        async () => {
+        await execute(
 
-            const approveTx =
-                await pvltContract.approve(
-                    GAME_ADDRESS,
-                    amount
-                );
+            async () => {
 
-            await approveTx.wait();
+                const approveTx =
+                    await pvltContract.approve(
+                        GAME_ADDRESS,
+                        amount
+                    );
 
-            return gameContract.buyEnergy();
-        },
-        "Buying energy..."
-    );
+                await approveTx.wait();
+
+                return
+                    gameContract.buyEnergy();
+            },
+
+            "Buying energy..."
+        );
 };
 
 document.getElementById(
     "convertBtn"
-).onclick = async () => {
+).onclick =
+    async () => {
 
-    execute(
-        () => gameContract.convertPoints(),
-        "Converting points..."
-    );
+        await execute(
+            () =>
+                gameContract.convertPoints(),
+            "Converting points..."
+        );
 };
 
 document.getElementById(
     "claimBtn"
-).onclick = async () => {
+).onclick =
+    async () => {
 
-    execute(
-        () => gameContract.claimRewards(),
-        "Claiming rewards..."
-    );
+        await execute(
+            () =>
+                gameContract.claimRewards(),
+            "Claiming rewards..."
+        );
 };
 
-if(window.ethereum){
+/* =========================================================
+   AUTO RELOAD
+========================================================= */
 
-    window.ethereum.on(
-        "accountsChanged",
-        () => location.reload()
-    );
+window.addEventListener(
+    "focus",
+    async () => {
 
-    window.ethereum.on(
-        "chainChanged",
-        () => location.reload()
-    );
-}
+        if(gameContract){
+            await updateStats();
+        }
+    }
+);
 
 </script>
 
