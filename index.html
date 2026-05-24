@@ -3,125 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt Ecosystem | Dashboard</title>
+    <title>PepeVolt Game Dashboard | Production-Ready Interface</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <style>
+        /* Production-Ready UI: Consistent typography and smooth transitions */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            transition: background-color 0.3s ease;
+        }
+        .mono-stat { font-family: 'Courier New', Courier, monospace; font-weight: bold; }
+        .action-button:disabled { cursor: not-allowed; opacity: 0.6; }
+    </style>
 </head>
-<body class="bg-gray-950 text-gray-200 min-h-screen font-sans">
+<body class="bg-slate-950 text-slate-100 min-h-screen">
     
-    <nav class="border-b border-gray-800 p-4">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-green-500 tracking-tight">PEPEVOLT<span class="text-white">GAME</span></h1>
-            <button id="connectBtn" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all">Connect Wallet</button>
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-tighter text-lime-400">
+                PepeVolt <span class="text-white font-light">Game</span>
+            </h1>
+            <div class="flex items-center gap-3">
+                <span id="networkStatus" class="text-xs bg-lime-900 text-lime-100 px-3 py-1 rounded-full font-medium">Network: Not Connected</span>
+                <button id="connectBtn" class="bg-lime-500 hover:bg-lime-600 text-slate-950 px-5 py-2 rounded-full text-sm font-semibold transition-all">Connect Wallet</button>
+            </div>
         </div>
-    </nav>
+    </header>
 
-    <main class="max-w-5xl mx-auto p-6 space-y-8">
+    <main class="max-w-7xl mx-auto p-6 md:p-10 space-y-10">
         
-        <div class="text-center py-10">
-            <h2 class="text-4xl font-extrabold mb-4">Ecosystem Overview</h2>
-            <p class="text-gray-400">Interact with the PepeVolt smart contracts directly from your browser.</p>
+        <div class="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row gap-8 items-center">
+            <div class="flex-grow space-y-4">
+                <h2 class="text-4xl font-extrabold text-white tracking-tight leading-tight">Your Real-Time <span class="text-lime-400">PepeVolt</span> Portal.</h2>
+                <p class="text-slate-400 max-w-2xl">This interface connects you directly to the decentralized PepeVolt Game ecosystem on the blockchain. Interact securely, manage your energy, and claim rewards from your personal dashboard.</p>
+                <p id="walletAddressDisplay" class="text-slate-500 text-sm font-mono mt-2 break-all bg-slate-950/50 p-3 rounded-xl border border-slate-800 hidden"></p>
+            </div>
+            <div class="flex-shrink-0 size-28 bg-lime-900/30 rounded-full border-4 border-lime-500 flex items-center justify-center text-5xl">⚡</div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800">
-                <p class="text-gray-500 text-xs font-bold uppercase">Energy Price</p>
-                <p id="energyPrice" class="text-2xl font-mono text-white mt-1">--</p>
-            </div>
-            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800">
-                <p class="text-gray-500 text-xs font-bold uppercase">Free Cap</p>
-                <p id="freeCap" class="text-2xl font-mono text-white mt-1">--</p>
-            </div>
-            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800">
-                <p class="text-gray-500 text-xs font-bold uppercase">Paid Cap</p>
-                <p id="paidCap" class="text-2xl font-mono text-white mt-1">--</p>
-            </div>
-            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800">
-                <p class="text-gray-500 text-xs font-bold uppercase">Treasury Status</p>
-                <p id="treasuryAddr" class="text-sm font-mono text-green-400 mt-2 break-all">--</p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="md:col-span-2 bg-gray-900 p-8 rounded-3xl border border-gray-800 shadow-xl">
-                <h3 class="text-lg font-bold mb-6">Contract Controls</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="handleAction('tap', this)" class="bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-bold transition">TAP</button>
-                    <button onclick="handleAction('buyEnergy', this)" class="bg-purple-600 hover:bg-purple-700 py-4 rounded-xl font-bold transition">Buy Energy</button>
-                    <button onclick="handleAction('refillEnergy', this)" class="bg-yellow-600 hover:bg-yellow-700 py-4 rounded-xl font-bold transition">Refill</button>
-                    <button onclick="handleAction('claimRewards', this)" class="bg-emerald-600 hover:bg-emerald-700 py-4 rounded-xl font-bold transition">Claim</button>
+        <section>
+            <h3 class="text-2xl font-semibold mb-6">Real-Time Game Economy</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-2">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Energy Price (POL)</p>
+                    <p id="energyPrice" class="text-3xl mono-stat text-white">--</p>
+                    <p class="text-slate-600 text-xs">Standard price for energy purchase.</p>
+                </div>
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-2">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Daily Free Energy Cap</p>
+                    <p id="freeCap" class="text-3xl mono-stat text-lime-400">--</p>
+                    <p class="text-slate-600 text-xs">Maximum free energy available.</p>
+                </div>
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-2">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Paid Energy Capacity</p>
+                    <p id="paidCap" class="text-3xl mono-stat text-white">--</p>
+                    <p class="text-slate-600 text-xs">Capacity for purchased energy.</p>
+                </div>
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-2">
+                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Treasury Vault (Truncated)</p>
+                    <a id="treasuryAddr" href="#" target="_blank" class="text-lg mono-stat text-lime-400 mt-2 break-all block hover:underline">--</a>
+                    <p class="text-slate-600 text-xs">Secured contract treasury.</p>
                 </div>
             </div>
+        </section>
 
-            <div class="bg-gray-900 p-8 rounded-3xl border border-gray-800">
-                <h3 class="text-lg font-bold mb-4">Activity Log</h3>
-                <div id="log" class="text-xs text-gray-500 font-mono space-y-2 h-48 overflow-y-auto">
-                    <p>> System ready...</p>
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 bg-slate-900 p-10 rounded-3xl border-2 border-lime-900 shadow-2xl">
+                <h3 class="text-2xl font-extrabold mb-8 text-white">Perform On-Chain Actions</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button id="btn-tap" onclick="handleAction('tap', this)" class="action-button bg-blue-600 hover:bg-blue-700 py-6 rounded-2xl text-xl font-bold transition shadow-lg text-white">TAP (Interact)</button>
+                    <button id="btn-buyEnergy" onclick="handleAction('buyEnergy', this)" class="action-button bg-purple-600 hover:bg-purple-700 py-6 rounded-2xl text-xl font-bold transition shadow-lg text-white">BUY Energy (Refill)</button>
+                    <button id="btn-refillEnergy" onclick="handleAction('refillEnergy', this)" class="action-button bg-amber-500 hover:bg-amber-600 py-6 rounded-2xl text-xl font-bold transition shadow-lg text-slate-950">REFILL (Free)</button>
+                    <button id="btn-claimRewards" onclick="handleAction('claimRewards', this)" class="action-button bg-lime-500 hover:bg-lime-600 py-6 rounded-2xl text-xl font-bold transition shadow-lg text-slate-950">CLAIM Rewards</button>
+                </div>
+                <p class="text-slate-600 text-sm mt-6 text-center">Transactions take a moment to finalize. Please be patient.</p>
+            </div>
+
+            <div class="bg-slate-900 p-10 rounded-3xl border border-slate-800">
+                <h3 class="text-xl font-bold mb-6">Interaction Log</h3>
+                <div id="log" class="text-xs text-slate-500 font-mono space-y-3 h-72 overflow-y-auto pr-2">
+                    <p>> System initialized. Standing by for connection...</p>
                 </div>
             </div>
-        </div>
+        </section>
+
     </main>
 
-    <footer class="text-center py-10 text-gray-600 text-sm">
-        <p>&copy; 2026 PepeVolt Ecosystem. Securely connected via Web3.</p>
+    <footer class="border-t border-slate-800 bg-slate-900/50 mt-16 py-12 px-6">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left">
+            <div class="space-y-3">
+                <h4 class="text-lg font-bold text-white">PEPEVOLT Ecosystem</h4>
+                <p class="text-sm text-slate-400">A community-driven decentralized application (dApp). Secure, transparent, and built on the blockchain.</p>
+            </div>
+            <div class="space-y-3">
+                <h4 class="text-lg font-bold text-white">Contract Address</h4>
+                <p class="text-sm font-mono text-slate-500 break-all p-2 bg-slate-950/50 rounded-lg">0x151803532A33837E4bBc2Afc23c6b1f59039B82D</p>
+            </div>
+            <div class="space-y-3">
+                <h4 class="text-lg font-bold text-white">Development Notice</h4>
+                <p class="text-sm text-slate-600">This dashboard is a static frontend. For official updates, please refer to the project's main channels. &copy; 2026 PepeVolt.</p>
+            </div>
+        </div>
     </footer>
 
     <script>
         const CONTRACT_ADDRESS = "0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
-        const ABI = [ /* PASTE ABI HERE */ ];
+        const ABI = [ /* IMPORTANT: INSERT YOUR FULL JSON ABI HERE */ ];
 
         let contract;
+        let userAddress = null;
 
-        function log(msg) {
-            const l = document.getElementById('log');
-            l.innerHTML += `<p>> ${msg}</p>`;
-            l.scrollTop = l.scrollHeight;
+        const connectBtn = document.getElementById('connectBtn');
+        const walletAddressDisplay = document.getElementById('walletAddressDisplay');
+        const networkStatus = document.getElementById('networkStatus');
+        const logPanel = document.getElementById('log');
+
+        function log(msg, type = 'info') {
+            const prefix = type === 'error' ? '[ERROR] ' : '> ';
+            logPanel.innerHTML += `<p class="${type === 'error' ? 'text-red-400' : ''}">${prefix}${msg}</p>`;
+            logPanel.scrollTop = logPanel.scrollHeight;
         }
 
         async function connect() {
-            if (!window.ethereum) return alert("MetaMask required");
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-            document.getElementById('connectBtn').innerText = "Connected";
-            log("Wallet connected");
-            updateStats();
+            if (!window.ethereum) return log("Web3 wallet (MetaMask, etc.) required. Use a dApp browser.", 'error');
+            
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+                connectBtn.innerText = "Connected";
+                connectBtn.classList.add('hidden'); // Option 1: Hide the button entirely
+                
+                walletAddressDisplay.innerText = `Connected Wallet: ${userAddress}`;
+                walletAddressDisplay.classList.remove('hidden');
+                
+                networkStatus.innerText = "Network: Active";
+                networkStatus.classList.remove('bg-lime-900', 'text-lime-100');
+                networkStatus.classList.add('bg-lime-500', 'text-slate-950');
+
+                log(`Successfully connected as: ${userAddress.slice(0, 8)}...`);
+                
+                updateStats();
+                startUpdateLoop(); // Optimization: poll for economy changes (less common)
+
+            } catch (error) {
+                console.error(error);
+                log("Connection failed or rejected.", 'error');
+            }
         }
 
         async function updateStats() {
             try {
+                // Production-Ready efficiency: Fetch variables in parallel
                 const [price, free, paid, treasury] = await Promise.all([
                     contract.ENERGY_PRICE(),
                     contract.FREE_CAP(),
                     contract.PAID_CAP(),
                     contract.treasury()
                 ]);
-                document.getElementById('energyPrice').innerText = ethers.formatEther(price).slice(0, 8);
+
+                document.getElementById('energyPrice').innerText = `${ethers.formatEther(price)} POL`;
                 document.getElementById('freeCap').innerText = free.toString();
                 document.getElementById('paidCap').innerText = paid.toString();
-                document.getElementById('treasuryAddr').innerText = treasury.slice(0, 10) + "...";
-            } catch (e) { log("Error loading stats"); }
+                
+                const treasuryDisplay = document.getElementById('treasuryAddr');
+                treasuryDisplay.innerText = treasury.slice(0, 12) + "...";
+                // Optionally add a link to the block explorer
+                treasuryDisplay.href = `https://polygonscan.com/address/${treasury}`;
+
+            } catch (e) {
+                console.error(e);
+                log("Failed to sync economy data from contract.", 'error');
+            }
         }
 
         async function handleAction(funcName, btn) {
-            if (!contract) return log("Connect wallet first!");
+            if (!contract) return log("Action requires wallet connection.", 'error');
+            
             const originalText = btn.innerText;
             try {
-                btn.innerText = "Waiting...";
+                btn.innerText = "Awaiting Confirmation...";
                 btn.disabled = true;
-                log(`Calling ${funcName}...`);
-                const tx = await contract[funcName]();
-                await tx.wait();
-                log(`${funcName} success!`);
+                log(`Calling function ${funcName}. Waiting for wallet response...`);
+                
+                const tx = await contract[funcName](); // This will differ if the function needs parameters
+                log(`${funcName} sent! TX Hash: ${tx.hash.slice(0, 10)}... Now waiting for finalization...`);
+                
+                await tx.wait(); // Pause until finalized
+                log(`${funcName} transaction finalized on-chain!`);
+                
+                // UX refinement: Flash the button green for success
+                btn.classList.add('bg-green-600');
+                btn.innerText = "SUCCESS";
+                setTimeout(() => {
+                    btn.classList.remove('bg-green-600');
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }, 1500);
+
             } catch (err) {
-                log("Transaction cancelled");
-            } finally {
+                console.error(err);
+                log(`${funcName} action was rejected or failed. Check console.`, 'error');
                 btn.innerText = originalText;
                 btn.disabled = false;
             }
         }
 
-        document.getElementById('connectBtn').addEventListener('click', connect);
+        // Optimization: Periodically sync the stats (e.g., every 3 minutes) 
+        function startUpdateLoop() {
+            setInterval(() => { if (contract) updateStats(); }, 180000); // 180s = 3m
+        }
+
+        connectBtn.addEventListener('click', connect);
     </script>
 </body>
 </html>
