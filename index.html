@@ -1,350 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-
-<!-- FIXED VIEWPORT (iOS STABLE) -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-
-<title>PepeVolt Tap Game</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-<style>
-
-/* =========================
-   HARD LAYOUT LOCK FIX
-========================= */
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
--webkit-tap-highlight-color:transparent;
-}
-
-html, body{
-width:100%;
-height:100%;
-overflow:hidden;
-position:fixed;   /* 🔥 IMPORTANT FIX */
-top:0;
-left:0;
-right:0;
-bottom:0;
-}
-
-body{
-font-family:'Poppins',sans-serif;
-background:#07111f;
-color:#fff;
-display:flex;
-justify-content:center;
-align-items:center;
-touch-action:none; /* 🔥 prevents zoom/scroll issues */
-overscroll-behavior:none;
--webkit-user-select:none;
-user-select:none;
-}
-
-/* background */
-body::before{
-content:'';
-position:fixed;
-inset:0;
-background:
-radial-gradient(circle at top,#00ffb32e,transparent 40%),
-radial-gradient(circle at bottom,#00b7ff25,transparent 40%);
-z-index:-1;
-}
-
-/* APP CONTAINER (LOCKED HEIGHT) */
-.app{
-width:100%;
-max-width:450px;
-height:100dvh; /* 🔥 FIX for mobile dynamic viewport */
-display:flex;
-flex-direction:column;
-justify-content:space-between;
-padding:16px;
-}
-
-/* TOP */
-.topbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.logo{
-font-size:22px;
-font-weight:700;
-background:linear-gradient(90deg,#00ff99,#00d0ff);
--webkit-background-clip:text;
--webkit-text-fill-color:transparent;
-}
-
-.connect-btn{
-border:none;
-padding:10px 14px;
-border-radius:12px;
-background:linear-gradient(90deg,#00ff99,#00d0ff);
-font-weight:700;
-}
-
-/* STATS */
-.stats{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:12px;
-margin-top:12px;
-}
-
-.card{
-background:rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.08);
-padding:12px;
-border-radius:16px;
-text-align:center;
-}
-
-.card h3{
-font-size:11px;
-opacity:.7;
-}
-
-.card p{
-font-size:16px;
-font-weight:700;
-}
-
-/* TAP AREA (CENTER FIXED) */
-.tap-wrapper{
-flex:1;
-display:flex;
-justify-content:center;
-align-items:center;
-position:relative;
-}
-
-.tap-btn{
-width:230px;
-height:230px;
-border-radius:50%;
-border:none;
-background:linear-gradient(145deg,#00ff99,#00b7ff);
-font-size:30px;
-font-weight:700;
-color:#04111f;
-box-shadow:0 0 40px rgba(0,255,153,0.4);
-
-transition:transform 0.08s ease;
-will-change:transform;
-}
-
-.tap-btn:active{
-transform:scale(0.96);
-}
-
-/* ENERGY */
-.energy-bar{
-height:16px;
-background:rgba(255,255,255,0.08);
-border-radius:999px;
-overflow:hidden;
-margin-top:10px;
-}
-
-.energy-fill{
-height:100%;
-width:100%;
-background:linear-gradient(90deg,#00ff99,#00d0ff);
-transition:0.2s;
-}
-
-/* NAV */
-.bottom-nav{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:10px;
-margin-top:10px;
-}
-
-.nav-btn{
-background:rgba(255,255,255,0.05);
-padding:12px;
-border-radius:14px;
-text-align:center;
-font-size:11px;
-}
-
-/* POPUP */
-.popup{
-position:absolute;
-font-size:20px;
-font-weight:700;
-color:#00ff99;
-animation:floatUp 0.8s ease-out forwards;
-pointer-events:none;
-}
-
-@keyframes floatUp{
-0%{opacity:1;transform:translateY(0);}
-100%{opacity:0;transform:translateY(-70px) scale(1.4);}
-}
-
-/* MODAL */
-.modal{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,0.6);
-display:none;
-justify-content:center;
-align-items:center;
-z-index:999;
-}
-
-.modal-content{
-width:90%;
-max-width:360px;
-background:#0c1728;
-padding:16px;
-border-radius:18px;
-}
-
-.info{
-background:rgba(255,255,255,0.04);
-padding:10px;
-border-radius:12px;
-margin-bottom:8px;
-font-size:12px;
-word-break:break-all;
-}
-
-.close-btn{
-width:100%;
-padding:12px;
-border:none;
-border-radius:12px;
-background:linear-gradient(90deg,#00ff99,#00d0ff);
-font-weight:700;
-}
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PepeVolt Ecosystem | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 </head>
+<body class="bg-gray-950 text-gray-200 min-h-screen font-sans">
+    
+    <nav class="border-b border-gray-800 p-4">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-green-500 tracking-tight">PEPEVOLT<span class="text-white">GAME</span></h1>
+            <button id="connectBtn" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all">Connect Wallet</button>
+        </div>
+    </nav>
 
-<body>
+    <main class="max-w-5xl mx-auto p-6 space-y-8">
+        
+        <div class="text-center py-10">
+            <h2 class="text-4xl font-extrabold mb-4">Ecosystem Overview</h2>
+            <p class="text-gray-400">Interact with the PepeVolt smart contracts directly from your browser.</p>
+        </div>
 
-<div class="app">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800">
+                <p class="text-gray-500 text-xs font-bold uppercase">Energy Price</p>
+                <p id="energyPrice" class="text-2xl font-mono text-white mt-1">--</p>
+            </div>
+            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800">
+                <p class="text-gray-500 text-xs font-bold uppercase">Free Cap</p>
+                <p id="freeCap" class="text-2xl font-mono text-white mt-1">--</p>
+            </div>
+            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800">
+                <p class="text-gray-500 text-xs font-bold uppercase">Paid Cap</p>
+                <p id="paidCap" class="text-2xl font-mono text-white mt-1">--</p>
+            </div>
+            <div class="bg-gray-900 p-5 rounded-2xl border border-gray-800">
+                <p class="text-gray-500 text-xs font-bold uppercase">Treasury Status</p>
+                <p id="treasuryAddr" class="text-sm font-mono text-green-400 mt-2 break-all">--</p>
+            </div>
+        </div>
 
-<!-- TOP -->
-<div>
-<div class="topbar">
-<div class="logo">PEPEVOLT</div>
-<button class="connect-btn" id="connectBtn">Connect</button>
-</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2 bg-gray-900 p-8 rounded-3xl border border-gray-800 shadow-xl">
+                <h3 class="text-lg font-bold mb-6">Contract Controls</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="handleAction('tap', this)" class="bg-blue-600 hover:bg-blue-700 py-4 rounded-xl font-bold transition">TAP</button>
+                    <button onclick="handleAction('buyEnergy', this)" class="bg-purple-600 hover:bg-purple-700 py-4 rounded-xl font-bold transition">Buy Energy</button>
+                    <button onclick="handleAction('refillEnergy', this)" class="bg-yellow-600 hover:bg-yellow-700 py-4 rounded-xl font-bold transition">Refill</button>
+                    <button onclick="handleAction('claimRewards', this)" class="bg-emerald-600 hover:bg-emerald-700 py-4 rounded-xl font-bold transition">Claim</button>
+                </div>
+            </div>
 
-<div class="stats">
-<div class="card"><h3>Balance</h3><p id="balance">0</p></div>
-<div class="card"><h3>Taps</h3><p id="taps">0</p></div>
-<div class="card"><h3>Energy</h3><p id="energyText">100</p></div>
-<div class="card"><h3>Reward</h3><p id="reward">0</p></div>
-</div>
-</div>
+            <div class="bg-gray-900 p-8 rounded-3xl border border-gray-800">
+                <h3 class="text-lg font-bold mb-4">Activity Log</h3>
+                <div id="log" class="text-xs text-gray-500 font-mono space-y-2 h-48 overflow-y-auto">
+                    <p>> System ready...</p>
+                </div>
+            </div>
+        </div>
+    </main>
 
-<!-- TAP -->
-<div class="tap-wrapper">
-<button class="tap-btn" id="tapBtn">⚡ TAP</button>
-</div>
+    <footer class="text-center py-10 text-gray-600 text-sm">
+        <p>&copy; 2026 PepeVolt Ecosystem. Securely connected via Web3.</p>
+    </footer>
 
-<!-- BOTTOM -->
-<div>
-<div class="energy-bar">
-<div class="energy-fill" id="energyFill"></div>
-</div>
+    <script>
+        const CONTRACT_ADDRESS = "0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
+        const ABI = [ /* PASTE ABI HERE */ ];
 
-<div class="bottom-nav">
-<div class="nav-btn" id="infoNav">Info</div>
-<div class="nav-btn">Game</div>
-<div class="nav-btn">Treasury</div>
-<div class="nav-btn">Wallet</div>
-</div>
-</div>
+        let contract;
 
-</div>
+        function log(msg) {
+            const l = document.getElementById('log');
+            l.innerHTML += `<p>> ${msg}</p>`;
+            l.scrollTop = l.scrollHeight;
+        }
 
-<!-- MODAL -->
-<div class="modal" id="modal">
-<div class="modal-content">
+        async function connect() {
+            if (!window.ethereum) return alert("MetaMask required");
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+            document.getElementById('connectBtn').innerText = "Connected";
+            log("Wallet connected");
+            updateStats();
+        }
 
-<div class="info">PVLT Token<br>0xb8010fD52D5208eC05574a7D5A939c0d446A862a</div>
-<div class="info">TreasuryVolt<br>0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc</div>
-<div class="info">PepeVoltGame<br>0x151803532A33837E4bBc2Afc23c6b1f59039B82D</div>
+        async function updateStats() {
+            try {
+                const [price, free, paid, treasury] = await Promise.all([
+                    contract.ENERGY_PRICE(),
+                    contract.FREE_CAP(),
+                    contract.PAID_CAP(),
+                    contract.treasury()
+                ]);
+                document.getElementById('energyPrice').innerText = ethers.formatEther(price).slice(0, 8);
+                document.getElementById('freeCap').innerText = free.toString();
+                document.getElementById('paidCap').innerText = paid.toString();
+                document.getElementById('treasuryAddr').innerText = treasury.slice(0, 10) + "...";
+            } catch (e) { log("Error loading stats"); }
+        }
 
-<button class="close-btn" id="closeBtn">Close</button>
+        async function handleAction(funcName, btn) {
+            if (!contract) return log("Connect wallet first!");
+            const originalText = btn.innerText;
+            try {
+                btn.innerText = "Waiting...";
+                btn.disabled = true;
+                log(`Calling ${funcName}...`);
+                const tx = await contract[funcName]();
+                await tx.wait();
+                log(`${funcName} success!`);
+            } catch (err) {
+                log("Transaction cancelled");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
 
-</div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.min.js"></script>
-
-<script>
-
-/* LOCK GESTURES */
-document.addEventListener("gesturestart", e => e.preventDefault());
-document.addEventListener("gesturechange", e => e.preventDefault());
-
-let taps = 0;
-let energy = 100;
-let reward = 0;
-
-const tapBtn = document.getElementById("tapBtn");
-
-tapBtn.addEventListener("click", (e) => {
-
-if(energy <= 0) return;
-
-taps++;
-reward += 0.25;
-energy--;
-
-document.getElementById("taps").innerText = taps;
-document.getElementById("reward").innerText = reward.toFixed(2);
-document.getElementById("energyText").innerText = energy;
-document.getElementById("energyFill").style.width = energy + "%";
-
-const popup = document.createElement("div");
-popup.className = "popup";
-popup.innerText = "+0.25";
-popup.style.left = e.clientX + "px";
-popup.style.top = e.clientY + "px";
-
-document.body.appendChild(popup);
-setTimeout(() => popup.remove(), 800);
-
-});
-
-/* ENERGY REGEN */
-setInterval(() => {
-if(energy < 100){
-energy++;
-document.getElementById("energyText").innerText = energy;
-document.getElementById("energyFill").style.width = energy + "%";
-}
-}, 1500);
-
-/* MODAL */
-const modal = document.getElementById("modal");
-
-document.getElementById("infoNav").onclick = () => {
-modal.style.display = "flex";
-};
-
-document.getElementById("closeBtn").onclick = () => {
-modal.style.display = "none";
-};
-
-</script>
-
+        document.getElementById('connectBtn').addEventListener('click', connect);
+    </script>
 </body>
 </html>
