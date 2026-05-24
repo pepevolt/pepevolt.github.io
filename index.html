@@ -1,566 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>PVLT Tap Game</title>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PepeVolt Game</title>
     <style>
-        /* ================= RESET ================= */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #020b18;
-            font-family: Arial, sans-serif;
-            color: white;
-        }
-
-        /* ================= BODY ================= */
-        body {
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ================= TOP BAR ================= */
-        .topbar {
-            width: 100%;
-            padding: 14px 18px;
-            background: #091426;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        /* ================= MAIN ================= */
-        .main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        /* ================= TAP BUTTON ================= */
-        .tapBtn {
-            width: 240px;
-            height: 240px;
-            border: none;
-            border-radius: 50%;
-            overflow: hidden;
-            margin-top: 20px;
-            background: linear-gradient(135deg, #00ff99, #00ccff);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 0 30px rgba(0, 255, 180, 0.25);
-            cursor: pointer;
-            touch-action: manipulation;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        .tapBtn:active {
-            transform: scale(0.96);
-        }
-
-        .tapBtn img {
-            width: 78%;
-            height: 78%;
-            object-fit: contain;
-            pointer-events: none;
-        }
-
-        /* ================= CARD ================= */
-        .card {
-            width: 100%;
-            max-width: 380px;
-            margin-top: 28px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 18px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        /* ================= INPUT ================= */
-        input {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            background: #0c1628;
-            color: white;
-            font-size: 14px;
-            outline: none;
-        }
-
-        /* ================= BUTTON ================= */
-        .actionBtn {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: bold;
-            background: linear-gradient(90deg, #00ff99, #00ccff);
-            color: black;
-            cursor: pointer;
-        }
-
-        /* ================= STATUS ================= */
-        .status {
-            text-align: center;
-            font-size: 12px;
-            opacity: 0.8;
-            display: none;
-        }
-
-        /* ================= INFO BOX ================= */
-        .info {
-            margin-top: 16px;
-            font-size: 12px;
-            line-height: 1.7;
-            opacity: 0.8;
-            text-align: center;
-            max-width: 380px;
-        }
-
-        /* ================= BUY MODAL POPUP ================= */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(2, 11, 24, 0.85);
-            backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-box {
-            width: 90%;
-            max-width: 340px;
-            background: #091426;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            padding: 24px;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            transform: scale(0.9);
-            transition: transform 0.25s ease;
-        }
-
-        .modal-overlay.active .modal-box {
-            transform: scale(1);
-        }
-
-        .modal-box h3 {
-            font-size: 18px;
-            margin-bottom: 12px;
-            color: #00ff99;
-        }
-
-        .modal-box p {
-            font-size: 14px;
-            opacity: 0.9;
-            line-height: 1.5;
-            margin-bottom: 24px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 12px;
-        }
-
-        .modal-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .btn-confirm {
-            background: linear-gradient(90deg, #00ff99, #00ccff);
-            color: black;
-        }
-
-        .btn-cancel {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
+        /* Add your CSS here to match the provided design */
+        body { background-color: #0d1117; color: white; font-family: sans-serif; text-align: center; }
+        .container { border: 1px solid #30363d; padding: 20px; border-radius: 10px; max-width: 400px; margin: auto; }
+        button { display: block; width: 100%; margin: 10px 0; padding: 15px; border-radius: 5px; border: none; cursor: pointer; background: linear-gradient(90deg, #60ff8e, #00d2ff); }
     </style>
 </head>
-
 <body>
 
-    <div class="topbar">
-        <div>🔋 <span id="energy">50</span></div>
-        <div>⚡ <span id="points">0</span></div>
-        <div>💎 <span id="pvltg">0.0000</span></div>
+    <div class="container">
+        <h1>PepeVolt</h1>
+        <div id="stats">Energy: <span id="energy">0</span> | Points: <span id="points">0</span></div>
+        
+        <button id="connectBtn">CONNECT WALLET</button>
+        <button onclick="buyEnergy()">BUY ENERGY</button>
+        <button onclick="swapPoints()">SWAP POINTS -> PVLTG</button>
+        <button onclick="claimRewards()">CLAIM PVLT</button>
     </div>
 
-    <div class="main">
-        <button class="tapBtn" onclick="tap()">
-            <img src="images/IMG_1850.png" alt="Tap Target">
-        </button>
+    <script type="module">
+        import { createAppKit, defaultConfig } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@latest/+esm';
+        import { ethers } from 'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js';
 
-        <div class="card">
-            <input id="walletInput" placeholder="Connect Polygon Wallet" readonly>
+        const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
+        const GAME_ADDR = "0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
+        
+        // Initialize AppKit
+        const modal = createAppKit({
+            projectId: PROJECT_ID,
+            chains: [ { id: 137, name: 'Polygon', currency: 'MATIC', explorerUrl: 'https://polygonscan.com', rpcUrl: 'https://polygon-rpc.com' } ]
+        });
 
-            <button class="actionBtn" id="walletBtn" onclick="connectWallet()">
-                CONNECT WALLET
-            </button>
+        // Event listener for connect
+        document.getElementById('connectBtn').onclick = () => modal.open();
 
-            <div class="status" id="walletStatus">
-                Wallet Connected
-            </div>
+        // Transaction functions
+        window.buyEnergy = async () => {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const contract = new ethers.Contract(GAME_ADDR, ["function buyEnergy() external"], signer);
+            const tx = await contract.buyEnergy();
+            await tx.wait();
+            alert("Energy bought!");
+        };
 
-            <button class="actionBtn" onclick="openBuyModal()">
-                BUY ENERGY
-            </button>
+        window.swapPoints = async () => {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const contract = new ethers.Contract(GAME_ADDR, ["function convertPoints() external"], signer);
+            await (await contract.convertPoints()).wait();
+            alert("Swapped!");
+        };
 
-            <button class="actionBtn" onclick="swapPoints()">
-                SWAP POINTS → PVLTG
-            </button>
-
-            <button class="actionBtn" onclick="claimPVLT()">
-                CLAIM PVLT
-            </button>
-        </div>
-
-        <div class="info">
-            1 Tap = 1 Point<br>
-            10000 Points = 1 PVLTG<br>
-            100 PVLTG = 1 PVLT
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="buyModal">
-        <div class="modal-box">
-            <h3>Buy Energy Pack</h3>
-            <p>Would you like to buy <b>1,00,000 Energy</b> for <b>100 PVLT</b>?<br><br><span style="font-size:12px; opacity:0.6;">This will open your connected wallet to sign a transaction.</span></p>
-            <div class="modal-buttons">
-                <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
-                <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        /* ================= CONFIG ================= */
-        const API = "https://pvlt-server.onrender.com";
-        const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
-
-        const PVLT_TOKEN_ADDRESS = "0x3094Dc50cB01721eE6c0ECAf18bd0D15c154ba2d"; 
-        const GAME_TREASURY_ADDRESS = "0xe2bb81bD8e36367F2C85c89F0B03570dFCaf5D57";
-
-        /* ================= STATE ================= */
-        let web3Provider; 
-        let wallet = "";
-        let points = 0;
-        let energy = 50;
-        let pvltg = 0;
-
-        /* ================= UPDATE UI ================= */
-        function updateUI(){
-            document.getElementById("energy").innerText = energy;
-            document.getElementById("points").innerText = points;
-            document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
-        }
-
-        /* ================= MODAL HANDLERS ================= */
-        function openBuyModal() {
-            if(!wallet) return alert("Connect wallet first");
-            document.getElementById("buyModal").classList.add("active");
-        }
-
-        function closeBuyModal() {
-            document.getElementById("buyModal").classList.remove("active");
-        }
-
-        /* ================= CONNECT WALLET ================= */
-        async function connectWallet(){
-            try {
-                if (typeof window.ethers === 'undefined') {
-                    alert("Ethers library failed to load from CDN. Try clearing your browser cache.");
-                    return;
-                }
-
-                if (typeof window.ethereum !== 'undefined') {
-                    console.log("In-app Web3 browser detected.");
-                    await window.ethereum.request({ method: "eth_requestAccounts" });
-                    web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-                } 
-                else {
-                    console.log("Standard browser detected. Initializing WalletConnect...");
-                    const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
-                    
-                    const wcProvider = await WalletConnectProvider.init({
-                        projectId: PROJECT_ID,
-                        chains: [137], 
-                        showQrModal: true,
-                        optionalMethods: [
-                            "eth_sendTransaction",
-                            "eth_signTransaction",
-                            "personal_sign",
-                            "eth_signTypedData",
-                            "eth_signTypedData_v4"
-                        ],
-                        qrModalOptions: { themeMode: "dark" }
-                    });
-
-                    await wcProvider.connect();
-                    web3Provider = new ethers.providers.Web3Provider(wcProvider);
-                }
-
-                const signer = web3Provider.getSigner();
-                wallet = await signer.getAddress();
-
-                document.getElementById("walletInput").value =
-                    wallet.substring(0,6) + "..." + wallet.substring(wallet.length - 4);
-
-                document.getElementById("walletBtn").innerText = "CONNECTED";
-                document.getElementById("walletStatus").style.display = "block";
-
-                const res = await fetch(API + "/user", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ wallet })
-                });
-
-                const data = await res.json();
-                if (data.error) {
-                    alert("Server Error: " + data.error);
-                    return;
-                }
-
-                points = data.points ?? 0;
-                energy = data.energy ?? 50;
-                pvltg = data.pvltg ?? 0;
-
-                updateUI();
-
-            } catch(err) {
-                console.error("Connection detailed error log:", err);
-                alert("Wallet connection failed: " + (err.message || JSON.stringify(err)));
-            }
-        }
-
-        /* ================= TAP ================= */
-        async function tap(){
-            if(!wallet) return alert("Connect wallet first");
-
-            try{
-                const res = await fetch(API + "/tap", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ wallet })
-                });
-                const data = await res.json();
-
-                if(data.error) return alert(data.error);
-
-                points = data.points;
-                energy = data.energy;
-                updateUI();
-            } catch(err){
-                console.error(err);
-                alert("Tap failed");
-            }
-        }
-
-        /* ================= EXECUTE ENERGY PURCHASE ================= */
-        async function executeEnergyPurchase(){
-            const confirmBtn = document.getElementById("confirmPaymentBtn");
-            try {
-                confirmBtn.innerText = "Processing...";
-                confirmBtn.disabled = true;
-
-                const signer = web3Provider.getSigner();
-                
-                const tokenContract = new ethers.Contract(
-                    PVLT_TOKEN_ADDRESS,
-                    [
-                        "function transfer(address to, uint256 value) external returns (bool)",
-                        "function decimals() external view returns (uint8)"
-                    ],
-                    signer
-                );
-
-                // READ THE CONTRACT DECIMALS LIVE TO PREVENT OVER-INFLATION
-                let tokenDecimals = 18;
-                try {
-                    tokenDecimals = await tokenContract.decimals();
-                    console.log("Smart contract successfully reported decimals:", tokenDecimals);
-                } catch (decimalsError) {
-                    console.warn("Failed to read decimals from contract node. Defaulting to 0 for custom asset safety.");
-                    tokenDecimals = 0; 
-                }
-
-                // Parse units using the true contract decimal definition
-                const costAmount = ethers.utils.parseUnits("100", tokenDecimals);
-                console.log("Calculated exact baseline amount value hex string:", costAmount.toString());
-
-                // Issue transfer execution with fixed manual gas limit allocations to break simulation blocks
-                const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount, {
-                    gasLimit: ethers.BigNumber.from("100000")
-                });
-                
-                closeBuyModal();
-                alert("Transaction dispatched! Switch back to your wallet application to click confirm.");
-
-                await tx.wait();
-
-                // Inform backend to add the energy payload
-                const res = await fetch(API + "/refill", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        wallet: wallet,
-                        txHash: tx.hash 
-                    })
-                });
-                const data = await res.json();
-
-                if(data.error) {
-                    alert("On-chain transfer completed successfully, but balance data sync failed: " + data.error);
-                    return;
-                }
-
-                energy = data.energy;
-                updateUI();
-                alert("Success! 1,000 Energy added to your profile balance.");
-
-            } catch(err) {
-                console.error("Detailed Tx Loop Breakdown Errors:", err);
-                if (err.message && err.message.includes("user rejected action")) {
-                    alert("Transaction cancelled by user.");
-                } else {
-                    alert("Execution completed. If the window did not open, manually verify your transaction log within your wallet app.");
-                }
-            } finally {
-                confirmBtn.innerText = "Confirm";
-                confirmBtn.disabled = false;
-                closeBuyModal();
-            }
-        }
-
-        /* ================= SWAP POINTS ================= */
-        async function swapPoints(){
-            if(!wallet) return alert("Connect wallet first");
-
-            try{
-                const res = await fetch(API + "/swap-points", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ wallet })
-                });
-                const data = await res.json();
-
-                if(data.error) return alert(data.error);
-
-                points = 0;
-                pvltg = data.pvltg;
-                updateUI();
-                alert("Points swapped to PVLTG");
-            } catch(err){
-                console.error(err);
-                alert("Swap failed");
-            }
-        }
-
-        /* ================= CLAIM PVLT ================= */
-        async function claimPVLT(){
-            if(!wallet) return alert("Connect wallet first");
-            if(pvltg < 100) return alert("Need minimum 100 PVLTG");
-
-            try{
-                const signer = web3Provider.getSigner();
-                
-                const tokenContract = new ethers.Contract(
-                    PVLT_TOKEN_ADDRESS,
-                    [
-                        "function approve(address spender,uint256 amount) external returns(bool)",
-                        "function decimals() external view returns (uint8)"
-                    ],
-                    signer
-                );
-
-                let tokenDecimals = 18;
-                try {
-                    tokenDecimals = await tokenContract.decimals();
-                } catch(e) {
-                    tokenDecimals = 0;
-                }
-
-                const amount = ethers.utils.parseUnits(pvltg.toString(), tokenDecimals);
-                const approveTx = await tokenContract.approve(
-                    GAME_TREASURY_ADDRESS,
-                    amount
-                );
-                await approveTx.wait();
-
-                const res = await fetch(API + "/claim-pvltg", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ wallet })
-                });
-                const data = await res.json();
-
-                if(data.error) return alert(data.error);
-
-                pvltg = 0;
-                updateUI();
-                alert("PVLT claimed successfully!\n\nTX:\n" + data.tx);
-            } catch(err){
-                console.error(err);
-                alert("Claim failed");
-            }
-        }
-
-        /* ================= AUTO REFILL ================= */
-        setInterval(()=>{
-            if(energy < 50){
-                energy += 1;
-                updateUI();
-            }
-        }, 30000);
-
-        /* ================= START ================= */
-        updateUI();
+        window.claimRewards = async () => {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const contract = new ethers.Contract(GAME_ADDR, ["function claimRewards() external"], signer);
+            await (await contract.claimRewards()).wait();
+            alert("Claimed!");
+        };
     </script>
 </body>
-
 </html>
