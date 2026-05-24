@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>PEPEVOLT</title>
+<title>PEPEVOLT X</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
@@ -13,71 +13,71 @@
 
 body{
 margin:0;
-background:#050505;
-color:#fff;
+background:#000;
 font-family:Arial;
+color:#fff;
 overflow-x:hidden;
 }
 
-.topbar{
+.nav{
 display:flex;
 justify-content:space-around;
 padding:15px;
-background:rgba(255,255,255,0.05);
-backdrop-filter:blur(10px);
+background:#101010;
+font-size:24px;
 position:sticky;
 top:0;
-z-index:100;
-font-size:24px;
-font-weight:bold;
+z-index:999;
 }
 
-.panel{
+.container{
 width:92%;
 margin:auto;
-margin-top:20px;
-padding:18px;
-border-radius:20px;
-background:rgba(255,255,255,0.05);
-backdrop-filter:blur(20px);
-border:1px solid rgba(255,255,255,0.08);
 }
 
-.grid{
+.hero{
+margin-top:20px;
+padding:22px;
+border-radius:24px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(18px);
+}
+
+.stats{
 display:grid;
 grid-template-columns:1fr 1fr;
-gap:12px;
-margin-top:15px;
+gap:14px;
+margin-top:20px;
 }
 
-.card{
+.box{
 padding:18px;
-border-radius:16px;
 background:#111;
+border-radius:16px;
 text-align:center;
 }
 
-.tap{
-width:250px;
-height:250px;
+.tap-btn{
+width:260px;
+height:260px;
 border-radius:50%;
-background:linear-gradient(145deg,#1a1a1a,#0a0a0a);
 margin:40px auto;
+background:radial-gradient(circle,#1f1f1f,#090909);
 display:flex;
 justify-content:center;
 align-items:center;
-font-size:42px;
+font-size:48px;
 font-weight:bold;
 cursor:pointer;
-box-shadow:0 0 40px rgba(0,255,100,0.2);
-transition:0.15s;
+box-shadow:0 0 60px rgba(0,255,150,0.25);
+transition:0.2s;
 }
 
-.tap:active{
-transform:scale(0.95);
+.tap-btn:active{
+transform:scale(0.94);
 }
 
-.buttons{
+.actions{
 display:flex;
 justify-content:center;
 flex-wrap:wrap;
@@ -86,18 +86,18 @@ padding-bottom:40px;
 }
 
 button{
-padding:14px 24px;
+padding:15px 22px;
+font-size:18px;
 border:none;
 border-radius:14px;
-font-size:18px;
-background:#141414;
+background:#151515;
 color:#fff;
 cursor:pointer;
 }
 
 .wallet{
-text-align:center;
 margin-top:10px;
+font-size:14px;
 color:#aaa;
 word-break:break-all;
 }
@@ -108,81 +108,85 @@ word-break:break-all;
 
 <body>
 
-<div class="topbar">
+<div class="nav">
 
 <div>⚡ <span id="energy">0</span></div>
 
-<div>🪙 <span id="points">0</span></div>
+<div>🪙 <span id="gpvlt">0</span></div>
 
 <div>💰 <span id="pvlt">0</span></div>
 
 </div>
 
-<div class="panel">
+<div class="container">
 
-<h2>PEPEVOLT</h2>
+<div class="hero">
 
-<div class="wallet" id="wallet">
-Wallet Not Connected
-</div>
-
-<br>
+<h2>PEPEVOLT X</h2>
 
 <button onclick="connectWallet()">
 Connect Wallet
 </button>
 
-<div class="grid">
+<div class="wallet" id="wallet">
+Wallet Not Connected
+</div>
 
-<div class="card">
+<div class="stats">
+
+<div class="box">
 Treasury
 <br><br>
 <span id="treasury">0</span>
 </div>
 
-<div class="card">
-Burned
+<div class="box">
+Wallet PVLT
 <br><br>
-<span id="burned">0</span>
+<span id="walletPVLT">0</span>
 </div>
 
-<div class="card">
-Revenue
+<div class="box">
+Daily Claim
 <br><br>
-<span id="revenue">0</span>
+10 - 1000
 </div>
 
-<div class="card">
-Rewards Paid
+<div class="box">
+Energy Cost
 <br><br>
-<span id="rewards">0</span>
+300 PVLT
 </div>
 
 </div>
 
 </div>
 
-<div class="tap" onclick="tap()">
+<div class="tap-btn" onclick="tap()">
 TAP
 </div>
 
-<div class="buttons">
+<div class="actions">
 
 <button onclick="buyEnergy()">
 Buy Energy
 </button>
 
-<button onclick="convertPoints()">
+<button onclick="convert()">
 Convert
 </button>
 
-<button onclick="claimRewards()">
+<button onclick="claim()">
 Claim
 </button>
 
 </div>
 
+</div>
+
 <script>
+
+// CONTRACTS
 
 const GAME =
 "YOUR_GAME_CONTRACT";
@@ -201,25 +205,21 @@ const GAME_ABI = [
 
 "function tap() external",
 
-"function buyEnergy() external",
+"function refillEnergy() external",
 
-"function convertPoints() external",
+"function convertToPVLT(uint256 amount) external",
 
-"function claimRewards() external",
+"function claimPVLT(uint256 amount) external",
 
-"function getPlayer(address) view returns(uint256,uint256,uint256,bool,uint256)"
+"function energy(address) view returns(uint256)",
+
+"function gPVLT(address) view returns(uint256)"
 
 ];
 
 const TREASURY_ABI = [
 
-"function treasuryBalance() view returns(uint256)",
-
-"function totalRevenue() view returns(uint256)",
-
-"function totalRewardsPaid() view returns(uint256)",
-
-"function totalBurnedGPVLT() view returns(uint256)"
+"function treasuryBalance() view returns(uint256)"
 
 ];
 
@@ -277,41 +277,37 @@ ERC20_ABI,
 signer
 );
 
-const player =
-await game.getPlayer(user);
-
 document.getElementById("energy")
-.innerHTML = player[0];
+.innerHTML =
+ethers.utils.formatEther(
+await game.energy(user)
+);
 
-document.getElementById("points")
-.innerHTML = player[1];
+document.getElementById("gpvlt")
+.innerHTML =
+ethers.utils.formatEther(
+await game.gPVLT(user)
+);
 
-document.getElementById("burned")
-.innerHTML = player[2];
-
-const walletPVLT =
+const walletBalance =
 await pvlt.balanceOf(user);
+
+document.getElementById("walletPVLT")
+.innerHTML =
+ethers.utils.formatEther(
+walletBalance
+);
 
 document.getElementById("pvlt")
 .innerHTML =
-ethers.utils.formatEther(walletPVLT);
+ethers.utils.formatEther(
+walletBalance
+);
 
 document.getElementById("treasury")
 .innerHTML =
 ethers.utils.formatEther(
 await treasury.treasuryBalance()
-);
-
-document.getElementById("revenue")
-.innerHTML =
-ethers.utils.formatEther(
-await treasury.totalRevenue()
-);
-
-document.getElementById("rewards")
-.innerHTML =
-ethers.utils.formatEther(
-await treasury.totalRewardsPaid()
 );
 
 }
@@ -345,7 +341,7 @@ signer
 
 await pvlt.approve(
 GAME,
-ethers.utils.parseEther("100")
+ethers.utils.parseEther("300")
 );
 
 const game =
@@ -356,7 +352,7 @@ signer
 );
 
 const tx =
-await game.buyEnergy();
+await game.refillEnergy();
 
 await tx.wait();
 
@@ -364,7 +360,12 @@ loadData();
 
 }
 
-async function convertPoints(){
+async function convert(){
+
+const amount =
+prompt("Enter gPVLT");
+
+if(!amount) return;
 
 const game =
 new ethers.Contract(
@@ -374,7 +375,9 @@ signer
 );
 
 const tx =
-await game.convertPoints();
+await game.convertToPVLT(
+ethers.utils.parseEther(amount)
+);
 
 await tx.wait();
 
@@ -382,7 +385,12 @@ loadData();
 
 }
 
-async function claimRewards(){
+async function claim(){
+
+const amount =
+prompt("Enter PVLT");
+
+if(!amount) return;
 
 const game =
 new ethers.Contract(
@@ -392,7 +400,9 @@ signer
 );
 
 const tx =
-await game.claimRewards();
+await game.claimPVLT(
+ethers.utils.parseEther(amount)
+);
 
 await tx.wait();
 
