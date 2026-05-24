@@ -228,7 +228,7 @@
     <div class="topbar">
         <div>🔋 <span id="energy">50</span></div>
         <div>⚡ <span id="points">0</span></div>
-        <div>💎 <span id="pvltg">0.0000</span></div>
+        <div>💎 <span id="gpvlt">0.0000</span></div>
     </div>
 
     <div class="main">
@@ -252,7 +252,7 @@
             </button>
 
             <button class="actionBtn" onclick="swapPoints()">
-                SWAP POINTS → PVLTG
+                SWAP POINTS → GPVLT
             </button>
 
             <button class="actionBtn" onclick="claimPVLT()">
@@ -262,8 +262,8 @@
 
         <div class="info">
             1 Tap = 1 Point<br>
-            10000 Points = 1 PVLTG<br>
-            100 PVLTG = 1 PVLT
+            10000 Points = 1 gPVLT<br>
+            100 GPVLT = 1 PVLT
         </div>
     </div>
 
@@ -292,13 +292,13 @@
         let wallet = "";
         let points = 0;
         let energy = 50;
-        let pvltg = 0;
+        let gpvlt = 0;
 
         /* ================= UPDATE UI ================= */
         function updateUI(){
             document.getElementById("energy").innerText = energy;
             document.getElementById("points").innerText = points;
-            document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
+            document.getElementById("gpvlt").innerText = Number(gpvlt).toFixed(4);
         }
 
         /* ================= MODAL HANDLERS ================= */
@@ -369,7 +369,7 @@
 
                 points = data.points ?? 0;
                 energy = data.energy ?? 50;
-                pvltg = data.pvltg ?? 0;
+                gpvlt = data.gpvlt ?? 0;
 
                 updateUI();
 
@@ -493,9 +493,9 @@
                 if(data.error) return alert(data.error);
 
                 points = 0;
-                pvltg = data.pvltg;
+                gpvlt = data.gpvlt;
                 updateUI();
-                alert("Points swapped to PVLTG");
+                alert("Points swapped to GPVLT");
             } catch(err){
                 console.error(err);
                 alert("Swap failed");
@@ -505,7 +505,7 @@
         /* ================= CLAIM PVLT ================= */
         async function claimPVLT(){
             if(!wallet) return alert("Connect wallet first");
-            if(pvltg < 100) return alert("Need minimum 100 PVLTG");
+            if(gpvlt < 100) return alert("Need minimum 100 GPVLT");
 
             try{
                 const signer = web3Provider.getSigner();
@@ -526,7 +526,7 @@
                     tokenDecimals = 0;
                 }
 
-                const amount = ethers.utils.parseUnits(pvltg.toString(), tokenDecimals);
+                const amount = ethers.utils.parseUnits(gpvlt.toString(), tokenDecimals);
                 const approveTx = await tokenContract.approve(
                     TreasuryVolt,
                     amount
@@ -542,7 +542,7 @@
 
                 if(data.error) return alert(data.error);
 
-                pvltg = 0;
+                gpvlt = 0;
                 updateUI();
                 alert("PVLT claimed successfully!\n\nTX:\n" + data.tx);
             } catch(err){
