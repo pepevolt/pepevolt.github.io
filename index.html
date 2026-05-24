@@ -283,8 +283,9 @@
         const API = "https://pvlt-server.onrender.com";
         const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
-        const PVLT_TOKEN_ADDRESS = "0xb8010fD52D5208eC05574a7D5A939c0d446A862a"; 
-        const GAME_TREASURY_ADDRESS = "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc";
+        const PVLT = "0xb8010fD52D5208eC05574a7D5A939c0d446A862a"; 
+        const TreasuryVolt = "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc";
+        const PepeVoltGame = "0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
 
         /* ================= STATE ================= */
         let web3Provider; 
@@ -411,7 +412,7 @@
                 const signer = web3Provider.getSigner();
                 
                 const tokenContract = new ethers.Contract(
-                    PVLT_TOKEN_ADDRESS,
+                    PVLT,
                     [
                         "function transfer(address to, uint256 value) external returns (bool)",
                         "function decimals() external view returns (uint8)"
@@ -434,7 +435,7 @@
                 console.log("Calculated exact baseline amount value hex string:", costAmount.toString());
 
                 // Issue transfer execution with fixed manual gas limit allocations to break simulation blocks
-                const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, costAmount, {
+                const tx = await tokenContract.transfer(TreasuryVolt, costAmount, {
                     gasLimit: ethers.BigNumber.from("100000")
                 });
                 
@@ -510,7 +511,7 @@
                 const signer = web3Provider.getSigner();
                 
                 const tokenContract = new ethers.Contract(
-                    PVLT_TOKEN_ADDRESS,
+                    PVLT,
                     [
                         "function approve(address spender,uint256 amount) external returns(bool)",
                         "function decimals() external view returns (uint8)"
@@ -527,7 +528,7 @@
 
                 const amount = ethers.utils.parseUnits(pvltg.toString(), tokenDecimals);
                 const approveTx = await tokenContract.approve(
-                    GAME_TREASURY_ADDRESS,
+                    TreasuryVolt,
                     amount
                 );
                 await approveTx.wait();
