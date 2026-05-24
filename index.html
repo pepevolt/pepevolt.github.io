@@ -3,53 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PepeVolt Ecosystem</title>
+    <title>PepeVolt | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <style>
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        body { background: #020b18; color: white; touch-action: manipulation; }
+        body { background: #020b18; color: white; font-family: sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
-<body class="pb-20">
-
-    <header class="p-6 bg-slate-900 border-b border-slate-800 flex justify-between font-mono text-sm">
-        <span>🔋 <span id="energy">--</span></span>
-        <span>⚡ <span id="points">--</span></span>
-        <span>💎 <span id="burned">--</span></span>
-    </header>
-
-    <main class="p-6">
-        <div id="play" class="tab-content active space-y-6">
-            <button onclick="handleTx('tap')" class="w-full h-64 bg-green-900/30 border-2 border-green-500 rounded-full flex items-center justify-center text-6xl">🐸</button>
-            <button onclick="handleTx('refillEnergy')" class="w-full py-4 bg-slate-800 rounded-xl font-bold">REFILL ENERGY</button>
+<body class="p-4 md:p-8">
+    <div class="max-w-md mx-auto space-y-6">
+        
+        <div class="glass p-5 rounded-2xl flex justify-between font-mono text-sm shadow-xl">
+            <span>🔋 <span id="energy">--</span></span>
+            <span>⚡ <span id="points">--</span></span>
+            <span>💎 <span id="burned">--</span></span>
         </div>
 
-        <div id="market" class="tab-content space-y-4">
-            <div class="bg-slate-900 p-6 rounded-2xl">
-                <h3 class="font-bold mb-4">Buy Energy Pack</h3>
-                <p class="text-sm text-gray-400 mb-4">100 PVLT = 10,000 Energy Cap</p>
-                <button onclick="buyEnergyFlow()" class="w-full py-4 bg-purple-600 rounded-xl font-bold">BUY ENERGY</button>
-            </div>
+        <button id="connectBtn" onclick="connect()" class="w-full py-3 rounded-xl bg-blue-900 border border-blue-700 font-bold">CONNECT WALLET</button>
+
+        <div class="glass p-8 rounded-3xl text-center space-y-6">
+            <button onclick="handleTx('tap')" class="w-48 h-48 bg-gradient-to-br from-green-500 to-green-900 rounded-full text-6xl shadow-2xl transition hover:scale-105 active:scale-95">🐸</button>
+            <button onclick="handleTx('refillEnergy')" class="w-full py-3 bg-slate-800 rounded-xl font-bold">REFILL ENERGY</button>
         </div>
 
-        <div id="vault" class="tab-content space-y-4">
-            <button onclick="handleTx('convertPoints')" class="w-full py-4 bg-blue-600 rounded-xl font-bold">CONVERT 100 PTS → 1 gPVLT</button>
-            <button onclick="handleTx('claimRewards')" class="w-full py-4 bg-green-500 text-black rounded-xl font-bold">CLAIM REWARDS</button>
+        <div class="grid grid-cols-2 gap-4">
+            <button onclick="buyEnergyFlow()" class="p-4 rounded-xl bg-purple-900 font-bold text-sm">BUY ENERGY</button>
+            <button onclick="handleTx('convertPoints')" class="p-4 rounded-xl bg-blue-900 font-bold text-sm">CONVERT</button>
         </div>
-    </main>
 
-    <nav class="fixed bottom-0 w-full flex bg-slate-900 border-t border-slate-800">
-        <button onclick="showTab('play')" class="flex-1 p-4">Play</button>
-        <button onclick="showTab('market')" class="flex-1 p-4">Market</button>
-        <button onclick="showTab('vault')" class="flex-1 p-4">Vault</button>
-    </nav>
+        <button onclick="handleTx('claimRewards')" class="w-full py-4 bg-green-600 rounded-xl font-bold text-lg shadow-lg">CLAIM REWARDS</button>
+    </div>
 
     <script>
         const GAME_ADDR = "0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
         const PVLT_ADDR = "0xb8010fD52D5208eC05574a7D5A939c0d446A862a";
-        const ABI = [ /* PASTE YOUR FULL GAME CONTRACT ABI HERE */ ];
+        const ABI = [ /* PASTE GAME CONTRACT ABI HERE */ ];
         const TOKEN_ABI = ["function approve(address,uint256) external returns(bool)", "function allowance(address,address) external view returns(uint256)"];
 
         let contract, signer;
@@ -58,26 +47,29 @@
             const provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             contract = new ethers.Contract(GAME_ADDR, ABI, signer);
+            document.getElementById('connectBtn').innerText = "CONNECTED";
             updateUI();
         }
 
         async function updateUI() {
-            const player = await contract.getPlayer(await signer.getAddress());
-            document.getElementById('energy').innerText = player.energy;
-            document.getElementById('points').innerText = player.points;
-            document.getElementById('burned').innerText = player.burnedGPVLT;
+            try {
+                const player = await contract.getPlayer(await signer.getAddress());
+                document.getElementById('energy').innerText = player.energy;
+                document.getElementById('points').innerText = player.points;
+                document.getElementById('burned').innerText = player.burnedGPVLT;
+            } catch (e) { console.error(e); }
         }
 
-        // Logic for Approval + Buying
         async function buyEnergyFlow() {
-            const token = new ethers.Contract(PVLT_ADDR, TOKEN_ABI, signer);
-            const allowance = await token.allowance(await signer.getAddress(), GAME_ADDR);
-            
-            if (allowance < ethers.parseEther("100")) {
-                const tx = await token.approve(GAME_ADDR, ethers.parseEther("100"));
-                await tx.wait();
-            }
-            await handleTx('buyEnergy');
+            try {
+                const token = new ethers.Contract(PVLT_ADDR, TOKEN_ABI, signer);
+                const allowance = await token.allowance(await signer.getAddress(), GAME_ADDR);
+                if (allowance < ethers.parseEther("100")) {
+                    const tx = await token.approve(GAME_ADDR, ethers.parseEther("100"));
+                    await tx.wait();
+                }
+                handleTx('buyEnergy');
+            } catch (e) { alert("Approval failed"); }
         }
 
         async function handleTx(fn) {
@@ -85,16 +77,8 @@
                 const tx = await contract[fn]();
                 await tx.wait();
                 updateUI();
-                alert("Success!");
-            } catch (e) { alert("Action Failed: " + e.reason); }
+            } catch (e) { alert("Transaction failed: " + (e.reason || "Check console")); }
         }
-
-        function showTab(id) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-
-        document.addEventListener('DOMContentLoaded', connect);
     </script>
 </body>
 </html>
