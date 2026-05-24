@@ -1,80 +1,381 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>PepeVolt Game</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
+<meta charset="UTF-8" />
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+/>
+
+<title>PepeVolt Game</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
+
+<style>
+body{
+    touch-action: manipulation;
+}
+.glow{
+    box-shadow: 0 0 30px rgba(16,185,129,0.6);
+}
+</style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center p-6 font-sans">
 
-    <div class="flex justify-between w-full max-w-sm mb-10 text-lg bg-slate-800 p-4 rounded-xl">
-        <div>⚡ <span id="energy">0</span></div>
-        <div>💎 <span id="points">0</span></div>
-        <div>🪙 <span id="gpvlt">0</span></div>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col items-center p-4 font-sans">
+
+<h1 class="text-3xl font-black mb-6 text-emerald-400">
+⚡ PEPEVOLT
+</h1>
+
+<div
+    class="w-full max-w-md bg-slate-900 rounded-3xl p-5 border border-slate-800"
+>
+
+    <!-- WALLET -->
+    <div class="flex flex-col gap-2 mb-5">
+        <button
+            id="connectBtn"
+            class="bg-emerald-600 hover:bg-emerald-500 transition p-3 rounded-xl font-bold"
+        >
+            Connect Wallet
+        </button>
+
+        <div
+            id="walletText"
+            class="text-sm text-slate-400 break-all"
+        >
+            Not Connected
+        </div>
     </div>
 
-    <button id="tapBtn" class="w-64 h-64 rounded-full bg-emerald-600 hover:bg-emerald-500 transition shadow-lg flex items-center justify-center text-4xl font-bold mb-8">TAP!</button>
+    <!-- STATS -->
+    <div
+        class="grid grid-cols-3 gap-3 mb-6"
+    >
+        <div class="bg-slate-800 p-4 rounded-2xl text-center">
+            <div class="text-2xl">⚡</div>
+            <div id="energy" class="font-black text-xl">0</div>
+            <div class="text-xs text-slate-400">Energy</div>
+        </div>
 
-    <div class="w-full max-w-sm flex flex-col gap-4">
-        <button id="buyBtn" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-bold">Buy 10,000 Energy (100 PVLT)</button>
-        <button id="convertBtn" class="bg-purple-600 disabled:opacity-30 p-4 rounded-xl font-bold">Convert Points</button>
-        <button id="claimBtn" class="bg-amber-600 disabled:opacity-30 p-4 rounded-xl font-bold">Claim Rewards</button>
+        <div class="bg-slate-800 p-4 rounded-2xl text-center">
+            <div class="text-2xl">💎</div>
+            <div id="points" class="font-black text-xl">0</div>
+            <div class="text-xs text-slate-400">Points</div>
+        </div>
+
+        <div class="bg-slate-800 p-4 rounded-2xl text-center">
+            <div class="text-2xl">🪙</div>
+            <div id="gpvlt" class="font-black text-xl">0</div>
+            <div class="text-xs text-slate-400">gPVLT</div>
+        </div>
     </div>
 
-    <script>
-        const GAME_ADDRESS = "YOUR_GAME_CONTRACT_ADDRESS";
-        const PVLT_ADDRESS = "YOUR_PVLT_CONTRACT_ADDRESS";
-        const ABI_GAME = ["function tap() external", "function buyEnergy() external", "function convertPoints() external", "function claimRewards() external", "function getPlayer(address) view returns(uint256, uint256, uint256, bool, uint256)"];
-        const ABI_PVLT = ["function approve(address spender, uint256 amount) external returns (bool)"];
+    <!-- TAP BUTTON -->
+    <div class="flex justify-center mb-6">
+        <button
+            id="tapBtn"
+            class="w-56 h-56 rounded-full bg-emerald-600 active:scale-95 transition-all glow text-5xl font-black"
+        >
+            TAP
+        </button>
+    </div>
 
-        let provider, signer, gameContract, pvltContract, userAddress;
+    <!-- STATUS -->
+    <div
+        id="status"
+        class="text-center text-sm text-slate-400 mb-5 min-h-[20px]"
+    >
+        Ready
+    </div>
 
-        async function init() {
-            if (!window.ethereum) return alert("Install MetaMask");
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = provider.getSigner();
-            userAddress = await signer.getAddress();
-            
-            gameContract = new ethers.Contract(GAME_ADDRESS, ABI_GAME, signer);
-            pvltContract = new ethers.Contract(PVLT_ADDRESS, ABI_PVLT, signer);
-            updateStats();
+    <!-- ACTIONS -->
+    <div class="flex flex-col gap-3">
+
+        <button
+            id="refillBtn"
+            class="bg-cyan-600 hover:bg-cyan-500 transition p-4 rounded-2xl font-bold"
+        >
+            Refill Energy
+        </button>
+
+        <button
+            id="buyBtn"
+            class="bg-blue-600 hover:bg-blue-500 transition p-4 rounded-2xl font-bold"
+        >
+            Buy 10,000 Energy (100 PVLT)
+        </button>
+
+        <button
+            id="convertBtn"
+            class="bg-purple-600 hover:bg-purple-500 transition p-4 rounded-2xl font-bold disabled:opacity-40"
+        >
+            Convert 100 Points → 1 gPVLT
+        </button>
+
+        <button
+            id="claimBtn"
+            class="bg-amber-600 hover:bg-amber-500 transition p-4 rounded-2xl font-bold disabled:opacity-40"
+        >
+            Claim Rewards
+        </button>
+
+    </div>
+</div>
+
+<script>
+
+const GAME_ADDRESS = "YOUR_GAME_CONTRACT";
+const PVLT_ADDRESS = "YOUR_PVLT_CONTRACT";
+
+const ABI_GAME = [
+
+    "function tap() external",
+
+    "function buyEnergy() external",
+
+    "function convertPoints() external",
+
+    "function claimRewards() external",
+
+    "function refillEnergy() external",
+
+    "function getPlayer(address) external view returns(uint256,uint256,uint256,bool,uint256)"
+];
+
+const ABI_PVLT = [
+
+    "function approve(address spender,uint256 amount) external returns(bool)"
+];
+
+let provider;
+let signer;
+let gameContract;
+let pvltContract;
+let userAddress;
+
+const energyEl = document.getElementById("energy");
+const pointsEl = document.getElementById("points");
+const gpvltEl = document.getElementById("gpvlt");
+
+const statusEl = document.getElementById("status");
+
+function setStatus(msg){
+    statusEl.innerText = msg;
+}
+
+async function connectWallet(){
+
+    try{
+
+        if(!window.ethereum){
+            alert("Install MetaMask");
+            return;
         }
 
-        async function updateStats() {
-            const p = await gameContract.getPlayer(userAddress);
-            document.getElementById('energy').innerText = p[0];
-            document.getElementById('points').innerText = p[1];
-            document.getElementById('gpvlt').innerText = p[2];
-            
-            document.getElementById('convertBtn').disabled = p[1] < 100;
-            document.getElementById('claimBtn').disabled = !(p[2] >= 100 && p[2] <= 1000);
+        setStatus("Connecting wallet...");
+
+        provider =
+            new window.ethers.providers.Web3Provider(
+                window.ethereum
+            );
+
+        await provider.send(
+            "eth_requestAccounts",
+            []
+        );
+
+        signer = provider.getSigner();
+
+        userAddress =
+            await signer.getAddress();
+
+        gameContract =
+            new window.ethers.Contract(
+                GAME_ADDRESS,
+                ABI_GAME,
+                signer
+            );
+
+        pvltContract =
+            new window.ethers.Contract(
+                PVLT_ADDRESS,
+                ABI_PVLT,
+                signer
+            );
+
+        document.getElementById(
+            "walletText"
+        ).innerText =
+            userAddress;
+
+        setStatus("Wallet Connected");
+
+        updateStats();
+
+    }catch(err){
+
+        console.log(err);
+
+        setStatus(
+            err.message || "Connection failed"
+        );
+    }
+}
+
+async function updateStats(){
+
+    try{
+
+        if(!gameContract) return;
+
+        const p =
+            await gameContract.getPlayer(
+                userAddress
+            );
+
+        const energy =
+            Number(p[0]);
+
+        const points =
+            Number(p[1]);
+
+        const gpvlt =
+            Number(p[2]);
+
+        energyEl.innerText = energy;
+        pointsEl.innerText = points;
+        gpvltEl.innerText = gpvlt;
+
+        document.getElementById(
+            "convertBtn"
+        ).disabled = points < 100;
+
+        document.getElementById(
+            "claimBtn"
+        ).disabled =
+            !(gpvlt >= 100 && gpvlt <= 1000);
+
+    }catch(err){
+
+        console.log(err);
+
+        setStatus("Failed loading stats");
+    }
+}
+
+async function execute(fn, text){
+
+    try{
+
+        setStatus(text);
+
+        const tx = await fn();
+
+        setStatus("Waiting confirmation...");
+
+        await tx.wait();
+
+        setStatus("Transaction Success");
+
+        updateStats();
+
+    }catch(err){
+
+        console.log(err);
+
+        if(err?.data?.message){
+            setStatus(err.data.message);
         }
+        else{
+            setStatus(err.message || "Transaction failed");
+        }
+    }
+}
 
-        document.getElementById('tapBtn').onclick = async () => {
-            await (await gameContract.tap()).wait();
-            updateStats();
-        };
+document.getElementById(
+    "connectBtn"
+).onclick = connectWallet;
 
-        document.getElementById('buyBtn').onclick = async () => {
-            const amount = ethers.utils.parseEther("100");
-            await (await pvltContract.approve(GAME_ADDRESS, amount)).wait();
-            await (await gameContract.buyEnergy()).wait();
-            updateStats();
-        };
+document.getElementById(
+    "tapBtn"
+).onclick = async () => {
 
-        document.getElementById('convertBtn').onclick = async () => {
-            await (await gameContract.convertPoints()).wait();
-            updateStats();
-        };
+    execute(
+        () => gameContract.tap(),
+        "Tapping..."
+    );
+};
 
-        document.getElementById('claimBtn').onclick = async () => {
-            await (await gameContract.claimRewards()).wait();
-            updateStats();
-        };
+document.getElementById(
+    "refillBtn"
+).onclick = async () => {
 
-        init();
-    </script>
+    execute(
+        () => gameContract.refillEnergy(),
+        "Refilling energy..."
+    );
+};
+
+document.getElementById(
+    "buyBtn"
+).onclick = async () => {
+
+    const amount =
+        window.ethers.utils.parseEther("100");
+
+    await execute(
+        async () => {
+
+            const approveTx =
+                await pvltContract.approve(
+                    GAME_ADDRESS,
+                    amount
+                );
+
+            await approveTx.wait();
+
+            return gameContract.buyEnergy();
+        },
+        "Buying energy..."
+    );
+};
+
+document.getElementById(
+    "convertBtn"
+).onclick = async () => {
+
+    execute(
+        () => gameContract.convertPoints(),
+        "Converting points..."
+    );
+};
+
+document.getElementById(
+    "claimBtn"
+).onclick = async () => {
+
+    execute(
+        () => gameContract.claimRewards(),
+        "Claiming rewards..."
+    );
+};
+
+if(window.ethereum){
+
+    window.ethereum.on(
+        "accountsChanged",
+        () => location.reload()
+    );
+
+    window.ethereum.on(
+        "chainChanged",
+        () => location.reload()
+    );
+}
+
+</script>
+
 </body>
 </html>
