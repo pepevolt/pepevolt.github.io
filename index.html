@@ -6,44 +6,55 @@
     <title>PepeVolt Arena</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#020b18] text-white p-6">
-    <div class="max-w-sm mx-auto space-y-6">
-        <div class="flex justify-between p-4 bg-slate-900 rounded-xl">
-            <span id="energy">🔋 0</span>
-            <span id="points">⚡ 0</span>
+<body class="bg-[#020b18] text-white min-h-screen flex flex-col items-center p-6">
+
+    <div class="w-full max-w-sm flex justify-between p-4 bg-slate-900 rounded-2xl border border-slate-700 shadow-xl mb-8">
+        <div class="text-center">
+            <p class="text-xs text-gray-400">Energy</p>
+            <span id="energy" class="text-lg font-bold">--</span>
         </div>
-
-        <button onclick="apiCall('tap')" class="w-full h-64 bg-green-500 rounded-full text-8xl">🐸</button>
-
-        <div class="grid grid-cols-2 gap-4">
-            <button onclick="apiCall('buyEnergy')" class="p-4 bg-purple-600 rounded-xl">BUY</button>
-            <button onclick="apiCall('convertPoints')" class="p-4 bg-blue-600 rounded-xl">CONVERT</button>
-            <button onclick="apiCall('claimRewards')" class="col-span-2 p-4 bg-green-600 rounded-xl">CLAIM</button>
+        <div class="text-center">
+            <p class="text-xs text-gray-400">Points</p>
+            <span id="points" class="text-lg font-bold">--</span>
+        </div>
+        <div class="text-center">
+            <p class="text-xs text-gray-400">gPVLT</p>
+            <span id="burned" class="text-lg font-bold">--</span>
         </div>
     </div>
 
+    <button onclick="apiCall('tap')" class="w-64 h-64 bg-green-500 rounded-full mb-8 flex items-center justify-center text-8xl shadow-[0_0_50px_rgba(34,197,94,0.2)] hover:scale-105 transition-transform active:scale-95">🐸</button>
+
+    <div class="w-full max-w-sm grid grid-cols-2 gap-3">
+        <button onclick="apiCall('buyEnergy')" class="p-4 bg-purple-900 rounded-xl font-bold border border-purple-700">BUY ENERGY</button>
+        <button onclick="apiCall('refillEnergy')" class="p-4 bg-slate-800 rounded-xl font-bold">REFILL</button>
+        <button onclick="apiCall('convertPoints')" class="p-4 bg-blue-900 rounded-xl font-bold border border-blue-700">CONVERT</button>
+        <button onclick="apiCall('claimRewards')" class="p-4 bg-green-600 rounded-xl font-bold text-black">CLAIM</button>
+    </div>
+
     <script>
-        // Your Render Server URL
-        const SERVER_URL = "https://your-app-name.onrender.com";
+        const API_BASE = "https://your-render-app-url.onrender.com"; // Replace with your actual Render URL
+        const wallet = "0x..."; // Logic to retrieve user's connected wallet
 
         async function apiCall(endpoint) {
-            const wallet = localStorage.getItem('wallet'); // Assuming wallet stored after login
-            const res = await fetch(`${SERVER_URL}/${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ wallet })
-            });
-            const data = await res.json();
-            alert(data.message || "Success");
-            updateStats();
+            try {
+                const response = await fetch(`${API_BASE}/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ wallet })
+                });
+                const data = await response.json();
+                alert(data.message || "Transaction Sent");
+                updateStats();
+            } catch (err) { console.error(err); }
         }
 
         async function updateStats() {
-            const wallet = localStorage.getItem('wallet');
-            const res = await fetch(`${SERVER_URL}/status?wallet=${wallet}`);
+            const res = await fetch(`${API_BASE}/status?wallet=${wallet}`);
             const data = await res.json();
-            document.getElementById('energy').innerText = `🔋 ${data.energy}`;
-            document.getElementById('points').innerText = `⚡ ${data.points}`;
+            document.getElementById('energy').innerText = data.energy;
+            document.getElementById('points').innerText = data.points;
+            document.getElementById('burned').innerText = data.burnedGPVLT;
         }
     </script>
 </body>
