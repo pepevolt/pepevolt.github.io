@@ -2,19 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PepeVolt Game</title>
-    <style>
-        body { background: #1a1d23; color: white; font-family: sans-serif; text-align: center; }
-        .stat-bar { display: flex; justify-content: space-around; padding: 20px; }
-        #tap-btn { width: 200px; height: 200px; border-radius: 50%; border: none; background: #333; color: #00aaff; font-size: 24px; cursor: pointer; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
 </head>
-<body>
-    <div class="stat-bar">
+<body class="bg-slate-900 text-white flex flex-col items-center p-6 font-sans">
+
+    <div class="flex justify-between w-full max-w-sm mb-10 text-lg">
         <div>⚡ <span id="energy">0</span></div>
         <div>💎 <span id="points">0</span></div>
+        <div>🪙 <span id="gpvlt">0</span></div>
     </div>
-    <button id="tap-btn">TAP!</button>
-    <script type="module" src="/main.js"></script>
+
+    <button id="tapBtn" class="w-64 h-64 rounded-full bg-slate-700 hover:bg-slate-600 transition flex items-center justify-center text-3xl font-bold mb-8 border-4 border-slate-600">
+        TAP!
+    </button>
+
+    <div class="w-full max-w-sm flex flex-col gap-4">
+        <button id="buyBtn" class="bg-emerald-500 hover:bg-emerald-600 p-4 rounded-xl font-semibold transition">
+            Buy 10,000 Energy (100 PVLT)
+        </button>
+
+        <button id="convertBtn" disabled class="bg-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed p-4 rounded-xl font-semibold transition">
+            Convert Points
+        </button>
+
+        <button id="claimBtn" disabled class="bg-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed p-4 rounded-xl font-semibold transition">
+            Claim Rewards
+        </button>
+    </div>
+
+    <script>
+        // Logic initialization placeholder
+        const tapBtn = document.getElementById('tapBtn');
+        const buyBtn = document.getElementById('buyBtn');
+        const convertBtn = document.getElementById('convertBtn');
+        const claimBtn = document.getElementById('claimBtn');
+
+        // Example state
+        let energy = 8;
+        let points = 500;
+        let burnedGPVLT = 150;
+
+        // UI Logic
+        function updateUI() {
+            // Update button states based on requirements
+            convertBtn.disabled = points < 100;
+            claimBtn.disabled = !(burnedGPVLT >= 100 && burnedGPVLT <= 1000);
+        }
+
+        tapBtn.addEventListener('click', async () => {
+            if (energy > 0) {
+                console.log("Calling tap() contract function...");
+                // Add your contract interaction here
+            }
+        });
+
+        buyBtn.addEventListener('click', async () => {
+            console.log("Approving PVLT...");
+            // 1. pvltContract.approve(GAME_ADDRESS, ethers.utils.parseEther("100"));
+            console.log("Calling buyEnergy()...");
+            // 2. gameContract.buyEnergy();
+        });
+
+        updateUI();
+    </script>
 </body>
 </html>
