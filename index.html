@@ -1,69 +1,554 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt Game</title>
-    <style>
-        /* Add your CSS here to match the provided design */
-        body { background-color: #0d1117; color: white; font-family: sans-serif; text-align: center; }
-        .container { border: 1px solid #30363d; padding: 20px; border-radius: 10px; max-width: 400px; margin: auto; }
-        button { display: block; width: 100%; margin: 10px 0; padding: 15px; border-radius: 5px; border: none; cursor: pointer; background: linear-gradient(90deg, #60ff8e, #00d2ff); }
-    </style>
+<meta charset="UTF-8" />
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+/>
+
+<title>PepeVolt Tap Game</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+body{
+font-family:'Poppins',sans-serif;
+background:#07111f;
+color:#fff;
+overflow:hidden;
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+body::before{
+content:'';
+position:fixed;
+width:100%;
+height:100%;
+background:
+radial-gradient(circle at top,#00ffb32e 0%,transparent 40%),
+radial-gradient(circle at bottom,#00b7ff25 0%,transparent 40%);
+z-index:-1;
+}
+
+.app{
+width:100%;
+max-width:450px;
+height:100vh;
+padding:16px;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+}
+
+.topbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-top:8px;
+}
+
+.logo{
+font-size:24px;
+font-weight:700;
+background:linear-gradient(90deg,#00ff99,#00d0ff);
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+}
+
+.connect-btn{
+border:none;
+padding:12px 18px;
+border-radius:14px;
+background:linear-gradient(90deg,#00ff99,#00d0ff);
+color:#000;
+font-weight:700;
+font-size:14px;
+cursor:pointer;
+box-shadow:0 0 20px rgba(0,255,153,.3);
+}
+
+.stats{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:14px;
+margin-top:20px;
+}
+
+.card{
+background:rgba(255,255,255,0.05);
+border:1px solid rgba(255,255,255,0.08);
+backdrop-filter:blur(10px);
+padding:16px;
+border-radius:20px;
+text-align:center;
+}
+
+.card h3{
+font-size:13px;
+font-weight:500;
+opacity:.7;
+margin-bottom:8px;
+}
+
+.card p{
+font-size:20px;
+font-weight:700;
+}
+
+.tap-wrapper{
+flex:1;
+display:flex;
+justify-content:center;
+align-items:center;
+position:relative;
+}
+
+.tap-btn{
+width:240px;
+height:240px;
+border-radius:50%;
+border:none;
+cursor:pointer;
+background:
+linear-gradient(145deg,#00ff99,#00b7ff);
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:34px;
+font-weight:700;
+color:#04111f;
+box-shadow:
+0 0 40px rgba(0,255,153,.4),
+0 0 80px rgba(0,183,255,.2);
+transition:.08s;
+user-select:none;
+position:relative;
+overflow:hidden;
+}
+
+.tap-btn:active{
+transform:scale(.94);
+}
+
+.tap-btn::before{
+content:'';
+position:absolute;
+width:300px;
+height:300px;
+background:rgba(255,255,255,.15);
+transform:rotate(45deg);
+left:-240px;
+top:-80px;
+transition:0.6s;
+}
+
+.tap-btn:hover::before{
+left:280px;
+}
+
+.energy-bar{
+width:100%;
+height:20px;
+background:rgba(255,255,255,.08);
+border-radius:999px;
+overflow:hidden;
+margin-top:20px;
+}
+
+.energy-fill{
+height:100%;
+width:100%;
+background:linear-gradient(90deg,#00ff99,#00d0ff);
+transition:.3s;
+}
+
+.bottom-nav{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:10px;
+margin-bottom:10px;
+}
+
+.nav-btn{
+background:rgba(255,255,255,0.05);
+border:1px solid rgba(255,255,255,0.08);
+padding:14px 8px;
+border-radius:18px;
+text-align:center;
+font-size:12px;
+font-weight:600;
+cursor:pointer;
+}
+
+.popup{
+position:absolute;
+font-size:24px;
+font-weight:700;
+color:#00ff99;
+animation:floatUp 1s linear forwards;
+pointer-events:none;
+}
+
+@keyframes floatUp{
+0%{
+opacity:1;
+transform:translateY(0) scale(1);
+}
+100%{
+opacity:0;
+transform:translateY(-80px) scale(1.5);
+}
+}
+
+.modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.6);
+display:none;
+justify-content:center;
+align-items:center;
+z-index:999;
+padding:20px;
+}
+
+.modal-content{
+width:100%;
+max-width:380px;
+background:#0c1728;
+border-radius:24px;
+padding:20px;
+border:1px solid rgba(255,255,255,.08);
+}
+
+.modal-title{
+font-size:22px;
+font-weight:700;
+margin-bottom:18px;
+}
+
+.info{
+background:rgba(255,255,255,.04);
+padding:14px;
+border-radius:16px;
+margin-bottom:12px;
+word-break:break-all;
+font-size:13px;
+line-height:1.5;
+}
+
+.close-btn{
+margin-top:10px;
+width:100%;
+padding:14px;
+border:none;
+border-radius:16px;
+font-weight:700;
+background:linear-gradient(90deg,#00ff99,#00d0ff);
+color:#000;
+cursor:pointer;
+}
+
+@media(max-width:480px){
+
+.tap-btn{
+width:210px;
+height:210px;
+font-size:30px;
+}
+
+.logo{
+font-size:20px;
+}
+
+}
+</style>
 </head>
+
 <body>
 
-    <div class="container">
-        <h1>PepeVolt</h1>
-        <div id="stats">Energy: <span id="energy">0</span> | Points: <span id="points">0</span></div>
-        
-        <button id="connectBtn">CONNECT WALLET</button>
-        <button onclick="buyEnergy()">BUY ENERGY</button>
-        <button onclick="swapPoints()">SWAP POINTS -> PVLTG</button>
-        <button onclick="claimRewards()">CLAIM PVLT</button>
-    </div>
+<div class="app">
 
-    <script type="module">
-        import { createAppKit, defaultConfig } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@latest/+esm';
-        import { ethers } from 'https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js';
+<div>
 
-        const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
-        const GAME_ADDR = "0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
-        
-        // Initialize AppKit
-        const modal = createAppKit({
-            projectId: PROJECT_ID,
-            chains: [ { id: 137, name: 'Polygon', currency: 'MATIC', explorerUrl: 'https://polygonscan.com', rpcUrl: 'https://polygon-rpc.com' } ]
-        });
+<div class="topbar">
+<div class="logo">PEPEVOLT</div>
 
-        // Event listener for connect
-        document.getElementById('connectBtn').onclick = () => modal.open();
+<button class="connect-btn" id="connectBtn">
+Connect Wallet
+</button>
+</div>
 
-        // Transaction functions
-        window.buyEnergy = async () => {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const contract = new ethers.Contract(GAME_ADDR, ["function buyEnergy() external"], signer);
-            const tx = await contract.buyEnergy();
-            await tx.wait();
-            alert("Energy bought!");
-        };
+<div class="stats">
 
-        window.swapPoints = async () => {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const contract = new ethers.Contract(GAME_ADDR, ["function convertPoints() external"], signer);
-            await (await contract.convertPoints()).wait();
-            alert("Swapped!");
-        };
+<div class="card">
+<h3>Balance</h3>
+<p id="balance">0 PVLT</p>
+</div>
 
-        window.claimRewards = async () => {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const contract = new ethers.Contract(GAME_ADDR, ["function claimRewards() external"], signer);
-            await (await contract.claimRewards()).wait();
-            alert("Claimed!");
-        };
-    </script>
+<div class="card">
+<h3>Total Taps</h3>
+<p id="taps">0</p>
+</div>
+
+<div class="card">
+<h3>Energy</h3>
+<p id="energyText">100 / 100</p>
+</div>
+
+<div class="card">
+<h3>Reward</h3>
+<p id="reward">0 PVLT</p>
+</div>
+
+</div>
+
+</div>
+
+<div class="tap-wrapper">
+
+<button class="tap-btn" id="tapBtn">
+⚡ TAP
+</button>
+
+</div>
+
+<div>
+
+<div class="energy-bar">
+<div class="energy-fill" id="energyFill"></div>
+</div>
+
+<div class="bottom-nav">
+
+<div class="nav-btn" id="walletNav">
+Wallet
+</div>
+
+<div class="nav-btn" id="treasuryNav">
+Treasury
+</div>
+
+<div class="nav-btn" id="gameNav">
+Game
+</div>
+
+<div class="nav-btn" id="infoNav">
+Info
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- Modal -->
+
+<div class="modal" id="modal">
+
+<div class="modal-content">
+
+<div class="modal-title">
+PepeVolt Contracts
+</div>
+
+<div class="info">
+<b>PVLT Token:</b><br>
+0xb8010fD52D5208eC05574a7D5A939c0d446A862a
+</div>
+
+<div class="info">
+<b>TreasuryVolt:</b><br>
+0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc
+</div>
+
+<div class="info">
+<b>PepeVoltGame:</b><br>
+0x151803532A33837E4bBc2Afc23c6b1f59039B82D
+</div>
+
+<button class="close-btn" id="closeBtn">
+Close
+</button>
+
+</div>
+
+</div>
+
+<!-- ETHERS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.min.js"></script>
+
+<!-- REOWN / WALLETCONNECT -->
+<script type="module">
+
+import {
+createAppKit
+} from "https://esm.sh/@reown/appkit";
+
+import {
+EthersAdapter
+} from "https://esm.sh/@reown/appkit-adapter-ethers";
+
+import {
+mainnet,
+bsc
+} from "https://esm.sh/@reown/appkit/networks";
+
+const projectId = "1731f99148b9cf6107dee70b6efb14b7";
+
+const metadata = {
+name: "PepeVolt Tap Game",
+description: "PVLT Tap To Earn",
+url: window.location.origin,
+icons: ["https://cryptologos.cc/logos/pepe-pepe-logo.png"]
+};
+
+const modal = createAppKit({
+adapters: [new EthersAdapter()],
+networks: [mainnet,bsc],
+metadata,
+projectId,
+features:{
+analytics:true
+}
+});
+
+window.appKit = modal;
+
+</script>
+
+<script>
+
+let provider;
+let signer;
+let userAddress;
+
+let taps = 0;
+let energy = 100;
+let reward = 0;
+
+const tapBtn = document.getElementById("tapBtn");
+const tapsText = document.getElementById("taps");
+const energyText = document.getElementById("energyText");
+const energyFill = document.getElementById("energyFill");
+const rewardText = document.getElementById("reward");
+
+async function connectWallet(){
+
+try{
+
+if(!window.appKit){
+alert("Wallet system loading...");
+return;
+}
+
+await window.appKit.open();
+
+if(window.ethereum){
+
+provider = new ethers.providers.Web3Provider(window.ethereum);
+
+await provider.send("eth_requestAccounts",[]);
+
+signer = provider.getSigner();
+
+userAddress = await signer.getAddress();
+
+document.getElementById("connectBtn").innerText =
+userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+
+}
+
+}catch(err){
+console.log(err);
+alert("Wallet connection failed");
+}
+
+}
+
+document
+.getElementById("connectBtn")
+.addEventListener("click",connectWallet);
+
+tapBtn.addEventListener("click",(e)=>{
+
+if(energy <= 0) return;
+
+navigator.vibrate?.(30);
+
+taps++;
+reward += 0.25;
+energy--;
+
+tapsText.innerText = taps;
+
+rewardText.innerText = reward.toFixed(2) + " PVLT";
+
+energyText.innerText = energy + " / 100";
+
+energyFill.style.width = energy + "%";
+
+const popup = document.createElement("div");
+
+popup.className = "popup";
+
+popup.innerText = "+0.25";
+
+popup.style.left = e.clientX - 20 + "px";
+popup.style.top = e.clientY - 20 + "px";
+
+document.body.appendChild(popup);
+
+setTimeout(()=>{
+popup.remove();
+},1000);
+
+});
+
+setInterval(()=>{
+
+if(energy < 100){
+
+energy += 1;
+
+energyText.innerText = energy + " / 100";
+
+energyFill.style.width = energy + "%";
+
+}
+
+},1500);
+
+const modal = document.getElementById("modal");
+
+document
+.getElementById("infoNav")
+.addEventListener("click",()=>{
+
+modal.style.display = "flex";
+
+});
+
+document
+.getElementById("closeBtn")
+.addEventListener("click",()=>{
+
+modal.style.display = "none";
+
+});
+
+</script>
+
 </body>
 </html>
