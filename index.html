@@ -1,222 +1,996 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt Game Dashboard | Production-Ready Interface</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-    <style>
-        /* Production-Ready UI: Consistent typography and smooth transitions */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            transition: background-color 0.3s ease;
-        }
-        .mono-stat { font-family: 'Courier New', Courier, monospace; font-weight: bold; }
-        .action-button:disabled { cursor: not-allowed; opacity: 0.6; }
-    </style>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width,
+initial-scale=1,
+maximum-scale=1,
+user-scalable=no"
+>
+
+<title>PVLT Tap Game</title>
+
+<!-- ETHERS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+
+<!-- WALLET CONNECT -->
+<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+background:#020b18;
+font-family:Arial,sans-serif;
+color:white;
+/* Prevents overall page dragging/accidental zooming on certain devices */
+touch-action: none; 
+}
+
+body{
+display:flex;
+flex-direction:column;
+}
+
+.topbar{
+width:100%;
+padding:14px 18px;
+background:#091426;
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:14px;
+font-weight:bold;
+}
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding:20px;
+overflow-y:auto;
+}
+
+.tapBtn{
+width:240px;
+height:240px;
+border:none;
+border-radius:50%;
+overflow:hidden;
+margin-top:20px;
+background:linear-gradient(135deg,#00ff99,#00ccff);
+display:flex;
+justify-content:center;
+align-items:center;
+box-shadow:0 0 30px rgba(0,255,180,0.25);
+cursor:pointer;
+
+/* FIXES FOR TAP-ZOOMING AND SELECTION ACCIDENTS */
+touch-action: manipulation;
+user-select: none;
+-webkit-user-select: none;
+}
+
+.tapBtn:active{
+transform:scale(0.96);
+}
+
+.tapBtn img{
+width:78%;
+height:78%;
+object-fit:contain;
+pointer-events:none;
+}
+
+.card{
+width:100%;
+max-width:380px;
+margin-top:28px;
+background:rgba(255,255,255,0.04);
+border:1px solid rgba(255,255,255,0.08);
+border-radius:18px;
+padding:18px;
+display:flex;
+flex-direction:column;
+gap:14px;
+}
+
+input{
+width:100%;
+padding:15px;
+border:none;
+border-radius:12px;
+background:#0c1628;
+color:white;
+font-size:14px;
+outline:none;
+}
+
+.actionBtn{
+width:100%;
+padding:15px;
+border:none;
+border-radius:12px;
+font-size:15px;
+font-weight:bold;
+background:linear-gradient(90deg,#00ff99,#00ccff);
+color:black;
+cursor:pointer;
+}
+
+.status{
+text-align:center;
+font-size:12px;
+opacity:0.8;
+display:none;
+}
+
+.info{
+margin-top:16px;
+font-size:12px;
+line-height:1.7;
+opacity:0.8;
+text-align:center;
+max-width:380px;
+}
+
+.modal-overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(2,11,24,0.85);
+backdrop-filter:blur(5px);
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:9999;
+opacity:0;
+pointer-events:none;
+transition:0.25s;
+}
+
+.modal-overlay.active{
+opacity:1;
+pointer-events:auto;
+}
+
+.modal-box{
+width:90%;
+max-width:340px;
+background:#091426;
+border:1px solid rgba(255,255,255,0.15);
+border-radius:20px;
+padding:24px;
+text-align:center;
+transform:scale(0.9);
+transition:0.25s;
+}
+
+.modal-overlay.active .modal-box{
+transform:scale(1);
+}
+
+.modal-box h3{
+font-size:18px;
+margin-bottom:12px;
+color:#00ff99;
+}
+
+.modal-box p{
+font-size:14px;
+line-height:1.5;
+opacity:0.9;
+margin-bottom:24px;
+}
+
+.modal-buttons{
+display:flex;
+gap:12px;
+}
+
+.modal-btn{
+flex:1;
+padding:12px;
+border:none;
+border-radius:10px;
+font-size:14px;
+font-weight:bold;
+cursor:pointer;
+}
+
+.btn-confirm{
+background:linear-gradient(90deg,#00ff99,#00ccff);
+color:black;
+}
+
+.btn-cancel{
+background:rgba(255,255,255,0.1);
+color:white;
+}
+
+</style>
+
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
-    
-    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50 p-4">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold tracking-tighter text-lime-400">
-                PepeVolt <span class="text-white font-light">Game</span>
-            </h1>
-            <div class="flex items-center gap-3">
-                <span id="networkStatus" class="text-xs bg-lime-900 text-lime-100 px-3 py-1 rounded-full font-medium">Network: Not Connected</span>
-                <button id="connectBtn" class="bg-lime-500 hover:bg-lime-600 text-slate-950 px-5 py-2 rounded-full text-sm font-semibold transition-all">Connect Wallet</button>
-            </div>
-        </div>
-    </header>
 
-    <main class="max-w-7xl mx-auto p-6 md:p-10 space-y-10">
-        
-        <div class="bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col md:flex-row gap-8 items-center">
-            <div class="flex-grow space-y-4">
-                <h2 class="text-4xl font-extrabold text-white tracking-tight leading-tight">Your Real-Time <span class="text-lime-400">PepeVolt</span> Portal.</h2>
-                <p class="text-slate-400 max-w-2xl">This interface connects you directly to the decentralized PepeVolt Game ecosystem on the blockchain. Interact securely, manage your energy, and claim rewards from your personal dashboard.</p>
-                <p id="walletAddressDisplay" class="text-slate-500 text-sm font-mono mt-2 break-all bg-slate-950/50 p-3 rounded-xl border border-slate-800 hidden"></p>
-            </div>
-            <div class="flex-shrink-0 size-28 bg-lime-900/30 rounded-full border-4 border-lime-500 flex items-center justify-center text-5xl">⚡</div>
-        </div>
+<body>
 
-        <section>
-            <h3 class="text-2xl font-semibold mb-6">Real-Time Game Economy</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-2">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Energy Price (POL)</p>
-                    <p id="energyPrice" class="text-3xl mono-stat text-white">--</p>
-                    <p class="text-slate-600 text-xs">Standard price for energy purchase.</p>
-                </div>
-                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-2">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Daily Free Energy Cap</p>
-                    <p id="freeCap" class="text-3xl mono-stat text-lime-400">--</p>
-                    <p class="text-slate-600 text-xs">Maximum free energy available.</p>
-                </div>
-                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-2">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Paid Energy Capacity</p>
-                    <p id="paidCap" class="text-3xl mono-stat text-white">--</p>
-                    <p class="text-slate-600 text-xs">Capacity for purchased energy.</p>
-                </div>
-                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-2">
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Treasury Vault (Truncated)</p>
-                    <a id="treasuryAddr" href="#" target="_blank" class="text-lg mono-stat text-lime-400 mt-2 break-all block hover:underline">--</a>
-                    <p class="text-slate-600 text-xs">Secured contract treasury.</p>
-                </div>
-            </div>
-        </section>
+<!-- TOPBAR -->
 
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 bg-slate-900 p-10 rounded-3xl border-2 border-lime-900 shadow-2xl">
-                <h3 class="text-2xl font-extrabold mb-8 text-white">Perform On-Chain Actions</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <button id="btn-tap" onclick="handleAction('tap', this)" class="action-button bg-blue-600 hover:bg-blue-700 py-6 rounded-2xl text-xl font-bold transition shadow-lg text-white">TAP (Interact)</button>
-                    <button id="btn-buyEnergy" onclick="handleAction('buyEnergy', this)" class="action-button bg-purple-600 hover:bg-purple-700 py-6 rounded-2xl text-xl font-bold transition shadow-lg text-white">BUY Energy (Refill)</button>
-                    <button id="btn-refillEnergy" onclick="handleAction('refillEnergy', this)" class="action-button bg-amber-500 hover:bg-amber-600 py-6 rounded-2xl text-xl font-bold transition shadow-lg text-slate-950">REFILL (Free)</button>
-                    <button id="btn-claimRewards" onclick="handleAction('claimRewards', this)" class="action-button bg-lime-500 hover:bg-lime-600 py-6 rounded-2xl text-xl font-bold transition shadow-lg text-slate-950">CLAIM Rewards</button>
-                </div>
-                <p class="text-slate-600 text-sm mt-6 text-center">Transactions take a moment to finalize. Please be patient.</p>
-            </div>
+<div class="topbar">
 
-            <div class="bg-slate-900 p-10 rounded-3xl border border-slate-800">
-                <h3 class="text-xl font-bold mb-6">Interaction Log</h3>
-                <div id="log" class="text-xs text-slate-500 font-mono space-y-3 h-72 overflow-y-auto pr-2">
-                    <p>> System initialized. Standing by for connection...</p>
-                </div>
-            </div>
-        </section>
+<div>
+🔋 <span id="energy">50</span>
+</div>
 
-    </main>
+<div>
+⚡ <span id="points">0</span>
+</div>
 
-    <footer class="border-t border-slate-800 bg-slate-900/50 mt-16 py-12 px-6">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left">
-            <div class="space-y-3">
-                <h4 class="text-lg font-bold text-white">PEPEVOLT Ecosystem</h4>
-                <p class="text-sm text-slate-400">A community-driven decentralized application (dApp). Secure, transparent, and built on the blockchain.</p>
-            </div>
-            <div class="space-y-3">
-                <h4 class="text-lg font-bold text-white">Contract Address</h4>
-                <p class="text-sm font-mono text-slate-500 break-all p-2 bg-slate-950/50 rounded-lg">0x151803532A33837E4bBc2Afc23c6b1f59039B82D</p>
-            </div>
-            <div class="space-y-3">
-                <h4 class="text-lg font-bold text-white">Development Notice</h4>
-                <p class="text-sm text-slate-600">This dashboard is a static frontend. For official updates, please refer to the project's main channels. &copy; 2026 PepeVolt.</p>
-            </div>
-        </div>
-    </footer>
+<div>
+💎 <span id="pvltg">0.0000</span>
+</div>
 
-    <script>
-        const CONTRACT_ADDRESS = "0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
-        const ABI = [ /* IMPORTANT: INSERT YOUR FULL JSON ABI HERE */ ];
+</div>
 
-        let contract;
-        let userAddress = null;
+<!-- MAIN -->
 
-        const connectBtn = document.getElementById('connectBtn');
-        const walletAddressDisplay = document.getElementById('walletAddressDisplay');
-        const networkStatus = document.getElementById('networkStatus');
-        const logPanel = document.getElementById('log');
+<div class="main">
 
-        function log(msg, type = 'info') {
-            const prefix = type === 'error' ? '[ERROR] ' : '> ';
-            logPanel.innerHTML += `<p class="${type === 'error' ? 'text-red-400' : ''}">${prefix}${msg}</p>`;
-            logPanel.scrollTop = logPanel.scrollHeight;
-        }
+<button
+class="tapBtn"
+onclick="tap()"
+>
 
-        async function connect() {
-            if (!window.ethereum) return log("Web3 wallet (MetaMask, etc.) required. Use a dApp browser.", 'error');
-            
-            try {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
-                contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+<img
+src="images/IMG_1850.png"
+alt="Tap"
+>
 
-                connectBtn.innerText = "Connected";
-                connectBtn.classList.add('hidden'); // Option 1: Hide the button entirely
-                
-                walletAddressDisplay.innerText = `Connected Wallet: ${userAddress}`;
-                walletAddressDisplay.classList.remove('hidden');
-                
-                networkStatus.innerText = "Network: Active";
-                networkStatus.classList.remove('bg-lime-900', 'text-lime-100');
-                networkStatus.classList.add('bg-lime-500', 'text-slate-950');
+</button>
 
-                log(`Successfully connected as: ${userAddress.slice(0, 8)}...`);
-                
-                updateStats();
-                startUpdateLoop(); // Optimization: poll for economy changes (less common)
+<div class="card">
 
-            } catch (error) {
-                console.error(error);
-                log("Connection failed or rejected.", 'error');
-            }
-        }
+<input
+id="walletInput"
+placeholder="Connect Polygon Wallet"
+readonly
+>
 
-        async function updateStats() {
-            try {
-                // Production-Ready efficiency: Fetch variables in parallel
-                const [price, free, paid, treasury] = await Promise.all([
-                    contract.ENERGY_PRICE(),
-                    contract.FREE_CAP(),
-                    contract.PAID_CAP(),
-                    contract.treasury()
-                ]);
+<button
+class="actionBtn"
+id="walletBtn"
+onclick="connectWallet()"
+>
+CONNECT WALLET
+</button>
 
-                document.getElementById('energyPrice').innerText = `${ethers.formatEther(price)} POL`;
-                document.getElementById('freeCap').innerText = free.toString();
-                document.getElementById('paidCap').innerText = paid.toString();
-                
-                const treasuryDisplay = document.getElementById('treasuryAddr');
-                treasuryDisplay.innerText = treasury.slice(0, 12) + "...";
-                // Optionally add a link to the block explorer
-                treasuryDisplay.href = `https://polygonscan.com/address/${treasury}`;
+<div
+class="status"
+id="walletStatus"
+>
+Wallet Connected
+</div>
 
-            } catch (e) {
-                console.error(e);
-                log("Failed to sync economy data from contract.", 'error');
-            }
-        }
+<button
+class="actionBtn"
+onclick="openBuyModal()"
+>
+BUY ENERGY
+</button>
 
-        async function handleAction(funcName, btn) {
-            if (!contract) return log("Action requires wallet connection.", 'error');
-            
-            const originalText = btn.innerText;
-            try {
-                btn.innerText = "Awaiting Confirmation...";
-                btn.disabled = true;
-                log(`Calling function ${funcName}. Waiting for wallet response...`);
-                
-                const tx = await contract[funcName](); // This will differ if the function needs parameters
-                log(`${funcName} sent! TX Hash: ${tx.hash.slice(0, 10)}... Now waiting for finalization...`);
-                
-                await tx.wait(); // Pause until finalized
-                log(`${funcName} transaction finalized on-chain!`);
-                
-                // UX refinement: Flash the button green for success
-                btn.classList.add('bg-green-600');
-                btn.innerText = "SUCCESS";
-                setTimeout(() => {
-                    btn.classList.remove('bg-green-600');
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                }, 1500);
+<button
+class="actionBtn"
+onclick="swapPoints()"
+>
+SWAP POINTS → PVLTG
+</button>
 
-            } catch (err) {
-                console.error(err);
-                log(`${funcName} action was rejected or failed. Check console.`, 'error');
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        }
+<button
+class="actionBtn"
+onclick="claimPVLT()"
+>
+CLAIM PVLT
+</button>
 
-        // Optimization: Periodically sync the stats (e.g., every 3 minutes) 
-        function startUpdateLoop() {
-            setInterval(() => { if (contract) updateStats(); }, 180000); // 180s = 3m
-        }
+</div>
 
-        connectBtn.addEventListener('click', connect);
-    </script>
+<div class="info">
+
+1 Tap = 1 Point
+<br>
+
+10000 Points = 1 PVLTG
+<br>
+
+100 PVLTG = 1 PVLT
+
+</div>
+
+</div>
+
+<!-- MODAL -->
+
+<div
+class="modal-overlay"
+id="buyModal"
+>
+
+<div class="modal-box">
+
+<h3>
+Buy Energy Pack
+</h3>
+
+<p>
+
+Buy
+<b>100,000 Energy</b>
+
+for
+
+<b>100 PVLT</b>
+
+</p>
+
+<div class="modal-buttons">
+
+<button
+class="modal-btn btn-cancel"
+onclick="closeBuyModal()"
+>
+Cancel
+</button>
+
+<button
+class="modal-btn btn-confirm"
+id="confirmPaymentBtn"
+onclick="executeEnergyPurchase()"
+>
+Confirm
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+/* ================= CONFIG ================= */
+
+const API =
+"https://pvlt-server.onrender.com";
+
+const PROJECT_ID =
+"1731f99148b9cf6107dee70b6efb14b7";
+
+/* REAL PVLT TOKEN */
+const PVLT_TOKEN_ADDRESS =
+"0xC096dB70Fa05255b210Be58Ec2508Bed61e8dfD6";
+
+/* PVLTG TOKEN */
+const PVLTG_TOKEN_ADDRESS =
+"0x3094Dc50cB01721eE6c0ECAf18bd0D15c154ba2d";
+
+/* GAME ENGINE */
+const GAME_TREASURY_ADDRESS =
+"0xe2bb81bD8e36367F2C85c89F0B03570dFCaf5D57";
+
+/* TOKEN DECIMALS */
+const TOKEN_DECIMALS = 18;
+
+/* ================= STATE ================= */
+
+let web3Provider;
+let wallet = "";
+
+let points = 0;
+let energy = 50;
+let pvltg = 0;
+
+/* ================= UPDATE UI ================= */
+
+function updateUI(){
+
+document.getElementById(
+"energy"
+).innerText = energy;
+
+document.getElementById(
+"points"
+).innerText = points;
+
+document.getElementById(
+"pvltg"
+).innerText =
+Number(pvltg).toFixed(4);
+
+}
+
+/* ================= MODAL ================= */
+
+function openBuyModal(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+document
+.getElementById("buyModal")
+.classList.add("active");
+
+}
+
+function closeBuyModal(){
+
+document
+.getElementById("buyModal")
+.classList.remove("active");
+
+}
+
+/* ================= CONNECT WALLET ================= */
+
+async function connectWallet(){
+
+try{
+
+if(window.ethereum){
+
+await window.ethereum.request({
+method:"eth_requestAccounts"
+});
+
+web3Provider =
+new ethers.providers.Web3Provider(
+window.ethereum
+);
+
+}else{
+
+const WalletConnectProvider =
+window[
+"@walletconnect/ethereum-provider"
+].EthereumProvider;
+
+const wcProvider =
+await WalletConnectProvider.init({
+
+projectId: PROJECT_ID,
+
+chains:[137],
+
+showQrModal:true
+
+});
+
+await wcProvider.connect();
+
+web3Provider =
+new ethers.providers.Web3Provider(
+wcProvider
+);
+
+}
+
+const signer =
+web3Provider.getSigner();
+
+wallet =
+await signer.getAddress();
+
+document.getElementById(
+"walletInput"
+).value =
+wallet.slice(0,6)
++ "..."
++ wallet.slice(-4);
+
+document.getElementById(
+"walletBtn"
+).innerText =
+"CONNECTED";
+
+document.getElementById(
+"walletStatus"
+).style.display =
+"block";
+
+/* LOAD USER */
+
+const res =
+await fetch(
+API + "/user",
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+points =
+data.points || 0;
+
+energy =
+data.energy || 50;
+
+pvltg =
+data.pvltg || 0;
+
+updateUI();
+
+}catch(err){
+
+console.error(err);
+
+alert(
+"Wallet connection failed"
+);
+
+}
+
+}
+
+/* ================= TAP ================= */
+
+async function tap(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+API + "/tap",
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+points =
+data.points;
+
+energy =
+data.energy;
+
+updateUI();
+
+}catch(err){
+
+console.error(err);
+
+alert(
+"Tap failed"
+);
+
+}
+
+}
+
+/* ================= BUY ENERGY ================= */
+
+async function executeEnergyPurchase(){
+
+const confirmBtn =
+document.getElementById(
+"confirmPaymentBtn"
+);
+
+try{
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+confirmBtn.innerText =
+"Processing...";
+
+confirmBtn.disabled = true;
+
+/* NETWORK CHECK */
+
+const network =
+await web3Provider.getNetwork();
+
+if(network.chainId !== 137){
+
+alert(
+"Switch wallet to Polygon Mainnet"
+);
+
+return;
+}
+
+const signer =
+web3Provider.getSigner();
+
+/* REAL PVLT TOKEN */
+
+const tokenContract =
+new ethers.Contract(
+
+PVLT_TOKEN_ADDRESS,
+
+[
+"function transfer(address to,uint256 amount) external returns(bool)",
+"function balanceOf(address owner) external view returns(uint256)"
+],
+
+signer
+);
+
+/* COST */
+
+const amount =
+ethers.utils.parseUnits(
+"100",
+TOKEN_DECIMALS
+);
+
+/* BALANCE */
+
+const rawBalance =
+await tokenContract.balanceOf(
+wallet
+);
+
+console.log(
+"RAW BALANCE:",
+rawBalance.toString()
+);
+
+console.log(
+"FORMATTED:",
+ethers.utils.formatUnits(
+rawBalance,
+TOKEN_DECIMALS
+)
+);
+
+if(rawBalance.lt(amount)){
+
+alert(
+"Insufficient PVLT balance"
+);
+
+return;
+}
+
+/* SEND TX */
+
+const tx =
+await tokenContract.transfer(
+GAME_TREASURY_ADDRESS,
+amount
+);
+
+closeBuyModal();
+
+alert(
+"Confirm transaction in wallet"
+);
+
+await tx.wait();
+
+/* SERVER REFILL */
+
+const refillRes =
+await fetch(
+API + "/refill",
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+wallet,
+txHash: tx.hash
+
+})
+}
+);
+
+const refillData =
+await refillRes.json();
+
+if(refillData.error){
+
+alert(
+refillData.error
+);
+
+return;
+}
+
+energy =
+refillData.energy;
+
+updateUI();
+
+alert(
+"100,000 Energy Added Successfully"
+);
+
+}catch(err){
+
+console.error(err);
+
+let message =
+err.reason
+|| err.data?.message
+|| err.message
+|| "Unknown error";
+
+alert(
+"Transaction failed:\n\n"
++ message
+);
+
+}finally{
+
+confirmBtn.innerText =
+"Confirm";
+
+confirmBtn.disabled = false;
+
+closeBuyModal();
+
+}
+
+}
+
+/* ================= SWAP ================= */
+
+async function swapPoints(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+API + "/swap-points",
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+points = 0;
+
+pvltg =
+data.pvltg;
+
+updateUI();
+
+alert(
+"Points swapped successfully"
+);
+
+}catch(err){
+
+console.error(err);
+
+alert(
+"Swap failed"
+);
+
+}
+
+}
+
+/* ================= CLAIM ================= */
+
+async function claimPVLT(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+if(pvltg < 100){
+
+alert(
+"Need minimum 100 PVLTG"
+);
+
+return;
+}
+
+try{
+
+const signer =
+web3Provider.getSigner();
+
+const tokenContract =
+new ethers.Contract(
+
+PVLT_TOKEN_ADDRESS,
+
+[
+"function approve(address spender,uint256 amount) external returns(bool)"
+],
+
+signer
+);
+
+const amount =
+ethers.utils.parseUnits(
+pvltg.toString(),
+TOKEN_DECIMALS
+);
+
+const approveTx =
+await tokenContract.approve(
+GAME_TREASURY_ADDRESS,
+amount
+);
+
+await approveTx.wait();
+
+const res =
+await fetch(
+API + "/claim-pvltg",
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+pvltg = 0;
+
+updateUI();
+
+alert(
+"PVLT claimed successfully"
+);
+
+}catch(err){
+
+console.error(err);
+
+alert(
+"Claim failed"
+);
+
+}
+
+}
+
+/* ================= AUTO REFILL ================= */
+
+setInterval(()=>{
+
+if(energy < 50){
+
+energy += 1;
+
+updateUI();
+
+}
+
+},30000);
+
+/* ================= START ================= */
+
+updateUI();
+
+</script>
+
 </body>
 </html>
