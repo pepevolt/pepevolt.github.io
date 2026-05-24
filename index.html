@@ -15,7 +15,7 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 <style>
 
 /* =========================
-   GLOBAL FIX (NO ZOOM + NO SHIFT)
+   GLOBAL STABILITY FIX
 ========================= */
 
 *{
@@ -25,16 +25,13 @@ box-sizing:border-box;
 -webkit-tap-highlight-color:transparent;
 }
 
-html, body {
+html, body{
 height:100%;
 overflow:hidden;
 touch-action: manipulation;
-overscroll-behavior: none;
--webkit-user-select: none;
-user-select: none;
-}
-
-body{
+overscroll-behavior:none;
+-webkit-user-select:none;
+user-select:none;
 font-family:'Poppins',sans-serif;
 background:#07111f;
 color:#fff;
@@ -43,14 +40,14 @@ justify-content:center;
 align-items:center;
 }
 
-/* background FX */
+/* BACKGROUND */
 body::before{
 content:'';
 position:fixed;
 inset:0;
 background:
-radial-gradient(circle at top,#00ffb32e 0%,transparent 40%),
-radial-gradient(circle at bottom,#00b7ff25 0%,transparent 40%);
+radial-gradient(circle at top,#00ffb32e,transparent 40%),
+radial-gradient(circle at bottom,#00b7ff25,transparent 40%);
 z-index:-1;
 }
 
@@ -70,7 +67,7 @@ justify-content:space-between;
 display:flex;
 justify-content:space-between;
 align-items:center;
-margin-top:8px;
+margin-top:10px;
 }
 
 .logo{
@@ -83,21 +80,19 @@ background:linear-gradient(90deg,#00ff99,#00d0ff);
 
 .connect-btn{
 border:none;
-padding:12px 18px;
+padding:12px 16px;
 border-radius:14px;
 background:linear-gradient(90deg,#00ff99,#00d0ff);
 color:#000;
 font-weight:700;
-font-size:14px;
 cursor:pointer;
-box-shadow:0 0 20px rgba(0,255,153,.3);
 }
 
 /* STATS */
 .stats{
 display:grid;
 grid-template-columns:1fr 1fr;
-gap:14px;
+gap:12px;
 margin-top:20px;
 }
 
@@ -105,23 +100,23 @@ margin-top:20px;
 background:rgba(255,255,255,0.05);
 border:1px solid rgba(255,255,255,0.08);
 backdrop-filter:blur(10px);
-padding:16px;
-border-radius:20px;
+padding:14px;
+border-radius:18px;
 text-align:center;
 }
 
 .card h3{
-font-size:13px;
-opacity:.7;
-margin-bottom:8px;
+font-size:12px;
+opacity:0.7;
+margin-bottom:6px;
 }
 
 .card p{
-font-size:20px;
+font-size:18px;
 font-weight:700;
 }
 
-/* TAP AREA */
+/* TAP */
 .tap-wrapper{
 flex:1;
 display:flex;
@@ -136,27 +131,24 @@ border-radius:50%;
 border:none;
 cursor:pointer;
 background:linear-gradient(145deg,#00ff99,#00b7ff);
-display:flex;
-justify-content:center;
-align-items:center;
-font-size:34px;
+font-size:32px;
 font-weight:700;
 color:#04111f;
-box-shadow:0 0 40px rgba(0,255,153,.4), 0 0 80px rgba(0,183,255,.2);
+box-shadow:0 0 40px rgba(0,255,153,0.4),0 0 80px rgba(0,183,255,0.2);
 
-/* FIX: smooth stable transform */
-transition: transform 0.08s ease;
-will-change: transform;
+/* FIXED ANIMATION */
+transition:transform 0.08s ease;
+will-change:transform;
 }
 
 .tap-btn:active{
-transform: scale(0.97);
+transform:scale(0.97);
 }
 
-/* energy */
+/* ENERGY */
 .energy-bar{
 width:100%;
-height:20px;
+height:18px;
 background:rgba(255,255,255,0.08);
 border-radius:999px;
 overflow:hidden;
@@ -167,7 +159,7 @@ margin-top:20px;
 height:100%;
 width:100%;
 background:linear-gradient(90deg,#00ff99,#00d0ff);
-transition:.3s;
+transition:0.3s;
 }
 
 /* NAV */
@@ -181,8 +173,8 @@ margin-bottom:10px;
 .nav-btn{
 background:rgba(255,255,255,0.05);
 border:1px solid rgba(255,255,255,0.08);
-padding:14px 8px;
-border-radius:18px;
+padding:12px;
+border-radius:16px;
 text-align:center;
 font-size:12px;
 font-weight:600;
@@ -192,7 +184,7 @@ cursor:pointer;
 /* POPUP */
 .popup{
 position:absolute;
-font-size:24px;
+font-size:22px;
 font-weight:700;
 color:#00ff99;
 animation:floatUp 1s linear forwards;
@@ -200,7 +192,7 @@ pointer-events:none;
 }
 
 @keyframes floatUp{
-0%{opacity:1;transform:translateY(0) scale(1);}
+0%{opacity:1;transform:translateY(0);}
 100%{opacity:0;transform:translateY(-80px) scale(1.5);}
 }
 
@@ -208,7 +200,7 @@ pointer-events:none;
 .modal{
 position:fixed;
 inset:0;
-background:rgba(0,0,0,.6);
+background:rgba(0,0,0,0.6);
 display:none;
 justify-content:center;
 align-items:center;
@@ -220,40 +212,32 @@ padding:20px;
 width:100%;
 max-width:380px;
 background:#0c1728;
-border-radius:24px;
-padding:20px;
-border:1px solid rgba(255,255,255,.08);
-}
-
-.modal-title{
-font-size:22px;
-font-weight:700;
-margin-bottom:18px;
+border-radius:22px;
+padding:18px;
+border:1px solid rgba(255,255,255,0.08);
 }
 
 .info{
-background:rgba(255,255,255,.04);
-padding:14px;
-border-radius:16px;
-margin-bottom:12px;
+background:rgba(255,255,255,0.04);
+padding:12px;
+border-radius:14px;
+margin-bottom:10px;
+font-size:12px;
 word-break:break-all;
-font-size:13px;
 }
 
 .close-btn{
-margin-top:10px;
 width:100%;
-padding:14px;
+padding:12px;
 border:none;
-border-radius:16px;
-font-weight:700;
+border-radius:14px;
 background:linear-gradient(90deg,#00ff99,#00d0ff);
-color:#000;
+font-weight:700;
 cursor:pointer;
 }
 
 @media(max-width:480px){
-.tap-btn{width:210px;height:210px;font-size:30px;}
+.tap-btn{width:210px;height:210px;font-size:28px;}
 .logo{font-size:20px;}
 }
 
@@ -273,8 +257,8 @@ cursor:pointer;
 
 <div class="stats">
 <div class="card"><h3>Balance</h3><p id="balance">0 PVLT</p></div>
-<div class="card"><h3>Total Taps</h3><p id="taps">0</p></div>
-<div class="card"><h3>Energy</h3><p id="energyText">100 / 100</p></div>
+<div class="card"><h3>Taps</h3><p id="taps">0</p></div>
+<div class="card"><h3>Energy</h3><p id="energyText">100/100</p></div>
 <div class="card"><h3>Reward</h3><p id="reward">0 PVLT</p></div>
 </div>
 </div>
@@ -291,10 +275,10 @@ cursor:pointer;
 </div>
 
 <div class="bottom-nav">
-<div class="nav-btn" id="walletNav">Wallet</div>
-<div class="nav-btn" id="treasuryNav">Treasury</div>
-<div class="nav-btn" id="gameNav">Game</div>
 <div class="nav-btn" id="infoNav">Info</div>
+<div class="nav-btn">Game</div>
+<div class="nav-btn">Treasury</div>
+<div class="nav-btn">Wallet</div>
 </div>
 </div>
 
@@ -303,7 +287,6 @@ cursor:pointer;
 <!-- MODAL -->
 <div class="modal" id="modal">
 <div class="modal-content">
-<div class="modal-title">PepeVolt Contracts</div>
 
 <div class="info">PVLT Token<br>0xb8010fD52D5208eC05574a7D5A939c0d446A862a</div>
 <div class="info">TreasuryVolt<br>0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc</div>
@@ -313,30 +296,29 @@ cursor:pointer;
 </div>
 </div>
 
+<!-- ETHERS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.min.js"></script>
 
+<!-- APPKIT (POLYGON ONLY) -->
 <script type="module">
-
-/* WALLET CONNECT */
 import { createAppKit } from "https://esm.sh/@reown/appkit";
 import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers";
-import { mainnet, bsc } from "https://esm.sh/@reown/appkit/networks";
+import { polygon } from "https://esm.sh/@reown/appkit/networks";
 
 const projectId = "1731f99148b9cf6107dee70b6efb14b7";
 
-const modal = createAppKit({
-adapters: [new EthersAdapter()],
-networks: [mainnet, bsc],
-projectId
+const appKit = createAppKit({
+  adapters: [new EthersAdapter()],
+  networks: [polygon],
+  projectId
 });
 
-window.appKit = modal;
-
+window.appKit = appKit;
 </script>
 
 <script>
 
-/* SAFETY FIX: block gesture zoom */
+/* BLOCK ZOOM GESTURES */
 document.addEventListener("gesturestart", e => e.preventDefault());
 document.addEventListener("gesturechange", e => e.preventDefault());
 document.addEventListener("gestureend", e => e.preventDefault());
@@ -351,15 +333,15 @@ tapBtn.addEventListener("click", (e) => {
 
 if (energy <= 0) return;
 
-navigator.vibrate?.(30);
+navigator.vibrate?.(25);
 
 taps++;
 reward += 0.25;
 energy--;
 
 document.getElementById("taps").innerText = taps;
-document.getElementById("reward").innerText = reward.toFixed(2) + " PVLT";
-document.getElementById("energyText").innerText = energy + " / 100";
+document.getElementById("reward").innerText = reward.toFixed(2);
+document.getElementById("energyText").innerText = energy + "/100";
 document.getElementById("energyFill").style.width = energy + "%";
 
 const popup = document.createElement("div");
@@ -367,30 +349,29 @@ popup.className = "popup";
 popup.innerText = "+0.25";
 popup.style.left = e.clientX + "px";
 popup.style.top = e.clientY + "px";
-document.body.appendChild(popup);
 
-setTimeout(() => popup.remove(), 1000);
+document.body.appendChild(popup);
+setTimeout(() => popup.remove(), 900);
 
 });
 
-/* ENERGY REGEN */
 setInterval(() => {
 if (energy < 100) {
 energy++;
-document.getElementById("energyText").innerText = energy + " / 100";
+document.getElementById("energyText").innerText = energy + "/100";
 document.getElementById("energyFill").style.width = energy + "%";
 }
 }, 1500);
 
 /* MODAL */
-const modalBox = document.getElementById("modal");
+const modal = document.getElementById("modal");
 
 document.getElementById("infoNav").onclick = () => {
-modalBox.style.display = "flex";
+modal.style.display = "flex";
 };
 
 document.getElementById("closeBtn").onclick = () => {
-modalBox.style.display = "none";
+modal.style.display = "none";
 };
 
 </script>
