@@ -1,43 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PepeVolt Game</title>
+    <style>
+        body { background: #1a1d23; color: white; font-family: sans-serif; text-align: center; }
+        .stat-bar { display: flex; justify-content: space-around; padding: 20px; }
+        #tap-btn { width: 200px; height: 200px; border-radius: 50%; border: none; background: #333; color: #00aaff; font-size: 24px; cursor: pointer; }
+    </style>
+</head>
 <body>
-    <appkit-button></appkit-button>
-    <div id="game-ui">
-        <button id="tap-btn" onclick="handleTap()">TAP!</button>
-        <div id="status-msg"></div>
+    <div class="stat-bar">
+        <div>⚡ <span id="energy">0</span></div>
+        <div>💎 <span id="points">0</span></div>
     </div>
-
-    <script type="module">
-        import { ethers } from "https://esm.sh/ethers";
-        
-        // Use a Loading State UI
-        async function handleTap() {
-            const btn = document.getElementById('tap-btn');
-            const status = document.getElementById('status-msg');
-            
-            try {
-                btn.disabled = true;
-                status.innerText = "Confirm in wallet...";
-                
-                // 1. Trigger Contract Transaction
-                const tx = await contract.tap();
-                status.innerText = "Mining...";
-                await tx.wait(); // Wait for block confirmation
-                
-                // 2. Notify Backend only AFTER success
-                await fetch('https://your-server.onrender.com/api/v1/log-action', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'tap', txHash: tx.hash })
-                });
-                
-                status.innerText = "Success!";
-            } catch (err) {
-                status.innerText = "Error: " + err.message;
-            } finally {
-                btn.disabled = false;
-            }
-        }
-    </script>
+    <button id="tap-btn">TAP!</button>
+    <script type="module" src="/main.js"></script>
 </body>
 </html>
