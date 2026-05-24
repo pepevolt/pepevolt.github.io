@@ -1,28 +1,42 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <title>PepeVolt Game</title>
-    <script src="https://cdn.jsdelivr.net/npm/@reown/appkit@latest"></script>
-</head>
+<html lang="en">
 <body>
     <appkit-button></appkit-button>
-    <div id="game">
-        <button onclick="tapGame()">TAP!</button>
-        <p id="status"></p>
+    <div id="game-ui">
+        <button id="tap-btn" onclick="handleTap()">TAP!</button>
+        <div id="status-msg"></div>
     </div>
 
-    <script>
-        // Initialize Reown/AppKit here (as per Reown documentation)
-        const GAME_ADDRESS = "YOUR_CONTRACT_ADDRESS";
+    <script type="module">
+        import { ethers } from "https://esm.sh/ethers";
         
-        async function tapGame() {
-            // Use ethers.js to call the 'tap()' function on your contract
-            // Then, send a notification to your backend
-            await fetch('https://your-render-app.onrender.com/log-tap', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user: "USER_ADDRESS" })
-            });
+        // Use a Loading State UI
+        async function handleTap() {
+            const btn = document.getElementById('tap-btn');
+            const status = document.getElementById('status-msg');
+            
+            try {
+                btn.disabled = true;
+                status.innerText = "Confirm in wallet...";
+                
+                // 1. Trigger Contract Transaction
+                const tx = await contract.tap();
+                status.innerText = "Mining...";
+                await tx.wait(); // Wait for block confirmation
+                
+                // 2. Notify Backend only AFTER success
+                await fetch('https://your-server.onrender.com/api/v1/log-action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'tap', txHash: tx.hash })
+                });
+                
+                status.innerText = "Success!";
+            } catch (err) {
+                status.innerText = "Error: " + err.message;
+            } finally {
+                btn.disabled = false;
+            }
         }
     </script>
 </body>
