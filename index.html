@@ -39,7 +39,7 @@
         .btn-action { background-color: #e67e22; }
         button:disabled { opacity: 0.3; cursor: not-allowed; }
         
-        #status-feed { font-size: 0.8rem; color: #95a5a6; margin-top: 20px; }
+        #status-feed { font-size: 0.9rem; color: #e74c3c; margin-top: 20px; padding: 0 10px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -60,7 +60,7 @@
         <button id="convert-btn" class="btn-action" onclick="handleOnChainConvert()" disabled>Convert 100 Points → 1 gPVLT</button>
         <button id="claim-btn" class="btn-action" onclick="claimReward()" disabled>Claim Reward (100-1000 gPVLT)</button>
 
-        <p id="status-feed">Please load app within a Web3 interface browser.</p>
+        <p id="status-feed" style="color: #95a5a6;">Please load app within a Web3 interface browser.</p>
     </div>
 
     <script>
@@ -71,7 +71,6 @@
             TreasuryVolt: "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc"
         };
 
-        // ABIs perfectly synchronized with your exact verified Polygonscan configurations
         const ABIs = {
             PVLT: [
                 "function balanceOf(address account) view returns (uint256)",
@@ -94,7 +93,6 @@
         let isWalletConnected = false;
         let actionInFlight = false;
 
-        // Local UI Tracking States
         let localEnergy = 0;
         let localPoints = 0;
         let localGpvlt = 0;
@@ -103,6 +101,7 @@
             try {
                 const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
                 if (currentChainId !== POLYGON_CHAIN_ID) {
+                    document.getElementById('status-feed').style.color = "#e67e22";
                     document.getElementById('status-feed').innerText = "Routing to Polygon Network...";
                     try {
                         await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: POLYGON_CHAIN_ID }] });
@@ -123,6 +122,7 @@
                 }
                 return true;
             } catch (err) {
+                document.getElementById('status-feed').style.color = "#e74c3c";
                 document.getElementById('status-feed').innerText = "Network confirmation aborted.";
                 return false;
             }
@@ -134,9 +134,14 @@
                 document.getElementById('wallet-btn').innerText = "Connect Wallet";
                 setButtonsState(true);
                 updateUIHTML(true);
+                document.getElementById('status-feed').style.color = "#95a5a6";
                 document.getElementById('status-feed').innerText = "Session cleared.";
             } else {
-                if (!window.ethereum) { alert("Please target a secure Web3 infrastructure browser layer."); return; }
+                if (!window.ethereum) { 
+                    document.getElementById('status-feed').style.color = "#e74c3c";
+                    document.getElementById('status-feed').innerText = "Please target a secure Web3 infrastructure browser layer."; 
+                    return; 
+                }
                 try {
                     if (!await checkAndSwitchNetwork()) return;
                     provider = new ethers.BrowserProvider(window.ethereum);
@@ -154,6 +159,7 @@
                     await syncContractState();
                 } catch (err) {
                     console.error(err);
+                    document.getElementById('status-feed').style.color = "#e74c3c";
                     document.getElementById('status-feed').innerText = "Authentication failure.";
                 }
             }
@@ -174,7 +180,6 @@
             }
         }
 
-        // Uses your explicit 'getPlayer' function found in your verified contract (Image 3)
         async function syncContractState() {
             if (!gameContract || !userAddress || !isWalletConnected || actionInFlight) return;
             try {
@@ -187,13 +192,14 @@
                 document.getElementById('energy').innerText = localEnergy.toLocaleString();
                 document.getElementById('points').innerText = localPoints.toLocaleString();
                 document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
+                
+                document.getElementById('status-feed').style.color = "#2ecc71";
                 document.getElementById('status-feed').innerText = "Live contract status synchronized.";
             } catch (err) {
                 console.error("Sync error:", err);
             }
         }
 
-        // Fast responsive tapping for UI gameplay feel
         function handleLocalTap() {
             if (!isWalletConnected) return;
 
@@ -203,33 +209,38 @@
 
                 document.getElementById('energy').innerText = localEnergy.toLocaleString();
                 document.getElementById('points').innerText = localPoints.toLocaleString();
+                document.getElementById('status-feed').style.color = "#2ecc71";
                 document.getElementById('status-feed').innerText = "Tap recorded locally.";
             } else {
+                document.getElementById('status-feed').style.color = "#e74c3c";
                 document.getElementById('status-feed').innerText = "Out of energy!";
             }
         }
 
-        // Secure on-chain conversion writing straight to your deployed contract address
         async function handleOnChainConvert() {
             if (!isWalletConnected || actionInFlight) return;
 
             if (localPoints < 100) {
+                document.getElementById('status-feed').style.color = "#e74c3c";
                 document.getElementById('status-feed').innerText = "Insufficient Points! You need at least 100 points to convert.";
                 return;
             }
 
             try {
                 actionInFlight = true;
+                document.getElementById('status-feed').style.color = "#e67e22";
                 document.getElementById('status-feed').innerText = "Converting 100 Points to gPVLT on-chain...";
                 
                 const tx = await gameContract.convertPoints();
                 document.getElementById('status-feed').innerText = "Confirming transaction block...";
                 await tx.wait(1);
                 
+                document.getElementById('status-feed').style.color = "#2ecc71";
                 document.getElementById('status-feed').innerText = "Converted successfully! State refreshed.";
             } catch (err) {
                 console.error(err);
-                document.getElementById('status-feed').innerText = "Conversion rejected or out of sync.";
+                document.getElementById('status-feed').style.color = "#e74c3c";
+                document.getElementById('status-feed').innerText = "Conversion failed or rejected by network requirements.";
             } finally {
                 actionInFlight = false;
                 await syncContractState();
@@ -244,16 +255,20 @@
                 const currentAllowance = await pvltContract.allowance(userAddress, CONTRACT_ADDRESSES.PepeVoltGame);
                 
                 if (currentAllowance < price) {
+                    document.getElementById('status-feed').style.color = "#e67e22";
                     document.getElementById('status-feed').innerText = "Approving PVLT expenditure...";
                     const approveTx = await pvltContract.approve(CONTRACT_ADDRESSES.PepeVoltGame, price);
                     await approveTx.wait(1);
                 }
 
+                document.getElementById('status-feed').style.color = "#e67e22";
                 document.getElementById('status-feed').innerText = "Recharging total capacity...";
                 const buyTx = await gameContract.buyEnergy();
                 await buyTx.wait(1);
+                document.getElementById('status-feed').style.color = "#2ecc71";
                 document.getElementById('status-feed').innerText = "Energy balance restored on-chain.";
             } catch (err) {
+                document.getElementById('status-feed').style.color = "#e74c3c";
                 document.getElementById('status-feed').innerText = "Acquisition aborted.";
             } finally {
                 actionInFlight = false;
@@ -261,27 +276,31 @@
             }
         }
 
-        // Executes claim rewards using your TreasuryVolt address (Image 1)
+        // REWARD CLAIM LOGIC: Rewritten to completely avoid blocked alert popups
         async function claimReward() {
             if (!isWalletConnected || actionInFlight) return;
 
+            // Direct in-page error tracking instead of using alert()
             if (localGpvlt < 100) {
-                alert("Requirement unmet: You need a minimum of 100 gPVLT on-chain to claim rewards.");
-                document.getElementById('status-feed').innerText = "Claim aborted.";
+                document.getElementById('status-feed').style.color = "#e74c3c";
+                document.getElementById('status-feed').innerText = "Insufficient gPVLT! You need at least 100 gPVLT on-chain to claim rewards.";
                 return;
             }
 
             try {
                 actionInFlight = true;
+                document.getElementById('status-feed').style.color = "#e67e22";
                 document.getElementById('status-feed').innerText = "Submitting claim request to TreasuryVolt...";
                 
                 const tx = await treasuryContract.claimRewards();
                 document.getElementById('status-feed').innerText = "Awaiting block finality...";
                 await tx.wait(1);
 
+                document.getElementById('status-feed').style.color = "#2ecc71";
                 document.getElementById('status-feed').innerText = "Successfully claimed PVLT directly to your wallet!";
             } catch (err) {
                 console.error(err);
+                document.getElementById('status-feed').style.color = "#e74c3c";
                 document.getElementById('status-feed').innerText = "Transaction failed or rejected by contract limitations.";
             } finally {
                 actionInFlight = false;
