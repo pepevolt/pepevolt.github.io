@@ -28,14 +28,12 @@
             user-select: none;
             -webkit-user-select: none;
         }
-        /* Glassmorphism panel base */
         .glass-panel {
             background: rgba(10, 18, 14, 0.7);
             border: 1px solid rgba(16, 185, 129, 0.15);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
         }
-        /* High-response tap mechanism scaling */
         .click-target {
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             touch-action: manipulation;
@@ -43,7 +41,6 @@
         .click-target:active {
             transform: scale(0.92);
         }
-        /* Floating numeric click indicator animation */
         @keyframes floatUp {
             0% { transform: translateY(0) scale(1); opacity: 1; }
             100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
@@ -102,7 +99,6 @@
     </section>
 
     <main class="w-full max-w-md flex flex-col items-center justify-center my-auto relative z-10">
-        
         <div class="relative flex flex-col items-center justify-center my-6" id="clickAreaContainer">
             <div class="absolute w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
             
@@ -122,7 +118,6 @@
                 <span class="font-bold text-slate-200" id="walletBalance">Disconnected</span>
             </div>
         </div>
-
     </main>
 
     <section class="w-full max-w-md flex flex-col gap-2.5 pb-2 z-10">
@@ -149,7 +144,6 @@
 
         const CONTRACT_ADDRESSES = {
             PVLT: "0xb8010fD52D5208eC05574a7D5A939c0d446A862a",
-            TreasuryVolt: "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc",
             PepeVoltGame: "0x151803532A33837E4bBc2Afc23c6b1f59039B82D"
         };
 
@@ -175,14 +169,16 @@
         
         let localEnergy = 0;
         let localMaxEnergy = 50; 
+        let baseRefillCap = 50; // Free baseline capacity limit for passive recovery tracking
 
-        function updateUI(energy, maxEnergy, points, burnedGPVLT, pvltBalance, isPaid) {
+        function updateUI(points, energy, maxEnergy, burnedGPVLT, pvltBalance, isPaid) {
             localEnergy = Number(energy);
+            // If user has bought premium energy, contract max capacity updates to 10,000+
             localMaxEnergy = Number(maxEnergy || 50);
 
+            document.getElementById('playerPoints').innerText = Number(points).toLocaleString();
             document.getElementById('currentEnergy').innerText = localEnergy.toLocaleString();
             document.getElementById('maxEnergy').innerText = localMaxEnergy.toLocaleString();
-            document.getElementById('playerPoints').innerText = Number(points).toLocaleString();
             document.getElementById('playerGPVLT').innerText = Number(burnedGPVLT).toLocaleString();
             
             if(pvltBalance !== null) {
@@ -203,11 +199,24 @@
             document.getElementById('energyProgress').style.width = percent + '%';
         }
 
+        // Automatic Per-Second Passive Energy Refill Tracking Logic
+        setInterval(() => {
+            if (!userAddress) return; 
+            
+            // Only execute passive recovery if current energy rests below baseline threshold limit (50)
+            if (localEnergy < baseRefillCap) {
+                localEnergy++;
+                document.getElementById('currentEnergy').innerText = localEnergy.toLocaleString();
+                const percent = localMaxEnergy > 0 ? (localEnergy / localMaxEnergy) * 100 : 0;
+                document.getElementById('energyProgress').style.width = percent + '%';
+            }
+        }, 1000);
+
         async function checkAndSwitchNetwork() {
             try {
                 const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
                 if (currentChainId !== POLYGON_CHAIN_ID) {
-                    document.getElementById('userTier').innerText = "Requesting network swap to Polygon Mainnet...";
+                    document.getElementById('userTier').innerText = "Switching network to Polygon Mainnet...";
                     try {
                         await window.ethereum.request({
                             method: 'wallet_switchEthereumChain',
@@ -232,15 +241,14 @@
                 }
                 return true;
             } catch (err) {
-                console.error("Network management breakdown:", err);
-                alert("Please toggle your connection framework manually to Polygon Mainnet.");
+                console.error(err);
                 return false;
             }
         }
 
         async function connectWallet() {
             if (!window.ethereum) {
-                alert("Injected Web3 layer missing. Please access inside an authorized Web3 terminal/browser.");
+                alert("Please open this page inside your crypto wallet app browser.");
                 return;
             }
             try {
@@ -257,12 +265,10 @@
 
                 const cleanAddress = `${userAddress.substring(0,6)}...${userAddress.substring(38)}`;
                 document.getElementById('connectBtn').innerHTML = `<i class="fa-solid fa-shield text-[10px] mr-1 text-emerald-950"></i> ${cleanAddress}`;
-                document.getElementById('connectBtn').className = "click-target text-xs font-bold px-4 py-2 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800/60 transition-colors cursor-pointer outline-none";
-
+                
                 await syncContractState();
             } catch (err) {
                 console.error(err);
-                alert("Connection pipeline signature dropped.");
             }
         }
 
@@ -274,54 +280,42 @@
                 const paidCap = await gameContract.PAID_CAP();
                 const pvltBalance = await pvltContract.balanceOf(userAddress);
 
+                baseRefillCap = Number(freeCap || 50);
                 const currentMax = playerData.paidUser ? paidCap : freeCap;
 
                 updateUI(
+                    playerData.points,
                     playerData.energy,
                     currentMax,
-                    playerData.points,
                     playerData.burnedGPVLT,
                     pvltBalance,
                     playerData.paidUser
                 );
             } catch (err) {
-                console.error("Storage lookup failure:", err);
+                console.error(err);
             }
         }
 
         async function handleTapAction(event) {
-            if (!gameContract) {
-                connectWallet();
-                return;
-            }
-            if (localEnergy <= 0) {
-                alert("EVM Reversion Prediction: Zero Energy available.");
-                return;
-            }
+            if (!gameContract) { connectWallet(); return; }
+            if (localEnergy <= 0) { alert("Zero Energy available."); return; }
 
-            let clientX = event.clientX;
-            let clientY = event.clientY;
-            if (event.touches && event.touches[0]) {
-                clientX = event.touches[0].clientX;
-                clientY = event.touches[0].clientY;
-            }
-
+            let clientX = event.clientX || (event.touches && event.touches[0] ? event.touches[0].clientX : 0);
+            let clientY = event.clientY || (event.touches && event.touches[0] ? event.touches[0].clientY : 0);
             createFloatingIndicator(clientX, clientY);
 
             localEnergy--;
             document.getElementById('currentEnergy').innerText = localEnergy.toLocaleString();
             const pointsEl = document.getElementById('playerPoints');
             pointsEl.innerText = (parseInt(pointsEl.innerText.replace(/,/g, '')) + 1).toLocaleString();
-            
-            const percent = (localEnergy / localMaxEnergy) * 100;
-            document.getElementById('energyProgress').style.width = percent + '%';
+            document.getElementById('energyProgress').style.width = ((localEnergy / localMaxEnergy) * 100) + '%';
 
             try {
                 const tx = await gameContract.tap();
                 await tx.wait(1);
                 await syncContractState();
             } catch (err) {
-                console.error("Transaction exception:", err);
+                console.error(err);
                 await syncContractState();
             }
         }
@@ -333,71 +327,67 @@
             indicator.style.left = `${x - 10}px`;
             indicator.style.top = `${y - 20}px`;
             document.body.appendChild(indicator);
-            
             setTimeout(() => indicator.remove(), 800);
         }
 
         const tapBtn = document.getElementById('tapBtn');
-        tapBtn.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            handleTapAction(e);
-        }, { passive: false });
-
-        tapBtn.addEventListener('mousedown', function(e) {
-            if ('ontouchstart' in window) return;
-            handleTapAction(e);
-        });
+        tapBtn.addEventListener('touchstart', function(e) { e.preventDefault(); handleTapAction(e); }, { passive: false });
+        tapBtn.addEventListener('mousedown', function(e) { if ('ontouchstart' in window) return; handleTapAction(e); });
 
         async function handleBuyEnergy() {
-            if (!gameContract) return alert("Please establish structural wallet connection first.");
+            if (!gameContract) return alert("Connect wallet first.");
             try {
                 const price = ethers.parseEther("100");
-                const currentAllowance = await pvltContract.allowance(userAddress, CONTRACT_ADDRESSES.PepeVoltGame);
+                const balance = await pvltContract.balanceOf(userAddress);
                 
+                if (balance < price) {
+                    alert("Transaction Cancelled: Insufficient PVLT balance inside your connected wallet profile.");
+                    return;
+                }
+
+                const currentAllowance = await pvltContract.allowance(userAddress, CONTRACT_ADDRESSES.PepeVoltGame);
                 if (currentAllowance < price) {
-                    document.getElementById('userTier').innerText = "Approving exactly 100 PVLT allowance...";
+                    document.getElementById('userTier').innerText = "Approving exactly 100 PVLT...";
                     const approveTx = await pvltContract.approve(CONTRACT_ADDRESSES.PepeVoltGame, price);
                     await approveTx.wait(1);
                 }
 
-                document.getElementById('userTier').innerText = "Purchasing Upgrade Pack...";
+                document.getElementById('userTier').innerText = "Purchasing 10,000 Energy Pack...";
                 const buyTx = await gameContract.buyEnergy();
                 await buyTx.wait(1);
                 
-                alert("Ecosystem energy expansion confirmed!");
+                alert("Ecosystem energy expansion confirmed! 10,000 Energy added.");
                 await syncContractState();
             } catch (err) {
                 console.error(err);
-                alert("EVM pipeline transaction error. Check token capacities.");
+                alert("Transaction Failed: Action reverted on-chain.");
                 await syncContractState();
             }
         }
 
         async function handleConvert() {
-            if (!gameContract) return alert("Connect workspace profile.");
+            if (!gameContract) return alert("Connect wallet.");
             try {
-                document.getElementById('userTier').innerText = "Converting localized metrics to gPVLT...";
+                document.getElementById('userTier').innerText = "Converting points to gPVLT...";
                 const tx = await gameContract.convertPoints();
                 await tx.wait(1);
                 await syncContractState();
             } catch (err) {
                 console.error(err);
-                alert("Minimum processing requirement: 100 system points.");
                 await syncContractState();
             }
         }
 
         async function handleClaim() {
-            if (!gameContract) return alert("Connect workspace profile.");
+            if (!gameContract) return alert("Connect wallet.");
             try {
-                document.getElementById('userTier').innerText = "Validating claimable metrics via execution parameters...";
+                document.getElementById('userTier').innerText = "Claiming rewards...";
                 const tx = await gameContract.claimRewards();
                 await tx.wait(1);
-                alert("Ecosystem rewards migrated to main balance state!");
+                alert("gPVLT burned! PVLT transferred from Treasury to your wallet.");
                 await syncContractState();
             } catch (err) {
                 console.error(err);
-                alert("Claim checks unfulfilled. Validate parameters.");
                 await syncContractState();
             }
         }
@@ -410,9 +400,7 @@
         let lastTouchEndTime = 0;
         document.addEventListener('touchend', function (e) {
             let currentTime = (new Date()).getTime();
-            if (currentTime - lastTouchEndTime <= 300) {
-                e.preventDefault();
-            }
+            if (currentTime - lastTouchEndTime <= 300) e.preventDefault();
             lastTouchEndTime = currentTime;
         }, false);
     </script>
