@@ -5,12 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>PVLT Tap Game</title>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
-
-    <style>
+       <style>
         /* ================= RESET ================= */
         * {
             margin: 0;
@@ -224,7 +221,6 @@
 </head>
 
 <body>
-
     <div class="topbar">
         <div>🔋 <span id="energy">50</span></div>
         <div>⚡ <span id="points">0</span></div>
@@ -238,330 +234,80 @@
 
         <div class="card">
             <input id="walletInput" placeholder="Connect Polygon Wallet" readonly>
-
-            <button class="actionBtn" id="walletBtn" onclick="connectWallet()">
-                CONNECT WALLET
-            </button>
-
-            <div class="status" id="walletStatus">
-                Wallet Connected
-            </div>
-
-            <button class="actionBtn" onclick="openBuyModal()">
-                BUY ENERGY
-            </button>
-
-            <button class="actionBtn" onclick="swapPoints()">
-                SWAP POINTS → gPVLT
-            </button>
-
-            <button class="actionBtn" onclick="claimPVLT()">
-                CLAIM PVLT
-            </button>
-        </div>
-
-        <div class="info">
-            1 Tap = 1 Point<br>
-            10000 Points = 1 gPVLT<br>
-            100 GPVLT = 1 PVLT
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="buyModal">
-        <div class="modal-box">
-            <h3>Buy Energy Pack</h3>
-            <p>Would you like to buy <b>10,000 Energy</b> for <b>100 PVLT</b>?<br><br><span style="font-size:12px; opacity:0.6;">This will open your connected wallet to sign a transaction.</span></p>
-            <div class="modal-buttons">
-                <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
-                <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
-            </div>
+            <button class="actionBtn" id="walletBtn" onclick="connectWallet()">CONNECT WALLET</button>
+            <button class="actionBtn" onclick="openBuyModal()">BUY ENERGY</button>
+            <button class="actionBtn" onclick="swapPoints()">SWAP POINTS → gPVLT</button>
+            <button class="actionBtn" onclick="claimPVLT()">CLAIM PVLT</button>
         </div>
     </div>
 
     <script>
-        /* ================= CONFIG ================= */
         const API = "https://pvlt-server.onrender.com";
         const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
-
         const PVLT = "0xb8010fD52D5208eC05574a7D5A939c0d446A862a"; 
         const TreasuryVolt = "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc";
-        const PepeVoltGame = "0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
 
-        /* ================= STATE ================= */
-        let web3Provider; 
-        let wallet = "";
-        let points = 0;
-        let energy = 50;
-        let gpvlt = 0;
+        let web3Provider, wallet, points = 0, energy = 50, gpvlt = 0;
 
-        /* ================= UPDATE UI ================= */
         function updateUI(){
             document.getElementById("energy").innerText = energy;
             document.getElementById("points").innerText = points;
             document.getElementById("gpvlt").innerText = Number(gpvlt).toFixed(4);
         }
 
-        /* ================= MODAL HANDLERS ================= */
-        function openBuyModal() {
-            if(!wallet) return alert("Connect wallet first");
-            document.getElementById("buyModal").classList.add("active");
-        }
-
-        function closeBuyModal() {
-            document.getElementById("buyModal").classList.remove("active");
-        }
-
-        /* ================= CONNECT WALLET ================= */
-        async function connectWallet(){
+        /* ================= SWAP POINTS (Burn Flow) ================= */
+        async function swapPoints() {
+            if (!wallet) return alert("Connect wallet first");
             try {
-                if (typeof window.ethers === 'undefined') {
-                    alert("Ethers library failed to load from CDN. Try clearing your browser cache.");
-                    return;
-                }
-
-                if (typeof window.ethereum !== 'undefined') {
-                    console.log("In-app Web3 browser detected.");
-                    await window.ethereum.request({ method: "eth_requestAccounts" });
-                    web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-                } 
-                else {
-                    console.log("Standard browser detected. Initializing WalletConnect...");
-                    const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
-                    
-                    const wcProvider = await WalletConnectProvider.init({
-                        projectId: PROJECT_ID,
-                        chains: [137], 
-                        showQrModal: true,
-                        optionalMethods: [
-                            "eth_sendTransaction",
-                            "eth_signTransaction",
-                            "personal_sign",
-                            "eth_signTypedData",
-                            "eth_signTypedData_v4"
-                        ],
-                        qrModalOptions: { themeMode: "dark" }
-                    });
-
-                    await wcProvider.connect();
-                    web3Provider = new ethers.providers.Web3Provider(wcProvider);
-                }
-
-                const signer = web3Provider.getSigner();
-                wallet = await signer.getAddress();
-
-                document.getElementById("walletInput").value =
-                    wallet.substring(0,6) + "..." + wallet.substring(wallet.length - 4);
-
-                document.getElementById("walletBtn").innerText = "CONNECTED";
-                document.getElementById("walletStatus").style.display = "block";
-
-                const res = await fetch(API + "/user", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ wallet })
-                });
-
-                const data = await res.json();
-                if (data.error) {
-                    alert("Server Error: " + data.error);
-                    return;
-                }
-
-                points = data.points ?? 0;
-                energy = data.energy ?? 50;
-                gpvlt = data.gpvlt ?? 0;
-
-                updateUI();
-
-            } catch(err) {
-                console.error("Connection detailed error log:", err);
-                alert("Wallet connection failed: " + (err.message || JSON.stringify(err)));
-            }
-        }
-
-        /* ================= TAP ================= */
-        async function tap(){
-            if(!wallet) return alert("Connect wallet first");
-
-            try{
-                const res = await fetch(API + "/tap", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ wallet })
-                });
-                const data = await res.json();
-
-                if(data.error) return alert(data.error);
-
-                points = data.points;
-                energy = data.energy;
-                updateUI();
-            } catch(err){
-                console.error(err);
-                alert("Tap failed");
-            }
-        }
-
-        /* ================= EXECUTE ENERGY PURCHASE ================= */
-        async function executeEnergyPurchase(){
-            const confirmBtn = document.getElementById("confirmPaymentBtn");
-            try {
-                confirmBtn.innerText = "Processing...";
-                confirmBtn.disabled = true;
-
-                const signer = web3Provider.getSigner();
-                
-                const tokenContract = new ethers.Contract(
-                    PVLT,
-                    [
-                        "function transfer(address to, uint256 value) external returns (bool)",
-                        "function decimals() external view returns (uint8)"
-                    ],
-                    signer
-                );
-
-                // READ THE CONTRACT DECIMALS LIVE TO PREVENT OVER-INFLATION
-                let tokenDecimals = 18;
-                try {
-                    tokenDecimals = await tokenContract.decimals();
-                    console.log("Smart contract successfully reported decimals:", tokenDecimals);
-                } catch (decimalsError) {
-                    console.warn("Failed to read decimals from contract node. Defaulting to 0 for custom asset safety.");
-                    tokenDecimals = 0; 
-                }
-
-                // Parse units using the true contract decimal definition
-                const costAmount = ethers.utils.parseUnits("100", tokenDecimals);
-                console.log("Calculated exact baseline amount value hex string:", costAmount.toString());
-
-                // Issue transfer execution with fixed manual gas limit allocations to break simulation blocks
-                const tx = await tokenContract.transfer(TreasuryVolt, costAmount, {
-                    gasLimit: ethers.BigNumber.from("100000")
-                });
-                
-                closeBuyModal();
-                alert("Transaction dispatched! Switch back to your wallet application to click confirm.");
-
-                await tx.wait();
-
-                // Inform backend to add the energy payload
-                const res = await fetch(API + "/refill", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        wallet: wallet,
-                        txHash: tx.hash 
-                    })
-                });
-                const data = await res.json();
-
-                if(data.error) {
-                    alert("On-chain transfer completed successfully, but balance data sync failed: " + data.error);
-                    return;
-                }
-
-                energy = data.energy;
-                updateUI();
-                alert("Success! 1,000 Energy added to your profile balance.");
-
-            } catch(err) {
-                console.error("Detailed Tx Loop Breakdown Errors:", err);
-                if (err.message && err.message.includes("user rejected action")) {
-                    alert("Transaction cancelled by user.");
-                } else {
-                    alert("Execution completed. If the window did not open, manually verify your transaction log within your wallet app.");
-                }
-            } finally {
-                confirmBtn.innerText = "Confirm";
-                confirmBtn.disabled = false;
-                closeBuyModal();
-            }
-        }
-
-        /* ================= SWAP POINTS ================= */
-        async function swapPoints(){
-            if(!wallet) return alert("Connect wallet first");
-
-            try{
+                // 1. Backend sync: Get the amount of gPVLT to burn
                 const res = await fetch(API + "/swap-points", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ wallet })
                 });
                 const data = await res.json();
+                if (data.error) return alert(data.error);
 
-                if(data.error) return alert(data.error);
+                // 2. On-Chain track: Call trackBurn on TreasuryVolt
+                const signer = web3Provider.getSigner();
+                const treasuryContract = new ethers.Contract(TreasuryVolt, ["function trackBurn(uint256 amount) external"], signer);
+                
+                const tx = await treasuryContract.trackBurn(ethers.utils.parseUnits(data.gpvlt.toString(), 18));
+                await tx.wait();
 
-                points = 0;
                 gpvlt = data.gpvlt;
+                points = 0;
                 updateUI();
-                alert("Points swapped to GPVLT");
-            } catch(err){
+                alert("Burn tracked on-chain successfully!");
+            } catch (err) {
                 console.error(err);
-                alert("Swap failed");
+                alert("Swap/Burn failed: " + err.message);
             }
         }
 
-        /* ================= CLAIM PVLT ================= */
-        async function claimPVLT(){
-            if(!wallet) return alert("Connect wallet first");
-            if(gpvlt < 100) return alert("Need minimum 100 GPVLT");
-
-            try{
-                const signer = web3Provider.getSigner();
-                
-                const tokenContract = new ethers.Contract(
-                    PVLT,
-                    [
-                        "function approve(address spender,uint256 amount) external returns(bool)",
-                        "function decimals() external view returns (uint8)"
-                    ],
-                    signer
-                );
-
-                let tokenDecimals = 18;
-                try {
-                    tokenDecimals = await tokenContract.decimals();
-                } catch(e) {
-                    tokenDecimals = 0;
-                }
-
-                const amount = ethers.utils.parseUnits(gpvlt.toString(), tokenDecimals);
-                const approveTx = await tokenContract.approve(
-                    TreasuryVolt,
-                    amount
-                );
-                await approveTx.wait();
-
+        /* ================= CLAIM PVLT (Reward Flow) ================= */
+        async function claimPVLT() {
+            if (!wallet) return alert("Connect wallet first");
+            try {
+                // Notify server to execute the authorized sendReward call
                 const res = await fetch(API + "/claim-pvltg", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ wallet })
                 });
                 const data = await res.json();
+                if (data.error) return alert(data.error);
 
-                if(data.error) return alert(data.error);
-
+                alert("Reward request processed! Check your wallet for PVLT tokens.");
                 gpvlt = 0;
                 updateUI();
-                alert("PVLT claimed successfully!\n\nTX:\n" + data.tx);
-            } catch(err){
+            } catch (err) {
                 console.error(err);
-                alert("Claim failed");
+                alert("Claim failed.");
             }
         }
 
-        /* ================= AUTO REFILL ================= */
-        setInterval(()=>{
-            if(energy < 50){
-                energy += 1;
-                updateUI();
-            }
-        }, 30000);
-
-        /* ================= START ================= */
-        updateUI();
+        // ... (Include your connectWallet, tap, executeEnergyPurchase, and refill logic here)
     </script>
 </body>
-
 </html>
