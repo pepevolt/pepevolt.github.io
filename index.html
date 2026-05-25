@@ -2,407 +2,299 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PepeVolt Ecosystem Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TapTap Blitz!</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700;800&display=swap');
-        
-        html, body {
-            position: fixed;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
+        :root {
+            --bg-color: #121214;
+            --card-color: #1e1e24;
+            --accent-color: #ff4757;
+            --accent-hover: #ff6b81;
+            --text-color: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            -webkit-text-size-adjust: none;
-        }
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: radial-gradient(circle at 50% 30%, #13271d 0%, #080c0a 100%);
-        }
-        * {
-            -webkit-tap-highlight-color: transparent;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
             -webkit-user-select: none;
         }
-        .glass-panel {
-            background: rgba(10, 18, 14, 0.7);
-            border: 1px solid rgba(16, 185, 129, 0.15);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
         }
-        .click-target {
-            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            touch-action: manipulation;
+
+        .game-container {
+            width: 100%;
+            max-width: 450px;
+            height: 90vh;
+            max-height: 750px;
+            background-color: var(--card-color);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        .click-target:active {
-            transform: scale(0.92);
-        }
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
-        }
-        .floating-point {
+
+        /* Screens styling */
+        .screen {
             position: absolute;
-            animation: floatUp 0.8s ease-out forwards;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Typography & Buttons */
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            background: linear-gradient(45deg, #ff4757, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: #a4b0be;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 36px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Game HUD */
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .hud-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Play Area & Target */
+        .play-area {
+            flex: 1;
+            width: 100%;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .target {
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, #ff4757 0%, #ff6b81 70%, #ff4757 100%);
+            border-radius: 50%;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+            cursor: pointer;
+            transition: width 0.1s, height 0.1s;
+        }
+
+        .target:active {
+            width: 70px;
+            height: 70px;
+        }
+
+        /* Pop effect for score */
+        .pop {
+            position: absolute;
+            color: #ffa502;
+            font-weight: bold;
+            animation: floatUp 0.6s ease-out forwards;
             pointer-events: none;
-            font-weight: 800;
-            color: #10b981;
-            text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
         }
     </style>
 </head>
-<body class="text-slate-100 flex flex-col justify-between items-center p-4">
+<body>
 
-    <header class="w-full max-w-md flex justify-between items-center mt-2 z-10">
-        <div class="flex items-center gap-2">
-            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
-                <i class="fa-solid fa-frog text-emerald-400 text-lg"></i>
-            </div>
-            <div>
-                <h1 class="text-xs font-black tracking-wider text-white uppercase">PepeVolt</h1>
-                <p class="text-[10px] text-emerald-500/80 font-bold tracking-tight flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span> Polygon Mainnet
-                </p>
-            </div>
-        </div>
+    <div class="game-container">
         
-        <button id="connectBtn" onclick="connectWallet()" class="click-target text-xs font-bold px-4 py-2 rounded-xl bg-emerald-500 text-neutral-950 hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/10 cursor-pointer outline-none">
-            <i class="fa-solid fa-wallet mr-1.5"></i> Connect Wallet
-        </button>
-    </header>
-
-    <section class="w-full max-w-md glass-panel rounded-2xl p-4 mt-4 grid grid-cols-3 gap-2 shadow-xl relative z-10">
-        <div class="flex flex-col items-center justify-center py-1">
-            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
-                <i class="fa-solid fa-circle-dot text-emerald-400"></i> Points
-            </span>
-            <span class="text-base font-black text-white tracking-tight" id="playerPoints">0</span>
-        </div>
-        <div class="flex flex-col items-center justify-center py-1 border-x border-slate-800/60">
-            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
-                <i class="fa-solid fa-bolt text-amber-400"></i> Energy
-            </span>
-            <span class="text-base font-black text-white tracking-tight">
-                <span id="currentEnergy">0</span><span class="text-slate-500 text-xs font-normal">/<span id="maxEnergy">50</span></span>
-            </span>
-        </div>
-        <div class="flex flex-col items-center justify-center py-1">
-            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
-                <i class="fa-solid fa-fire text-orange-400"></i> gPVLT
-            </span>
-            <span class="text-base font-black text-orange-400 tracking-tight" id="playerGPVLT">0</span>
-        </div>
-    </section>
-
-    <main class="w-full max-w-md flex flex-col items-center justify-center my-auto relative z-10">
-        <div class="relative flex flex-col items-center justify-center my-6" id="clickAreaContainer">
-            <div class="absolute w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
-            
-            <button id="tapBtn" class="click-target relative w-60 h-60 rounded-full border border-emerald-500/30 bg-gradient-to-b from-neutral-900 to-neutral-950 flex flex-col items-center justify-center shadow-2xl cursor-pointer outline-none group">
-                <div class="absolute inset-2 bg-gradient-to-tr from-emerald-950/40 to-teal-950/20 rounded-full transition-transform duration-300 group-hover:scale-105"></div>
-                <span class="text-7xl mb-1 relative z-10 drop-shadow-[0_4px_12px_rgba(16,185,129,0.3)]">🐸</span>
-                <span class="text-[10px] uppercase font-black tracking-widest text-emerald-400/60 relative z-10 mt-2">Tap Generator</span>
-            </button>
+        <!-- START SCREEN -->
+        <div id="start-screen" class="screen">
+            <h1>TapTap Blitz</h1>
+            <p>Tap the red target as many times as you can before the timer runs out!</p>
+            <button class="btn" onclick="startGame()">Start Game</button>
         </div>
 
-        <div class="w-full px-3 flex flex-col gap-2 mb-4">
-            <div class="w-full bg-neutral-950 rounded-full h-2.5 overflow-hidden p-[2px] border border-emerald-950/40">
-                <div id="energyProgress" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-150 shadow-[0_0_8px_rgba(16,185,129,0.4)]" style="width: 0%"></div>
+        <!-- GAME SCREEN -->
+        <div id="game-screen" class="screen hidden" style="padding: 0; justify-content: flex-start;">
+            <div class="hud">
+                <div class="hud-item">Score: <span id="score-display">0</span></div>
+                <div class="hud-item">Time: <span id="time-display">20</span>s</div>
             </div>
-            <div class="flex justify-between items-center text-xs px-1 font-medium text-slate-400">
-                <span class="flex items-center gap-1.5"><i class="fa-solid fa-wallet text-slate-500"></i> Balance:</span>
-                <span class="font-bold text-slate-200" id="walletBalance">Disconnected</span>
+            <div class="play-area" id="play-area">
+                <div id="target" class="target"></div>
             </div>
         </div>
-    </main>
 
-    <section class="w-full max-w-md flex flex-col gap-2.5 pb-2 z-10">
-        <button onclick="handleBuyEnergy()" class="click-target w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-neutral-950 font-black py-3.5 rounded-xl tracking-wide transition-all shadow-xl shadow-emerald-950/20 cursor-pointer text-sm font-bold flex items-center justify-center gap-2 outline-none">
-            <i class="fa-solid fa-bolt-lightning"></i> Buy 10,000 Energy (100 PVLT)
-        </button>
-
-        <div class="grid grid-cols-2 gap-2.5">
-            <button onclick="handleConvert()" class="click-target w-full bg-neutral-900 border border-slate-800 hover:bg-neutral-800 text-slate-200 font-bold py-3 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5 outline-none">
-                <i class="fa-solid fa-arrow-rotate-left text-slate-400"></i> Convert to gPVLT
-            </button>
-            <button onclick="handleClaim()" class="click-target w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5 outline-none">
-                <i class="fa-solid fa-download text-blue-400"></i> Claim PVLT
-            </button>
+        <!-- GAME OVER SCREEN -->
+        <div id="end-screen" class="screen hidden">
+            <h1>Game Over</h1>
+            <p>Great effort! Here is how you did:</p>
+            <div style="font-size: 1.5rem; margin-bottom: 2rem;">
+                Final Score: <strong id="final-score" style="color: var(--accent-color);">0</strong>
+            </div>
+            <button class="btn" onclick="showScreen('start-screen')">Main Menu</button>
         </div>
 
-        <p id="userTier" class="text-[10px] text-slate-500 font-medium text-center mt-2 tracking-wide">
-            Please connect wallet to read ecosystem states.
-        </p>
-    </section>
+    </div>
 
     <script>
-        const POLYGON_CHAIN_ID = "0x89";
+        // Game State Variables
+        let score = 0;
+        let timeLeft = 20;
+        let gameInterval;
+        const gameDuration = 20; // 20 seconds game
 
-        const CONTRACT_ADDRESSES = {
-            PVLT: "0xb8010fD52D5208eC05574a7D5A939c0d446A862a",
-            PepeVoltGame: "0x151803532A33837E4bBc2Afc23c6b1f59039B82D"
-        };
-
-        const ABIs = {
-            PVLT: [
-                "function balanceOf(address account) view returns (uint256)",
-                "function allowance(address owner, address spender) view returns (uint256)",
-                "function approve(address spender, uint256 amount) returns (bool)"
-            ],
-            PepeVoltGame: [
-                "function players(address) view returns (uint256 points, uint256 energy, uint256 burnedGPVLT, bool paidUser)",
-                "function tap() external",
-                "function buyEnergy() external",
-                "function convertPoints() external",
-                "function claimRewards() external",
-                "function FREE_CAP() view returns (uint256)",
-                "function PAID_CAP() view returns (uint256)"
-            ]
-        };
-
-        let provider, signer, userAddress;
-        let pvltContract, gameContract;
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
         
-        let localEnergy = 0;
-        let localMaxEnergy = 50; 
-        let baseRefillCap = 50; // Free baseline capacity limit for passive recovery tracking
+        const target = document.getElementById('target');
+        const playArea = document.getElementById('play-area');
+        const scoreDisplay = document.getElementById('score-display');
+        const timeDisplay = document.getElementById('time-display');
+        const finalScore = document.getElementById('final-score');
 
-        function updateUI(points, energy, maxEnergy, burnedGPVLT, pvltBalance, isPaid) {
-            localEnergy = Number(energy);
-            // If user has bought premium energy, contract max capacity updates to 10,000+
-            localMaxEnergy = Number(maxEnergy || 50);
+        // Navigation Helper
+        function showScreen(screenId) {
+            startScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
 
-            document.getElementById('playerPoints').innerText = Number(points).toLocaleString();
-            document.getElementById('currentEnergy').innerText = localEnergy.toLocaleString();
-            document.getElementById('maxEnergy').innerText = localMaxEnergy.toLocaleString();
-            document.getElementById('playerGPVLT').innerText = Number(burnedGPVLT).toLocaleString();
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        // Initialize and Start Game
+        function startGame() {
+            score = 0;
+            timeLeft = gameDuration;
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft;
             
-            if(pvltBalance !== null) {
-                const formattedBalance = parseFloat(ethers.formatEther(pvltBalance)).toFixed(2);
-                document.getElementById('walletBalance').innerText = `${formattedBalance} PVLT`;
-            }
-
-            const infoFooter = document.getElementById('userTier');
-            if (isPaid) {
-                infoFooter.innerText = "✨ Premium Tier Identity Sync Active";
-                infoFooter.className = "text-[10px] text-emerald-400 font-bold text-center mt-2 tracking-wide";
-            } else {
-                infoFooter.innerText = "Standard Play Profile Active";
-                infoFooter.className = "text-[10px] text-slate-500 font-medium text-center mt-2 tracking-wide";
-            }
-
-            const percent = localMaxEnergy > 0 ? (localEnergy / localMaxEnergy) * 100 : 0;
-            document.getElementById('energyProgress').style.width = percent + '%';
-        }
-
-        // Automatic Per-Second Passive Energy Refill Tracking Logic
-        setInterval(() => {
-            if (!userAddress) return; 
+            showScreen('game-screen');
+            moveTarget();
             
-            // Only execute passive recovery if current energy rests below baseline threshold limit (50)
-            if (localEnergy < baseRefillCap) {
-                localEnergy++;
-                document.getElementById('currentEnergy').innerText = localEnergy.toLocaleString();
-                const percent = localMaxEnergy > 0 ? (localEnergy / localMaxEnergy) * 100 : 0;
-                document.getElementById('energyProgress').style.width = percent + '%';
-            }
-        }, 1000);
+            // Start Countdown Timer
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timeDisplay.textContent = timeLeft;
 
-        async function checkAndSwitchNetwork() {
-            try {
-                const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-                if (currentChainId !== POLYGON_CHAIN_ID) {
-                    document.getElementById('userTier').innerText = "Switching network to Polygon Mainnet...";
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: POLYGON_CHAIN_ID }],
-                        });
-                    } catch (switchError) {
-                        if (switchError.code === 4902) {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [{
-                                    chainId: POLYGON_CHAIN_ID,
-                                    chainName: 'Polygon Mainnet',
-                                    nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-                                    rpcUrls: ['https://polygon-rpc.com/'],
-                                    blockExplorerUrls: ['https://polygonscan.com/']
-                                }],
-                            });
-                        } else {
-                            throw switchError;
-                        }
-                    }
+                if (timeLeft <= 0) {
+                    endGame();
                 }
-                return true;
-            } catch (err) {
-                console.error(err);
-                return false;
-            }
+            }, 1000);
         }
 
-        async function connectWallet() {
-            if (!window.ethereum) {
-                alert("Please open this page inside your crypto wallet app browser.");
-                return;
-            }
-            try {
-                const chainVerified = await checkAndSwitchNetwork();
-                if (!chainVerified) return;
+        // Move target to a random spot within the bounds of the play area
+        function moveTarget() {
+            const areaWidth = playArea.clientWidth;
+            const areaHeight = playArea.clientHeight;
 
-                provider = new ethers.BrowserProvider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
+            // Give padding so the button doesn't spawn halfway off-screen
+            const padding = 50; 
+            
+            const randomX = Math.random() * (areaWidth - padding * 2) + padding;
+            const randomY = Math.random() * (areaHeight - padding * 2) + padding;
 
-                pvltContract = new ethers.Contract(CONTRACT_ADDRESSES.PVLT, ABIs.PVLT, signer);
-                gameContract = new ethers.Contract(CONTRACT_ADDRESSES.PepeVoltGame, ABIs.PepeVoltGame, signer);
-
-                const cleanAddress = `${userAddress.substring(0,6)}...${userAddress.substring(38)}`;
-                document.getElementById('connectBtn').innerHTML = `<i class="fa-solid fa-shield text-[10px] mr-1 text-emerald-950"></i> ${cleanAddress}`;
-                
-                await syncContractState();
-            } catch (err) {
-                console.error(err);
-            }
+            target.style.left = `${randomX}px`;
+            target.style.top = `${randomY}px`;
         }
 
-        async function syncContractState() {
-            if (!gameContract || !userAddress) return;
-            try {
-                const playerData = await gameContract.players(userAddress);
-                const freeCap = await gameContract.FREE_CAP();
-                const paidCap = await gameContract.PAID_CAP();
-                const pvltBalance = await pvltContract.balanceOf(userAddress);
+        // Handle Tap / Click on Target
+        target.addEventListener('click', (e) => {
+            score++;
+            scoreDisplay.textContent = score;
+            
+            // Create a floating score indicator (+1)
+            createPopEffect(e.clientX, e.clientY);
+            
+            // Move target to next position
+            moveTarget();
+        });
 
-                baseRefillCap = Number(freeCap || 50);
-                const currentMax = playerData.paidUser ? paidCap : freeCap;
-
-                updateUI(
-                    playerData.points,
-                    playerData.energy,
-                    currentMax,
-                    playerData.burnedGPVLT,
-                    pvltBalance,
-                    playerData.paidUser
-                );
-            } catch (err) {
-                console.error(err);
-            }
+        // Add a nice visual indicator where the player clicked
+        function createPopEffect(x, y) {
+            const pop = document.createElement('div');
+            pop.classList.add('pop');
+            pop.textContent = '+1';
+            
+            // Absolute positioning relative to the whole page for simplicity
+            pop.style.left = `${x}px`;
+            pop.style.top = `${y}px`;
+            
+            document.body.appendChild(pop);
+            
+            // Clean up element after animation finishes
+            setTimeout(() => {
+                pop.remove();
+            }, 600);
         }
 
-        async function handleTapAction(event) {
-            if (!gameContract) { connectWallet(); return; }
-            if (localEnergy <= 0) { alert("Zero Energy available."); return; }
-
-            let clientX = event.clientX || (event.touches && event.touches[0] ? event.touches[0].clientX : 0);
-            let clientY = event.clientY || (event.touches && event.touches[0] ? event.touches[0].clientY : 0);
-            createFloatingIndicator(clientX, clientY);
-
-            localEnergy--;
-            document.getElementById('currentEnergy').innerText = localEnergy.toLocaleString();
-            const pointsEl = document.getElementById('playerPoints');
-            pointsEl.innerText = (parseInt(pointsEl.innerText.replace(/,/g, '')) + 1).toLocaleString();
-            document.getElementById('energyProgress').style.width = ((localEnergy / localMaxEnergy) * 100) + '%';
-
-            try {
-                const tx = await gameContract.tap();
-                await tx.wait(1);
-                await syncContractState();
-            } catch (err) {
-                console.error(err);
-                await syncContractState();
-            }
+        // Handle Game Over
+        function endGame() {
+            clearInterval(gameInterval);
+            finalScore.textContent = score;
+            showScreen('end-screen');
         }
-
-        function createFloatingIndicator(x, y) {
-            const indicator = document.createElement('div');
-            indicator.className = 'floating-point';
-            indicator.innerText = '+1';
-            indicator.style.left = `${x - 10}px`;
-            indicator.style.top = `${y - 20}px`;
-            document.body.appendChild(indicator);
-            setTimeout(() => indicator.remove(), 800);
-        }
-
-        const tapBtn = document.getElementById('tapBtn');
-        tapBtn.addEventListener('touchstart', function(e) { e.preventDefault(); handleTapAction(e); }, { passive: false });
-        tapBtn.addEventListener('mousedown', function(e) { if ('ontouchstart' in window) return; handleTapAction(e); });
-
-        async function handleBuyEnergy() {
-            if (!gameContract) return alert("Connect wallet first.");
-            try {
-                const price = ethers.parseEther("100");
-                const balance = await pvltContract.balanceOf(userAddress);
-                
-                if (balance < price) {
-                    alert("Transaction Cancelled: Insufficient PVLT balance inside your connected wallet profile.");
-                    return;
-                }
-
-                const currentAllowance = await pvltContract.allowance(userAddress, CONTRACT_ADDRESSES.PepeVoltGame);
-                if (currentAllowance < price) {
-                    document.getElementById('userTier').innerText = "Approving exactly 100 PVLT...";
-                    const approveTx = await pvltContract.approve(CONTRACT_ADDRESSES.PepeVoltGame, price);
-                    await approveTx.wait(1);
-                }
-
-                document.getElementById('userTier').innerText = "Purchasing 10,000 Energy Pack...";
-                const buyTx = await gameContract.buyEnergy();
-                await buyTx.wait(1);
-                
-                alert("Ecosystem energy expansion confirmed! 10,000 Energy added.");
-                await syncContractState();
-            } catch (err) {
-                console.error(err);
-                alert("Transaction Failed: Action reverted on-chain.");
-                await syncContractState();
-            }
-        }
-
-        async function handleConvert() {
-            if (!gameContract) return alert("Connect wallet.");
-            try {
-                document.getElementById('userTier').innerText = "Converting points to gPVLT...";
-                const tx = await gameContract.convertPoints();
-                await tx.wait(1);
-                await syncContractState();
-            } catch (err) {
-                console.error(err);
-                await syncContractState();
-            }
-        }
-
-        async function handleClaim() {
-            if (!gameContract) return alert("Connect wallet.");
-            try {
-                document.getElementById('userTier').innerText = "Claiming rewards...";
-                const tx = await gameContract.claimRewards();
-                await tx.wait(1);
-                alert("gPVLT burned! PVLT transferred from Treasury to your wallet.");
-                await syncContractState();
-            } catch (err) {
-                console.error(err);
-                await syncContractState();
-            }
-        }
-
-        if (window.ethereum) {
-            window.ethereum.on('chainChanged', () => window.location.reload());
-            window.ethereum.on('accountsChanged', () => window.location.reload());
-        }
-
-        let lastTouchEndTime = 0;
-        document.addEventListener('touchend', function (e) {
-            let currentTime = (new Date()).getTime();
-            if (currentTime - lastTouchEndTime <= 300) e.preventDefault();
-            lastTouchEndTime = currentTime;
-        }, false);
     </script>
 </body>
 </html>
