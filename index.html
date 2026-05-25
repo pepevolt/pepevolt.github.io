@@ -56,8 +56,9 @@
 
         <button id="wallet-btn" class="btn-connect" onclick="toggleWallet()">Connect Wallet</button>
         
+        /* Action Submissions */
         <button id="buy-energy-btn" class="btn-action" onclick="confirmRefill()" disabled>Buy 10,000 Energy (100 PVLT)</button>
-        <button id="convert-btn" class="btn-action" onclick="handleLocalConvert()" disabled>Convert 100 Points → 1 gPVLT</button>
+        <button id="convert-btn" class="btn-action" onclick="handleOnChainConvert()" disabled>Convert 100 Points → 1 gPVLT</button>
         <button id="claim-btn" class="btn-action" onclick="claimReward()" disabled>Claim Reward (100-1000 gPVLT)</button>
 
         <p id="status-feed">Please load app within a Web3 interface browser.</p>
@@ -92,7 +93,7 @@
         let isWalletConnected = false;
         let actionInFlight = false;
 
-        // Local UI State Tracking Variables
+        // Local UI State Values
         let localEnergy = 0;
         let localPoints = 0;
         let localGpvlt = 0;
@@ -190,7 +191,7 @@
             }
         }
 
-        // INSTANT TAP LOGIC: Updates top nav immediately
+        // Instant Visual Tapping (Zero friction for users)
         function handleLocalTap() {
             if (!isWalletConnected) return;
 
@@ -206,19 +207,33 @@
             }
         }
 
-        // INSTANT CONVERT LOGIC: Subtracts 100 Points (💎), Adds 1 gPVLT (🪙) straight to navbar instantly
-        function handleLocalConvert() {
-            if (!isWalletConnected) return;
+        // FIXED ON-CHAIN CONVERSION: Writes directly to blockchain so claimRewards doesn't abort!
+        async function handleOnChainConvert() {
+            if (!isWalletConnected || actionInFlight) return;
 
-            if (localPoints >= 100) {
-                localPoints -= 100;
-                localGpvlt += 1;
-
-                document.getElementById('points').innerText = localPoints.toLocaleString();
-                document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
-                document.getElementById('status-feed').innerText = "Converted 100 Points to 1 gPVLT locally!";
-            } else {
+            if (localPoints < 100) {
                 document.getElementById('status-feed').innerText = "Insufficient Points! You need at least 100 points to convert.";
+                return;
+            }
+
+            try {
+                actionInFlight = true;
+                document.getElementById('status-feed').innerText = "Converting 100 Points to 1 gPVLT on-chain...";
+                
+                // Submit transaction directly to PepeVoltGame contract
+                const tx = await gameContract.convertPoints();
+                
+                document.getElementById('status-feed').innerText = "Confirming conversion transaction block...";
+                await tx.wait(1);
+                
+                document.getElementById('status-feed').innerText = "Converted successfully! Navbar synchronized.";
+            } catch (err) {
+                console.error(err);
+                document.getElementById('status-feed').innerText = "Conversion failed or rejected by network requirements.";
+            } finally {
+                actionInFlight = false;
+                // Pull down updated balances from blockchain to refresh the top nav emojis
+                await syncContractState();
             }
         }
 
@@ -247,37 +262,27 @@
             }
         }
 
-        // REWARD CLAIM LOGIC: Updates top nav instantly and triggers the TreasuryVolt payout
+        // Reward Claim Processing via TreasuryVolt Address
         async function claimReward() {
             if (!isWalletConnected || actionInFlight) return;
 
             if (localGpvlt < 100) {
-                alert("Requirement unmet: You need a minimum of 100 gPVLT to claim rewards.");
+                alert("Requirement unmet: You need a minimum of 100 gPVLT on the blockchain to claim rewards.");
                 document.getElementById('status-feed').innerText = "Claim aborted.";
                 return;
             }
 
-            // Cap execution maximum at 1000 gPVLT per transaction cycle matching contract thresholds
-            let claimAmount = localGpvlt;
-            if (claimAmount > 1000) {
-                claimAmount = 1000;
-            }
-
             try {
                 actionInFlight = true;
-                document.getElementById('status-feed').innerText = `Sending reward request to TreasuryVolt...`;
+                document.getElementById('status-feed').innerText = "Submitting claim request to TreasuryVolt...";
                 
-                // Route transaction via TreasuryVolt deployment explicitly
+                // Routes payout request through your explicit TreasuryVolt deployment
                 const tx = await treasuryContract.claimRewards();
                 
                 document.getElementById('status-feed').innerText = "Awaiting transaction block finality...";
                 await tx.wait(1);
 
-                // Deduct claimed values on top navbar instantly
-                localGpvlt -= claimAmount;
-                document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
-
-                document.getElementById('status-feed').innerText = `Successfully claimed PVLT directly from TreasuryVolt!`;
+                document.getElementById('status-feed').innerText = "Successfully claimed PVLT directly to your wallet!";
             } catch (err) {
                 console.error(err);
                 document.getElementById('status-feed').innerText = "Transaction failed or rejected by contract limitations.";
