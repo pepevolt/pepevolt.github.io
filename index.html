@@ -1,105 +1,780 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PEPE VOLT ⚡ Game</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #0b0b0b;
-      color: white;
-    }
+<meta charset="UTF-8">
 
-    button {
-      padding: 14px 18px;
-      margin: 10px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+<meta
+name="viewport"
+content="width=device-width,
+initial-scale=1,
+maximum-scale=1,
+user-scalable=no,
+viewport-fit=cover">
 
-    .box {
-      margin-top: 30px;
-    }
+<title>PVLT Tap Game</title>
 
-    .score {
-      font-size: 32px;
-      margin: 20px;
-    }
-  </style>
+<!-- ETHERS -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
+<!-- REOWN / WALLETCONNECT -->
+<script src="https://unpkg.com/@walletconnect/ethereum-provider/dist/index.umd.js"></script>
+
+<style>
+
+/* ================= RESET ================= */
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+background:#07101d;
+font-family:Arial,sans-serif;
+color:white;
+touch-action:manipulation;
+overscroll-behavior:none;
+-webkit-text-size-adjust:100%;
+}
+
+/* ================= BODY ================= */
+
+body{
+display:flex;
+flex-direction:column;
+}
+
+/* ================= NAV ================= */
+
+.nav{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:14px;
+background:#101b2e;
+font-size:13px;
+font-weight:bold;
+}
+
+/* ================= MAIN ================= */
+
+.main{
+flex:1;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding:20px;
+}
+
+/* ================= TAP BUTTON ================= */
+
+.tap{
+width:230px;
+height:230px;
+border-radius:50%;
+border:none;
+margin-top:20px;
+background:linear-gradient(
+135deg,
+#00ff99,
+#00ccff
+);
+display:flex;
+align-items:center;
+justify-content:center;
+overflow:hidden;
+box-shadow:
+0 0 30px rgba(0,255,180,0.25);
+
+touch-action:manipulation;
+
+user-select:none;
+-webkit-user-select:none;
+}
+
+.tap:active{
+transform:scale(0.96);
+}
+
+.tap img{
+width:75%;
+height:75%;
+object-fit:contain;
+pointer-events:none;
+}
+
+/* ================= CARD ================= */
+
+.card{
+width:92%;
+max-width:380px;
+margin-top:24px;
+padding:18px;
+border-radius:18px;
+background:rgba(255,255,255,0.05);
+border:1px solid rgba(255,255,255,0.08);
+
+display:flex;
+flex-direction:column;
+gap:14px;
+}
+
+/* ================= INPUT ================= */
+
+input{
+width:100%;
+padding:15px;
+border:none;
+border-radius:12px;
+background:#111827;
+color:white;
+font-size:14px;
+outline:none;
+}
+
+/* ================= BUTTON ================= */
+
+.btn{
+width:100%;
+padding:15px;
+border:none;
+border-radius:12px;
+font-weight:bold;
+font-size:15px;
+
+background:linear-gradient(
+90deg,
+#00ff99,
+#00ccff
+);
+
+color:black;
+}
+
+/* ================= STATUS ================= */
+
+.status{
+font-size:12px;
+text-align:center;
+display:none;
+opacity:0.8;
+}
+
+/* ================= INFO ================= */
+
+.info{
+margin-top:18px;
+font-size:12px;
+line-height:1.7;
+text-align:center;
+opacity:0.85;
+max-width:380px;
+}
+
+</style>
+
 </head>
 
 <body>
 
-<h1>⚡ PEPE VOLT TAP GAME</h1>
+<!-- ================= NAVBAR ================= -->
 
-<button id="connectBtn">Connect Wallet</button>
+<div class="nav">
 
-<p id="wallet">Not connected</p>
-
-<div class="box">
-  <div class="score">Score: <span id="score">0</span></div>
-
-  <button onclick="tap()">⚡ TAP</button>
-  <button onclick="loadScore()">🔄 Refresh Score</button>
+<div>
+🔋
+<span id="energy">50</span>
 </div>
 
-<script type="module">
-import { createAppKit } from "https://unpkg.com/@reown/appkit@latest/dist/index.js";
+<div>
+⚡
+<span id="points">0</span>
+</div>
 
-// 🔗 Reown WalletConnect
-const appKit = createAppKit({
-  projectId: "1731f99148b9cf6107dee70b6efb14b7",
-  networks: [137], // Polygon mainnet ([Polygon Labs](chatgpt://generic-entity?number=0))
-  defaultNetwork: 137
+<div>
+💎
+<span id="pvltg">0.0000</span>
+</div>
+
+</div>
+
+<!-- ================= MAIN ================= -->
+
+<div class="main">
+
+<!-- TAP BUTTON -->
+
+<button class="tap" onclick="tapGame()">
+
+<img src="images/IMG_1850.png">
+
+</button>
+
+<!-- CARD -->
+
+<div class="card">
+
+<input
+id="walletInput"
+placeholder="Connect Polygon Wallet"
+readonly>
+
+<button
+class="btn"
+id="connectBtn"
+onclick="connectWallet()">
+
+CONNECT WALLET
+
+</button>
+
+<div
+class="status"
+id="walletStatus">
+
+Wallet Connected
+
+</div>
+
+<button
+class="btn"
+onclick="buyEnergy()">
+
+BUY ENERGY
+
+</button>
+
+<button
+class="btn"
+onclick="swapPoints()">
+
+SWAP POINTS → PVLTG
+
+</button>
+
+<button
+class="btn"
+onclick="claimPVLT()">
+
+CLAIM PVLT
+
+</button>
+
+</div>
+
+<!-- INFO -->
+
+<div class="info">
+
+1 Tap = 1 Point<br>
+
+10000 Points = 1 PVLTG<br>
+
+100 PVLTG = 1 PVLT
+
+</div>
+
+</div>
+
+<script>
+
+/* ================= CONFIG ================= */
+
+const API =
+"https://pvlt-server.onrender.com";
+
+const PROJECT_ID =
+"1731f99148b9cf6107dee70b6efb14b7";
+
+/* ================= CONTRACTS ================= */
+
+const PVLT =
+"0xb8010fD52D5208eC05574a7D5A939c0d446A862a";
+
+const TREASURY =
+"0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc";
+
+const PVLTG =
+"0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
+
+/* ================= STATE ================= */
+
+let provider;
+
+let wallet = "";
+
+let points = 0;
+
+let energy = 50;
+
+let pvltg = 0;
+
+/* ================= UI ================= */
+
+function updateUI(){
+
+document.getElementById(
+"energy"
+).innerText = energy;
+
+document.getElementById(
+"points"
+).innerText = points;
+
+document.getElementById(
+"pvltg"
+).innerText =
+Number(pvltg).toFixed(4);
+}
+
+/* ================= CONNECT WALLET ================= */
+
+async function connectWallet(){
+
+try{
+
+provider =
+await EthereumProvider.init({
+
+projectId:
+PROJECT_ID,
+
+chains:[137],
+
+showQrModal:true
+
 });
 
-let wallet = null;
+await provider.enable();
 
-// CONNECT WALLET
-document.getElementById("connectBtn").onclick = async () => {
-  const result = await appKit.open();
+const ethersProvider =
+new ethers.providers.Web3Provider(
+provider
+);
 
-  wallet = result.address;
+const signer =
+ethersProvider.getSigner();
 
-  document.getElementById("wallet").innerText = wallet;
+wallet =
+await signer.getAddress();
 
-  loadScore();
-};
+/* ================= SHOW WALLET ================= */
 
-// TAP FUNCTION
-window.tap = async function () {
-  if (!wallet) return alert("Connect wallet first");
+document.getElementById(
+"walletInput"
+).value =
+wallet.substring(0,6)
++
+"..."
++
+wallet.substring(
+wallet.length - 4
+);
 
-  const res = await fetch("https://YOUR-RENDER-URL/tap", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ wallet })
-  });
+/* ================= BUTTON ================= */
 
-  const data = await res.json();
+document.getElementById(
+"connectBtn"
+).innerText =
+"CONNECTED";
 
-  if (data.score !== undefined) {
-    document.getElementById("score").innerText = data.score;
-  } else {
-    alert(data.error || "Error");
-  }
-};
+/* ================= STATUS ================= */
 
-// LOAD SCORE
-window.loadScore = async function () {
-  if (!wallet) return;
+document.getElementById(
+"walletStatus"
+).style.display =
+"block";
 
-  const res = await fetch("https://YOUR-RENDER-URL/score/" + wallet);
+/* ================= LOAD USER ================= */
 
-  const data = await res.json();
+const res =
+await fetch(
+API + "/user",
+{
+method:"POST",
 
-  if (data.score !== undefined) {
-    document.getElementById("score").innerText = data.score;
-  }
-};
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+points =
+data.points || 0;
+
+energy =
+data.energy || 50;
+
+pvltg =
+data.pvltg || 0;
+
+updateUI();
+
+}catch(err){
+
+console.log(err);
+
+alert(
+"Wallet connection failed"
+);
+}
+}
+
+/* ================= TAP ================= */
+
+async function tapGame(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+try{
+
+const res =
+await fetch(
+API + "/tap",
+{
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+if(data.error){
+
+alert(data.error);
+
+return;
+}
+
+points =
+data.points;
+
+energy =
+data.energy;
+
+updateUI();
+
+}catch(err){
+
+console.log(err);
+
+alert(
+"Tap failed"
+);
+}
+}
+
+/* ================= BUY ENERGY ================= */
+
+async function buyEnergy(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+try{
+
+const ethersProvider =
+new ethers.providers.Web3Provider(
+provider
+);
+
+const signer =
+ethersProvider.getSigner();
+
+/* ================= PVLT CONTRACT ================= */
+
+const pvltContract =
+new ethers.Contract(
+
+PVLT,
+
+[
+"function approve(address spender,uint256 amount) external returns(bool)"
+],
+
+signer
+
+);
+
+/* ================= APPROVE ================= */
+
+const amount =
+ethers.utils.parseEther(
+"0.025"
+);
+
+const approveTx =
+await pvltContract.approve(
+TREASURY,
+amount
+);
+
+await approveTx.wait();
+
+/* ================= TREASURY ================= */
+
+const treasury =
+new ethers.Contract(
+
+TREASURY,
+
+[
+"function buyEnergy() external"
+],
+
+signer
+
+);
+
+const tx =
+await treasury.buyEnergy();
+
+await tx.wait();
+
+/* ================= BACKEND REFILL ================= */
+
+const res =
+await fetch(
+API + "/refill",
+{
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+wallet
+})
+}
+);
+
+const data =
+await res.json();
+
+energy =
+data.energy;
+
+updateUI();
+
+alert(
+"1000 Energy Purchased"
+);
+
+}catch(err){
+
+console.log(err);
+
+alert(
+"Energy purchase failed"
+);
+}
+}
+
+/* ================= SWAP POINTS ================= */
+
+async function swapPoints(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+if(points < 10000){
+
+alert(
+"Need minimum 10000 points"
+);
+
+return;
+}
+
+const earned =
+Math.floor(
+points / 10000
+);
+
+points = 0;
+
+pvltg += earned;
+
+updateUI();
+
+alert(
+earned +
+" PVLTG added"
+);
+}
+
+/* ================= CLAIM PVLT ================= */
+
+async function claimPVLT(){
+
+if(!wallet){
+
+alert(
+"Connect wallet first"
+);
+
+return;
+}
+
+if(pvltg < 100){
+
+alert(
+"Need minimum 100 PVLTG"
+);
+
+return;
+}
+
+try{
+
+const ethersProvider =
+new ethers.providers.Web3Provider(
+provider
+);
+
+const signer =
+ethersProvider.getSigner();
+
+/* ================= PVLTG CONTRACT ================= */
+
+const pvltgContract =
+new ethers.Contract(
+
+PVLTG,
+
+[
+"function approve(address spender,uint256 amount) external returns(bool)"
+],
+
+signer
+
+);
+
+/* ================= APPROVE ================= */
+
+const amount =
+ethers.utils.parseEther(
+pvltg.toString()
+);
+
+const approveTx =
+await pvltgContract.approve(
+
+TREASURY,
+
+amount
+
+);
+
+await approveTx.wait();
+
+/* ================= TREASURY ================= */
+
+const treasury =
+new ethers.Contract(
+
+TREASURY,
+
+[
+"function swapPVLTGtoPVLT(uint256 amount) external"
+],
+
+signer
+
+);
+
+/* ================= SWAP ================= */
+
+const tx =
+await treasury.swapPVLTGtoPVLT(
+amount
+);
+
+await tx.wait();
+
+/* ================= RESET ================= */
+
+pvltg = 0;
+
+updateUI();
+
+alert(
+"PVLT claimed successfully"
+);
+
+}catch(err){
+
+console.log(err);
+
+alert(
+"Claim failed"
+);
+}
+}
+
+/* ================= AUTO REFILL ================= */
+
+setInterval(()=>{
+
+if(energy < 50){
+
+energy += 1;
+
+updateUI();
+}
+
+},30000);
+
+/* ================= START ================= */
+
+updateUI();
+
 </script>
 
 </body>
