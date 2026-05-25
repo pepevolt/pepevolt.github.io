@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- strict responsive sizing configuration that explicitly blocks user scaling -->
+    <!-- Blocks mobile browser window-scaling/zooming gestures completely -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PepeVolt Clicker</title>
     <!-- Tailwind CSS for clean dark UI styling -->
@@ -12,7 +12,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=500;700;800&display=swap');
         
-        /* Forces the view screen boundaries to remain strictly locked */
+        /* Fixed layout rules prevent scrolling and native zooming completely */
         html, body {
             position: fixed;
             overflow: hidden;
@@ -20,8 +20,6 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            /* Completely blocks native mobile browser zoom mechanics */
-            touch-action: none; 
             -webkit-text-size-adjust: none;
         }
 
@@ -30,19 +28,19 @@
             background: radial-gradient(circle at center, #111d18 0%, #070a09 100%);
         }
 
-        /* Prevents elements from highlighting or flashing blue on fast taps */
+        /* Prevents selections or blue click highlights on web elements */
         * {
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             -webkit-user-select: none;
         }
 
-        /* Safe handling for button clicks without browser scale interference */
-        .tap-button {
+        /* Allows rapid tapping behavior specifically on interactive button targets */
+        .tap-target {
             touch-action: manipulation;
         }
-        .tap-button:active {
-            transform: scale(0.96);
+        .tap-target:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -81,9 +79,10 @@
     <main class="w-full max-w-md flex flex-col items-center gap-8 my-auto">
         
         <!-- Center Giant Tap Tap Target Button -->
-        <div class="relative flex flex-col items-center select-none">
+        <div class="relative flex flex-col items-center">
             <div class="absolute -inset-2 bg-emerald-500/10 rounded-full blur-xl"></div>
-            <button onclick="handleTap(event)" class="tap-button relative w-56 h-56 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600 flex flex-col items-center justify-center border-4 border-emerald-400 shadow-2xl transition-all duration-75 cursor-pointer outline-none">
+            <!-- Handled using unified pointer events below for instant touch response -->
+            <button id="tapBtn" class="tap-target relative w-56 h-56 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600 flex flex-col items-center justify-center border-4 border-emerald-400 shadow-2xl transition-transform duration-75 cursor-pointer outline-none">
                 <i class="fa-solid fa-frog text-8xl text-black/80 mb-2 pointer-events-none"></i>
                 <span class="text-xs uppercase font-black tracking-widest text-black/60 pointer-events-none">Tap Tap</span>
             </button>
@@ -102,15 +101,15 @@
 
         <!-- System Pipeline Action Controls -->
         <div class="w-full flex flex-col gap-3">
-            <button onclick="handleBuyEnergy()" class="tap-button w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-emerald-500/10 cursor-pointer text-sm outline-none">
+            <button onclick="handleBuyEnergy()" class="tap-target w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-emerald-500/10 cursor-pointer text-sm outline-none">
                 Buy 10,000 Energy (100 PVLT)
             </button>
 
-            <button onclick="handleConvert()" class="tap-button w-full bg-gray-900 hover:bg-gray-800 border border-white/5 hover:border-white/10 font-bold py-3.5 rounded-xl tracking-wide transition-all cursor-pointer text-sm outline-none">
+            <button onclick="handleConvert()" class="tap-target w-full bg-gray-900 hover:bg-gray-800 border border-white/5 hover:border-white/10 font-bold py-3.5 rounded-xl tracking-wide transition-all cursor-pointer text-sm outline-none">
                 Convert Points to gPVLT
             </button>
 
-            <button onclick="handleClaim()" class="tap-button w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-blue-600/10 cursor-pointer text-sm outline-none">
+            <button onclick="handleClaim()" class="tap-target w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-blue-600/10 cursor-pointer text-sm outline-none">
                 Claim PVLT
             </button>
         </div>
@@ -134,18 +133,15 @@
         };
 
         function updateUI() {
-            // Live Stats Injectors
             document.getElementById('currentEnergy').innerText = gameState.energy;
             document.getElementById('maxEnergy').innerText = gameState.maxEnergy;
             document.getElementById('playerPoints').innerText = gameState.points;
             document.getElementById('playerGPVLT').innerText = gameState.burnedGPVLT;
             document.getElementById('walletBalance').innerText = gameState.walletBalance.toFixed(2) + " PVLT";
             
-            // Linear Progress calculation
             const percent = (gameState.energy / gameState.maxEnergy) * 100;
             document.getElementById('energyProgress').style.width = percent + '%';
 
-            // Footer tier descriptor adjustment
             const footerTier = document.getElementById('userTier');
             if (gameState.paidUser) {
                 footerTier.innerText = "Premium Upgrade Verified Mode";
@@ -153,13 +149,8 @@
             }
         }
 
-        // Action: Tap Tap execution
-        function handleTap(event) {
-            // Stops multi-touch gestures and double-tap behaviors from breaking layout bounds
-            if (event) {
-                event.preventDefault();
-            }
-            
+        // Processing Logic for Taps
+        function executeTapLogic() {
             if (gameState.energy > 0) {
                 gameState.energy -= 1;
                 gameState.points += 1;
@@ -169,7 +160,23 @@
             }
         }
 
-        // Action: Buy 10000 Energy
+        // Setup instant touch event listener for mobile devices
+        const tapButtonElement = document.getElementById('tapBtn');
+        
+        // Listens to native touch inputs directly, bypassing 300ms mobile browser delays
+        tapButtonElement.addEventListener('touchstart', function(event) {
+            event.preventDefault(); // Kills zoom/gestures
+            executeTapLogic();
+        }, { passive: false });
+
+        // Fallback option for standard desktop mouse testing
+        tapButtonElement.addEventListener('mousedown', function(event) {
+            // Only fire if it's a mouse click, not an emulated touch event
+            if (event.type === 'mousedown' && 'ontouchstart' in window) return;
+            executeTapLogic();
+        });
+
+        // Action: Buy 10,000 Energy
         function handleBuyEnergy() {
             if (gameState.walletBalance >= 100) {
                 gameState.walletBalance -= 100;
@@ -206,17 +213,17 @@
             }
         }
 
-        // Prevent double-tap zoom defaults via event listeners explicitly
+        // Structural window level double-tap override block
+        let lastTouchEndTime = 0;
         document.addEventListener('touchend', function (event) {
-            let now = (new Date()).getTime();
-            if (now - lastTouchEnd <= 300) {
+            let currentTime = (new Date()).getTime();
+            if (currentTime - lastTouchEndTime <= 300) {
                 event.preventDefault();
             }
-            lastTouchEnd = now;
+            lastTouchEndTime = currentTime;
         }, false);
-        let lastTouchEnd = 0;
 
-        // Initialize state engine layout
+        // Initialize display configuration state values
         updateUI();
     </script>
 </body>
