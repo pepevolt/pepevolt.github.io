@@ -68,7 +68,7 @@
         const CONTRACT_ADDRESSES = {
             PVLT: "0xb8010fD52D5208eC05574a7D5A939c0d446A862a",
             PepeVoltGame: "0x151803532A33837E4bBc2Afc23c6b1f59039B82D",
-            TreasuryVolt: "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc" // Added your newly assigned reward contract address
+            TreasuryVolt: "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc"
         };
 
         const ABIs = {
@@ -83,7 +83,7 @@
                 "function convertPoints() external"
             ],
             TreasuryVolt: [
-                "function claimRewards() external" // Kept exact target interface name for rewards execution
+                "function claimRewards() external"
             ]
         };
 
@@ -92,7 +92,7 @@
         let isWalletConnected = false;
         let actionInFlight = false;
 
-        // Local UI State Values
+        // Local UI State Tracking Variables
         let localEnergy = 0;
         let localPoints = 0;
         let localGpvlt = 0;
@@ -190,7 +190,7 @@
             }
         }
 
-        // Instant Visual Tapping
+        // INSTANT TAP LOGIC: Updates top nav immediately
         function handleLocalTap() {
             if (!isWalletConnected) return;
 
@@ -206,7 +206,7 @@
             }
         }
 
-        // Instant Local Point Conversion
+        // INSTANT CONVERT LOGIC: Subtracts 100 Points (💎), Adds 1 gPVLT (🪙) straight to navbar instantly
         function handleLocalConvert() {
             if (!isWalletConnected) return;
 
@@ -247,17 +247,17 @@
             }
         }
 
-        // Process claim executions through the TreasuryVolt contract setup
+        // REWARD CLAIM LOGIC: Updates top nav instantly and triggers the TreasuryVolt payout
         async function claimReward() {
             if (!isWalletConnected || actionInFlight) return;
 
-            // Enforce limits inside UI logic
             if (localGpvlt < 100) {
                 alert("Requirement unmet: You need a minimum of 100 gPVLT to claim rewards.");
                 document.getElementById('status-feed').innerText = "Claim aborted.";
                 return;
             }
 
+            // Cap execution maximum at 1000 gPVLT per transaction cycle matching contract thresholds
             let claimAmount = localGpvlt;
             if (claimAmount > 1000) {
                 claimAmount = 1000;
@@ -265,22 +265,22 @@
 
             try {
                 actionInFlight = true;
-                document.getElementById('status-feed').innerText = `Sending transaction to TreasuryVolt for ${claimAmount} PVLT...`;
+                document.getElementById('status-feed').innerText = `Sending reward request to TreasuryVolt...`;
                 
-                // Targets the TreasuryVolt deployment explicitly
+                // Route transaction via TreasuryVolt deployment explicitly
                 const tx = await treasuryContract.claimRewards();
                 
                 document.getElementById('status-feed').innerText = "Awaiting transaction block finality...";
                 await tx.wait(1);
 
-                // Deduct claimed values on display interface instantly
+                // Deduct claimed values on top navbar instantly
                 localGpvlt -= claimAmount;
                 document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
 
-                document.getElementById('status-feed').innerText = `Successfully claimed ${claimAmount} PVLT directly from TreasuryVolt!`;
+                document.getElementById('status-feed').innerText = `Successfully claimed PVLT directly from TreasuryVolt!`;
             } catch (err) {
                 console.error(err);
-                document.getElementById('status-feed').innerText = "Transaction failed or rejected by TreasuryVolt criteria.";
+                document.getElementById('status-feed').innerText = "Transaction failed or rejected by contract limitations.";
             } finally {
                 actionInFlight = false;
                 await syncContractState();
