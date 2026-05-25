@@ -2,27 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- strict responsive sizing configuration that explicitly blocks user scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PepeVolt Clicker</title>
     <!-- Tailwind CSS for clean dark UI styling -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- FontAwesome for layout icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=500;700;800&display=swap');
+        
+        /* Forces the view screen boundaries to remain strictly locked */
+        html, body {
+            position: fixed;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            /* Completely blocks native mobile browser zoom mechanics */
+            touch-action: none; 
+            -webkit-text-size-adjust: none;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: radial-gradient(circle at center, #111d18 0%, #070a09 100%);
         }
-        .tap-active:active {
-            transform: scale(0.95);
+
+        /* Prevents elements from highlighting or flashing blue on fast taps */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Safe handling for button clicks without browser scale interference */
+        .tap-button {
+            touch-action: manipulation;
+        }
+        .tap-button:active {
+            transform: scale(0.96);
         }
     </style>
 </head>
-<body class="text-gray-200 min-h-screen flex flex-col justify-between items-center p-4">
+<body class="text-gray-200 flex flex-col justify-between items-center p-4">
 
     <!-- Top Navigation Bar (Stats Layout) -->
-    <nav class="w-full max-w-md bg-black/40 border border-emerald-900/40 rounded-2xl px-4 py-3 flex justify-between items-center shadow-lg backdrop-blur-md">
+    <nav class="w-full max-w-md bg-black/40 border border-emerald-900/40 rounded-2xl px-4 py-3 flex justify-between items-center shadow-lg backdrop-blur-md mt-2">
         <!-- 1. Energy Tracking Module -->
         <div class="flex flex-col items-center flex-1 border-r border-emerald-950/60">
             <span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold flex items-center gap-1">
@@ -51,14 +78,14 @@
     </nav>
 
     <!-- Main Game Section -->
-    <main class="w-full max-w-md flex flex-col items-center gap-10 my-auto">
+    <main class="w-full max-w-md flex flex-col items-center gap-8 my-auto">
         
         <!-- Center Giant Tap Tap Target Button -->
-        <div class="relative flex flex-col items-center">
+        <div class="relative flex flex-col items-center select-none">
             <div class="absolute -inset-2 bg-emerald-500/10 rounded-full blur-xl"></div>
-            <button onclick="handleTap()" class="relative w-56 h-56 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600 flex flex-col items-center justify-center border-4 border-emerald-400 shadow-2xl transition-all duration-75 transform tap-active cursor-pointer select-none">
-                <i class="fa-solid fa-frog text-8xl text-black/80 mb-2"></i>
-                <span class="text-xs uppercase font-black tracking-widest text-black/60">Tap Tap</span>
+            <button onclick="handleTap(event)" class="tap-button relative w-56 h-56 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600 flex flex-col items-center justify-center border-4 border-emerald-400 shadow-2xl transition-all duration-75 cursor-pointer outline-none">
+                <i class="fa-solid fa-frog text-8xl text-black/80 mb-2 pointer-events-none"></i>
+                <span class="text-xs uppercase font-black tracking-widest text-black/60 pointer-events-none">Tap Tap</span>
             </button>
         </div>
 
@@ -75,15 +102,15 @@
 
         <!-- System Pipeline Action Controls -->
         <div class="w-full flex flex-col gap-3">
-            <button onclick="handleBuyEnergy()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-emerald-500/10 cursor-pointer text-sm">
+            <button onclick="handleBuyEnergy()" class="tap-button w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-emerald-500/10 cursor-pointer text-sm outline-none">
                 Buy 10,000 Energy (100 PVLT)
             </button>
 
-            <button onclick="handleConvert()" class="w-full bg-gray-900 hover:bg-gray-800 border border-white/5 hover:border-white/10 font-bold py-3.5 rounded-xl tracking-wide transition-all cursor-pointer text-sm">
+            <button onclick="handleConvert()" class="tap-button w-full bg-gray-900 hover:bg-gray-800 border border-white/5 hover:border-white/10 font-bold py-3.5 rounded-xl tracking-wide transition-all cursor-pointer text-sm outline-none">
                 Convert Points to gPVLT
             </button>
 
-            <button onclick="handleClaim()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-blue-600/10 cursor-pointer text-sm">
+            <button onclick="handleClaim()" class="tap-button w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-blue-600/10 cursor-pointer text-sm outline-none">
                 Claim PVLT
             </button>
         </div>
@@ -91,7 +118,7 @@
     </main>
 
     <!-- Simple Identification Footer -->
-    <footer class="text-[10px] text-gray-600 text-center py-2" id="userTier">
+    <footer class="text-[10px] text-gray-600 text-center pb-2" id="userTier">
         Standard Ecosystem Profile Tier
     </footer>
 
@@ -127,7 +154,12 @@
         }
 
         // Action: Tap Tap execution
-        function handleTap() {
+        function handleTap(event) {
+            // Stops multi-touch gestures and double-tap behaviors from breaking layout bounds
+            if (event) {
+                event.preventDefault();
+            }
+            
             if (gameState.energy > 0) {
                 gameState.energy -= 1;
                 gameState.points += 1;
@@ -173,6 +205,16 @@
                 alert("Threshold unmatched. Target requirements range between 100 and 1000 gPVLT.");
             }
         }
+
+        // Prevent double-tap zoom defaults via event listeners explicitly
+        document.addEventListener('touchend', function (event) {
+            let now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+        let lastTouchEnd = 0;
 
         // Initialize state engine layout
         updateUI();
