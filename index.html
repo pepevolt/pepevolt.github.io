@@ -100,16 +100,16 @@
             font-size: 0.95rem;
         }
 
-        .ratio-tag {
-            background: rgba(255, 170, 0, 0.1);
-            color: var(--gov-color);
-            border: 1px solid rgba(255, 170, 0, 0.2);
-            padding: 4px 12px;
-            border-radius: 50px;
+        .pipeline-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 16px;
             font-size: 0.8rem;
-            font-weight: bold;
+            text-align: center;
+            color: #94a3b8;
             margin-bottom: 1.5rem;
-            letter-spacing: 0.5px;
+            line-height: 1.6;
         }
 
         .btn {
@@ -131,6 +131,13 @@
             transform: scale(0.96);
         }
 
+        .btn:disabled {
+            background-color: #334155 !important;
+            color: #64748b !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+        }
+
         .btn-secondary {
             background-color: transparent;
             color: #64748b;
@@ -139,11 +146,11 @@
             box-shadow: none;
         }
 
-        /* HUD Section */
+        /* Top HUD Configuration */
         .hud {
             width: 100%;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 10px;
             padding: 16px;
             z-index: 20;
@@ -154,23 +161,21 @@
 
         .hud-item {
             background: rgba(255, 255, 255, 0.03);
-            padding: 10px 12px;
+            padding: 12px;
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.06);
             text-align: center;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: #94a3b8;
         }
 
         .hud-item strong {
-            display: block;
-            font-size: 1.1rem;
+            font-size: 1.4rem;
             color: #fff;
-            margin-top: 2px;
+            margin-left: 6px;
         }
 
         .hud-full {
-            grid-column: span 2;
             padding: 12px;
             background: rgba(255, 255, 255, 0.02);
             border-radius: 16px;
@@ -204,7 +209,7 @@
             transition: width 0.1s linear;
         }
 
-        /* Play Canvas */
+        /* Spawning Arena Canvas */
         .play-area {
             position: absolute;
             top: 155px; 
@@ -215,8 +220,8 @@
         }
 
         .token-target {
-            width: 100px;
-            height: 100px;
+            width: 110px;
+            height: 110px;
             border-radius: 50%;
             position: absolute;
             transform: translate(-50%, -50%);
@@ -224,41 +229,37 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 2.2rem;
-            border: 3px solid #ffffff;
+            font-size: 2.5rem;
+            border: 4px solid #ffffff;
             touch-action: manipulation;
-            transition: background 0.1s, box-shadow 0.1s, opacity 0.2s, transform 0.1s;
-        }
-
-        .coin-pvlt {
             background: radial-gradient(circle, #00ff66 0%, #054019 100%);
             box-shadow: 0 0 35px rgba(0, 255, 102, 0.6), inset 0 0 15px rgba(255,255,255,0.4);
+            transition: transform 0.05s ease;
+        }
+        
+        .token-target:active {
+            transform: translate(-50%, -50%) scale(0.9);
         }
 
-        .coin-gpvlt {
-            background: radial-gradient(circle, #ffaa00 0%, #78350f 100%);
-            box-shadow: 0 0 40px rgba(255, 170, 0, 0.8), inset 0 0 15px rgba(255,255,255,0.6);
-        }
-
-        /* Out of Energy Modal */
-        .energy-modal {
+        /* Modular Action Sheets */
+        .action-modal {
             position: absolute;
-            top: 55%;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 85%;
-            background: rgba(15, 20, 28, 0.95);
-            border: 1px solid rgba(0, 229, 255, 0.2);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-            border-radius: 24px;
+            width: 88%;
+            background: rgba(15, 20, 28, 0.98);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.9);
+            border-radius: 28px;
             padding: 24px;
             text-align: center;
             z-index: 30;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
-            backdrop-filter: blur(8px);
+            gap: 14px;
+            backdrop-filter: blur(10px);
         }
 
         /* Floating pops */
@@ -266,44 +267,34 @@
             position: absolute;
             font-weight: 800;
             font-size: 1.5rem;
-            animation: floatUp 0.5s ease-out forwards;
+            color: #ffffff;
+            animation: floatUp 0.4s ease-out forwards;
             pointer-events: none;
             text-shadow: 0 0 10px rgba(0,0,0,0.9);
             z-index: 40;
         }
-        .pop-pvlt { color: var(--accent-color); }
-        .pop-gpvlt { color: var(--gov-color); font-size: 1.7rem; }
 
         @keyframes floatUp {
             0% { transform: translate(-50%, -50%) translateY(0) scale(1); opacity: 1; }
-            100% { transform: translate(-50%, -50%) translateY(-80px) scale(1.3); opacity: 0; }
+            100% { transform: translate(-50%, -50%) translateY(-70px) scale(1.2); opacity: 0; }
         }
 
-        /* Final Yield modules */
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            width: 85%;
-            margin-bottom: 1rem;
+        /* Flow Process Nodes */
+        .flow-box {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 18px;
+            padding: 12px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .stat-box {
-            background: rgba(255, 255, 255, 0.02);
-            padding: 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            text-align: center;
-        }
-
-        .total-valuation-box {
-            background: linear-gradient(135deg, rgba(0,255,102,0.03) 0%, rgba(255,170,0,0.03) 100%);
-            width: 85%;
-            padding: 16px;
-            border-radius: 20px;
-            border: 1px solid rgba(0, 255, 102, 0.15);
-            text-align: center;
-            margin-bottom: 2rem;
+        .flow-arrow {
+            color: #64748b;
+            font-size: 1.2rem;
+            margin: 4px 0;
         }
     </style>
 </head>
@@ -314,19 +305,24 @@
         <div id="start-screen" class="screen">
             <div style="font-size: 4.5rem; margin-bottom: 1rem;">⚡🐸</div>
             <h1>PEPEVOLT</h1>
-            <p>Mine utility blocks using your maximum energy pool. Every manual interaction burns exactly 1 point of energy.</p>
-            <div class="ratio-tag">EXCHANGE RATE: 100 gPVLT = 1 PVLT</div>
+            <p>Tap to accumulate core points, swap them down the line to gPVLT governance vectors, and extract pure $PVLT blocks.</p>
+            
+            <div class="pipeline-card">
+                ⚡ 1 Tap = 1 Point<br>
+                🔄 10 Points = 0.1 gPVLT<br>
+                💎 100 gPVLT = 1 PVLT
+            </div>
+
             <button class="btn" onclick="startGame()">Start Mining</button>
         </div>
 
         <div id="game-screen" class="screen hidden" style="padding: 0;">
             <div class="hud">
-                <div class="hud-item">PVLT Block: <strong id="score-display">0</strong></div>
-                <div class="hud-item">gPVLT Block: <strong id="gov-display">0</strong></div>
+                <div class="hud-item">Mined: <strong id="score-display" style="color: var(--energy-color);">0 POINTS</strong></div>
                 
                 <div class="hud-full">
                     <div class="energy-header">
-                        <span>⚡ MINING POOL STAMINA</span>
+                        <span>⚡ MINING STAMINA CAP</span>
                         <span id="energy-text">50/50</span>
                     </div>
                     <div class="energy-bar-container">
@@ -336,73 +332,84 @@
             </div>
             
             <div class="play-area" id="play-area">
-                <div id="target" class="token-target coin-pvlt">🐸</div>
+                <div id="target" class="token-target">🐸</div>
                 
-                <div id="energy-modal" class="energy-modal hidden">
-                    <div style="font-size: 2.5rem;">🪫</div>
-                    <h3 style="color: var(--energy-color); font-size: 1.3rem; text-transform: uppercase;">Stamina Depleted</h3>
-                    <p style="font-size: 0.85rem; margin-bottom: 1rem; color: #94a3b8;">You hit 0/50 energy. Buy a block refill using 5 PVLT, or head directly to your claim contract payout.</p>
-                    <button class="btn" onclick="buyEnergy()" id="buy-energy-btn" style="width: 100%; font-size: 1rem; padding: 12px;">Refill Energy (-5 PVLT)</button>
-                    <button class="btn btn-secondary" onclick="endGame()" style="width: 100%; margin-top: 0; padding: 12px; font-size: 1rem;">Claim Rewards</button>
+                <div id="swap-modal" class="action-modal hidden">
+                    <div style="font-size: 2.5rem;">🔄</div>
+                    <h3 style="color: var(--gov-color); font-size: 1.3rem; text-transform: uppercase; letter-spacing: 0.5px;">Stamina Expired</h3>
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.5rem;">Your capacity hit 0/50. You must swap your raw points into Governance gPVLT tokens to unlock your rewards panel.</p>
+                    
+                    <div class="flow-box">
+                        <span style="color:#94a3b8; font-size:0.85rem;">Raw Yield:</span>
+                        <span style="font-weight:700; color:var(--energy-color);" id="modal-points-yield">0 Points</span>
+                    </div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-box">
+                        <span style="color:#94a3b8; font-size:0.85rem;">Estimated gPVLT:</span>
+                        <span style="font-weight:700; color:var(--gov-color);" id="modal-gpvlt-yield">0.0 gPVLT</span>
+                    </div>
+
+                    <button class="btn" onclick="swapPointsToGov()" style="width: 100%; font-size: 1rem; padding: 14px; background-color: var(--gov-color); margin-top: 0.5rem;">Swap Points ➡️ gPVLT</button>
+                    <button class="btn btn-secondary" onclick="buyRefillEnergy()" id="buy-refill-btn" style="width: 100%; margin-top: 0; padding: 10px; font-size: 0.85rem;">Refill Energy (-10 Points)</button>
                 </div>
             </div>
         </div>
 
         <div id="end-screen" class="screen hidden">
-            <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🎉</div>
-            <h1>Session Settlement</h1>
-            <p>Your session claims have been recorded successfully below.</p>
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">💎</div>
+            <h1>Ecosystem Bridge</h1>
+            <p>Convert your governance gPVLT storage layers into market-ready asset pools ($PVLT) to claim.</p>
             
-            <div class="stat-grid">
-                <div class="stat-box">
-                    <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; margin-bottom: 4px;">RAW PVLT</div>
-                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-color);" id="final-score">0</div>
+            <div style="width: 85%; display: flex; flex-direction: column; align-items: center; margin-bottom: 1.5rem;">
+                <div class="flow-box">
+                    <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">gPVLT BALANCE</span>
+                    <span style="font-size: 1.3rem; font-weight: 800; color: var(--gov-color);" id="settle-gov-bal">0.0</span>
                 </div>
-                <div class="stat-box">
-                    <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; margin-bottom: 4px;">RAW gPVLT</div>
-                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--gov-color);" id="final-gov">0</div>
+                
+                <div class="flow-arrow" style="margin: 6px 0;">⬇️</div>
+                
+                <div class="flow-box" style="border-color: rgba(0,255,102,0.15); background: linear-gradient(135deg, rgba(0,255,102,0.02) 0%, transparent 100%);">
+                    <span style="color: #64748b; font-size: 0.8rem; font-weight: 600;">PVLT EXTRACTED</span>
+                    <span style="font-size: 1.5rem; font-weight: 900; color: var(--accent-color);" id="settle-pvlt-bal">0.000</span>
                 </div>
             </div>
 
-            <div class="total-valuation-box">
-                <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px;">CONSOLIDATED NET VALUE</div>
-                <div style="font-size: 2rem; font-weight: 900; color: #ffffff;">
-                    <span id="consolidated-value" style="color: var(--accent-color);">0.00</span> <span style="font-size: 1.2rem; font-weight: 700;">PVLT</span>
-                </div>
-                <div style="color: #64748b; font-size: 0.7rem; margin-top: 4px;">(Includes converted gPVLT balance)</div>
-            </div>
-
-            <button class="btn" id="claim-btn" onclick="claimTokens()">Claim Rewards</button>
+            <button class="btn" id="convert-bridge-btn" onclick="convertGovToPvlt()">Convert gPVLT ➡️ PVLT</button>
+            <button class="btn" id="final-claim-btn" onclick="executeWeb3Claim()" style="margin-top: 0.8rem; display: none;">Execute Final Claim</button>
             <button class="btn btn-secondary" onclick="showScreen('start-screen')">Mine Again</button>
         </div>
 
     </div>
 
     <script>
-        let pvltScore = 0;
-        let gpvltScore = 0;
+        // Core game metrics
+        let points = 0;
+        let gpvlt = 0;
+        let pvlt = 0;
         
         let energy = 50;
         const maxEnergy = 50;
-        const energyCostToRefill = 5; // Costs 5 PVLT tokens to purchase another 50 energy units
+        const energyRefillCostPoints = 10; // Costs 10 hard points to re-purchase 50 energy units
 
         const startScreen = document.getElementById('start-screen');
         const gameScreen = document.getElementById('game-screen');
         const endScreen = document.getElementById('end-screen');
-        const energyModal = document.getElementById('energy-modal');
+        const swapModal = document.getElementById('swap-modal');
         
         const target = document.getElementById('target');
         const playArea = document.getElementById('play-area');
         const scoreDisplay = document.getElementById('score-display');
-        const govDisplay = document.getElementById('gov-display');
         const energyText = document.getElementById('energy-text');
         const energyFill = document.getElementById('energy-fill');
-        const buyEnergyBtn = document.getElementById('buy-energy-btn');
+        const buyRefillBtn = document.getElementById('buy-refill-btn');
         
-        const finalScore = document.getElementById('final-score');
-        const finalGov = document.getElementById('final-gov');
-        const consolidatedValue = document.getElementById('consolidated-value');
-        const claimBtn = document.getElementById('claim-btn');
+        const modalPointsYield = document.getElementById('modal-points-yield');
+        const modalGpvltYield = document.getElementById('modal-gpvlt-yield');
+        
+        const settleGovBal = document.getElementById('settle-gov-bal');
+        const settlePvltBal = document.getElementById('settle-pvlt-bal');
+        const convertBridgeBtn = document.getElementById('convert-bridge-btn');
+        const finalClaimBtn = document.getElementById('final-claim-btn');
 
         function showScreen(screenId) {
             startScreen.classList.add('hidden');
@@ -412,20 +419,22 @@
         }
 
         function startGame() {
-            pvltScore = 0;
-            gpvltScore = 0;
+            points = 0;
+            gpvlt = 0;
+            pvlt = 0;
             energy = maxEnergy;
             
-            scoreDisplay.textContent = pvltScore;
-            govDisplay.textContent = gpvltScore;
+            scoreDisplay.textContent = `${points} POINTS`;
             updateEnergyBar();
             
-            energyModal.classList.add('hidden');
+            swapModal.classList.add('hidden');
             target.style.opacity = "1";
             target.style.pointerEvents = "auto";
             
-            claimBtn.textContent = "Claim Rewards";
-            claimBtn.disabled = false;
+            // Reset extraction system actions
+            convertBridgeBtn.style.display = "block";
+            convertBridgeBtn.disabled = false;
+            finalClaimBtn.style.display = "none";
             
             showScreen('game-screen');
             moveTarget();
@@ -441,42 +450,29 @@
             const areaWidth = playArea.clientWidth;
             const areaHeight = playArea.clientHeight;
             
-            const paddingX = 60;
-            const paddingY = 60; 
+            const paddingX = 65;
+            const paddingY = 65; 
             
             const randomX = Math.random() * (areaWidth - paddingX * 2) + paddingX;
             const randomY = Math.random() * (areaHeight - paddingY * 2) + paddingY;
 
             target.style.left = `${randomX}px`;
             target.style.top = `${randomY}px`;
-
-            if(Math.random() < 0.20) {
-                target.className = "token-target coin-gpvlt";
-                target.dataset.tokenType = "gpvlt";
-            } else {
-                target.className = "token-target coin-pvlt";
-                target.dataset.tokenType = "pvlt";
-            }
         }
 
+        // Tap Core Process
         target.addEventListener('pointerdown', (e) => {
             e.preventDefault();
-            
             if (energy <= 0) return;
 
             energy--;
             updateEnergyBar();
 
-            const type = target.dataset.tokenType;
-            if(type === "gpvlt") {
-                gpvltScore += 1;
-                govDisplay.textContent = gpvltScore;
-                createPopEffect(e.clientX, e.clientY, "+1 gPVLT", "pop-gpvlt");
-            } else {
-                pvltScore += 1;
-                scoreDisplay.textContent = pvltScore;
-                createPopEffect(e.clientX, e.clientY, "+1 PVLT", "pop-pvlt");
-            }
+            // 1 tap = 1 point
+            points += 1;
+            scoreDisplay.textContent = `${points} POINTS`;
+            
+            createPopEffect(e.clientX, e.clientY, "+1 Point");
             
             if (energy <= 0) {
                 handleOutofEnergy();
@@ -486,69 +482,93 @@
         });
 
         function handleOutofEnergy() {
-            // Lock out the token component safely
-            target.style.opacity = "0.2";
+            target.style.opacity = "0.15";
             target.style.pointerEvents = "none";
             
-            // Check if they have enough balance to trigger a buy choice
-            if (pvltScore < energyCostToRefill) {
-                buyEnergyBtn.disabled = true;
-                buyEnergyBtn.style.opacity = "0.4";
-                buyEnergyBtn.textContent = "Not Enough PVLT to Refill";
+            // Calculate potential swap conversion fields (10 points = 0.1 gPVLT)
+            const calculatedGov = (points / 10) * 0.1;
+            
+            modalPointsYield.textContent = `${points} Points`;
+            modalGpvltYield.textContent = `${calculatedGov.toFixed(2)} gPVLT`;
+            
+            // Manage refill visibility
+            if (points < energyRefillCostPoints) {
+                buyRefillBtn.disabled = true;
+                buyRefillBtn.style.opacity = "0.3";
+                buyRefillBtn.textContent = "Insufficient Points to Refill";
             } else {
-                buyEnergyBtn.disabled = false;
-                buyEnergyBtn.style.opacity = "1";
-                buyEnergyBtn.textContent = "Refill Energy (-5 PVLT)";
+                buyRefillBtn.disabled = false;
+                buyRefillBtn.style.opacity = "1";
+                buyRefillBtn.textContent = `Refill Stamina (-10 Points)`;
             }
             
-            // Reveal inline action module
-            energyModal.classList.remove('hidden');
+            swapModal.classList.remove('hidden');
         }
 
-        function buyEnergy() {
-            if (pvltScore >= energyCostToRefill) {
-                pvltScore -= energyCostToRefill; // deduct 5 PVLT
-                scoreDisplay.textContent = pvltScore;
+        function buyRefillEnergy() {
+            if (points >= energyRefillCostPoints) {
+                points -= energyRefillCostPoints;
+                scoreDisplay.textContent = `${points} POINTS`;
                 
                 energy = maxEnergy;
                 updateEnergyBar();
                 
-                // Reset interaction overlays
-                energyModal.classList.add('hidden');
+                swapModal.classList.add('hidden');
                 target.style.opacity = "1";
                 target.style.pointerEvents = "auto";
                 moveTarget();
             }
         }
 
-        function createPopEffect(x, y, text, customClass) {
+        // Step 1: Swap Points to gPVLT
+        function swapPointsToGov() {
+            // Formula Execution: 10 points = 0.1 gPVLT
+            gpvlt = (points / 10) * 0.1;
+            points = 0; // Clear point ledger
+            
+            // Push values forward to the Settlement screen layout
+            settleGovBal.textContent = gpvlt.toFixed(2);
+            settlePvltBal.textContent = pvlt.toFixed(4);
+            
+            showScreen('end-screen');
+        }
+
+        // Step 2: Convert gPVLT to PVLT
+        function convertGovToPvlt() {
+            convertBridgeBtn.disabled = true;
+            convertBridgeBtn.textContent = "Bridging Token Protocols...";
+
+            setTimeout(() => {
+                // Formula Execution: 100 gPVLT = 1 PVLT
+                pvlt = gpvlt / 100;
+                
+                settlePvltBal.textContent = pvlt.toFixed(4);
+                
+                // Swap the functional operational buttons
+                convertBridgeBtn.style.display = "none";
+                finalClaimBtn.style.display = "block";
+            }, 1200);
+        }
+
+        function executeWeb3Claim() {
+            finalClaimBtn.textContent = "Minting Contract Claims...";
+            finalClaimBtn.disabled = true;
+
+            setTimeout(() => {
+                finalClaimBtn.textContent = "Success! Credited";
+                alert(`Claim Complete!\n\nExtracted Ledger:\n• Total Claimed Assets: ${pvlt.toFixed(4)} PVLT`);
+            }, 1400);
+        }
+
+        function createPopEffect(x, y, text) {
             const pop = document.createElement('div');
-            pop.className = `pop ${customClass}`;
+            pop.className = 'pop';
             pop.textContent = text;
             pop.style.left = `${x}px`;
             pop.style.top = `${y}px`;
             
             document.body.appendChild(pop);
-            setTimeout(() => pop.remove(), 500);
-        }
-
-        function endGame() {
-            const totalConvertedValue = pvltScore + (gpvltScore / 100);
-            finalScore.textContent = pvltScore;
-            finalGov.textContent = gpvltScore;
-            consolidatedValue.textContent = totalConvertedValue.toFixed(2);
-            showScreen('end-screen');
-        }
-
-        function claimTokens() {
-            claimBtn.textContent = "Processing Conversion...";
-            claimBtn.disabled = true;
-
-            setTimeout(() => {
-                const total = pvltScore + (gpvltScore / 100);
-                claimBtn.textContent = "Success! Credited";
-                alert(`Conversion Settlement Complete!\n\nFinal Token Balance Distributed:\n• ${total.toFixed(2)} PVLT`);
-            }, 1600);
+            setTimeout(() => pop.remove(), 400);
         }
     </script>
 </body>
