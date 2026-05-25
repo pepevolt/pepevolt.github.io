@@ -5,7 +5,11 @@
 
 <meta
 name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+content="width=device-width,
+initial-scale=1.0,
+maximum-scale=1.0,
+user-scalable=no,
+viewport-fit=cover"
 />
 
 <title>PEPEVOLT TAP GAME</title>
@@ -19,15 +23,19 @@ margin:0;
 padding:0;
 box-sizing:border-box;
 -webkit-tap-highlight-color:transparent;
+-webkit-touch-callout:none;
 }
 
-html,body{
+html,
+body{
 width:100%;
 height:100%;
 overflow:hidden;
+touch-action:manipulation;
+background:#050816;
 font-family:Arial,sans-serif;
-background:#040816;
-color:white;
+overscroll-behavior:none;
+position:fixed;
 }
 
 body{
@@ -35,20 +43,35 @@ display:flex;
 justify-content:center;
 align-items:center;
 padding:12px;
+color:white;
+}
+
+button,
+input,
+textarea,
+select{
+font:inherit;
+touch-action:manipulation;
+outline:none;
 }
 
 .app{
 width:100%;
 max-width:480px;
-height:100%;
+height:100dvh;
 max-height:940px;
 background:
-linear-gradient(180deg,#0b1025,#111b3d 55%,#0b1025);
+linear-gradient(
+180deg,
+#0b1025,
+#111936 55%,
+#0b1025
+);
 border-radius:28px;
 overflow:hidden;
-position:relative;
 display:flex;
 flex-direction:column;
+position:relative;
 border:1px solid rgba(255,255,255,.08);
 }
 
@@ -58,8 +81,8 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 background:rgba(255,255,255,.03);
-backdrop-filter:blur(10px);
-border-bottom:1px solid rgba(255,255,255,.06);
+border-bottom:1px solid rgba(255,255,255,.08);
+flex-shrink:0;
 }
 
 .logo{
@@ -72,7 +95,7 @@ letter-spacing:1px;
 color:#2cff85;
 }
 
-.connect{
+.connectBtn{
 border:none;
 background:#2cff85;
 color:black;
@@ -80,7 +103,7 @@ font-weight:800;
 padding:12px 18px;
 border-radius:16px;
 cursor:pointer;
-font-size:14px;
+min-height:48px;
 }
 
 .main{
@@ -88,9 +111,10 @@ flex:1;
 overflow-y:auto;
 padding:18px;
 padding-bottom:120px;
+-webkit-overflow-scrolling:touch;
 }
 
-.panel{
+.card{
 background:rgba(255,255,255,.05);
 border:1px solid rgba(255,255,255,.07);
 border-radius:24px;
@@ -109,6 +133,10 @@ background:rgba(255,255,255,.04);
 border-radius:18px;
 padding:18px;
 text-align:center;
+min-height:100px;
+display:flex;
+flex-direction:column;
+justify-content:center;
 }
 
 .statLabel{
@@ -118,29 +146,37 @@ margin-bottom:10px;
 }
 
 .statValue{
-font-size:24px;
+font-size:22px;
 font-weight:900;
 word-break:break-word;
 }
 
-.tapArea{
+.sectionTitle{
+font-size:18px;
+font-weight:900;
+margin-bottom:18px;
+}
+
+.tapWrap{
 display:flex;
 justify-content:center;
 align-items:center;
-padding:25px 0 15px;
+padding:20px 0;
 position:relative;
+min-height:280px;
+overflow:hidden;
 }
 
-.tapCircle{
+.tapBtn{
 
-width:250px;
-height:250px;
+width:240px;
+height:240px;
 border-radius:50%;
 border:none;
 cursor:pointer;
 
 background:
-radial-gradient(circle at top,#48ff9e,#00a850);
+radial-gradient(circle at top,#4dffa3,#00a651);
 
 display:flex;
 justify-content:center;
@@ -150,81 +186,84 @@ position:relative;
 
 box-shadow:
 0 0 40px rgba(44,255,133,.25),
-0 0 80px rgba(44,255,133,.15),
-inset 0 -15px 30px rgba(0,0,0,.25);
-
-transition:transform .05s linear;
+0 0 90px rgba(44,255,133,.15),
+inset 0 -14px 24px rgba(0,0,0,.25);
 
 overflow:hidden;
+
+touch-action:manipulation;
+user-select:none;
+
+-webkit-user-select:none;
+-webkit-touch-callout:none;
+
+transform:translateZ(0);
+
 }
 
-.tapCircle:active{
-transform:scale(.95);
-}
-
-.tapCircle::before{
+.tapBtn::before{
 content:"";
 position:absolute;
 width:100%;
 height:100%;
 background:
-radial-gradient(circle,rgba(255,255,255,.3),transparent 65%);
+radial-gradient(circle,rgba(255,255,255,.22),transparent 65%);
 }
 
-.tapIcon{
+.tapBtn:active{
+transform:scale(.98) translateZ(0);
+}
+
+.tapText{
 position:relative;
 z-index:2;
 font-size:48px;
 font-weight:900;
-}
-
-.tapPoints{
-text-align:center;
-margin-top:18px;
-font-size:20px;
-font-weight:900;
+pointer-events:none;
 }
 
 .tapInfo{
 text-align:center;
+font-size:14px;
+opacity:.8;
 margin-top:8px;
-font-size:13px;
-opacity:.7;
 }
 
-.buttons{
+.buttonGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:12px;
-margin-top:18px;
+margin-top:20px;
 }
 
-.btn{
+.actionBtn{
 border:none;
 padding:16px;
 border-radius:18px;
 font-weight:800;
 cursor:pointer;
 font-size:14px;
+min-height:54px;
 color:white;
 background:#18295d;
+touch-action:manipulation;
 }
 
-.btn:active{
-transform:scale(.98);
-}
-
-.btn.green{
+.actionBtn.green{
 background:#2cff85;
 color:black;
 }
 
-.btn.red{
-background:#ff4d5f;
+.actionBtn.red{
+background:#ff4f5e;
+}
+
+.actionBtn:active{
+transform:scale(.98);
 }
 
 .progressWrap{
-margin-top:16px;
+margin-top:18px;
 }
 
 .progressTop{
@@ -247,13 +286,7 @@ height:100%;
 width:0%;
 background:#2cff85;
 border-radius:999px;
-transition:.2s;
-}
-
-.sectionTitle{
-font-size:18px;
-font-weight:900;
-margin-bottom:16px;
+transition:width .2s linear;
 }
 
 .infoRow{
@@ -266,8 +299,8 @@ font-size:13px;
 
 .infoRow span:last-child{
 font-weight:700;
-text-align:right;
 word-break:break-all;
+text-align:right;
 }
 
 .bottom{
@@ -276,17 +309,18 @@ bottom:0;
 left:0;
 width:100%;
 padding:16px;
-background:rgba(0,0,0,.3);
-backdrop-filter:blur(10px);
+background:rgba(0,0,0,.35);
 border-top:1px solid rgba(255,255,255,.08);
+backdrop-filter:blur(10px);
 text-align:center;
 font-size:13px;
 opacity:.7;
+flex-shrink:0;
 }
 
 .toast{
 position:fixed;
-bottom:24px;
+bottom:25px;
 left:50%;
 transform:translateX(-50%);
 background:#2cff85;
@@ -300,14 +334,14 @@ max-width:90%;
 text-align:center;
 }
 
-.floatText{
+.float{
 position:absolute;
-font-size:22px;
+font-size:24px;
 font-weight:900;
 color:#2cff85;
 pointer-events:none;
 animation:floatUp 1s linear forwards;
-z-index:99;
+z-index:50;
 }
 
 @keyframes floatUp{
@@ -319,19 +353,29 @@ transform:translateY(0);
 
 100%{
 opacity:0;
-transform:translateY(-80px);
+transform:translateY(-90px);
 }
 
 }
 
 @media(max-width:480px){
 
-.tapCircle{
+body{
+padding:0;
+}
+
+.app{
+max-width:100%;
+height:100dvh;
+border-radius:0;
+}
+
+.tapBtn{
 width:220px;
 height:220px;
 }
 
-.tapIcon{
+.tapText{
 font-size:42px;
 }
 
@@ -354,7 +398,10 @@ font-size:20px;
 PEPE<span>VOLT</span>
 </div>
 
-<button class="connect" id="connectBtn">
+<button
+class="connectBtn"
+id="connectBtn"
+>
 CONNECT
 </button>
 
@@ -362,7 +409,7 @@ CONNECT
 
 <div class="main">
 
-<div class="panel">
+<div class="card">
 
 <div class="stats">
 
@@ -371,7 +418,10 @@ CONNECT
 ENERGY
 </div>
 
-<div class="statValue" id="energy">
+<div
+class="statValue"
+id="energy"
+>
 0
 </div>
 </div>
@@ -381,7 +431,10 @@ ENERGY
 POINTS
 </div>
 
-<div class="statValue" id="points">
+<div
+class="statValue"
+id="points"
+>
 0
 </div>
 </div>
@@ -391,7 +444,10 @@ POINTS
 gPVLT
 </div>
 
-<div class="statValue" id="gpvlt">
+<div
+class="statValue"
+id="gpvlt"
+>
 0
 </div>
 </div>
@@ -401,7 +457,10 @@ gPVLT
 STATUS
 </div>
 
-<div class="statValue" id="status">
+<div
+class="statValue"
+id="status"
+>
 FREE
 </div>
 </div>
@@ -411,59 +470,76 @@ FREE
 <div class="progressWrap">
 
 <div class="progressTop">
-<span>Progress</span>
+<span>PROGRESS</span>
+
 <span id="progressText">
 0 / 100
 </span>
 </div>
 
 <div class="progress">
-<div class="progressBar" id="progressBar"></div>
+<div
+class="progressBar"
+id="progressBar"
+></div>
 </div>
 
 </div>
 
 </div>
 
-<div class="panel">
+<div class="card">
 
 <div class="sectionTitle">
 TAP GAME
 </div>
 
-<div class="tapArea">
+<div class="tapWrap">
 
-<button class="tapCircle" id="tapBtn">
-<div class="tapIcon">
+<button
+class="tapBtn"
+id="tapBtn"
+>
+
+<div class="tapText">
 ⚡
 </div>
+
 </button>
 
-</div>
-
-<div class="tapPoints">
-+1 POINT EACH TAP
 </div>
 
 <div class="tapInfo">
-Tap fast to earn points and convert to gPVLT
+Tap to earn points and convert to gPVLT
 </div>
 
-<div class="buttons">
+<div class="buttonGrid">
 
-<button class="btn green" id="buyBtn">
+<button
+class="actionBtn green"
+id="buyBtn"
+>
 BUY ENERGY
 </button>
 
-<button class="btn" id="refillBtn">
+<button
+class="actionBtn"
+id="refillBtn"
+>
 REFILL
 </button>
 
-<button class="btn" id="convertBtn">
+<button
+class="actionBtn"
+id="convertBtn"
+>
 CONVERT
 </button>
 
-<button class="btn red" id="claimBtn">
+<button
+class="actionBtn red"
+id="claimBtn"
+>
 CLAIM
 </button>
 
@@ -471,7 +547,7 @@ CLAIM
 
 </div>
 
-<div class="panel">
+<div class="card">
 
 <div class="sectionTitle">
 CONTRACTS
@@ -479,6 +555,7 @@ CONTRACTS
 
 <div class="infoRow">
 <span>PVLT</span>
+
 <span>
 0xb8010fD52D5208eC05574a7D5A939c0d446A862a
 </span>
@@ -486,6 +563,7 @@ CONTRACTS
 
 <div class="infoRow">
 <span>Treasury</span>
+
 <span>
 0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc
 </span>
@@ -493,6 +571,7 @@ CONTRACTS
 
 <div class="infoRow">
 <span>Game</span>
+
 <span>
 0x151803532A33837E4bBc2Afc23c6b1f59039B82D
 </span>
@@ -503,14 +582,44 @@ CONTRACTS
 </div>
 
 <div class="bottom">
-Polygon Mainnet • PEPEVOLT GAME
+PEPEVOLT • Polygon Mainnet
 </div>
 
 </div>
 
-<div class="toast" id="toast"></div>
+<div
+class="toast"
+id="toast"
+></div>
 
 <script>
+
+document.addEventListener(
+"gesturestart",
+function(e){
+e.preventDefault();
+}
+);
+
+document.addEventListener(
+"dblclick",
+function(e){
+e.preventDefault();
+},
+{ passive:false }
+);
+
+document.addEventListener(
+"touchmove",
+function(e){
+
+if(e.scale !== 1){
+e.preventDefault();
+}
+
+},
+{ passive:false }
+);
 
 const PVLT =
 "0xb8010fD52D5208eC05574a7D5A939c0d446A862a";
@@ -680,24 +789,28 @@ Number(p.points);
 const burned =
 Number(p.burnedGPVLT);
 
-const paid =
-p.paidUser;
+energyEl.innerText =
+energy;
 
-energyEl.innerText = energy;
-pointsEl.innerText = points;
-gpvltEl.innerText = burned;
+pointsEl.innerText =
+points;
+
+gpvltEl.innerText =
+burned;
 
 statusEl.innerText =
-paid ? "PREMIUM" : "FREE";
+p.paidUser
+? "PREMIUM"
+: "FREE";
 
-const percent =
-(points % 100);
+const progress =
+points % 100;
 
 progressBar.style.width =
-percent + "%";
+progress + "%";
 
 progressText.innerText =
-percent + " / 100";
+progress + " / 100";
 
 }catch(err){
 
@@ -707,14 +820,14 @@ console.log(err);
 
 }
 
-async function tap(){
+async function tapGame(){
 
 try{
 
 const tx =
 await game.tap();
 
-spawnFloat("+1");
+spawnFloat();
 
 await tx.wait();
 
@@ -730,29 +843,29 @@ toast("No Energy");
 
 }
 
-function spawnFloat(text){
+function spawnFloat(){
 
-const el =
+const float =
 document.createElement("div");
 
-el.className = "floatText";
+float.className = "float";
 
-el.innerText = text;
+float.innerText = "+1";
 
-const tapArea =
-document.querySelector(".tapArea");
-
-el.style.left =
-(50 + (Math.random()*120-60))
+float.style.left =
+(50 + (Math.random()*90-45))
 +
 "%";
 
-el.style.top = "45%";
+float.style.top =
+"50%";
 
-tapArea.appendChild(el);
+document
+.querySelector(".tapWrap")
+.appendChild(float);
 
 setTimeout(()=>{
-el.remove();
+float.remove();
 },1000);
 
 }
@@ -855,7 +968,7 @@ await tx.wait();
 
 await loadPlayer();
 
-toast("Reward Claimed");
+toast("Claimed");
 
 }catch(err){
 
@@ -873,7 +986,7 @@ connectWallet;
 document
 .getElementById("tapBtn")
 .onclick =
-tap;
+tapGame;
 
 document
 .getElementById("buyBtn")
