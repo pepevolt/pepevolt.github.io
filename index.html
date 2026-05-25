@@ -6,46 +6,52 @@
     <title>PepeVolt Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #1a1a2e; color: #fff; text-align: center; padding: 20px; }
-        .card { background: #2c3e50; padding: 20px; border-radius: 10px; max-width: 400px; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .stat { background: #16a085; padding: 10px; border-radius: 5px; font-size: 0.9rem; }
-        button { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .btn-connect { background-color: #3498db; color: white; }
-        .btn-tap { background-color: #2ecc71; color: #1a1a2e; height: 100px; border-radius: 50%; width: 100px; margin: 20px auto; display: block; font-size: 1.2rem; }
-        .btn-action { background-color: #e67e22; color: white; }
+        body { font-family: Arial, sans-serif; background-color: #1a1a2e; color: #fff; margin: 0; padding: 0; text-align: center; }
+        
+        /* Top Navigation Styling */
+        .topnav { display: flex; justify-content: space-around; background: #2c3e50; padding: 15px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); font-weight: bold; font-size: 0.9rem; }
+        .nav-item { display: flex; flex-direction: column; }
+        .nav-item span { color: #2ecc71; margin-top: 3px; }
+
+        .container { padding: 20px; max-width: 400px; margin: 0 auto; }
+        
+        /* Tap Button */
+        .btn-tap { background-color: #2ecc71; color: #1a1a2e; height: 120px; width: 120px; border-radius: 50%; border: none; font-weight: bold; cursor: pointer; font-size: 1.5rem; margin: 40px auto; display: block; box-shadow: 0 6px 0 #27ae60; transition: transform 0.1s; }
+        .btn-tap:active:not(:disabled) { transform: scale(0.95); box-shadow: 0 2px 0 #27ae60; }
+        
+        /* Control Buttons */
+        button { width: 100%; padding: 14px; margin: 10px 0; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 1rem; color: white; }
+        .btn-connect { background-color: #3498db; }
+        .btn-action { background-color: #e67e22; }
         .btn-refill { background-color: #f1c40f; color: #1a1a2e; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
-        #status-feed { font-size: 0.8rem; color: #bdc3c7; margin-top: 15px; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        
+        #pvlt-display { font-size: 0.9rem; color: #bdc3c7; margin: 15px 0 5px 0; }
+        #status-feed { font-size: 0.8rem; color: #95a5a6; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <h1>PepeVolt Tap Game</h1>
+    <nav class="topnav">
+        <div class="nav-item">⚡ Energy <span id="energy">Locked</span></div>
+        <div class="nav-item">💎 Points <span id="points">Locked</span></div>
+        <div class="nav-item">🪙 gPVLT <span id="gpvlt">Locked</span></div>
+    </nav>
 
-    <div class="card">
+    <div class="container">
+        
+        <button id="tap-button" class="btn-tap" onclick="handleTap()" disabled>TAP</button>
+
         <button id="wallet-btn" class="btn-connect" onclick="toggleWallet()">Connect Wallet</button>
-        <p id="pvlt-display">Balance: Locked</p>
-    </div>
-
-    <div class="card">
-        <div class="grid">
-            <div class="stat">⚡ Energy<br><span id="energy">0</span></div>
-            <div class="stat">💎 Points<br><span id="points">0</span></div>
-            <div class="stat">🪙 gPVLT<br><span id="gpvlt">0</span></div>
-        </div>
-
-        <button id="tap-button" class="btn-tap" onclick="handleTap()" disabled>TAP!</button>
-    </div>
-
-    <div class="card">
-        <button id="free-refill-btn" class="btn-refill" onclick="triggerFreeRefill()" disabled>⚡ Free Contract Refill (+1)</button>
+        <p id="pvlt-display">Wallet Balance: Locked</p>
+        
+        <button id="free-refill-btn" class="btn-refill" onclick="triggerFreeRefill()" disabled>⚡ Free Refill (+1 Energy)</button>
+        <button id="buy-energy-btn" class="btn-action" onclick="confirmRefill()" disabled>Buy 10,000 Energy (100 PVLT)</button>
         <button id="convert-btn" class="btn-action" onclick="convertPoints()" disabled>Convert 100 Points → 1 gPVLT</button>
         <button id="claim-btn" class="btn-action" onclick="claimReward()" disabled>Claim Reward (100-1000 gPVLT)</button>
-        <button id="buy-energy-btn" class="btn-action" onclick="confirmRefill()" disabled>Buy Full 10,000 Energy (100 PVLT)</button>
-    </div>
 
-    <p id="status-feed">Please connect your Web3 wallet inside Polygon Network.</p>
+        <p id="status-feed">Please load app within a Web3 interface browser.</p>
+    </div>
 
     <script>
         const POLYGON_CHAIN_ID = "0x89";
@@ -66,9 +72,7 @@
                 "function buyEnergy() external",
                 "function convertPoints() external",
                 "function claimRewards() external",
-                "function refillEnergy() external",
-                "function FREE_CAP() view returns (uint256)",
-                "function PAID_CAP() view returns (uint256)"
+                "function refillEnergy() external"
             ]
         };
 
@@ -81,7 +85,7 @@
             try {
                 const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
                 if (currentChainId !== POLYGON_CHAIN_ID) {
-                    document.getElementById('status-feed').innerText = "Switching to Polygon...";
+                    document.getElementById('status-feed').innerText = "Routing to Polygon Network...";
                     try {
                         await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: POLYGON_CHAIN_ID }] });
                     } catch (err) {
@@ -101,7 +105,7 @@
                 }
                 return true;
             } catch (err) {
-                document.getElementById('status-feed').innerText = "Network switch rejected.";
+                document.getElementById('status-feed').innerText = "Network confirmation aborted.";
                 return false;
             }
         }
@@ -111,9 +115,10 @@
                 isWalletConnected = false; userAddress = null; provider = null; signer = null; pvltContract = null; gameContract = null;
                 document.getElementById('wallet-btn').innerText = "Connect Wallet";
                 setButtonsState(true);
-                document.getElementById('status-feed').innerText = "Wallet disconnected.";
+                updateUIHTML(true);
+                document.getElementById('status-feed').innerText = "Session cleared.";
             } else {
-                if (!window.ethereum) { alert("Please use a Web3 browser or app dApp wallet."); return; }
+                if (!window.ethereum) { alert("Please target a secure Web3 infrastructure browser layer."); return; }
                 try {
                     if (!await checkAndSwitchNetwork()) return;
                     provider = new ethers.BrowserProvider(window.ethereum);
@@ -130,7 +135,7 @@
                     await syncContractState();
                 } catch (err) {
                     console.error(err);
-                    document.getElementById('status-feed').innerText = "Connection failed.";
+                    document.getElementById('status-feed').innerText = "Authentication failure.";
                 }
             }
         }
@@ -143,6 +148,15 @@
             document.getElementById('buy-energy-btn').disabled = disabled;
         }
 
+        function updateUIHTML(isLocked = false) {
+            if (isLocked) {
+                document.getElementById('energy').innerText = "Locked";
+                document.getElementById('points').innerText = "Locked";
+                document.getElementById('gpvlt').innerText = "Locked";
+                document.getElementById('pvlt-display').innerText = "Wallet Balance: Locked";
+            }
+        }
+
         async function syncContractState() {
             if (!gameContract || !userAddress || !isWalletConnected) return;
             try {
@@ -152,8 +166,8 @@
                 document.getElementById('energy').innerText = Number(playerData.energy).toLocaleString();
                 document.getElementById('points').innerText = Number(playerData.points).toLocaleString();
                 document.getElementById('gpvlt').innerText = Number(playerData.burnedGPVLT).toLocaleString();
-                document.getElementById('pvlt-display').innerText = `Balance: ${parseFloat(ethers.formatEther(pvltBalance)).toFixed(3)} PVLT`;
-                document.getElementById('status-feed').innerText = "Data updated from contract.";
+                document.getElementById('pvlt-display').innerText = `Wallet Balance: ${parseFloat(ethers.formatEther(pvltBalance)).toFixed(3)} PVLT`;
+                document.getElementById('status-feed').innerText = "Live contract status synchronized.";
             } catch (err) {
                 console.error(err);
             }
@@ -163,13 +177,13 @@
             if (!isWalletConnected || actionInFlight) return;
             try {
                 actionInFlight = true;
-                document.getElementById('status-feed').innerText = "Confirm transaction in your wallet...";
+                document.getElementById('status-feed').innerText = "Awaiting signature verification...";
                 const tx = await gameContract.tap();
-                document.getElementById('status-feed').innerText = "Waiting for block confirmation...";
+                document.getElementById('status-feed').innerText = "Mining state variations...";
                 await tx.wait(1);
-                document.getElementById('status-feed').innerText = "Tap recorded!";
+                document.getElementById('status-feed').innerText = "Tap point finalized!";
             } catch (err) {
-                document.getElementById('status-feed').innerText = "Transaction canceled.";
+                document.getElementById('status-feed').innerText = "Transaction rejected.";
             } finally {
                 actionInFlight = false;
                 await syncContractState();
@@ -180,12 +194,12 @@
             if (!isWalletConnected || actionInFlight) return;
             try {
                 actionInFlight = true;
-                document.getElementById('status-feed').innerText = "Sending refill tx...";
+                document.getElementById('status-feed').innerText = "Broadcasting manual refill...";
                 const tx = await gameContract.refillEnergy();
                 await tx.wait(1);
-                document.getElementById('status-feed').innerText = "Energy +1 added!";
+                document.getElementById('status-feed').innerText = "Energy value bumped!";
             } catch (err) {
-                document.getElementById('status-feed').innerText = "Refill failed.";
+                document.getElementById('status-feed').innerText = "Action reverted.";
             } finally {
                 actionInFlight = false;
                 await syncContractState();
@@ -200,17 +214,17 @@
                 const currentAllowance = await pvltContract.allowance(userAddress, CONTRACT_ADDRESSES.PepeVoltGame);
                 
                 if (currentAllowance < price) {
-                    document.getElementById('status-feed').innerText = "Approving PVLT...";
+                    document.getElementById('status-feed').innerText = "Approving PVLT expenditure...";
                     const approveTx = await pvltContract.approve(CONTRACT_ADDRESSES.PepeVoltGame, price);
                     await approveTx.wait(1);
                 }
 
-                document.getElementById('status-feed').innerText = "Buying full energy...";
+                document.getElementById('status-feed').innerText = "Recharging total capacity...";
                 const buyTx = await gameContract.buyEnergy();
                 await buyTx.wait(1);
-                alert("Bought 10,000 Energy!");
+                document.getElementById('status-feed').innerText = "Energy set to 10,000!";
             } catch (err) {
-                document.getElementById('status-feed').innerText = "Purchase aborted.";
+                document.getElementById('status-feed').innerText = "Acquisition aborted.";
             } finally {
                 actionInFlight = false;
                 await syncContractState();
@@ -221,12 +235,12 @@
             if (!isWalletConnected || actionInFlight) return;
             try {
                 actionInFlight = true;
-                document.getElementById('status-feed').innerText = "Converting points...";
+                document.getElementById('status-feed').innerText = "Executing allocation swap...";
                 const tx = await gameContract.convertPoints();
                 await tx.wait(1);
-                document.getElementById('status-feed').innerText = "Conversion complete.";
+                document.getElementById('status-feed').innerText = "Points burned into gPVLT.";
             } catch (err) {
-                document.getElementById('status-feed').innerText = "Conversion failed.";
+                document.getElementById('status-feed').innerText = "Conversion parameters unfulfilled.";
             } finally {
                 actionInFlight = false;
                 await syncContractState();
@@ -237,12 +251,13 @@
             if (!isWalletConnected || actionInFlight) return;
             try {
                 actionInFlight = true;
-                document.getElementById('status-feed').innerText = "Claiming rewards...";
+                document.getElementById('status-feed').innerText = "Processing distributions...";
                 const tx = await gameContract.claimRewards();
                 await tx.wait(1);
-                alert("Rewards claimed!");
+                document.getElementById('status-feed').innerText = "Asset distribution complete.";
             } catch (err) {
-                alert("Failed: Check daily cooldown or gPVLT thresholds (100-1000).");
+                alert("Requirement unmet: Daily limit reached or insufficient gPVLT (100-1000 required).");
+                document.getElementById('status-feed').innerText = "Execution failed.";
             } finally {
                 actionInFlight = false;
                 await syncContractState();
