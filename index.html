@@ -30,12 +30,13 @@
         .container { padding: 90px 20px 20px 20px; max-width: 400px; margin: 0 auto; }
         
         /* Tap Button */
-        .btn-tap { background-color: #2ecc71; color: #1a1a2e; height: 120px; width: 120px; border-radius: 50%; border: none; font-weight: bold; cursor: pointer; font-size: 1.5rem; margin: 40px auto; display: block; box-shadow: 0 6px 0 #27ae60; transition: transform 0.1s; }
+        .btn-tap { background-color: #2ecc71; color: #1a1a2e; height: 120px; width: 120px; border-radius: 50%; border: none; font-weight: bold; cursor: pointer; font-size: 1.5rem; margin: 30px auto; display: block; box-shadow: 0 6px 0 #27ae60; transition: transform 0.1s; }
         .btn-tap:active:not(:disabled) { transform: scale(0.95); box-shadow: 0 2px 0 #27ae60; }
         
         /* Control Buttons */
         button { width: 100%; padding: 14px; margin: 10px 0; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 1rem; color: white; }
-        .btn-connect { background-color: #3498db; margin-bottom: 25px; }
+        .btn-connect { background-color: #3498db; margin-bottom: 10px; }
+        .btn-sync { background-color: #9b59b6; margin-bottom: 25px; }
         .btn-action { background-color: #e67e22; }
         button:disabled { opacity: 0.3; cursor: not-allowed; }
         
@@ -55,6 +56,7 @@
         <button id="tap-button" class="btn-tap" onclick="handleLocalTap()" disabled>TAP</button>
 
         <button id="wallet-btn" class="btn-connect" onclick="toggleWallet()">Connect Wallet</button>
+        <button id="sync-btn" class="btn-sync" onclick="syncTapsToChain()" disabled>💾 Sync Local Taps to Chain</button>
         
         <button id="buy-energy-btn" class="btn-action" onclick="confirmRefill()" disabled>Buy 10,000 Energy (100 PVLT)</button>
         <button id="convert-btn" class="btn-action" onclick="convertPoints()" disabled>Convert 100 Points → 1 gPVLT</button>
@@ -78,6 +80,7 @@
             ],
             PepeVoltGame: [
                 "function players(address) view returns (uint256 energy, uint256 points, uint256 burnedGPVLT, bool paidUser, uint256 lastClaimDay)",
+                "function tap() external",
                 "function buyEnergy() external",
                 "function convertPoints() external",
                 "function claimRewards() external"
@@ -92,6 +95,7 @@
         // Local UI State Values
         let localEnergy = 0;
         let localPoints = 0;
+        let unsavedTaps = 0;
 
         async function checkAndSwitchNetwork() {
             try {
@@ -125,6 +129,7 @@
         async function toggleWallet() {
             if (isWalletConnected) {
                 isWalletConnected = false; userAddress = null; provider = null; signer = null; pvltContract = null; gameContract = null;
+                unsavedTaps = 0;
                 document.getElementById('wallet-btn').innerText = "Connect Wallet";
                 setButtonsState(true);
                 updateUIHTML(true);
@@ -154,6 +159,7 @@
 
         function setButtonsState(disabled) {
             document.getElementById('tap-button').disabled = disabled;
+            document.getElementById('sync-btn').disabled = disabled;
             document.getElementById('convert-btn').disabled = disabled;
             document.getElementById('claim-btn').disabled = disabled;
             document.getElementById('buy-energy-btn').disabled = disabled;
@@ -172,8 +178,10 @@
             try {
                 const playerData = await gameContract.players(userAddress);
 
+                // Re-sync basic structural properties from the blockchain
                 localEnergy = Number(playerData.energy);
                 localPoints = Number(playerData.points);
+                unsavedTaps = 0; 
 
                 document.getElementById('energy').innerText = localEnergy.toLocaleString();
                 document.getElementById('points').innerText = localPoints.toLocaleString();
@@ -184,19 +192,45 @@
             }
         }
 
-        // Instant Visual State Modification
+        // Instant Local Tapping
         function handleLocalTap() {
             if (!isWalletConnected) return;
 
             if (localEnergy > 0) {
                 localEnergy -= 1;
                 localPoints += 1;
+                unsavedTaps += 1;
 
                 document.getElementById('energy').innerText = localEnergy.toLocaleString();
                 document.getElementById('points').innerText = localPoints.toLocaleString();
-                document.getElementById('status-feed').innerText = "Tap recorded locally.";
+                document.getElementById('status-feed').innerText = `Taps cached locally: ${unsavedTaps}. Sync before converting!`;
             } else {
                 document.getElementById('status-feed').innerText = "Out of energy!";
+            }
+        }
+
+        // Sync local updates back to the blockchain architecture
+        async function syncTapsToChain() {
+            if (!isWalletConnected || actionInFlight) return;
+            if (unsavedTaps === 0) {
+                document.getElementById('status-feed').innerText = "No unsaved taps to transmit.";
+                return;
+            }
+            try {
+                actionInFlight = true;
+                document.getElementById('status-feed').innerText = "Transmitting points payload to contract...";
+                
+                // If your contract setup accepts standard execution intervals:
+                const tx = await gameContract.tap();
+                await tx.wait(1);
+                
+                document.getElementById('status-feed').innerText = "On-chain points updated successfully!";
+                unsavedTaps = 0;
+            } catch (err) {
+                document.getElementById('status-feed').innerText = "Sync transmission rejected.";
+            } finally {
+                actionInFlight = false;
+                await syncContractState();
             }
         }
 
@@ -234,7 +268,7 @@
                 await tx.wait(1);
                 document.getElementById('status-feed').innerText = "Points burned into gPVLT.";
             } catch (err) {
-                document.getElementById('status-feed').innerText = "Conversion parameters unfulfilled.";
+                document.getElementById('status-feed').innerText = "Conversion unfulfilled. Make sure your points are synced on-chain first!";
             } finally {
                 actionInFlight = false;
                 await syncContractState();
