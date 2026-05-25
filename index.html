@@ -27,5 +27,32 @@
             } catch (err) { console.error(err); }
         }
     </script>
+    
+    <div id="stats">
+    <p>Energy: <span id="energy">Loading...</span></p>
+    <p>Points: <span id="points">Loading...</span></p>
+</div>
+
+<script>
+    const gameAddress = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
+    const gameABI = [{"inputs":[{"internalType":"address","name":"_pvlt","type":"address"},{"internalType":"address","name":"_treasury","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"burned","type":"uint256"}],"name":"PointsConverted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"points","type":"uint256"}],"name":"Tap","type":"event"},{"inputs":[],"name":"ENERGY_PRICE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"FREE_CAP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PAID_CAP","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"convertPoints","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"players","outputs":[{"internalType":"uint256","name":"energy","type":"uint256"},{"internalType":"uint256","name":"points","type":"uint256"},{"internalType":"uint256","name":"burnedGPVLT","type":"uint256"},{"internalType":"bool","name":"paidUser","type":"bool"},{"internalType":"uint256","name":"lastClaimDay","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pvlt","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"refillEnergy","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"tap","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"treasury","outputs":[{"internalType":"contract TreasuryVolt","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"uint256","name":"newBalance","type":"uint256"}],"name":"updateBurnedGPVLT","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"},{"internalType":"uint256","name":"day","type":"uint256"}],"name":"updateLastClaimDay","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+
+    async function updateStats() {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const game = new ethers.Contract(gameAddress, gameABI, provider);
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        
+        if (accounts.length > 0) {
+            // Call the 'players' mapping from your Solidity contract
+            const player = await game.players(accounts[0]);
+            document.getElementById('energy').innerText = player.energy.toString();
+            document.getElementById('points').innerText = player.points.toString();
+        }
+    }
+    
+    // Call this after connecting the wallet
+    window.ethereum.on('accountsChanged', updateStats);
+</script>
+
 </body>
 </html>
