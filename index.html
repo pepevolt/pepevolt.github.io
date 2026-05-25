@@ -7,10 +7,7 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     
-    <script type="module">
-        import { createWeb3Modal, defaultWagmiConfig } from 'https://unpkg.com/@web3modal/wagmi@all/_next/static/chunks/pages/_app.js'
-        import { mainnet, polygon } from 'https://unpkg.com/viem/chains'
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@web3modal/ethers5@2.2.2/dist/index.umd.js"></script>
 
     <style>
         body { font-family: Arial, sans-serif; background-color: #1a1a2e; color: #fff; margin: 0; padding: 0; text-align: center; }
@@ -70,10 +67,8 @@
         <p id="status-feed">Tap Connect Wallet to begin playing PepeVolt.</p>
     </div>
 
-    <script type="module">
-        import { Web3Modal } from 'https://unpkg.com/@web3modal/ethers5@all/_next/static/chunks/pages/_app.js'
-
-        const POLYGON_CHAIN_ID = 137; // Polygon Mainnet
+    <script>
+        const POLYGON_CHAIN_ID = 137;
         const CONTRACT_ADDRESSES = {
             PVLT: "0xb8010fD52D5208eC05574a7D5A939c0d446A862a",
             PepeVoltGame: "0x151803532A33837E4bBc2Afc23c6b1f59039B82D",
@@ -97,8 +92,7 @@
             ]
         };
 
-        // Project registration metadata for WalletConnect popups
-        // Get your free Project ID from cloud.walletconnect.com
+        // Linked with your registered cloud credential structure
         const projectId = '1731f99148b9cf6107dee70b6efb14b7'; 
 
         const polygonNetwork = {
@@ -116,9 +110,9 @@
             icons: ['https://pepevolt.github.io/favicon.ico']
         };
 
-        // Configuration setup for dynamic handling
-        const modal = Web3Modal.createWeb3Modal({
-            ethersConfig: Web3Modal.defaultConfig({ metadata }),
+        // Initialize Web3Modal instance directly via Reown's bundle
+        const modal = window.Web3Modal.createWeb3Modal({
+            ethersConfig: window.Web3Modal.defaultConfig({ metadata }),
             chains: [polygonNetwork],
             projectId,
             enableAnalytics: false
@@ -126,18 +120,19 @@
 
         window.initiateConnection = async function() {
             try {
+                document.getElementById('status-feed').style.color = "#e67e22";
                 document.getElementById('status-feed').innerText = "Opening secure wallet selector...";
                 await modal.open();
             } catch (err) {
-                document.getElementById('status-feed').innerText = "Connection modal error.";
+                document.getElementById('status-feed').innerText = "Connection initialization error.";
             }
         };
 
-        // Watch state modifications from the popup interface
-        modal.subscribeProvider(async ({ provider, providerType, address, chainId }) => {
+        // Track and process changes from the Reown modal interface
+        modal.subscribeProvider(async ({ provider, address, chainId }) => {
             if (address && chainId === POLYGON_CHAIN_ID) {
-                window.provider = new ethers.BrowserProvider(provider);
-                window.signer = await window.provider.getSigner();
+                window.web3Provider = new ethers.BrowserProvider(provider);
+                window.signer = await window.web3Provider.getSigner();
                 window.userAddress = address;
 
                 window.pvltContract = new ethers.Contract(CONTRACT_ADDRESSES.PVLT, ABIs.PVLT, window.signer);
@@ -149,14 +144,15 @@
                 window.setButtonsState(false);
                 await window.syncContractState();
             } else if (address && chainId !== POLYGON_CHAIN_ID) {
-                document.getElementById('status-feed').innerText = "Please switch your connected wallet network to Polygon!";
+                document.getElementById('status-feed').style.color = "#e74c3c";
+                document.getElementById('status-feed').innerText = "Please switch your wallet network layout to Polygon Mainnet!";
                 window.setButtonsState(true);
             } else {
-                // Disconnected state
                 window.isWalletConnected = false;
                 document.getElementById('wallet-btn').innerText = "Connect Wallet";
                 window.setButtonsState(true);
                 window.updateUIHTML(true);
+                document.getElementById('status-feed').style.color = "#95a5a6";
                 document.getElementById('status-feed').innerText = "Wallet disconnected.";
             }
         });
