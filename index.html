@@ -56,7 +56,6 @@
 
         <button id="wallet-btn" class="btn-connect" onclick="toggleWallet()">Connect Wallet</button>
         
-        /* Action Submissions */
         <button id="buy-energy-btn" class="btn-action" onclick="confirmRefill()" disabled>Buy 10,000 Energy (100 PVLT)</button>
         <button id="convert-btn" class="btn-action" onclick="handleOnChainConvert()" disabled>Convert 100 Points → 1 gPVLT</button>
         <button id="claim-btn" class="btn-action" onclick="claimReward()" disabled>Claim Reward (100-1000 gPVLT)</button>
@@ -72,6 +71,7 @@
             TreasuryVolt: "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc"
         };
 
+        // ABIs perfectly synchronized with your exact verified Polygonscan configurations
         const ABIs = {
             PVLT: [
                 "function balanceOf(address account) view returns (uint256)",
@@ -79,7 +79,8 @@
                 "function approve(address spender, uint256 amount) returns (bool)"
             ],
             PepeVoltGame: [
-                "function players(address) view returns (uint256 energy, uint256 points, uint256 burnedGPVLT, bool paidUser, uint256 lastClaimDay)",
+                "function getPlayer(address user) view returns (uint256 energy, uint256 points, uint256 burnedGPVLT, bool paidUser, uint256 lastClaimDay)",
+                "function tap() external",
                 "function buyEnergy() external",
                 "function convertPoints() external"
             ],
@@ -93,7 +94,7 @@
         let isWalletConnected = false;
         let actionInFlight = false;
 
-        // Local UI State Values
+        // Local UI Tracking States
         let localEnergy = 0;
         let localPoints = 0;
         let localGpvlt = 0;
@@ -173,10 +174,11 @@
             }
         }
 
+        // Uses your explicit 'getPlayer' function found in your verified contract (Image 3)
         async function syncContractState() {
             if (!gameContract || !userAddress || !isWalletConnected || actionInFlight) return;
             try {
-                const playerData = await gameContract.players(userAddress);
+                const playerData = await gameContract.getPlayer(userAddress);
 
                 localEnergy = Number(playerData.energy);
                 localPoints = Number(playerData.points);
@@ -187,11 +189,11 @@
                 document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
                 document.getElementById('status-feed').innerText = "Live contract status synchronized.";
             } catch (err) {
-                console.error(err);
+                console.error("Sync error:", err);
             }
         }
 
-        // Instant Visual Tapping (Zero friction for users)
+        // Fast responsive tapping for UI gameplay feel
         function handleLocalTap() {
             if (!isWalletConnected) return;
 
@@ -207,7 +209,7 @@
             }
         }
 
-        // FIXED ON-CHAIN CONVERSION: Writes directly to blockchain so claimRewards doesn't abort!
+        // Secure on-chain conversion writing straight to your deployed contract address
         async function handleOnChainConvert() {
             if (!isWalletConnected || actionInFlight) return;
 
@@ -218,21 +220,18 @@
 
             try {
                 actionInFlight = true;
-                document.getElementById('status-feed').innerText = "Converting 100 Points to 1 gPVLT on-chain...";
+                document.getElementById('status-feed').innerText = "Converting 100 Points to gPVLT on-chain...";
                 
-                // Submit transaction directly to PepeVoltGame contract
                 const tx = await gameContract.convertPoints();
-                
-                document.getElementById('status-feed').innerText = "Confirming conversion transaction block...";
+                document.getElementById('status-feed').innerText = "Confirming transaction block...";
                 await tx.wait(1);
                 
-                document.getElementById('status-feed').innerText = "Converted successfully! Navbar synchronized.";
+                document.getElementById('status-feed').innerText = "Converted successfully! State refreshed.";
             } catch (err) {
                 console.error(err);
-                document.getElementById('status-feed').innerText = "Conversion failed or rejected by network requirements.";
+                document.getElementById('status-feed').innerText = "Conversion rejected or out of sync.";
             } finally {
                 actionInFlight = false;
-                // Pull down updated balances from blockchain to refresh the top nav emojis
                 await syncContractState();
             }
         }
@@ -262,12 +261,12 @@
             }
         }
 
-        // Reward Claim Processing via TreasuryVolt Address
+        // Executes claim rewards using your TreasuryVolt address (Image 1)
         async function claimReward() {
             if (!isWalletConnected || actionInFlight) return;
 
             if (localGpvlt < 100) {
-                alert("Requirement unmet: You need a minimum of 100 gPVLT on the blockchain to claim rewards.");
+                alert("Requirement unmet: You need a minimum of 100 gPVLT on-chain to claim rewards.");
                 document.getElementById('status-feed').innerText = "Claim aborted.";
                 return;
             }
@@ -276,10 +275,8 @@
                 actionInFlight = true;
                 document.getElementById('status-feed').innerText = "Submitting claim request to TreasuryVolt...";
                 
-                // Routes payout request through your explicit TreasuryVolt deployment
                 const tx = await treasuryContract.claimRewards();
-                
-                document.getElementById('status-feed').innerText = "Awaiting transaction block finality...";
+                document.getElementById('status-feed').innerText = "Awaiting block finality...";
                 await tx.wait(1);
 
                 document.getElementById('status-feed').innerText = "Successfully claimed PVLT directly to your wallet!";
