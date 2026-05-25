@@ -1,67 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt Game</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@reown/appkit@latest"></script>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #1a1a2e; color: #fff; margin: 0; text-align: center; }
-        .topnav { position: fixed; top: 0; left: 0; width: 100%; display: flex; justify-content: space-around; background: #2c3e50; padding: 15px 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
-        .nav-item { display: flex; flex-direction: column; font-size: 0.8rem; font-weight: bold; }
-        .nav-value { color: #2ecc71; margin-top: 3px; }
-        .container { padding: 90px 20px 20px 20px; max-width: 400px; margin: 0 auto; }
-        .btn-tap { background-color: #2ecc71; width: 180px; height: 180px; border-radius: 50%; border: none; font-size: 2rem; font-weight: bold; cursor: pointer; margin: 30px auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 0 #27ae60; transition: 0.1s; }
-        .btn-tap:active { transform: scale(0.95); box-shadow: 0 2px 0 #27ae60; }
-        .btn-action { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; background-color: #e67e22; color: white; }
-    </style>
+<meta charset="UTF-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+/>
+
+<title>PepeVolt Treasury</title>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,
+body{
+    width:100%;
+    height:100%;
+    overflow-x:hidden;
+    touch-action:manipulation;
+    background:#050816;
+    color:white;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    display:flex;
+    justify-content:center;
+    padding:20px;
+}
+
+.container{
+    width:100%;
+    max-width:500px;
+}
+
+.card{
+    background:#0d1326;
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:22px;
+    padding:20px;
+    margin-bottom:18px;
+    box-shadow:0 0 20px rgba(0,0,0,0.35);
+}
+
+.logo{
+    text-align:center;
+    margin-bottom:18px;
+}
+
+.logo h1{
+    font-size:34px;
+    color:#00ff9d;
+}
+
+.logo p{
+    margin-top:8px;
+    color:#9aa4b2;
+    font-size:14px;
+}
+
+.stat-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-top:15px;
+}
+
+.stat{
+    background:#121a31;
+    padding:14px;
+    border-radius:16px;
+    text-align:center;
+}
+
+.stat h2{
+    font-size:18px;
+    color:#00ff9d;
+}
+
+.stat span{
+    font-size:12px;
+    color:#9aa4b2;
+}
+
+.section-title{
+    font-size:18px;
+    margin-bottom:15px;
+    color:#00ff9d;
+}
+
+button{
+    width:100%;
+    border:none;
+    outline:none;
+    padding:16px;
+    border-radius:16px;
+    background:#00ff9d;
+    color:#000;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+button:active{
+    transform:scale(0.98);
+}
+
+button:disabled{
+    opacity:0.5;
+}
+
+.input{
+    width:100%;
+    padding:14px;
+    border-radius:14px;
+    border:none;
+    outline:none;
+    background:#121a31;
+    color:white;
+    margin-bottom:12px;
+    font-size:15px;
+}
+
+.info{
+    margin-top:15px;
+    background:#121a31;
+    padding:14px;
+    border-radius:16px;
+    line-height:1.7;
+    color:#cdd6e0;
+    font-size:14px;
+}
+
+.status{
+    margin-top:14px;
+    padding:14px;
+    border-radius:14px;
+    background:#121a31;
+    color:#00ff9d;
+    font-size:14px;
+    word-break:break-word;
+}
+
+.claim-box{
+    text-align:center;
+    margin-top:10px;
+}
+
+.claim-box h2{
+    font-size:40px;
+    color:#00ff9d;
+}
+
+.claim-box p{
+    color:#9aa4b2;
+    margin-top:6px;
+}
+</style>
 </head>
+
 <body>
-    <nav class="topnav">
-        <div class="nav-item">⚡ Energy <span class="nav-value" id="energy">0</span></div>
-        <div class="nav-item">💎 Points <span class="nav-value" id="points">0</span></div>
-        <div class="nav-item">🪙 gPVLT <span class="nav-value" id="gpvlt">0</span></div>
-    </nav>
-    <div class="container">
-        <button id="tap-button" class="btn-tap" onclick="callGame('tap')">TAP</button>
-        <button id="connect-btn" class="btn-action">Connect Wallet</button>
-        <button class="btn-action" onclick="callGame('buyEnergy')">Buy Energy (100 PVLT)</button>
-        <button class="btn-action" onclick="callGame('convertPoints')">Convert 10 pts → 1 gPVLT</button>
-        <button class="btn-action" onclick="callTreasury('claimRewards')">Claim Reward</button>
+
+<div class="container">
+
+    <div class="logo">
+        <h1>PEPEVOLT</h1>
+        <p>PVLT Treasury Reward Dashboard</p>
     </div>
 
-    <script>
-        const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
-        const GAME_ADDR = '0x5D28B2249dB78817A1b72cD7eff9977D13299f3C';
-        const TREASURY_ADDR = '0x9d414a46dCa706F6805C37D20C18dA277A0b5dF9';
+    <div class="card">
+        <div class="section-title">Wallet</div>
 
-        const modal = createAppKit({
-            projectId: PROJECT_ID,
-            chains: [137], // Polygon
-            enableAnalytics: true
-        });
+        <button id="connectBtn">
+            Connect Wallet
+        </button>
 
-        document.getElementById('connect-btn').addEventListener('click', () => modal.open());
+        <div class="status" id="walletStatus">
+            Wallet not connected
+        </div>
+    </div>
 
-        async function getSigner() {
-            const provider = await modal.getWalletProvider();
-            return await new ethers.BrowserProvider(provider).getSigner();
+    <div class="card">
+
+        <div class="section-title">Claim Rules</div>
+
+        <div class="info">
+            • Minimum Claim = 10 gPVLT<br>
+            • 10 gPVLT = 1 PVLT<br>
+            • Maximum Daily Claim = 100 PVLT<br>
+            • One claim allowed per day
+        </div>
+
+        <div class="claim-box">
+            <h2 id="rewardPreview">0 PVLT</h2>
+            <p>Estimated Claim Reward</p>
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <div class="section-title">Player Stats</div>
+
+        <div class="stat-grid">
+
+            <div class="stat">
+                <h2 id="energy">0</h2>
+                <span>Energy</span>
+            </div>
+
+            <div class="stat">
+                <h2 id="points">0</h2>
+                <span>Points</span>
+            </div>
+
+            <div class="stat">
+                <h2 id="gpvlt">0</h2>
+                <span>gPVLT</span>
+            </div>
+
+            <div class="stat">
+                <h2 id="claimDay">0</h2>
+                <span>Last Claim Day</span>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <div class="section-title">Actions</div>
+
+        <button id="claimBtn">
+            Claim PVLT Rewards
+        </button>
+
+        <br><br>
+
+        <button id="refreshBtn">
+            Refresh Stats
+        </button>
+
+        <div class="status" id="status">
+            Ready
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+/* =========================================
+   CONFIG
+========================================= */
+
+const TREASURY_ADDRESS = "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc";
+const GAME_ADDRESS = "0x151803532A33837E4bBc2";
+const CHAIN_ID = 137;
+
+/* =========================================
+   ABI
+========================================= */
+
+const GAME_ABI = [
+    "function players(address) view returns(uint256 energy,uint256 points,uint256 burnedGPVLT,bool paidUser,uint256 lastClaimDay)"
+];
+
+const TREASURY_ABI = [
+    "function claimRewards() external"
+];
+
+/* =========================================
+   GLOBALS
+========================================= */
+
+let provider;
+let signer;
+let userAddress;
+let game;
+let treasury;
+
+/* =========================================
+   ELEMENTS
+========================================= */
+
+const connectBtn = document.getElementById("connectBtn");
+const refreshBtn = document.getElementById("refreshBtn");
+const claimBtn = document.getElementById("claimBtn");
+
+const walletStatus = document.getElementById("walletStatus");
+const statusBox = document.getElementById("status");
+
+const energyEl = document.getElementById("energy");
+const pointsEl = document.getElementById("points");
+const gpvltEl = document.getElementById("gpvlt");
+const claimDayEl = document.getElementById("claimDay");
+
+const rewardPreview = document.getElementById("rewardPreview");
+
+/* =========================================
+   CONNECT WALLET
+========================================= */
+
+async function connectWallet(){
+
+    try{
+
+        if(!window.ethereum){
+            alert("MetaMask not installed");
+            return;
         }
 
-        async function callGame(func) {
-            const signer = await getSigner();
-            const contract = new ethers.Contract(GAME_ADDR, ["function tap() external", "function buyEnergy() external", "function convertPoints() external"], signer);
-            await (await contract[func]()).wait();
-            alert("Transaction confirmed!");
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+
+        await provider.send("eth_requestAccounts", []);
+
+        signer = provider.getSigner();
+
+        userAddress = await signer.getAddress();
+
+        const network = await provider.getNetwork();
+
+        if(network.chainId !== CHAIN_ID){
+            alert("Switch to Polygon Mainnet");
+            return;
         }
 
-        async function callTreasury(func) {
-            const signer = await getSigner();
-            const contract = new ethers.Contract(TREASURY_ADDR, ["function claimRewards() external"], signer);
-            await (await contract[func]()).wait();
-            alert("Reward claimed!");
+        game = new ethers.Contract(
+            GAME_ADDRESS,
+            GAME_ABI,
+            provider
+        );
+
+        treasury = new ethers.Contract(
+            TREASURY_ADDRESS,
+            TREASURY_ABI,
+            signer
+        );
+
+        walletStatus.innerHTML =
+            "Connected:<br>" +
+            userAddress;
+
+        statusBox.innerHTML = "Wallet connected";
+
+        loadPlayer();
+
+    }catch(err){
+
+        console.log(err);
+
+        statusBox.innerHTML =
+            "Connection failed";
+
+    }
+
+}
+
+/* =========================================
+   LOAD PLAYER
+========================================= */
+
+async function loadPlayer(){
+
+    try{
+
+        if(!userAddress) return;
+
+        const data = await game.players(userAddress);
+
+        const energy = Number(data.energy);
+        const points = Number(data.points);
+        const gpvlt = Number(data.burnedGPVLT);
+        const claimDay = Number(data.lastClaimDay);
+
+        energyEl.innerText = energy;
+        pointsEl.innerText = points;
+        gpvltEl.innerText = gpvlt;
+        claimDayEl.innerText = claimDay;
+
+        const batch =
+            gpvlt > 1000 ? 1000 : gpvlt;
+
+        const reward =
+            Math.floor(batch / 10);
+
+        rewardPreview.innerText =
+            reward + " PVLT";
+
+        statusBox.innerHTML =
+            "Stats updated";
+
+    }catch(err){
+
+        console.log(err);
+
+        statusBox.innerHTML =
+            "Failed loading stats";
+
+    }
+
+}
+
+/* =========================================
+   CLAIM REWARDS
+========================================= */
+
+async function claimRewards(){
+
+    try{
+
+        if(!treasury){
+            alert("Connect wallet first");
+            return;
         }
-    </script>
+
+        claimBtn.disabled = true;
+
+        statusBox.innerHTML =
+            "Waiting for wallet approval...";
+
+        const tx =
+            await treasury.claimRewards();
+
+        statusBox.innerHTML =
+            "Transaction submitted:<br>" +
+            tx.hash;
+
+        await tx.wait();
+
+        statusBox.innerHTML =
+            "Rewards claimed successfully";
+
+        loadPlayer();
+
+    }catch(err){
+
+        console.log(err);
+
+        if(err.data?.message){
+            statusBox.innerHTML =
+                err.data.message;
+        }else{
+            statusBox.innerHTML =
+                "Claim failed";
+        }
+
+    }
+
+    claimBtn.disabled = false;
+
+}
+
+/* =========================================
+   EVENTS
+========================================= */
+
+connectBtn.addEventListener(
+    "click",
+    connectWallet
+);
+
+refreshBtn.addEventListener(
+    "click",
+    loadPlayer
+);
+
+claimBtn.addEventListener(
+    "click",
+    claimRewards
+);
+
+</script>
+
 </body>
 </html>
