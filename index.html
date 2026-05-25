@@ -6,7 +6,7 @@
     <title>PepeVolt Clicker</title>
     <!-- Tailwind CSS for clean dark UI styling -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- FontAwesome for the center frog icon -->
+    <!-- FontAwesome for layout icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
@@ -21,75 +21,81 @@
 </head>
 <body class="text-gray-200 min-h-screen flex flex-col justify-between items-center p-4">
 
-    <!-- Top Account Header -->
-    <header class="w-full max-w-md flex justify-between items-center py-4 px-2 border-b border-emerald-950">
-        <div class="flex items-center gap-2">
-            <i class="fa-solid fa-wallet text-emerald-400 text-sm"></i>
-            <span class="text-sm font-bold text-gray-300" id="walletBalance">500.00 PVLT</span>
+    <!-- Top Navigation Bar (Stats Layout) -->
+    <nav class="w-full max-w-md bg-black/40 border border-emerald-900/40 rounded-2xl px-4 py-3 flex justify-between items-center shadow-lg backdrop-blur-md">
+        <!-- 1. Energy Tracking Module -->
+        <div class="flex flex-col items-center flex-1 border-r border-emerald-950/60">
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold flex items-center gap-1">
+                <i class="fa-solid fa-bolt text-emerald-400"></i> Energy
+            </span>
+            <span class="text-sm font-black text-white mt-0.5">
+                <span id="currentEnergy">50</span>/<span id="maxEnergy">50</span>
+            </span>
         </div>
-        <span class="text-xs font-mono uppercase bg-emerald-950 text-emerald-400 px-3 py-1 rounded-full border border-emerald-900" id="userTier">
-            Free User
-        </span>
-    </header>
+
+        <!-- 2. Points Tracking Module -->
+        <div class="flex flex-col items-center flex-1 border-r border-emerald-950/60">
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold flex items-center gap-1">
+                <i class="fa-solid fa-star text-yellow-400"></i> Points
+            </span>
+            <span class="text-sm font-black text-white mt-0.5" id="playerPoints">0</span>
+        </div>
+
+        <!-- 3. gPVLT Tracking Module -->
+        <div class="flex flex-col items-center flex-1">
+            <span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold flex items-center gap-1">
+                <i class="fa-solid fa-fire text-orange-400"></i> gPVLT
+            </span>
+            <span class="text-sm font-black text-orange-400 mt-0.5" id="playerGPVLT">0</span>
+        </div>
+    </nav>
 
     <!-- Main Game Section -->
-    <main class="w-full max-w-md flex flex-col items-center gap-8 my-auto">
+    <main class="w-full max-w-md flex flex-col items-center gap-10 my-auto">
         
-        <!-- Live Counters Grid -->
-        <div class="grid grid-cols-2 gap-4 w-full">
-            <div class="bg-black/40 border border-emerald-900/30 p-4 rounded-xl text-center">
-                <span class="text-gray-400 text-xs block uppercase tracking-wider mb-1">Points</span>
-                <span class="text-2xl font-black text-white" id="playerPoints">0</span>
-            </div>
-            <div class="bg-black/40 border border-emerald-900/30 p-4 rounded-xl text-center">
-                <span class="text-gray-400 text-xs block uppercase tracking-wider mb-1">gPVLT Holdings</span>
-                <span class="text-2xl font-black text-orange-400" id="playerGPVLT">0</span>
-            </div>
-        </div>
-
-        <!-- Giant Tap Tap Target Button -->
+        <!-- Center Giant Tap Tap Target Button -->
         <div class="relative flex flex-col items-center">
             <div class="absolute -inset-2 bg-emerald-500/10 rounded-full blur-xl"></div>
-            <button onclick="handleTap()" class="relative w-52 h-52 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600 flex flex-col items-center justify-center border-4 border-emerald-400 shadow-2xl transition-all duration-75 transform tap-active cursor-pointer select-none">
-                <i class="fa-solid fa-frog text-7xl text-black/80 mb-2"></i>
+            <button onclick="handleTap()" class="relative w-56 h-56 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600 flex flex-col items-center justify-center border-4 border-emerald-400 shadow-2xl transition-all duration-75 transform tap-active cursor-pointer select-none">
+                <i class="fa-solid fa-frog text-8xl text-black/80 mb-2"></i>
                 <span class="text-xs uppercase font-black tracking-widest text-black/60">Tap Tap</span>
             </button>
         </div>
 
-        <!-- Energy Bar Tracker -->
-        <div class="w-full px-2">
-            <div class="flex justify-between text-xs mb-1.5 font-bold">
-                <span class="text-gray-400">Energy Level</span>
-                <span class="text-white"><span id="currentEnergy">50</span> / <span id="maxEnergy">50</span></span>
-            </div>
-            <div class="w-full bg-gray-950 rounded-full h-3 border border-emerald-950 overflow-hidden">
+        <!-- Wallet Interface & Energy Visualizer Combo -->
+        <div class="w-full px-2 flex flex-col gap-2">
+            <div class="w-full bg-gray-950 rounded-full h-2 overflow-hidden border border-emerald-950/30">
                 <div id="energyProgress" class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-150" style="width: 100%"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs px-1 text-gray-400">
+                <span>Wallet Balance:</span>
+                <span class="font-bold text-gray-200" id="walletBalance">500.00 PVLT</span>
             </div>
         </div>
 
-        <!-- The 3 Requested Ecosystem Buttons -->
+        <!-- System Pipeline Action Controls -->
         <div class="w-full flex flex-col gap-3">
-            <button onclick="handleBuyEnergy()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black py-3 rounded-xl tracking-wide transition-all shadow-lg shadow-emerald-500/10 cursor-pointer text-sm">
+            <button onclick="handleBuyEnergy()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-emerald-500/10 cursor-pointer text-sm">
                 Buy 10,000 Energy (100 PVLT)
             </button>
 
-            <button onclick="handleConvert()" class="w-full bg-gray-900 hover:bg-gray-800 border border-white/5 hover:border-white/10 font-bold py-3 rounded-xl tracking-wide transition-all cursor-pointer text-sm">
+            <button onclick="handleConvert()" class="w-full bg-gray-900 hover:bg-gray-800 border border-white/5 hover:border-white/10 font-bold py-3.5 rounded-xl tracking-wide transition-all cursor-pointer text-sm">
                 Convert Points to gPVLT
             </button>
 
-            <button onclick="handleClaim()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl tracking-wide transition-all shadow-lg shadow-blue-600/10 cursor-pointer text-sm">
+            <button onclick="handleClaim()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl tracking-wide transition-all shadow-lg shadow-blue-600/10 cursor-pointer text-sm">
                 Claim PVLT
             </button>
         </div>
 
     </main>
 
-    <!-- Footer Note -->
-    <footer class="text-[10px] text-gray-600 text-center py-4">
-        PepeVolt UI Ecosystem Environment
+    <!-- Simple Identification Footer -->
+    <footer class="text-[10px] text-gray-600 text-center py-2" id="userTier">
+        Standard Ecosystem Profile Tier
     </footer>
 
-    <!-- Local State Logic (Simulating Contract Storage Functions) -->
+    <!-- Local Simulation Application Logic -->
     <script>
         let gameState = {
             energy: 50,
@@ -101,36 +107,37 @@
         };
 
         function updateUI() {
+            // Live Stats Injectors
             document.getElementById('currentEnergy').innerText = gameState.energy;
             document.getElementById('maxEnergy').innerText = gameState.maxEnergy;
             document.getElementById('playerPoints').innerText = gameState.points;
             document.getElementById('playerGPVLT').innerText = gameState.burnedGPVLT;
             document.getElementById('walletBalance').innerText = gameState.walletBalance.toFixed(2) + " PVLT";
             
-            // Render Energy Percentage Bar
+            // Linear Progress calculation
             const percent = (gameState.energy / gameState.maxEnergy) * 100;
             document.getElementById('energyProgress').style.width = percent + '%';
 
-            // Premium Tier Badge Label
-            const tierBadge = document.getElementById('userTier');
+            // Footer tier descriptor adjustment
+            const footerTier = document.getElementById('userTier');
             if (gameState.paidUser) {
-                tierBadge.innerText = "Premium User";
-                tierBadge.className = "text-xs font-mono uppercase bg-emerald-950/50 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30";
+                footerTier.innerText = "Premium Upgrade Verified Mode";
+                footerTier.classList.add('text-emerald-500');
             }
         }
 
-        // Tap Tap Function
+        // Action: Tap Tap execution
         function handleTap() {
             if (gameState.energy > 0) {
                 gameState.energy -= 1;
                 gameState.points += 1;
                 updateUI();
             } else {
-                alert("No energy left!");
+                alert("Out of interaction energy!");
             }
         }
 
-        // Buy Energy Action
+        // Action: Buy 10000 Energy
         function handleBuyEnergy() {
             if (gameState.walletBalance >= 100) {
                 gameState.walletBalance -= 100;
@@ -139,35 +146,35 @@
                 gameState.energy = 10000;
                 updateUI();
             } else {
-                alert("Insufficient PVLT balance.");
+                alert("Insufficient wallet funds.");
             }
         }
 
-        // Convert Points to gPVLT Action
+        // Action: Convert Points
         function handleConvert() {
             if (gameState.points >= 100) {
                 gameState.points -= 100;
                 gameState.burnedGPVLT += 1;
                 updateUI();
             } else {
-                alert("Need at least 100 points to convert.");
+                alert("Requires a minimum balance of 100 points.");
             }
         }
 
-        // Claim Rewards Action
+        // Action: Claim Payout
         function handleClaim() {
             if (gameState.burnedGPVLT >= 100 && gameState.burnedGPVLT <= 1000) {
                 let reward = Math.floor(gameState.burnedGPVLT / 100);
                 gameState.walletBalance += reward;
                 gameState.burnedGPVLT = 0;
                 updateUI();
-                alert(`Successfully claimed ${reward} PVLT!`);
+                alert(`Transaction Processed: Claimed ${reward} PVLT!`);
             } else {
-                alert("Claim requirements unfulfilled. Need between 100 and 1000 gPVLT.");
+                alert("Threshold unmatched. Target requirements range between 100 and 1000 gPVLT.");
             }
         }
 
-        // Initial Layout Setup Run
+        // Initialize state engine layout
         updateUI();
     </script>
 </body>
