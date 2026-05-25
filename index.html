@@ -21,20 +21,11 @@
         
         /* Control Buttons */
         button { width: 100%; padding: 14px; margin: 10px 0; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 1rem; color: white; }
-        .btn-connect { background-color: #3498db; }
-        .btn-sync { background-color: #9b59b6; animation: pulse 2s infinite; } /* Highlights the save progress button */
+        .btn-connect { background-color: #3498db; margin-bottom: 25px; }
         .btn-action { background-color: #e67e22; }
-        .btn-refill { background-color: #f1c40f; color: #1a1a2e; }
         button:disabled { opacity: 0.3; cursor: not-allowed; }
         
-        #pvlt-display { font-size: 0.9rem; color: #bdc3c7; margin: 15px 0 5px 0; }
         #status-feed { font-size: 0.8rem; color: #95a5a6; margin-top: 20px; }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(155, 89, 182, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0); }
-        }
     </style>
 </head>
 <body>
@@ -50,12 +41,7 @@
         <button id="tap-button" class="btn-tap" onclick="handleLocalTap()" disabled>TAP</button>
 
         <button id="wallet-btn" class="btn-connect" onclick="toggleWallet()">Connect Wallet</button>
-        <p id="pvlt-display">Wallet Balance: Locked</p>
         
-        <button id="sync-btn" class="btn-sync" onclick="syncTapsToBlockchain()" disabled>💾 Save Progress to Contract</button>
-        <hr style="border: 0; border-top: 1px solid #34495e; margin: 15px 0;">
-
-        <button id="free-refill-btn" class="btn-refill" onclick="triggerFreeRefill()" disabled>⚡ Free Refill (+1 Energy)</button>
         <button id="buy-energy-btn" class="btn-action" onclick="confirmRefill()" disabled>Buy 10,000 Energy (100 PVLT)</button>
         <button id="convert-btn" class="btn-action" onclick="convertPoints()" disabled>Convert 100 Points → 1 gPVLT</button>
         <button id="claim-btn" class="btn-action" onclick="claimReward()" disabled>Claim Reward (100-1000 gPVLT)</button>
@@ -78,11 +64,9 @@
             ],
             PepeVoltGame: [
                 "function players(address) view returns (uint256 energy, uint256 points, uint256 burnedGPVLT, bool paidUser, uint256 lastClaimDay)",
-                "function tap() external", // Kept for contract compatibility if needed
                 "function buyEnergy() external",
                 "function convertPoints() external",
-                "function claimRewards() external",
-                "function refillEnergy() external"
+                "function claimRewards() external"
             ]
         };
 
@@ -91,10 +75,9 @@
         let isWalletConnected = false;
         let actionInFlight = false;
 
-        // Local gameplay state trackers
+        // Local UI State Values
         let localEnergy = 0;
         let localPoints = 0;
-        let pendingTaps = 0; 
 
         async function checkAndSwitchNetwork() {
             try {
@@ -128,7 +111,6 @@
         async function toggleWallet() {
             if (isWalletConnected) {
                 isWalletConnected = false; userAddress = null; provider = null; signer = null; pvltContract = null; gameContract = null;
-                pendingTaps = 0;
                 document.getElementById('wallet-btn').innerText = "Connect Wallet";
                 setButtonsState(true);
                 updateUIHTML(true);
@@ -158,10 +140,8 @@
 
         function setButtonsState(disabled) {
             document.getElementById('tap-button').disabled = disabled;
-            document.getElementById('sync-btn').disabled = disabled;
             document.getElementById('convert-btn').disabled = disabled;
             document.getElementById('claim-btn').disabled = disabled;
-            document.getElementById('free-refill-btn').disabled = disabled;
             document.getElementById('buy-energy-btn').disabled = disabled;
         }
 
@@ -170,7 +150,6 @@
                 document.getElementById('energy').innerText = "Locked";
                 document.getElementById('points').innerText = "Locked";
                 document.getElementById('gpvlt').innerText = "Locked";
-                document.getElementById('pvlt-display').innerText = "Wallet Balance: Locked";
             }
         }
 
@@ -178,84 +157,32 @@
             if (!gameContract || !userAddress || !isWalletConnected || actionInFlight) return;
             try {
                 const playerData = await gameContract.players(userAddress);
-                const pvltBalance = await pvltContract.balanceOf(userAddress);
 
-                // Load initial state straight out of the smart contract logic
                 localEnergy = Number(playerData.energy);
                 localPoints = Number(playerData.points);
-                pendingTaps = 0; // Reset pending state variations
 
                 document.getElementById('energy').innerText = localEnergy.toLocaleString();
                 document.getElementById('points').innerText = localPoints.toLocaleString();
                 document.getElementById('gpvlt').innerText = Number(playerData.burnedGPVLT).toLocaleString();
-                document.getElementById('pvlt-display').innerText = `Wallet Balance: ${parseFloat(ethers.formatEther(pvltBalance)).toFixed(3)} PVLT`;
                 document.getElementById('status-feed').innerText = "Live contract status synchronized.";
             } catch (err) {
                 console.error(err);
             }
         }
 
-        // NO TRANSACTIONS HERE: Fast, instant screen update!
+        // Instant Visual State Modification
         function handleLocalTap() {
             if (!isWalletConnected) return;
 
             if (localEnergy > 0) {
                 localEnergy -= 1;
                 localPoints += 1;
-                pendingTaps += 1;
 
-                // Update UI instantly
                 document.getElementById('energy').innerText = localEnergy.toLocaleString();
                 document.getElementById('points').innerText = localPoints.toLocaleString();
-                document.getElementById('status-feed').innerText = `Tapped! ${pendingTaps} unsaved actions. Remember to click "Save Progress"`;
+                document.getElementById('status-feed').innerText = "Tap recorded locally.";
             } else {
-                document.getElementById('status-feed').innerText = "Out of energy! Buy more or use a refill.";
-            }
-        }
-
-        // ONE SINGLE TRANSACTION: Pushes all cached taps up to your contract setup
-        async function syncTapsToBlockchain() {
-            if (!isWalletConnected || actionInFlight) return;
-            if (pendingTaps === 0) {
-                document.getElementById('status-feed').innerText = "No unsaved taps to sync.";
-                return;
-            }
-
-            try {
-                actionInFlight = true;
-                document.getElementById('status-feed').innerText = `Syncing ${pendingTaps} taps to Polygon blockchain...`;
-                
-                /* Note: If your custom contract accepts an argument like gameContract.tap(pendingTaps), 
-                  change the line below to match your solidty function setup.
-                */
-                const tx = await gameContract.tap(); 
-                
-                document.getElementById('status-feed').innerText = "Mining state variations on-chain...";
-                await tx.wait(1);
-                
-                document.getElementById('status-feed').innerText = "Progress permanently saved!";
-                pendingTaps = 0;
-            } catch (err) {
-                document.getElementById('status-feed').innerText = "Sync transaction rejected.";
-            } finally {
-                actionInFlight = false;
-                await syncContractState();
-            }
-        }
-
-        async function triggerFreeRefill() {
-            if (!isWalletConnected || actionInFlight) return;
-            try {
-                actionInFlight = true;
-                document.getElementById('status-feed').innerText = "Broadcasting manual refill...";
-                const tx = await gameContract.refillEnergy();
-                await tx.wait(1);
-                document.getElementById('status-feed').innerText = "Energy value bumped!";
-            } catch (err) {
-                document.getElementById('status-feed').innerText = "Action reverted.";
-            } finally {
-                actionInFlight = false;
-                await syncContractState();
+                document.getElementById('status-feed').innerText = "Out of energy!";
             }
         }
 
@@ -275,7 +202,7 @@
                 document.getElementById('status-feed').innerText = "Recharging total capacity...";
                 const buyTx = await gameContract.buyEnergy();
                 await buyTx.wait(1);
-                document.getElementById('status-feed').innerText = "Energy set to 10,000!";
+                document.getElementById('status-feed').innerText = "Energy balance restored on-chain.";
             } catch (err) {
                 document.getElementById('status-feed').innerText = "Acquisition aborted.";
             } finally {
