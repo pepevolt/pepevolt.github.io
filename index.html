@@ -2,16 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+
 <meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
 />
 
-<title>PepeVolt Treasury</title>
+<title>PepeVolt Tap Game</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 
 <style>
+
 *{
     margin:0;
     padding:0;
@@ -23,147 +25,205 @@ html,
 body{
     width:100%;
     height:100%;
-    overflow-x:hidden;
+    overflow:hidden;
     touch-action:manipulation;
-    background:#050816;
+    font-family:Arial,sans-serif;
+    background:
+    radial-gradient(circle at center,
+    #1d2c57 0%,
+    #091126 100%);
     color:white;
-    font-family:Arial, sans-serif;
 }
 
 body{
     display:flex;
     justify-content:center;
-    padding:20px;
+    align-items:flex-start;
 }
 
 .container{
     width:100%;
     max-width:500px;
+    height:100vh;
+    overflow-y:auto;
+    padding-bottom:40px;
 }
 
-.card{
-    background:#0d1326;
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:22px;
-    padding:20px;
-    margin-bottom:18px;
-    box-shadow:0 0 20px rgba(0,0,0,0.35);
-}
+/* TOP BAR */
 
-.logo{
-    text-align:center;
-    margin-bottom:18px;
-}
-
-.logo h1{
-    font-size:34px;
-    color:#00ff9d;
-}
-
-.logo p{
-    margin-top:8px;
-    color:#9aa4b2;
-    font-size:14px;
-}
-
-.stat-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-    margin-top:15px;
+.topbar{
+    width:100%;
+    background:rgba(255,255,255,0.08);
+    backdrop-filter:blur(10px);
+    display:flex;
+    justify-content:space-around;
+    padding:20px 10px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
 }
 
 .stat{
-    background:#121a31;
-    padding:14px;
-    border-radius:16px;
     text-align:center;
 }
 
-.stat h2{
-    font-size:18px;
-    color:#00ff9d;
+.stat .icon{
+    font-size:30px;
+    margin-bottom:8px;
 }
 
-.stat span{
-    font-size:12px;
-    color:#9aa4b2;
-}
-
-.section-title{
-    font-size:18px;
-    margin-bottom:15px;
-    color:#00ff9d;
-}
-
-button{
-    width:100%;
-    border:none;
-    outline:none;
-    padding:16px;
-    border-radius:16px;
-    background:#00ff9d;
-    color:#000;
-    font-size:16px;
+.stat .value{
+    font-size:28px;
     font-weight:bold;
-    cursor:pointer;
-    transition:0.2s;
 }
 
-button:active{
-    transform:scale(0.98);
+.stat .label{
+    font-size:14px;
+    opacity:0.8;
 }
 
-button:disabled{
-    opacity:0.5;
+/* GAME */
+
+.game{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:30px 20px;
 }
 
-.input{
-    width:100%;
-    padding:14px;
-    border-radius:14px;
+.tap-area{
+    margin-top:40px;
+    margin-bottom:35px;
+}
+
+.tap-btn{
+    width:230px;
+    height:230px;
+    border-radius:50%;
     border:none;
     outline:none;
-    background:#121a31;
+    cursor:pointer;
+    background:
+    linear-gradient(180deg,
+    #5cf0c7,
+    #3fc7a3);
+    color:#1273ff;
+    font-size:52px;
+    font-weight:900;
+    box-shadow:
+    0 15px 0 #239578,
+    0 0 50px rgba(92,240,199,0.45);
+    transition:0.08s;
+    user-select:none;
+}
+
+.tap-btn:active{
+    transform:translateY(10px);
+    box-shadow:
+    0 5px 0 #239578,
+    0 0 20px rgba(92,240,199,0.4);
+}
+
+.wallet-btn{
+    width:100%;
+    padding:18px;
+    border:none;
+    border-radius:18px;
+    background:#ef4b3f;
     color:white;
-    margin-bottom:12px;
-    font-size:15px;
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:20px;
 }
 
-.info{
-    margin-top:15px;
-    background:#121a31;
-    padding:14px;
-    border-radius:16px;
-    line-height:1.7;
-    color:#cdd6e0;
-    font-size:14px;
+.progress-wrap{
+    width:100%;
+    height:30px;
+    border-radius:30px;
+    overflow:hidden;
+    background:rgba(255,255,255,0.08);
+    margin-bottom:18px;
 }
 
-.status{
-    margin-top:14px;
-    padding:14px;
-    border-radius:14px;
-    background:#121a31;
-    color:#00ff9d;
-    font-size:14px;
-    word-break:break-word;
+.progress{
+    width:0%;
+    height:100%;
+    border-radius:30px;
+    background:#59e3bb;
+    transition:0.3s;
 }
 
-.claim-box{
-    text-align:center;
+.balance{
+    font-size:28px;
+    font-weight:bold;
+    margin-bottom:30px;
+}
+
+.action-btn{
+    width:100%;
+    padding:22px;
+    border:none;
+    border-radius:18px;
+    background:#59e3bb;
+    color:#07111f;
+    font-size:24px;
+    font-weight:900;
+    margin-bottom:20px;
+}
+
+.card{
+    width:100%;
+    background:rgba(255,255,255,0.08);
+    border-radius:24px;
+    padding:25px;
     margin-top:10px;
 }
 
-.claim-box h2{
-    font-size:40px;
-    color:#00ff9d;
+.card h2{
+    text-align:center;
+    margin-bottom:25px;
+    font-size:32px;
 }
 
-.claim-box p{
-    color:#9aa4b2;
-    margin-top:6px;
+.refill-btn{
+    width:100%;
+    padding:22px;
+    border:none;
+    border-radius:18px;
+    background:#59e3bb;
+    color:#07111f;
+    font-size:24px;
+    font-weight:bold;
 }
+
+.status{
+    margin-top:20px;
+    text-align:center;
+    font-size:16px;
+    color:#59e3bb;
+    word-break:break-word;
+}
+
+/* FLOAT TEXT */
+
+.float{
+    position:absolute;
+    color:#5cf0c7;
+    font-weight:bold;
+    font-size:34px;
+    pointer-events:none;
+    animation:floatUp 1s linear forwards;
+}
+
+@keyframes floatUp{
+    0%{
+        opacity:1;
+        transform:translateY(0);
+    }
+    100%{
+        opacity:0;
+        transform:translateY(-100px);
+    }
+}
+
 </style>
 </head>
 
@@ -171,84 +231,70 @@ button:disabled{
 
 <div class="container">
 
-    <div class="logo">
-        <h1>PEPEVOLT</h1>
-        <p>PVLT Treasury Reward Dashboard</p>
+    <!-- TOP BAR -->
+
+    <div class="topbar">
+
+        <div class="stat">
+            <div class="icon">⚡</div>
+            <div class="value" id="energy">50/50</div>
+        </div>
+
+        <div class="stat">
+            <div class="icon">💎</div>
+            <div class="value" id="points">0</div>
+        </div>
+
+        <div class="stat">
+            <div class="icon">🪙</div>
+            <div class="value" id="gpvlt">0.00</div>
+        </div>
+
     </div>
 
-    <div class="card">
-        <div class="section-title">Wallet</div>
+    <!-- GAME -->
 
-        <button id="connectBtn">
+    <div class="game">
+
+        <div class="tap-area">
+            <button class="tap-btn" id="tapBtn">
+                TAP!
+            </button>
+        </div>
+
+        <button class="wallet-btn" id="connectBtn">
             Connect Wallet
         </button>
 
-        <div class="status" id="walletStatus">
-            Wallet not connected
-        </div>
-    </div>
-
-    <div class="card">
-
-        <div class="section-title">Claim Rules</div>
-
-        <div class="info">
-            • Minimum Claim = 10 gPVLT<br>
-            • 10 gPVLT = 1 PVLT<br>
-            • Maximum Daily Claim = 100 PVLT<br>
-            • One claim allowed per day
+        <div class="progress-wrap">
+            <div class="progress" id="progress"></div>
         </div>
 
-        <div class="claim-box">
-            <h2 id="rewardPreview">0 PVLT</h2>
-            <p>Estimated Claim Reward</p>
+        <div class="balance">
+            Balance:
+            <span id="pvltBalance">0.000</span>
+            PVLT
         </div>
 
-    </div>
-
-    <div class="card">
-
-        <div class="section-title">Player Stats</div>
-
-        <div class="stat-grid">
-
-            <div class="stat">
-                <h2 id="energy">0</h2>
-                <span>Energy</span>
-            </div>
-
-            <div class="stat">
-                <h2 id="points">0</h2>
-                <span>Points</span>
-            </div>
-
-            <div class="stat">
-                <h2 id="gpvlt">0</h2>
-                <span>gPVLT</span>
-            </div>
-
-            <div class="stat">
-                <h2 id="claimDay">0</h2>
-                <span>Last Claim Day</span>
-            </div>
-
-        </div>
-
-    </div>
-
-    <div class="card">
-
-        <div class="section-title">Actions</div>
-
-        <button id="claimBtn">
-            Claim PVLT Rewards
+        <button class="action-btn" id="convertBtn">
+            Convert 100 💎 → 1 gPVLT
         </button>
 
-        <br><br>
-
-        <button id="refreshBtn">
-            Refresh Stats
+        <button class="action-btn" id="claimBtn">
+            Claim Reward
         </button>
+
+        <div class="card">
+
+            <h2>
+                10,000 Energy = 100 PVLT
+            </h2>
+
+            <button class="refill-btn" id="refillBtn">
+                Confirm Refill
+            </button>
+
+        </div>
 
         <div class="status" id="status">
             Ready
@@ -260,99 +306,149 @@ button:disabled{
 
 <script>
 
-/* =========================================
-   CONFIG
-========================================= */
+/* =========================
+   CONTRACTS
+========================= */
 
-const TREASURY_ADDRESS = "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc";
-const GAME_ADDRESS = "0x151803532A33837E4bBc2";
+const GAME_ADDRESS =
+"0x151803532A33837E4bBc2";
+
+const TREASURY_ADDRESS =
+"0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc";
+
+const PVLT_ADDRESS =
+"0xb8010fD52D5208eC05574a7D5A939c0d446A862a";
+
 const CHAIN_ID = 137;
 
-/* =========================================
+/* =========================
    ABI
-========================================= */
+========================= */
 
 const GAME_ABI = [
-    "function players(address) view returns(uint256 energy,uint256 points,uint256 burnedGPVLT,bool paidUser,uint256 lastClaimDay)"
+"function tap() external",
+"function convertPoints() external",
+"function refillEnergy() external",
+"function players(address) view returns(uint256 energy,uint256 points,uint256 burnedGPVLT,bool paidUser,uint256 lastClaimDay)"
 ];
 
 const TREASURY_ABI = [
-    "function claimRewards() external"
+"function claimRewards() external"
 ];
 
-/* =========================================
+const ERC20_ABI = [
+"function balanceOf(address) view returns(uint256)"
+];
+
+/* =========================
    GLOBALS
-========================================= */
+========================= */
 
 let provider;
 let signer;
 let userAddress;
+
 let game;
 let treasury;
+let pvlt;
 
-/* =========================================
+/* =========================
    ELEMENTS
-========================================= */
+========================= */
 
-const connectBtn = document.getElementById("connectBtn");
-const refreshBtn = document.getElementById("refreshBtn");
-const claimBtn = document.getElementById("claimBtn");
+const connectBtn =
+document.getElementById("connectBtn");
 
-const walletStatus = document.getElementById("walletStatus");
-const statusBox = document.getElementById("status");
+const tapBtn =
+document.getElementById("tapBtn");
 
-const energyEl = document.getElementById("energy");
-const pointsEl = document.getElementById("points");
-const gpvltEl = document.getElementById("gpvlt");
-const claimDayEl = document.getElementById("claimDay");
+const convertBtn =
+document.getElementById("convertBtn");
 
-const rewardPreview = document.getElementById("rewardPreview");
+const refillBtn =
+document.getElementById("refillBtn");
 
-/* =========================================
+const claimBtn =
+document.getElementById("claimBtn");
+
+const energyEl =
+document.getElementById("energy");
+
+const pointsEl =
+document.getElementById("points");
+
+const gpvltEl =
+document.getElementById("gpvlt");
+
+const pvltBalanceEl =
+document.getElementById("pvltBalance");
+
+const progressEl =
+document.getElementById("progress");
+
+const statusEl =
+document.getElementById("status");
+
+/* =========================
    CONNECT WALLET
-========================================= */
+========================= */
 
 async function connectWallet(){
 
     try{
 
         if(!window.ethereum){
-            alert("MetaMask not installed");
+            alert("Install MetaMask");
             return;
         }
 
-        provider = new ethers.providers.Web3Provider(window.ethereum);
+        provider =
+        new ethers.providers.Web3Provider(window.ethereum);
 
-        await provider.send("eth_requestAccounts", []);
+        await provider.send(
+            "eth_requestAccounts",
+            []
+        );
 
         signer = provider.getSigner();
 
-        userAddress = await signer.getAddress();
+        userAddress =
+        await signer.getAddress();
 
-        const network = await provider.getNetwork();
+        const network =
+        await provider.getNetwork();
 
         if(network.chainId !== CHAIN_ID){
             alert("Switch to Polygon Mainnet");
             return;
         }
 
-        game = new ethers.Contract(
+        game =
+        new ethers.Contract(
             GAME_ADDRESS,
             GAME_ABI,
-            provider
+            signer
         );
 
-        treasury = new ethers.Contract(
+        treasury =
+        new ethers.Contract(
             TREASURY_ADDRESS,
             TREASURY_ABI,
             signer
         );
 
-        walletStatus.innerHTML =
-            "Connected:<br>" +
-            userAddress;
+        pvlt =
+        new ethers.Contract(
+            PVLT_ADDRESS,
+            ERC20_ABI,
+            provider
+        );
 
-        statusBox.innerHTML = "Wallet connected";
+        connectBtn.innerHTML =
+        "Disconnect Wallet";
+
+        statusEl.innerHTML =
+        "Wallet Connected";
 
         loadPlayer();
 
@@ -360,16 +456,16 @@ async function connectWallet(){
 
         console.log(err);
 
-        statusBox.innerHTML =
-            "Connection failed";
+        statusEl.innerHTML =
+        "Connection Failed";
 
     }
 
 }
 
-/* =========================================
+/* =========================
    LOAD PLAYER
-========================================= */
+========================= */
 
 async function loadPlayer(){
 
@@ -377,70 +473,99 @@ async function loadPlayer(){
 
         if(!userAddress) return;
 
-        const data = await game.players(userAddress);
+        const data =
+        await game.players(userAddress);
 
-        const energy = Number(data.energy);
-        const points = Number(data.points);
-        const gpvlt = Number(data.burnedGPVLT);
-        const claimDay = Number(data.lastClaimDay);
+        const energy =
+        Number(data.energy);
 
-        energyEl.innerText = energy;
-        pointsEl.innerText = points;
-        gpvltEl.innerText = gpvlt;
-        claimDayEl.innerText = claimDay;
+        const points =
+        Number(data.points);
 
-        const batch =
-            gpvlt > 1000 ? 1000 : gpvlt;
+        const gpvlt =
+        Number(data.burnedGPVLT);
 
-        const reward =
-            Math.floor(batch / 10);
+        const balance =
+        await pvlt.balanceOf(userAddress);
 
-        rewardPreview.innerText =
-            reward + " PVLT";
+        const pvltFormatted =
+        ethers.utils.formatEther(balance);
 
-        statusBox.innerHTML =
-            "Stats updated";
+        energyEl.innerHTML =
+        energy + "/50";
+
+        pointsEl.innerHTML =
+        points;
+
+        gpvltEl.innerHTML =
+        gpvlt.toFixed(2);
+
+        pvltBalanceEl.innerHTML =
+        Number(pvltFormatted).toFixed(3);
+
+        const progress =
+        Math.min((points / 100) * 100, 100);
+
+        progressEl.style.width =
+        progress + "%";
 
     }catch(err){
 
         console.log(err);
 
-        statusBox.innerHTML =
-            "Failed loading stats";
-
     }
 
 }
 
-/* =========================================
-   CLAIM REWARDS
-========================================= */
+/* =========================
+   FLOAT TEXT
+========================= */
 
-async function claimRewards(){
+function showFloat(){
+
+    const div =
+    document.createElement("div");
+
+    div.className = "float";
+
+    div.innerHTML = "+1";
+
+    const rect =
+    tapBtn.getBoundingClientRect();
+
+    div.style.left =
+    rect.left + rect.width/2 + "px";
+
+    div.style.top =
+    rect.top + "px";
+
+    document.body.appendChild(div);
+
+    setTimeout(()=>{
+        div.remove();
+    },1000);
+
+}
+
+/* =========================
+   TAP
+========================= */
+
+async function tap(){
 
     try{
 
-        if(!treasury){
-            alert("Connect wallet first");
+        if(!game){
+            alert("Connect wallet");
             return;
         }
 
-        claimBtn.disabled = true;
-
-        statusBox.innerHTML =
-            "Waiting for wallet approval...";
+        showFloat();
 
         const tx =
-            await treasury.claimRewards();
-
-        statusBox.innerHTML =
-            "Transaction submitted:<br>" +
-            tx.hash;
+        await game.tap();
 
         await tx.wait();
-
-        statusBox.innerHTML =
-            "Rewards claimed successfully";
 
         loadPlayer();
 
@@ -448,37 +573,136 @@ async function claimRewards(){
 
         console.log(err);
 
-        if(err.data?.message){
-            statusBox.innerHTML =
-                err.data.message;
-        }else{
-            statusBox.innerHTML =
-                "Claim failed";
-        }
+        statusEl.innerHTML =
+        "Tap failed";
 
     }
 
-    claimBtn.disabled = false;
+}
+
+/* =========================
+   CONVERT
+========================= */
+
+async function convert(){
+
+    try{
+
+        const tx =
+        await game.convertPoints();
+
+        statusEl.innerHTML =
+        "Converting...";
+
+        await tx.wait();
+
+        statusEl.innerHTML =
+        "Converted";
+
+        loadPlayer();
+
+    }catch(err){
+
+        console.log(err);
+
+        statusEl.innerHTML =
+        "Convert failed";
+
+    }
 
 }
 
-/* =========================================
+/* =========================
+   CLAIM
+========================= */
+
+async function claim(){
+
+    try{
+
+        const tx =
+        await treasury.claimRewards();
+
+        statusEl.innerHTML =
+        "Claiming rewards...";
+
+        await tx.wait();
+
+        statusEl.innerHTML =
+        "Rewards claimed";
+
+        loadPlayer();
+
+    }catch(err){
+
+        console.log(err);
+
+        statusEl.innerHTML =
+        "Claim failed";
+
+    }
+
+}
+
+/* =========================
+   REFILL
+========================= */
+
+async function refill(){
+
+    try{
+
+        const tx =
+        await game.refillEnergy();
+
+        statusEl.innerHTML =
+        "Refilling energy...";
+
+        await tx.wait();
+
+        statusEl.innerHTML =
+        "Energy refilled";
+
+        loadPlayer();
+
+    }catch(err){
+
+        console.log(err);
+
+        statusEl.innerHTML =
+        "Refill failed";
+
+    }
+
+}
+
+/* =========================
    EVENTS
-========================================= */
+========================= */
 
 connectBtn.addEventListener(
-    "click",
-    connectWallet
+"click",
+connectWallet
 );
 
-refreshBtn.addEventListener(
-    "click",
-    loadPlayer
+tapBtn.addEventListener(
+"click",
+tap
+);
+
+convertBtn.addEventListener(
+"click",
+convert
 );
 
 claimBtn.addEventListener(
-    "click",
-    claimRewards
+"click",
+claim
+);
+
+refillBtn.addEventListener(
+"click",
+refill
 );
 
 </script>
