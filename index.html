@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PepeVolt Clicker | Polygon</title>
+    <title>PepeVolt Ecosystem Dashboard</title>
+    <!-- Tailwind CSS v4 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome for Premium Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Ethers.js v6 Library Production Delivery -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=500;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        
         html, body {
             position: fixed;
             overflow: hidden;
@@ -20,93 +24,162 @@
         }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: radial-gradient(circle at center, #111d18 0%, #070a09 100%);
+            background: radial-gradient(circle at 50% 30%, #13271d 0%, #080c0a 100%);
         }
         * {
             -webkit-tap-highlight-color: transparent;
             user-select: none;
             -webkit-user-select: none;
         }
-        .tap-target {
+        /* Glassmorphism panel base */
+        .glass-panel {
+            background: rgba(10, 18, 14, 0.7);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        /* High-response tap mechanism scaling */
+        .click-target {
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             touch-action: manipulation;
         }
-        .tap-target:active {
-            transform: scale(0.95);
+        .click-target:active {
+            transform: scale(0.92);
+        }
+        /* Floating numeric click indicator animation */
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
+        }
+        .floating-point {
+            position: absolute;
+            animation: floatUp 0.8s ease-out forwards;
+            pointer-events: none;
+            font-weight: 800;
+            color: #10b981;
+            text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
         }
     </style>
 </head>
-<body class="text-gray-200 flex flex-col justify-between items-center p-4">
+<body class="text-slate-100 flex flex-col justify-between items-center p-4">
 
-    <nav class="w-full max-w-md bg-black/40 border border-emerald-900/40 rounded-2xl px-4 py-3 flex justify-between items-center shadow-lg backdrop-blur-md mt-2">
-        <div class="flex flex-col items-center flex-1 border-r border-emerald-950/60">
-            <span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold flex items-center gap-1">
-                <i class="fa-solid fa-bolt text-emerald-400"></i> Energy
+    <!-- TOP HEADER & WALLET MODULE -->
+    <header class="w-full max-w-md flex justify-between items-center mt-2 z-10">
+        <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+                <i class="fa-solid fa-frog text-emerald-400 text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-xs font-black tracking-wider text-white uppercase">PepeVolt</h1>
+                <p class="text-[10px] text-emerald-500/80 font-bold tracking-tight flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span> Polygon Mainnet
+                </p>
+            </div>
+        </div>
+        
+        <button id="connectBtn" onclick="connectWallet()" class="click-target text-xs font-bold px-4 py-2 rounded-xl bg-emerald-500 text-neutral-950 hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/10 cursor-pointer outline-none">
+            <i class="fa-solid fa-wallet mr-1.5"></i> Connect Wallet
+        </button>
+    </header>
+
+    <!-- CORE LIVE TRACKING STATS -->
+    <section class="w-full max-w-md glass-panel rounded-2xl p-4 mt-4 grid grid-cols-3 gap-2 shadow-xl relative z-10">
+        <div class="flex flex-col items-center justify-center py-1">
+            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-bolt text-amber-400"></i> Energy
             </span>
-            <span class="text-sm font-black text-white mt-0.5">
-                <span id="currentEnergy">0</span>/<span id="maxEnergy">0</span>
+            <span class="text-base font-black text-white tracking-tight">
+                <span id="currentEnergy">0</span><span class="text-slate-500 text-xs font-normal">/<span id="maxEnergy">0</span></span>
             </span>
         </div>
-        <div class="flex flex-col items-center flex-1 border-r border-emerald-950/60">
-            <span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold flex items-center gap-1">
-                <i class="fa-solid fa-star text-yellow-400"></i> Points
+        <div class="flex flex-col items-center justify-center py-1 border-x border-slate-800/60">
+            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
+                <i class="fa-solid fa-circle-dot text-emerald-400"></i> Points
             </span>
-            <span class="text-sm font-black text-white mt-0.5" id="playerPoints">0</span>
+            <span class="text-base font-black text-white tracking-tight" id="playerPoints">0</span>
         </div>
-        <div class="flex flex-col items-center flex-1">
-            <span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold flex items-center gap-1">
+        <div class="flex flex-col items-center justify-center py-1">
+            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
                 <i class="fa-solid fa-fire text-orange-400"></i> gPVLT
             </span>
-            <span class="text-sm font-black text-orange-400 mt-0.5" id="playerGPVLT">0</span>
+            <span class="text-base font-black text-orange-400 tracking-tight" id="playerGPVLT">0</span>
         </div>
-    </nav>
+    </section>
 
-    <main class="w-full max-w-md flex flex-col items-center gap-8 my-auto">
+    <!-- CENTER INTERACTIVE APP LAYER -->
+    <main class="w-full max-w-md flex flex-col items-center justify-center my-auto relative z-10">
         
-        <div class="relative flex flex-col items-center">
-            <div class="absolute -inset-2 bg-emerald-500/10 rounded-full blur-xl"></div>
-            <button id="tapBtn" class="tap-target relative w-56 h-56 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600 flex flex-col items-center justify-center border-4 border-emerald-400 shadow-2xl transition-transform duration-75 cursor-pointer outline-none">
-                <i class="fa-solid fa-frog text-8xl text-black/80 mb-2 pointer-events-none"></i>
-                <span class="text-xs uppercase font-black tracking-widest text-black/60 pointer-events-none">Tap Tap</span>
+        <!-- Giant Interactive Click Container -->
+        <div class="relative flex flex-col items-center justify-center my-6" id="clickAreaContainer">
+            <div class="absolute w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <!-- Structural Radial Click Border -->
+            <button id="tapBtn" class="click-target relative w-60 h-60 rounded-full border border-emerald-500/30 bg-gradient-to-b from-neutral-900 to-neutral-950 flex flex-col items-center justify-center shadow-2xl cursor-pointer outline-none group">
+                <div class="absolute inset-2 bg-gradient-to-tr from-emerald-950/40 to-teal-950/20 rounded-full transition-transform duration-300 group-hover:scale-105"></div>
+                <span class="text-7xl mb-1 relative z-10 drop-shadow-[0_4px_12px_rgba(16,185,129,0.3)]">🐸</span>
+                <span class="text-[10px] uppercase font-black tracking-widest text-emerald-400/60 relative z-10 mt-2">Tap Generator</span>
             </button>
         </div>
 
-        <div class="w-full px-2 flex flex-col gap-2">
-            <div class="w-full bg-gray-950 rounded-full h-2 overflow-hidden border border-emerald-950/30">
-                <div id="energyProgress" class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-150" style="width: 0%"></div>
+        <!-- Energy Structural Bar Progress Indicator -->
+        <div class="w-full px-3 flex flex-col gap-2 mb-4">
+            <div class="w-full bg-neutral-950 rounded-full h-2.5 overflow-hidden p-[2px] border border-emerald-950/40">
+                <div id="energyProgress" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-150 shadow-[0_0_8px_rgba(16,185,129,0.4)]" style="width: 0%"></div>
             </div>
-            <div class="flex justify-between items-center text-xs px-1 text-gray-400">
-                <span>Wallet Balance:</span>
-                <span class="font-bold text-gray-200" id="walletBalance">Disconnected</span>
+            <div class="flex justify-between items-center text-xs px-1 font-medium text-slate-400">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-wallet text-slate-500"></i> Balance:</span>
+                <span class="font-bold text-slate-200" id="walletBalance">Disconnected</span>
             </div>
-        </div>
-
-        <div class="w-full flex flex-col gap-3">
-            <button id="connectBtn" onclick="connectWallet()" class="tap-target w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-xl tracking-wide transition-all shadow-lg cursor-pointer text-sm outline-none">
-                Connect Web3 Wallet
-            </button>
-
-            <button onclick="handleBuyEnergy()" class="tap-target w-full bg-emerald-500 hover:bg-emerald-600 text-black font-black py-3.5 rounded-xl tracking-wide transition-all shadow-lg cursor-pointer text-sm outline-none">
-                Buy 10,000 Energy (100 PVLT)
-            </button>
-
-            <button onclick="handleConvert()" class="tap-target w-full bg-gray-900 hover:bg-gray-800 border border-white/5 hover:border-white/10 font-bold py-3.5 rounded-xl tracking-wide transition-all cursor-pointer text-sm outline-none">
-                Convert Points to gPVLT
-            </button>
-
-            <button onclick="handleClaim()" class="tap-target w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl tracking-wide transition-all shadow-lg cursor-pointer text-sm outline-none">
-                Claim PVLT
-            </button>
         </div>
 
     </main>
 
-    <footer class="text-[10px] text-gray-600 text-center pb-2" id="userTier">
-        Please connect your wallet to sync live data.
-    </footer>
+    <!-- CALL-TO-ACTION CONTROL SYSTEM PIPELINE -->
+    <section class="w-full max-w-md flex flex-col gap-2.5 pb-2 z-10">
+        <button onclick="handleBuyEnergy()" class="click-target w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-neutral-950 font-black py-3.5 rounded-xl tracking-wide transition-all shadow-xl shadow-emerald-950/20 cursor-pointer text-sm font-bold flex items-center justify-center gap-2 outline-none">
+            <i class="fa-solid fa-bolt-lightning"></i> Buy 10,000 Energy (100 PVLT)
+        </button>
 
+        <div class="grid grid-cols-2 gap-2.5">
+            <button onclick="handleConvert()" class="click-target w-full bg-neutral-900 border border-slate-800 hover:bg-neutral-800 text-slate-200 font-bold py-3 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5 outline-none">
+                <i class="fa-solid fa-arrow-rotate-left text-slate-400"></i> Convert to gPVLT
+            </button>
+            <button onclick="handleClaim()" class="click-target w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-bold py-3 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5 outline-none">
+                <i class="fa-solid fa-download text-blue-400"></i> Claim PVLT
+            </button>
+        </div>
+
+        <!-- ACCORDION UTILITY PANEL: SHOW LIVE CONTRACT ADDRESSES -->
+        <div class="w-full glass-panel rounded-xl mt-1 overflow-hidden transition-all duration-300">
+            <button onclick="toggleContractPanel()" class="w-full px-4 py-2.5 flex justify-between items-center text-[11px] font-bold text-slate-400 tracking-wide hover:bg-white/5 transition-colors cursor-pointer outline-none">
+                <span><i class="fa-solid fa-file-contract mr-1.5 text-emerald-500/70"></i> System Contracts</span>
+                <i id="panelChevron" class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200"></i>
+            </button>
+            <div id="contractDetails" class="hidden px-4 pb-3 pt-1 flex flex-col gap-1.5 border-t border-slate-900/40 text-[10px] text-slate-400 font-mono">
+                <div class="flex justify-between items-center bg-black/20 p-1.5 rounded-md">
+                    <span class="text-slate-500">PVLT Token:</span>
+                    <span class="text-slate-300">0xb801...862a</span>
+                </div>
+                <div class="flex justify-between items-center bg-black/20 p-1.5 rounded-md">
+                    <span class="text-slate-500">Game Core:</span>
+                    <span class="text-slate-300">0x1518...B82D</span>
+                </div>
+                <div class="flex justify-between items-center bg-black/20 p-1.5 rounded-md">
+                    <span class="text-slate-500">Treasury:</span>
+                    <span class="text-slate-300">0x3c25...21bc</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOTIFICATION BANNER FEEDBACK -->
+        <p id="userTier" class="text-[10px] text-slate-500 font-medium text-center mt-1 tracking-wide">
+            Please connect wallet to read ecosystem states.
+        </p>
+    </section>
+
+    <!-- SCRIPTS & WEB3 LOGIC ENGINE -->
     <script>
-        // Polygon Mainnet Target Configuration
-        const POLYGON_CHAIN_ID = "0x89"; // Hex representation of 137
+        const POLYGON_CHAIN_ID = "0x89"; // Hex representation of Chain ID 137
 
         const CONTRACT_ADDRESSES = {
             PVLT: "0xb8010fD52D5208eC05574a7D5A939c0d446A862a",
@@ -143,40 +216,38 @@
 
             document.getElementById('currentEnergy').innerText = localEnergy;
             document.getElementById('maxEnergy').innerText = localMaxEnergy;
-            document.getElementById('playerPoints').innerText = points.toString();
-            document.getElementById('playerGPVLT').innerText = burnedGPVLT.toString();
+            document.getElementById('playerPoints').innerText = points.toLocaleString();
+            document.getElementById('playerGPVLT').innerText = burnedGPVLT.toLocaleString();
             
             if(pvltBalance !== null) {
                 const formattedBalance = parseFloat(ethers.formatEther(pvltBalance)).toFixed(2);
                 document.getElementById('walletBalance').innerText = `${formattedBalance} PVLT`;
             }
 
-            const footerTier = document.getElementById('userTier');
+            const infoFooter = document.getElementById('userTier');
             if (isPaid) {
-                footerTier.innerText = "Premium Account Active";
-                footerTier.className = "text-[10px] text-emerald-400 text-center pb-2";
+                infoFooter.innerText = "✨ Premium Tier Identity Sync Active";
+                infoFooter.className = "text-[10px] text-emerald-400 font-bold text-center mt-1 tracking-wide";
             } else {
-                footerTier.innerText = "Standard Free Account";
-                footerTier.className = "text-[10px] text-gray-500 text-center pb-2";
+                infoFooter.innerText = "Standard Play Profile Active";
+                infoFooter.className = "text-[10px] text-slate-500 font-medium text-center mt-1 tracking-wide";
             }
 
             const percent = localMaxEnergy > 0 ? (localEnergy / localMaxEnergy) * 100 : 0;
             document.getElementById('energyProgress').style.width = percent + '%';
         }
 
-        // Enforce Polygon Network Switch
         async function checkAndSwitchNetwork() {
             try {
                 const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
                 if (currentChainId !== POLYGON_CHAIN_ID) {
-                    document.getElementById('userTier').innerText = "Switching network to Polygon...";
+                    document.getElementById('userTier').innerText = "Requesting network swap to Polygon Mainnet...";
                     try {
                         await window.ethereum.request({
                             method: 'wallet_switchEthereumChain',
                             params: [{ chainId: POLYGON_CHAIN_ID }],
                         });
                     } catch (switchError) {
-                        // This error code indicates that the chain has not been added to MetaMask.
                         if (switchError.code === 4902) {
                             await window.ethereum.request({
                                 method: 'wallet_addEthereumChain',
@@ -195,22 +266,20 @@
                 }
                 return true;
             } catch (err) {
-                console.error("Network switch failed:", err);
-                alert("Please switch your wallet network to Polygon Mainnet manually.");
+                console.error("Network management breakdown:", err);
+                alert("Please toggle your connection framework manually to Polygon Mainnet.");
                 return false;
             }
         }
 
-        // Web3 Connection Logic
         async function connectWallet() {
             if (!window.ethereum) {
-                alert("No Web3 Provider detected! Please install MetaMask or a compatible browser wallet.");
+                alert("Injected Web3 layer missing. Please access inside an authorized Web3 terminal/browser.");
                 return;
             }
             try {
-                // Ensure network matches Chain ID 137 before proceeding
-                const networkReady = await checkAndSwitchNetwork();
-                if (!networkReady) return;
+                const chainVerified = await checkAndSwitchNetwork();
+                if (!chainVerified) return;
 
                 provider = new ethers.BrowserProvider(window.ethereum);
                 await provider.send("eth_requestAccounts", []);
@@ -220,18 +289,17 @@
                 pvltContract = new ethers.Contract(CONTRACT_ADDRESSES.PVLT, ABIs.PVLT, signer);
                 gameContract = new ethers.Contract(CONTRACT_ADDRESSES.PepeVoltGame, ABIs.PepeVoltGame, signer);
 
-                document.getElementById('connectBtn').innerText = `Polygon: ${userAddress.substring(0,6)}...${userAddress.substring(38)}`;
-                document.getElementById('connectBtn').classList.replace('bg-blue-600', 'bg-purple-900/40');
-                document.getElementById('connectBtn').classList.add('text-purple-400', 'border', 'border-purple-800/60');
+                const cleanAddress = `${userAddress.substring(0,6)}...${userAddress.substring(38)}`;
+                document.getElementById('connectBtn').innerHTML = `<i class="fa-solid fa-shield text-[10px] mr-1 text-emerald-950"></i> ${cleanAddress}`;
+                document.getElementById('connectBtn').className = "click-target text-xs font-bold px-4 py-2 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-800/60 transition-colors cursor-pointer outline-none";
 
                 await syncContractState();
             } catch (err) {
                 console.error(err);
-                alert("Wallet connection dropped or rejected.");
+                alert("Connection pipeline signature dropped.");
             }
         }
 
-        // Fetch storage values directly from Polygon Mainnet
         async function syncContractState() {
             if (!gameContract || !userAddress) return;
             try {
@@ -251,24 +319,37 @@
                     playerData.paidUser
                 );
             } catch (err) {
-                console.error("Error reading contract data:", err);
+                console.error("Storage lookup failure:", err);
             }
         }
 
-        // Action: Tap Execution (Solidity execution call)
-        async function handleTapAction() {
+        // Optimistic UI Tap Action with floating indicators
+        async function handleTapAction(event) {
             if (!gameContract) {
                 connectWallet();
                 return;
             }
             if (localEnergy <= 0) {
-                alert("EVM Execution Reverted: Out of operational energy.");
+                alert("EVM Reversion Prediction: Zero Energy available.");
                 return;
             }
 
-            // Optimistic fast interface updating
+            // Extract click coordination offsets for exact localized feedback positioning
+            let clientX = event.clientX;
+            let clientY = event.clientY;
+            if (event.touches && event.touches[0]) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            }
+
+            createFloatingIndicator(clientX, clientY);
+
+            // Optimistic evaluation framework updates locally
             localEnergy--;
             document.getElementById('currentEnergy').innerText = localEnergy;
+            const pointsEl = document.getElementById('playerPoints');
+            pointsEl.innerText = (parseInt(pointsEl.innerText.replace(/,/g, '')) + 1).toLocaleString();
+            
             const percent = (localEnergy / localMaxEnergy) * 100;
             document.getElementById('energyProgress').style.width = percent + '%';
 
@@ -277,81 +358,108 @@
                 await tx.wait(1);
                 await syncContractState();
             } catch (err) {
-                console.error("Tap failed:", err);
+                console.error("Transaction exception:", err);
                 await syncContractState();
             }
         }
 
-        // Setup touch listeners
+        function createFloatingIndicator(x, y) {
+            const indicator = document.createElement('div');
+            indicator.className = 'floating-point';
+            indicator.innerText = '+1';
+            indicator.style.left = `${x - 10}px`;
+            indicator.style.top = `${y - 20}px`;
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => indicator.remove(), 800);
+        }
+
         const tapBtn = document.getElementById('tapBtn');
         tapBtn.addEventListener('touchstart', function(e) {
             e.preventDefault();
-            handleTapAction();
+            handleTapAction(e);
         }, { passive: false });
 
         tapBtn.addEventListener('mousedown', function(e) {
             if ('ontouchstart' in window) return;
-            handleTapAction();
+            handleTapAction(e);
         });
 
-        // Action: Buy 10,000 Energy Pack
         async function handleBuyEnergy() {
-            if (!gameContract) return alert("Please connect your wallet first.");
+            if (!gameContract) return alert("Please establish structural wallet connection first.");
             try {
                 const price = ethers.parseEther("100");
                 const currentAllowance = await pvltContract.allowance(userAddress, CONTRACT_ADDRESSES.PepeVoltGame);
                 
                 if (currentAllowance < price) {
-                    document.getElementById('userTier').innerText = "Processing ERC-20 Allowance Approval on Polygon...";
+                    document.getElementById('userTier').innerText = "Executing contract deployment allowance approvals...";
                     const approveTx = await pvltContract.approve(CONTRACT_ADDRESSES.PepeVoltGame, ethers.MaxUint256);
                     await approveTx.wait(1);
                 }
 
-                document.getElementById('userTier').innerText = "Purchasing Upgrade Pack...";
+                document.getElementById('userTier').innerText = "Processing buyEnergy runtime methods...";
                 const buyTx = await gameContract.buyEnergy();
                 await buyTx.wait(1);
                 
-                alert("Premium Upgrade Confirmed on Polygon!");
+                alert("Ecosystem energy expansion confirmed!");
                 await syncContractState();
             } catch (err) {
                 console.error(err);
-                alert("Transaction failed. Check POL balance for gas fees.");
+                alert("EVM pipeline transaction error. Check token capacities.");
                 await syncContractState();
             }
         }
 
-        // Action: Points Conversion to gPVLT
         async function handleConvert() {
-            if (!gameContract) return alert("Please connect your wallet first.");
+            if (!gameContract) return alert("Connect workspace profile.");
             try {
-                document.getElementById('userTier').innerText = "Converting structural points...";
+                document.getElementById('userTier').innerText = "Converting localized metrics to gPVLT...";
                 const tx = await gameContract.convertPoints();
                 await tx.wait(1);
                 await syncContractState();
             } catch (err) {
                 console.error(err);
-                alert("Conversion requirements unmet (Minimum 100 points required).");
+                alert("Minimum processing requirement: 100 system points.");
                 await syncContractState();
             }
         }
 
-        // Action: Reward Claim Window Execution
         async function handleClaim() {
-            if (!gameContract) return alert("Please connect your wallet first.");
+            if (!gameContract) return alert("Connect workspace profile.");
             try {
-                document.getElementById('userTier').innerText = "Claiming rewards via Treasury...";
+                document.getElementById('userTier').innerText = "Validating claimable metrics via execution parameters...";
                 const tx = await gameContract.claimRewards();
                 await tx.wait(1);
-                alert("Rewards successfully claimed to your wallet balance!");
+                alert("Ecosystem rewards migrated to main balance state!");
                 await syncContractState();
             } catch (err) {
                 console.error(err);
-                alert("Claim requirements unfulfilled.");
+                alert("Claim checks unfulfilled. Validate parameters.");
                 await syncContractState();
             }
         }
 
-        // Global layout gesture double-tap zoom protection 
+        function toggleContractPanel() {
+            const panel = document.getElementById('contractDetails');
+            const chevron = document.getElementById('panelChevron');
+            const isHidden = panel.classList.contains('hidden');
+            
+            if(isHidden) {
+                panel.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                panel.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Web3 global events listener
+        if (window.ethereum) {
+            window.ethereum.on('chainChanged', () => window.location.reload());
+            window.ethereum.on('accountsChanged', () => window.location.reload());
+        }
+
+        // Deep layout gesture block mechanisms
         let lastTouchEndTime = 0;
         document.addEventListener('touchend', function (e) {
             let currentTime = (new Date()).getTime();
@@ -360,16 +468,6 @@
             }
             lastTouchEndTime = currentTime;
         }, false);
-
-        // Listen for user switching network in MetaMask mid-session
-        if (window.ethereum) {
-            window.ethereum.on('chainChanged', () => {
-                window.location.reload();
-            });
-            window.ethereum.on('accountsChanged', () => {
-                window.location.reload();
-            });
-        }
     </script>
 </body>
 </html>
