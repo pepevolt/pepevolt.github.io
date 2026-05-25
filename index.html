@@ -67,7 +67,8 @@
         const POLYGON_CHAIN_ID = "0x89";
         const CONTRACT_ADDRESSES = {
             PVLT: "0xb8010fD52D5208eC05574a7D5A939c0d446A862a",
-            PepeVoltGame: "0x151803532A33837E4bBc2Afc23c6b1f59039B82D"
+            PepeVoltGame: "0x151803532A33837E4bBc2Afc23c6b1f59039B82D",
+            TreasuryVolt: "0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc" // Added your newly assigned reward contract address
         };
 
         const ABIs = {
@@ -79,17 +80,19 @@
             PepeVoltGame: [
                 "function players(address) view returns (uint256 energy, uint256 points, uint256 burnedGPVLT, bool paidUser, uint256 lastClaimDay)",
                 "function buyEnergy() external",
-                "function convertPoints() external",
-                "function claimRewards() external"
+                "function convertPoints() external"
+            ],
+            TreasuryVolt: [
+                "function claimRewards() external" // Kept exact target interface name for rewards execution
             ]
         };
 
         let provider, signer, userAddress;
-        let pvltContract, gameContract;
+        let pvltContract, gameContract, treasuryContract;
         let isWalletConnected = false;
         let actionInFlight = false;
 
-        // Local UI State Values (Keeps updates completely real-time)
+        // Local UI State Values
         let localEnergy = 0;
         let localPoints = 0;
         let localGpvlt = 0;
@@ -125,7 +128,7 @@
 
         async function toggleWallet() {
             if (isWalletConnected) {
-                isWalletConnected = false; userAddress = null; provider = null; signer = null; pvltContract = null; gameContract = null;
+                isWalletConnected = false; userAddress = null; provider = null; signer = null; pvltContract = null; gameContract = null; treasuryContract = null;
                 document.getElementById('wallet-btn').innerText = "Connect Wallet";
                 setButtonsState(true);
                 updateUIHTML(true);
@@ -141,6 +144,7 @@
 
                     pvltContract = new ethers.Contract(CONTRACT_ADDRESSES.PVLT, ABIs.PVLT, signer);
                     gameContract = new ethers.Contract(CONTRACT_ADDRESSES.PepeVoltGame, ABIs.PepeVoltGame, signer);
+                    treasuryContract = new ethers.Contract(CONTRACT_ADDRESSES.TreasuryVolt, ABIs.TreasuryVolt, signer);
 
                     isWalletConnected = true;
                     document.getElementById('wallet-btn').innerText = `Disconnect: ${userAddress.substring(0,6)}...${userAddress.substring(38)}`;
@@ -202,7 +206,7 @@
             }
         }
 
-        // INSTANT LOCAL CONVERSION: Subtracts 100 Points, adds 1 gPVLT directly to the screen layout
+        // Instant Local Point Conversion
         function handleLocalConvert() {
             if (!isWalletConnected) return;
 
@@ -210,7 +214,6 @@
                 localPoints -= 100;
                 localGpvlt += 1;
 
-                // Update UI instantly
                 document.getElementById('points').innerText = localPoints.toLocaleString();
                 document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
                 document.getElementById('status-feed').innerText = "Converted 100 Points to 1 gPVLT locally!";
@@ -244,17 +247,40 @@
             }
         }
 
+        // Process claim executions through the TreasuryVolt contract setup
         async function claimReward() {
             if (!isWalletConnected || actionInFlight) return;
+
+            // Enforce limits inside UI logic
+            if (localGpvlt < 100) {
+                alert("Requirement unmet: You need a minimum of 100 gPVLT to claim rewards.");
+                document.getElementById('status-feed').innerText = "Claim aborted.";
+                return;
+            }
+
+            let claimAmount = localGpvlt;
+            if (claimAmount > 1000) {
+                claimAmount = 1000;
+            }
+
             try {
                 actionInFlight = true;
-                document.getElementById('status-feed').innerText = "Processing distributions...";
-                const tx = await gameContract.claimRewards();
+                document.getElementById('status-feed').innerText = `Sending transaction to TreasuryVolt for ${claimAmount} PVLT...`;
+                
+                // Targets the TreasuryVolt deployment explicitly
+                const tx = await treasuryContract.claimRewards();
+                
+                document.getElementById('status-feed').innerText = "Awaiting transaction block finality...";
                 await tx.wait(1);
-                document.getElementById('status-feed').innerText = "Asset distribution complete.";
+
+                // Deduct claimed values on display interface instantly
+                localGpvlt -= claimAmount;
+                document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
+
+                document.getElementById('status-feed').innerText = `Successfully claimed ${claimAmount} PVLT directly from TreasuryVolt!`;
             } catch (err) {
-                alert("Requirement unmet: Daily limit reached or insufficient gPVLT (100-1000 required).");
-                document.getElementById('status-feed').innerText = "Execution failed.";
+                console.error(err);
+                document.getElementById('status-feed').innerText = "Transaction failed or rejected by TreasuryVolt criteria.";
             } finally {
                 actionInFlight = false;
                 await syncContractState();
