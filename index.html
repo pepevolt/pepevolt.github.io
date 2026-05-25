@@ -2,14 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TapTap Blitz!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Pepevolt Token Miner</title>
     <style>
         :root {
-            --bg-color: #121214;
-            --card-color: #1e1e24;
-            --accent-color: #ff4757;
-            --accent-hover: #ff6b81;
+            --bg-color: #080b10;
+            --card-color: #0f141c;
+            --accent-color: #00ff66; /* PVLT Green */
+            --gov-color: #ffaa00;    /* gPVLT Gold */
+            --energy-color: #00e5ff;  /* Cyan Energy */
             --text-color: #ffffff;
         }
 
@@ -17,148 +18,274 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             user-select: none;
             -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
         }
 
         body {
-            background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
         }
 
         .game-container {
             width: 100%;
-            max-width: 450px;
-            height: 90vh;
-            max-height: 750px;
+            height: 100%;
             background-color: var(--card-color);
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Screens styling */
+        @media (min-width: 480px) {
+            .game-container {
+                max-width: 430px;
+                max-height: 850px;
+                border-radius: 32px;
+                height: 92vh;
+                box-shadow: 0 0 40px rgba(0, 255, 102, 0.15);
+                border: 1px solid rgba(0, 255, 102, 0.1);
+            }
+        }
+
         .screen {
             position: absolute;
-            top: 0;
+            top: env(safe-area-inset-top, 0);
+            bottom: env(safe-area-inset-bottom, 0);
             left: 0;
             width: 100%;
-            height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 2rem;
-            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 5;
         }
 
         .hidden {
             display: none !important;
         }
 
-        /* Typography & Buttons */
         h1 {
             font-size: 2.5rem;
             margin-bottom: 0.5rem;
             text-transform: uppercase;
             letter-spacing: 2px;
             text-align: center;
-            background: linear-gradient(45deg, #ff4757, #ffa502);
+            background: linear-gradient(45deg, var(--accent-color), #00e5ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 10px rgba(0,255,102,0.3));
         }
 
         p {
-            color: #a4b0be;
-            margin-bottom: 2rem;
+            color: #64748b;
+            margin-bottom: 1.5rem;
             text-align: center;
+            line-height: 1.5;
+            max-width: 85%;
+            font-size: 0.95rem;
+        }
+
+        .ratio-tag {
+            background: rgba(255, 170, 0, 0.1);
+            color: var(--gov-color);
+            border: 1px solid rgba(255, 170, 0, 0.2);
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.5px;
         }
 
         .btn {
             background-color: var(--accent-color);
-            color: white;
+            color: #000;
             border: none;
-            padding: 12px 36px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 50px;
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 20px;
             cursor: pointer;
             transition: transform 0.1s, background-color 0.2s;
-            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
-        }
-
-        .btn:hover {
-            background-color: var(--accent-hover);
+            box-shadow: 0 4px 20px rgba(0, 255, 102, 0.3);
+            width: 85%;
+            text-align: center;
         }
 
         .btn:active {
-            transform: scale(0.95);
+            transform: scale(0.96);
         }
 
-        /* Game HUD */
+        .btn-secondary {
+            background-color: transparent;
+            color: #64748b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 1rem;
+            box-shadow: none;
+        }
+
+        /* Top HUD Layout Split */
         .hud {
             width: 100%;
-            display: flex;
-            justify-content: space-between;
-            padding: 1.5rem;
-            font-size: 1.2rem;
-            font-weight: bold;
-            z-index: 10;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 16px;
+            z-index: 20;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         .hud-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
         }
 
-        /* Play Area & Target */
-        .play-area {
-            flex: 1;
+        .hud-item strong {
+            display: block;
+            font-size: 1.1rem;
+            color: #fff;
+            margin-top: 2px;
+        }
+
+        /* Full Width Web3 Energy Bar HUD */
+        .hud-full {
+            grid-column: span 2;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .energy-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--energy-color);
+        }
+
+        .energy-bar-container {
             width: 100%;
-            position: relative;
-            cursor: pointer;
+            height: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
         }
 
-        .target {
-            width: 80px;
-            height: 80px;
-            background: radial-gradient(circle, #ff4757 0%, #ff6b81 70%, #ff4757 100%);
+        .energy-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #0077ff, var(--energy-color));
+            border-radius: 10px;
+            transition: width 0.1s linear;
+        }
+
+        /* Target Spawning Canvas */
+        .play-area {
+            position: absolute;
+            top: 155px; /* Pushed deeper down to accommodate the Energy bar setup */
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 10;
+        }
+
+        .token-target {
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             position: absolute;
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
             cursor: pointer;
-            transition: width 0.1s, height 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.2rem;
+            border: 3px solid #ffffff;
+            touch-action: manipulation;
+            transition: background 0.1s, box-shadow 0.1s;
         }
 
-        .target:active {
-            width: 70px;
-            height: 70px;
+        .coin-pvlt {
+            background: radial-gradient(circle, #00ff66 0%, #054019 100%);
+            box-shadow: 0 0 35px rgba(0, 255, 102, 0.6), inset 0 0 15px rgba(255,255,255,0.4);
         }
 
-        /* Pop effect for score */
+        .coin-gpvlt {
+            background: radial-gradient(circle, #ffaa00 0%, #78350f 100%);
+            box-shadow: 0 0 40px rgba(255, 170, 0, 0.8), inset 0 0 15px rgba(255,255,255,0.6);
+        }
+
+        /* Floating Text Effects */
         .pop {
             position: absolute;
-            color: #ffa502;
-            font-weight: bold;
-            animation: floatUp 0.6s ease-out forwards;
+            font-weight: 800;
+            font-size: 1.5rem;
+            animation: floatUp 0.5s ease-out forwards;
             pointer-events: none;
+            text-shadow: 0 0 10px rgba(0,0,0,0.9);
+            z-index: 30;
         }
 
+        .pop-pvlt { color: var(--accent-color); }
+        .pop-gpvlt { color: var(--gov-color); font-size: 1.7rem; }
+
         @keyframes floatUp {
-            0% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-50px); opacity: 0; }
+            0% { transform: translate(-50%, -50%) translateY(0) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) translateY(-80px) scale(1.3); opacity: 0; }
+        }
+
+        /* Settlement Yield Boxes */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 85%;
+            margin-bottom: 1rem;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: center;
+        }
+
+        .total-valuation-box {
+            background: linear-gradient(135deg, rgba(0,255,102,0.03) 0%, rgba(255,170,0,0.03) 100%);
+            width: 85%;
+            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 255, 102, 0.15);
+            text-align: center;
+            margin-bottom: 2rem;
         }
     </style>
 </head>
@@ -166,44 +293,73 @@
 
     <div class="game-container">
         
-        <!-- START SCREEN -->
         <div id="start-screen" class="screen">
-            <h1>TapTap Blitz</h1>
-            <p>Tap the red target as many times as you can before the timer runs out!</p>
-            <button class="btn" onclick="startGame()">Start Game</button>
+            <div style="font-size: 4.5rem; margin-bottom: 1rem;">⚡🐸</div>
+            <h1>PEPEVOLT</h1>
+            <p>Mine tokens before your energy hits empty! Every tap consumes 1 Energy. Pacing your taps allows structural cooling recharges.</p>
+            <div class="ratio-tag">EXCHANGE RATE: 100 gPVLT = 1 PVLT</div>
+            <button class="btn" onclick="startGame()">Start Mining</button>
         </div>
 
-        <!-- GAME SCREEN -->
-        <div id="game-screen" class="screen hidden" style="padding: 0; justify-content: flex-start;">
+        <div id="game-screen" class="screen hidden" style="padding: 0;">
             <div class="hud">
-                <div class="hud-item">Score: <span id="score-display">0</span></div>
-                <div class="hud-item">Time: <span id="time-display">20</span>s</div>
+                <div class="hud-item">PVLT Block: <strong id="score-display">0</strong></div>
+                <div class="hud-item">gPVLT Block: <strong id="gov-display">0</strong></div>
+                
+                <div class="hud-full">
+                    <div class="energy-header">
+                        <span>⚡ MINING ENERGY</span>
+                        <span id="energy-text">50/50</span>
+                    </div>
+                    <div class="energy-bar-container">
+                        <div id="energy-fill" class="energy-bar-fill"></div>
+                    </div>
+                </div>
             </div>
             <div class="play-area" id="play-area">
-                <div id="target" class="target"></div>
+                <div id="target" class="token-target coin-pvlt">🐸</div>
             </div>
         </div>
 
-        <!-- GAME OVER SCREEN -->
         <div id="end-screen" class="screen hidden">
-            <h1>Game Over</h1>
-            <p>Great effort! Here is how you did:</p>
-            <div style="font-size: 1.5rem; margin-bottom: 2rem;">
-                Final Score: <strong id="final-score" style="color: var(--accent-color);">0</strong>
+            <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🪫</div>
+            <h1>Energy Depleted</h1>
+            <p>Session closed. Conversion weights computed successfully.</p>
+            
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; margin-bottom: 4px;">RAW PVLT</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-color);" id="final-score">0</div>
+                </div>
+                <div class="stat-box">
+                    <div style="color: #64748b; font-size: 0.75rem; font-weight: 600; margin-bottom: 4px;">RAW gPVLT</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--gov-color);" id="final-gov">0</div>
+                </div>
             </div>
-            <button class="btn" onclick="showScreen('start-screen')">Main Menu</button>
+
+            <div class="total-valuation-box">
+                <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px;">CONSOLIDATED NET VALUE</div>
+                <div style="font-size: 2rem; font-weight: 900; color: #ffffff;">
+                    <span id="consolidated-value" style="color: var(--accent-color);">0.00</span> <span style="font-size: 1.2rem; font-weight: 700;">PVLT</span>
+                </div>
+                <div style="color: #64748b; font-size: 0.7rem; margin-top: 4px;">(Includes converted gPVLT balance)</div>
+            </div>
+
+            <button class="btn" id="claim-btn" onclick="claimTokens()">Claim Rewards</button>
+            <button class="btn btn-secondary" onclick="showScreen('start-screen')">Mine Again</button>
         </div>
 
     </div>
 
     <script>
-        // Game State Variables
-        let score = 0;
-        let timeLeft = 20;
-        let gameInterval;
-        const gameDuration = 20; // 20 seconds game
+        let pvltScore = 0;
+        let gpvltScore = 0;
+        
+        // Energy Mechanics Settings
+        let energy = 50;
+        const maxEnergy = 50;
+        let regenInterval;
 
-        // DOM Elements
         const startScreen = document.getElementById('start-screen');
         const gameScreen = document.getElementById('game-screen');
         const endScreen = document.getElementById('end-screen');
@@ -211,89 +367,136 @@
         const target = document.getElementById('target');
         const playArea = document.getElementById('play-area');
         const scoreDisplay = document.getElementById('score-display');
-        const timeDisplay = document.getElementById('time-display');
+        const govDisplay = document.getElementById('gov-display');
+        const energyText = document.getElementById('energy-text');
+        const energyFill = document.getElementById('energy-fill');
+        
         const finalScore = document.getElementById('final-score');
+        const finalGov = document.getElementById('final-gov');
+        const consolidatedValue = document.getElementById('consolidated-value');
+        const claimBtn = document.getElementById('claim-btn');
 
-        // Navigation Helper
         function showScreen(screenId) {
             startScreen.classList.add('hidden');
             gameScreen.classList.add('hidden');
             endScreen.classList.add('hidden');
-
             document.getElementById(screenId).classList.remove('hidden');
         }
 
-        // Initialize and Start Game
         function startGame() {
-            score = 0;
-            timeLeft = gameDuration;
-            scoreDisplay.textContent = score;
-            timeDisplay.textContent = timeLeft;
+            pvltScore = 0;
+            gpvltScore = 0;
+            energy = maxEnergy;
+            
+            scoreDisplay.textContent = pvltScore;
+            govDisplay.textContent = gpvltScore;
+            updateEnergyBar();
+            
+            claimBtn.textContent = "Claim Rewards";
+            claimBtn.disabled = false;
             
             showScreen('game-screen');
             moveTarget();
             
-            // Start Countdown Timer
-            gameInterval = setInterval(() => {
-                timeLeft--;
-                timeDisplay.textContent = timeLeft;
-
-                if (timeLeft <= 0) {
-                    endGame();
+            // Passive Energy Regeneration loop: Adds +3 Energy every second
+            regenInterval = setInterval(() => {
+                if (energy < maxEnergy) {
+                    energy = Math.min(maxEnergy, energy + 3);
+                    updateEnergyBar();
                 }
             }, 1000);
         }
 
-        // Move target to a random spot within the bounds of the play area
+        function updateEnergyBar() {
+            energyText.textContent = `${energy}/${maxEnergy}`;
+            const percentage = (energy / maxEnergy) * 100;
+            energyFill.style.width = `${percentage}%`;
+        }
+
         function moveTarget() {
             const areaWidth = playArea.clientWidth;
             const areaHeight = playArea.clientHeight;
-
-            // Give padding so the button doesn't spawn halfway off-screen
-            const padding = 50; 
             
-            const randomX = Math.random() * (areaWidth - padding * 2) + padding;
-            const randomY = Math.random() * (areaHeight - padding * 2) + padding;
+            const paddingX = 60;
+            const paddingY = 60; 
+            
+            const randomX = Math.random() * (areaWidth - paddingX * 2) + paddingX;
+            const randomY = Math.random() * (areaHeight - paddingY * 2) + paddingY;
 
             target.style.left = `${randomX}px`;
             target.style.top = `${randomY}px`;
+
+            // 20% Probability window for gPVLT spawning loops
+            if(Math.random() < 0.20) {
+                target.className = "token-target coin-gpvlt";
+                target.dataset.tokenType = "gpvlt";
+            } else {
+                target.className = "token-target coin-pvlt";
+                target.dataset.tokenType = "pvlt";
+            }
         }
 
-        // Handle Tap / Click on Target
-        target.addEventListener('click', (e) => {
-            score++;
-            scoreDisplay.textContent = score;
+        target.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
             
-            // Create a floating score indicator (+1)
-            createPopEffect(e.clientX, e.clientY);
+            // Check if user has energy available to tap
+            if (energy <= 0) return;
+
+            // Burn 1 Energy unit per tap interaction
+            energy--;
+            updateEnergyBar();
+
+            const type = target.dataset.tokenType;
+            if(type === "gpvlt") {
+                gpvltScore += 1;
+                govDisplay.textContent = gpvltScore;
+                createPopEffect(e.clientX, e.clientY, "+1 gPVLT", "pop-gpvlt");
+            } else {
+                pvltScore += 1;
+                scoreDisplay.textContent = pvltScore;
+                createPopEffect(e.clientX, e.clientY, "+1 PVLT", "pop-pvlt");
+            }
             
-            // Move target to next position
-            moveTarget();
+            // Check Game Over Condition
+            if (energy <= 0) {
+                setTimeout(endGame, 200); // Small visual delay so the user sees bar hit 0
+            } else {
+                moveTarget();
+            }
         });
 
-        // Add a nice visual indicator where the player clicked
-        function createPopEffect(x, y) {
+        function createPopEffect(x, y, text, customClass) {
             const pop = document.createElement('div');
-            pop.classList.add('pop');
-            pop.textContent = '+1';
-            
-            // Absolute positioning relative to the whole page for simplicity
+            pop.className = `pop ${customClass}`;
+            pop.textContent = text;
             pop.style.left = `${x}px`;
             pop.style.top = `${y}px`;
             
             document.body.appendChild(pop);
-            
-            // Clean up element after animation finishes
-            setTimeout(() => {
-                pop.remove();
-            }, 600);
+            setTimeout(() => pop.remove(), 500);
         }
 
-        // Handle Game Over
         function endGame() {
-            clearInterval(gameInterval);
-            finalScore.textContent = score;
+            clearInterval(regenInterval);
+            
+            const totalConvertedValue = pvltScore + (gpvltScore / 100);
+            
+            finalScore.textContent = pvltScore;
+            finalGov.textContent = gpvltScore;
+            consolidatedValue.textContent = totalConvertedValue.toFixed(2);
+            
             showScreen('end-screen');
+        }
+
+        function claimTokens() {
+            claimBtn.textContent = "Processing Conversion...";
+            claimBtn.disabled = true;
+
+            setTimeout(() => {
+                const total = pvltScore + (gpvltScore / 100);
+                claimBtn.textContent = "Success! Credited";
+                alert(`Conversion Settlement Complete!\n\nRaw Mining Totals:\n• ${pvltScore} PVLT\n• ${gpvltScore} gPVLT\n\nTotal Net Allocation Added:\n• ${total.toFixed(2)} PVLT`);
+            }, 1600);
         }
     </script>
 </body>
