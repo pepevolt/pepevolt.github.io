@@ -1,18 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8" />
 
 <meta
 name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
 />
 
-<title>PepeVolt Tap Game</title>
+<title>PVLT Tap Game</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 
 <style>
+
+:root{
+    --bg:#07111f;
+    --card:#111c31;
+    --green:#59e3bb;
+    --greenDark:#27b58f;
+    --text:#ffffff;
+    --muted:#9ca9c7;
+}
 
 *{
     margin:0;
@@ -21,7 +32,13 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
     -webkit-tap-highlight-color:transparent;
 }
 
-html,
+html{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    overscroll-behavior:none;
+}
+
 body{
     width:100%;
     height:100%;
@@ -29,188 +46,247 @@ body{
     touch-action:manipulation;
     font-family:Arial,sans-serif;
     background:
-    radial-gradient(circle at center,
-    #1d2c57 0%,
-    #091126 100%);
-    color:white;
+    radial-gradient(circle at top,
+    #22396f 0%,
+    #07111f 60%);
+    color:var(--text);
+    position:fixed;
+    inset:0;
 }
 
-body{
-    display:flex;
-    justify-content:center;
-    align-items:flex-start;
-}
+/* MAIN APP */
 
-.container{
+.app{
     width:100%;
     max-width:500px;
-    height:100vh;
-    overflow-y:auto;
-    padding-bottom:40px;
-}
-
-/* TOP BAR */
-
-.topbar{
-    width:100%;
-    background:rgba(255,255,255,0.08);
-    backdrop-filter:blur(10px);
+    height:100dvh;
+    margin:0 auto;
     display:flex;
-    justify-content:space-around;
-    padding:20px 10px;
-    border-bottom:1px solid rgba(255,255,255,0.08);
+    flex-direction:column;
+    overflow:hidden;
 }
 
-.stat{
+/* HEADER */
+
+.header{
+    width:100%;
+    padding:
+    calc(env(safe-area-inset-top) + 12px)
+    14px
+    14px
+    14px;
+
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+
+    background:rgba(255,255,255,0.05);
+    backdrop-filter:blur(10px);
+
+    border-bottom:
+    1px solid rgba(255,255,255,0.06);
+
+    flex-shrink:0;
+}
+
+.stat-box{
+    flex:1;
+    background:rgba(255,255,255,0.05);
+    border-radius:18px;
+    padding:12px 8px;
     text-align:center;
 }
 
-.stat .icon{
-    font-size:30px;
-    margin-bottom:8px;
+.stat-icon{
+    font-size:24px;
+    margin-bottom:5px;
 }
 
-.stat .value{
-    font-size:28px;
+.stat-value{
+    font-size:22px;
     font-weight:bold;
 }
 
-.stat .label{
-    font-size:14px;
-    opacity:0.8;
+.stat-label{
+    margin-top:3px;
+    font-size:12px;
+    color:var(--muted);
 }
 
-/* GAME */
+/* CONTENT */
 
-.game{
+.content{
+    flex:1;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:22px 18px 140px;
+    -webkit-overflow-scrolling:touch;
+}
+
+/* TAP AREA */
+
+.tap-section{
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding:30px 20px;
 }
 
-.tap-area{
-    margin-top:40px;
-    margin-bottom:35px;
+.tap-ring{
+    width:290px;
+    height:290px;
+    border-radius:50%;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    background:
+    radial-gradient(circle,
+    rgba(89,227,187,0.28),
+    rgba(89,227,187,0.04));
+
+    margin-top:18px;
+    margin-bottom:25px;
 }
 
 .tap-btn{
     width:230px;
     height:230px;
-    border-radius:50%;
     border:none;
-    outline:none;
-    cursor:pointer;
+    border-radius:50%;
+
     background:
-    linear-gradient(180deg,
-    #5cf0c7,
-    #3fc7a3);
-    color:#1273ff;
+    linear-gradient(
+    180deg,
+    #6cf3d0,
+    #3fd0aa);
+
+    color:#1163ff;
     font-size:52px;
     font-weight:900;
+
     box-shadow:
-    0 15px 0 #239578,
-    0 0 50px rgba(92,240,199,0.45);
-    transition:0.08s;
+    0 14px 0 #239578,
+    0 0 45px rgba(89,227,187,0.4);
+
+    transition:0.08s ease;
     user-select:none;
 }
 
 .tap-btn:active{
-    transform:translateY(10px);
+    transform:translateY(8px);
+
     box-shadow:
-    0 5px 0 #239578,
-    0 0 20px rgba(92,240,199,0.4);
+    0 6px 0 #239578,
+    0 0 20px rgba(89,227,187,0.3);
 }
 
-.wallet-btn{
+/* BUTTONS */
+
+.btn{
     width:100%;
-    padding:18px;
     border:none;
-    border-radius:18px;
+    border-radius:20px;
+    padding:18px;
+    font-size:18px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.connect-btn{
     background:#ef4b3f;
     color:white;
-    font-size:20px;
-    font-weight:bold;
-    margin-bottom:20px;
+    margin-bottom:18px;
 }
+
+.action-btn{
+    background:var(--green);
+    color:#07111f;
+    margin-top:14px;
+}
+
+/* PROGRESS */
 
 .progress-wrap{
     width:100%;
-    height:30px;
-    border-radius:30px;
-    overflow:hidden;
+    height:26px;
     background:rgba(255,255,255,0.08);
+    border-radius:40px;
+    overflow:hidden;
     margin-bottom:18px;
 }
 
 .progress{
     width:0%;
     height:100%;
-    border-radius:30px;
-    background:#59e3bb;
-    transition:0.3s;
+    background:var(--green);
+    border-radius:40px;
+    transition:0.25s;
 }
+
+/* BALANCE */
 
 .balance{
-    font-size:28px;
-    font-weight:bold;
-    margin-bottom:30px;
-}
-
-.action-btn{
-    width:100%;
-    padding:22px;
-    border:none;
-    border-radius:18px;
-    background:#59e3bb;
-    color:#07111f;
-    font-size:24px;
-    font-weight:900;
+    text-align:center;
     margin-bottom:20px;
 }
 
+.balance-title{
+    color:var(--muted);
+    margin-bottom:8px;
+    font-size:15px;
+}
+
+.balance-value{
+    font-size:32px;
+    font-weight:900;
+}
+
+/* CARD */
+
 .card{
     width:100%;
-    background:rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.06);
+    border:
+    1px solid rgba(255,255,255,0.06);
+
     border-radius:24px;
-    padding:25px;
-    margin-top:10px;
+    padding:20px;
+    margin-top:18px;
 }
 
 .card h2{
+    font-size:24px;
     text-align:center;
-    margin-bottom:25px;
-    font-size:32px;
+    margin-bottom:18px;
 }
 
-.refill-btn{
-    width:100%;
-    padding:22px;
-    border:none;
-    border-radius:18px;
-    background:#59e3bb;
-    color:#07111f;
-    font-size:24px;
-    font-weight:bold;
+.rules{
+    line-height:1.8;
+    color:#d8e2ff;
+    font-size:15px;
 }
+
+/* STATUS */
 
 .status{
-    margin-top:20px;
+    margin-top:18px;
     text-align:center;
-    font-size:16px;
-    color:#59e3bb;
+    color:var(--green);
+    font-size:15px;
     word-break:break-word;
 }
 
 /* FLOAT TEXT */
 
 .float{
-    position:absolute;
-    color:#5cf0c7;
+    position:fixed;
+    color:var(--green);
+    font-size:32px;
     font-weight:bold;
-    font-size:34px;
     pointer-events:none;
     animation:floatUp 1s linear forwards;
+    z-index:9999;
 }
 
 @keyframes floatUp{
@@ -220,83 +296,165 @@ body{
     }
     100%{
         opacity:0;
-        transform:translateY(-100px);
+        transform:translateY(-90px);
     }
 }
 
+/* MOBILE FIX */
+
+button,
+input,
+select,
+textarea{
+    font-size:16px;
+}
+
+/* SMALL DEVICE */
+
+@media(max-width:420px){
+
+    .tap-ring{
+        width:250px;
+        height:250px;
+    }
+
+    .tap-btn{
+        width:200px;
+        height:200px;
+        font-size:44px;
+    }
+
+    .balance-value{
+        font-size:26px;
+    }
+
+}
+
 </style>
+
 </head>
 
 <body>
 
-<div class="container">
+<div class="app">
 
-    <!-- TOP BAR -->
+    <!-- HEADER -->
 
-    <div class="topbar">
+    <div class="header">
 
-        <div class="stat">
-            <div class="icon">⚡</div>
-            <div class="value" id="energy">50/50</div>
+        <div class="stat-box">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-value" id="energy">
+                0/50
+            </div>
+            <div class="stat-label">
+                Energy
+            </div>
         </div>
 
-        <div class="stat">
-            <div class="icon">💎</div>
-            <div class="value" id="points">0</div>
+        <div class="stat-box">
+            <div class="stat-icon">💎</div>
+            <div class="stat-value" id="points">
+                0
+            </div>
+            <div class="stat-label">
+                Points
+            </div>
         </div>
 
-        <div class="stat">
-            <div class="icon">🪙</div>
-            <div class="value" id="gpvlt">0.00</div>
+        <div class="stat-box">
+            <div class="stat-icon">🪙</div>
+            <div class="stat-value" id="gpvlt">
+                0
+            </div>
+            <div class="stat-label">
+                gPVLT
+            </div>
         </div>
 
     </div>
 
-    <!-- GAME -->
+    <!-- CONTENT -->
 
-    <div class="game">
+    <div class="content">
 
-        <div class="tap-area">
-            <button class="tap-btn" id="tapBtn">
-                TAP!
-            </button>
+        <div class="tap-section">
+
+            <div class="tap-ring">
+
+                <button
+                class="tap-btn"
+                id="tapBtn">
+                    TAP
+                </button>
+
+            </div>
+
         </div>
 
-        <button class="wallet-btn" id="connectBtn">
+        <button
+        class="btn connect-btn"
+        id="connectBtn">
             Connect Wallet
         </button>
 
         <div class="progress-wrap">
-            <div class="progress" id="progress"></div>
+            <div
+            class="progress"
+            id="progress"></div>
         </div>
 
         <div class="balance">
-            Balance:
-            <span id="pvltBalance">0.000</span>
-            PVLT
+
+            <div class="balance-title">
+                PVLT Balance
+            </div>
+
+            <div
+            class="balance-value"
+            id="pvltBalance">
+                0.000
+            </div>
+
         </div>
 
-        <button class="action-btn" id="convertBtn">
-            Convert 100 💎 → 1 gPVLT
+        <button
+        class="btn action-btn"
+        id="convertBtn">
+            Convert 10 Points → 1 gPVLT
         </button>
 
-        <button class="action-btn" id="claimBtn">
-            Claim Reward
+        <button
+        class="btn action-btn"
+        id="claimBtn">
+            Claim PVLT Rewards
+        </button>
+
+        <button
+        class="btn action-btn"
+        id="refillBtn">
+            Refill Energy
         </button>
 
         <div class="card">
 
             <h2>
-                10,000 Energy = 100 PVLT
+                Reward Rules
             </h2>
 
-            <button class="refill-btn" id="refillBtn">
-                Confirm Refill
-            </button>
+            <div class="rules">
+                • 1 Tap = 1 Point<br>
+                • 10 Points = 1 gPVLT<br>
+                • 10 gPVLT = 1 PVLT<br>
+                • Minimum Claim = 1 PVLT<br>
+                • Max Daily Claim = 100 PVLT
+            </div>
 
         </div>
 
-        <div class="status" id="status">
+        <div
+        class="status"
+        id="status">
             Ready
         </div>
 
@@ -307,7 +465,7 @@ body{
 <script>
 
 /* =========================
-   CONTRACTS
+   CONFIG
 ========================= */
 
 const GAME_ADDRESS =
@@ -380,11 +538,11 @@ document.getElementById("points");
 const gpvltEl =
 document.getElementById("gpvlt");
 
-const pvltBalanceEl =
-document.getElementById("pvltBalance");
-
 const progressEl =
 document.getElementById("progress");
+
+const pvltBalanceEl =
+document.getElementById("pvltBalance");
 
 const statusEl =
 document.getElementById("status");
@@ -445,10 +603,10 @@ async function connectWallet(){
         );
 
         connectBtn.innerHTML =
-        "Disconnect Wallet";
+        "Wallet Connected";
 
         statusEl.innerHTML =
-        "Wallet Connected";
+        "Connected Successfully";
 
         loadPlayer();
 
@@ -457,7 +615,7 @@ async function connectWallet(){
         console.log(err);
 
         statusEl.innerHTML =
-        "Connection Failed";
+        "Wallet Connection Failed";
 
     }
 
@@ -498,13 +656,16 @@ async function loadPlayer(){
         points;
 
         gpvltEl.innerHTML =
-        gpvlt.toFixed(2);
+        gpvlt;
 
         pvltBalanceEl.innerHTML =
         Number(pvltFormatted).toFixed(3);
 
         const progress =
-        Math.min((points / 100) * 100, 100);
+        Math.min(
+        (points / 10) * 100,
+        100
+        );
 
         progressEl.style.width =
         progress + "%";
@@ -518,7 +679,7 @@ async function loadPlayer(){
 }
 
 /* =========================
-   FLOAT TEXT
+   FLOAT EFFECT
 ========================= */
 
 function showFloat(){
@@ -556,7 +717,7 @@ async function tap(){
     try{
 
         if(!game){
-            alert("Connect wallet");
+            alert("Connect Wallet");
             return;
         }
 
@@ -574,7 +735,7 @@ async function tap(){
         console.log(err);
 
         statusEl.innerHTML =
-        "Tap failed";
+        "Tap Failed";
 
     }
 
@@ -592,12 +753,12 @@ async function convert(){
         await game.convertPoints();
 
         statusEl.innerHTML =
-        "Converting...";
+        "Converting Points...";
 
         await tx.wait();
 
         statusEl.innerHTML =
-        "Converted";
+        "Converted Successfully";
 
         loadPlayer();
 
@@ -606,7 +767,7 @@ async function convert(){
         console.log(err);
 
         statusEl.innerHTML =
-        "Convert failed";
+        "Convert Failed";
 
     }
 
@@ -624,12 +785,12 @@ async function claim(){
         await treasury.claimRewards();
 
         statusEl.innerHTML =
-        "Claiming rewards...";
+        "Claiming Rewards...";
 
         await tx.wait();
 
         statusEl.innerHTML =
-        "Rewards claimed";
+        "Rewards Claimed";
 
         loadPlayer();
 
@@ -638,7 +799,7 @@ async function claim(){
         console.log(err);
 
         statusEl.innerHTML =
-        "Claim failed";
+        "Claim Failed";
 
     }
 
@@ -656,12 +817,12 @@ async function refill(){
         await game.refillEnergy();
 
         statusEl.innerHTML =
-        "Refilling energy...";
+        "Refilling Energy...";
 
         await tx.wait();
 
         statusEl.innerHTML =
-        "Energy refilled";
+        "Energy Refilled";
 
         loadPlayer();
 
@@ -670,7 +831,7 @@ async function refill(){
         console.log(err);
 
         statusEl.innerHTML =
-        "Refill failed";
+        "Refill Failed";
 
     }
 
