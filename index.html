@@ -3,78 +3,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt Game</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
-    <script src="https://unpkg.com/@walletconnect/ethereum-provider/dist/index.umd.js"></script>
+    <title>PepeVolt Ecosystem Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #07101d; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
-        button { padding: 15px 30px; margin: 10px; cursor: pointer; border-radius: 10px; border: none; background: #00ff99; font-weight: bold; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top center, #131d1a 0%, #090d0c 100%);
+        }
+        .crypto-glow {
+            box-shadow: 0 0 25px -5px rgba(34, 197, 94, 0.2);
+        }
+        .tap-active:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
-<body>
-    <h1>PepeVolt</h1>
-    <button id="connectBtn" onclick="connect()">CONNECT WALLET</button>
-    <div id="gameUI" style="display:none;">
-        <p>Energy: <span id="e">0</span> | Points: <span id="p">0</span></p>
-        <button onclick="tap()">TAP</button>
-        <button onclick="buyEnergy()">BUY ENERGY (100 PVLT)</button>
-        <button onclick="claim()">CLAIM REWARDS</button>
-    </div>
+<body class="text-gray-200 min-h-screen flex flex-col justify-between">
+
+    <header class="border-b border-emerald-900/40 bg-black/30 backdrop-blur-md px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="bg-emerald-500/20 p-2 rounded-xl border border-emerald-500/30">
+                <i class="fa-solid fa-bolt text-emerald-400 text-xl animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                    PEPEVOLT <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">Ecosystem</span>
+                </h1>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="bg-emerald-950/40 border border-emerald-900/60 rounded-xl px-4 py-2 flex items-center gap-2">
+                <i class="fa-solid fa-wallet text-emerald-400"></i>
+                <span class="text-sm font-semibold text-gray-300" id="walletBalance">0.00 PVLT</span>
+            </div>
+            <button class="bg-emerald-500 hover:bg-emerald-600 text-black font-bold px-4 py-2 rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">
+                Connect Wallet
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 my-auto">
+        
+        <div class="lg:col-span-1 flex flex-col gap-6">
+            <div class="bg-black/40 border border-emerald-900/30 p-5 rounded-2xl backdrop-blur-md crypto-glow">
+                <h3 class="text-gray-400 text-xs font-bold tracking-wider uppercase mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-emerald-500"></i> Global Contract Data
+                </h3>
+                <div class="space-y-4">
+                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                        <div class="text-gray-400 text-xs">Treasury Vault Pool</div>
+                        <div class="text-xl font-bold text-white mt-1" id="globalTreasury">0 PVLT</div>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                        <div class="text-gray-400 text-xs">Total Burned gPVLT</div>
+                        <div class="text-xl font-bold text-orange-400 mt-1" id="globalBurned">0 gPVLT</div>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                        <div class="text-gray-400 text-xs">Ecosystem Rewards Paid</div>
+                        <div class="text-xl font-bold text-blue-400 mt-1" id="globalRewards">0 PVLT</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-red-950/20 border border-red-900/30 p-5 rounded-2xl backdrop-blur-md">
+                <h3 class="text-red-400 text-xs font-bold tracking-wider uppercase mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved"></i> Owner Control Panel
+                </h3>
+                <p class="text-gray-400 text-xs mb-4">Direct contract withdrawal functions for Treasury management.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button class="bg-red-900/40 hover:bg-red-900/60 text-red-200 border border-red-800/50 text-xs font-medium py-2 px-3 rounded-xl transition-all">
+                        Withdraw To...
+                    </button>
+                    <button class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-3 rounded-xl transition-all shadow-md shadow-red-600/10">
+                        Emergency All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-1 flex flex-col justify-center items-center bg-black/20 border border-emerald-900/20 rounded-3xl p-6 relative overflow-hidden min-h-[450px]">
+            <div class="absolute top-4 left-4">
+                <span class="flex items-center gap-1.5 bg-gray-900/80 border border-white/10 text-xs text-gray-400 px-3 py-1 rounded-full" id="userTier">
+                    <span class="w-1.5 h-1.5 bg-gray-500 rounded-full"></span> Free Account
+                </span>
+            </div>
+
+            <div class="relative group my-auto">
+                <div class="absolute -inset-4 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition duration-1000"></div>
+                <button onclick="handleTap()" class="relative w-48 h-48 rounded-full bg-gradient-to-b from-emerald-500 to-teal-600 flex flex-col items-center justify-center border-4 border-emerald-400 shadow-2xl transition-all duration-75 transform tap-active cursor-pointer select-none">
+                    <i class="fa-solid fa-frog text-6xl text-black/80 mb-2"></i>
+                    <span class="text-xs uppercase font-black tracking-widest text-black/60">Tap to Earn</span>
+                </button>
+            </div>
+
+            <div class="w-full mt-auto">
+                <div class="flex justify-between items-center text-xs mb-2 px-1">
+                    <span class="text-gray-400 flex items-center gap-1">
+                        <i class="fa-solid fa-charging-station text-emerald-400"></i> Energy Reserve
+                    </span>
+                    <span class="font-bold text-white"><span id="currentEnergy">50</span> / <span id="maxEnergy">50</span></span>
+                </div>
+                <div class="w-full bg-gray-950 rounded-full h-3.5 border border-emerald-950 overflow-hidden p-0.5">
+                    <div id="energyProgress" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-300" style="width: 100%"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <button onclick="handleRefill()" class="bg-gray-900 hover:bg-gray-800 border border-white/5 hover:border-white/10 text-xs font-semibold py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrows-rotate text-emerald-400"></i> Refill Energy
+                    </button>
+                    <button onclick="handleBuyEnergy()" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-bold py-2.5 px-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cart-shopping"></i> Upgrade Pack (100 PVLT)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-1 flex flex-col gap-6">
+            <div class="bg-black/40 border border-emerald-900/30 p-5 rounded-2xl backdrop-blur-md crypto-glow">
+                <h3 class="text-gray-400 text-xs font-bold tracking-wider uppercase mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-user text-emerald-500"></i> Player Balance Sheet
+                </h3>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <div class="text-gray-400 text-xs flex items-center gap-1.5">
+                            Accumulated Points
+                        </div>
+                        <div class="text-2xl font-bold text-white mt-1" id="playerPoints">0</div>
+                    </div>
+                    <div class="bg-white/5 p-4 rounded-xl border border-white/5">
+                        <div class="text-gray-400 text-xs flex items-center gap-1.5">
+                            gPVLT Holdings
+                        </div>
+                        <div class="text-2xl font-bold text-orange-400 mt-1" id="playerGPVLT">0</div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="bg-emerald-950/20 border border-emerald-900/30 rounded-xl p-3 flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-xs text-gray-400">
+                            <span>Step 1: Point Conversion</span>
+                            <span class="text-white font-mono">100 Points &rarr; 1 gPVLT</span>
+                        </div>
+                        <button onclick="handleConvert()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-bold py-2 rounded-lg text-xs transition-all">
+                            Convert 100 Points
+                        </button>
+                    </div>
+
+                    <div class="bg-blue-950/20 border border-blue-900/30 rounded-xl p-3 flex flex-col gap-2">
+                        <div class="flex justify-between items-center text-xs text-gray-400">
+                            <span>Step 2: Claims Window</span>
+                            <span class="text-blue-400 font-mono">Req: 100-1000 gPVLT</span>
+                        </div>
+                        <button onclick="handleClaim()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs transition-all shadow-lg shadow-blue-600/10">
+                            Claim Daily Multipliers
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-gray-950/60 border border-white/5 rounded-2xl p-4 text-xs text-gray-400 flex gap-3">
+                <i class="fa-solid fa-circle-info text-emerald-500 text-sm mt-0.5"></i>
+                <p>Contract state reads are simulated locally below. Integrate an injection provider like Ethers.js or Viem to link up to your active Polygon testnet/mainnet deployment.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="border-t border-white/5 bg-black/40 py-4 px-6 text-center text-xs text-gray-500">
+        &copy; 2026 PepeVolt Ecosystem. Verified Target Source Environment.
+    </footer>
 
     <script>
-        const GAME_ADDR = "0x151803532A33837E4bBc2Afc23c6b1f59039B82D";
-        const PVLT_ADDR = "0xb8010fD52D5208eC05574a7D5A939c0d446A862a";
-        const ABI = [
-            "function tap() external",
-            "function buyEnergy() external",
-            "function claimRewards() external",
-            "function getPlayer(address) view returns(uint256, uint256, uint256, bool, uint256)"
-        ];
+        // Local state machine reflecting the Smart Contract Storage Layout
+        let gameState = {
+            energy: 50,
+            maxEnergy: 50,
+            points: 0,
+            burnedGPVLT: 0,
+            paidUser: false,
+            walletBalance: 500, // Starting simulated balance for demonstration
+            totalRevenue: 0,
+            totalRewardsPaid: 0,
+            totalBurnedGPVLTGlobal: 0,
+            treasuryBalance: 100000
+        };
 
-        let provider, signer, account;
+        function updateUI() {
+            // Player stats
+            document.getElementById('currentEnergy').innerText = gameState.energy;
+            document.getElementById('maxEnergy').innerText = gameState.maxEnergy;
+            document.getElementById('playerPoints').innerText = gameState.points;
+            document.getElementById('playerGPVLT').innerText = gameState.burnedGPVLT;
+            document.getElementById('walletBalance').innerText = gameState.walletBalance.toFixed(2) + " PVLT";
+            
+            // Global stats
+            document.getElementById('globalTreasury').innerText = gameState.treasuryBalance + " PVLT";
+            document.getElementById('globalBurned').innerText = gameState.totalBurnedGPVLTGlobal + " gPVLT";
+            document.getElementById('globalRewards').innerText = gameState.totalRewardsPaid + " PVLT";
+            
+            // Energy progress rendering
+            const percent = (gameState.energy / gameState.maxEnergy) * 100;
+            document.getElementById('energyProgress').style.width = percent + '%';
 
-        async function connect() {
-            provider = await EthereumProvider.init({
-                projectId: "1731f99148b9cf6107dee70b6efb14b7",
-                chains: [137],
-                metadata: { name: "PepeVolt", description: "Game", url: window.location.origin, icons: [] }
-            });
-            await provider.enable();
-            const web3Provider = new ethers.providers.Web3Provider(provider);
-            signer = web3Provider.getSigner();
-            account = await signer.getAddress();
-            document.getElementById("gameUI").style.display = "block";
-            updateUI();
+            // Tier Status update
+            const tierBadge = document.getElementById('userTier');
+            if (gameState.paidUser) {
+                tierBadge.innerHTML = `<span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span> Premium Paid Tier`;
+                tierBadge.classList.remove('text-gray-400');
+                tierBadge.classList.add('text-emerald-400', 'border-emerald-500/30', 'bg-emerald-950/40');
+            }
         }
 
-        async function updateUI() {
-            const game = new ethers.Contract(GAME_ADDR, ABI, signer);
-            const data = await game.getPlayer(account);
-            document.getElementById("e").innerText = data[0];
-            document.getElementById("p").innerText = data[1];
+        // Equivalent to the contract tap() function
+        function handleTap() {
+            if (gameState.energy > 0) {
+                gameState.energy -= 1;
+                gameState.points += 1;
+                updateUI();
+            } else {
+                alert("Smart Contract Exception: No energy left!");
+            }
         }
 
-        async function tap() {
-            const game = new ethers.Contract(GAME_ADDR, ABI, signer);
-            await (await game.tap()).wait();
-            updateUI();
+        // Equivalent to the contract refillEnergy() function
+        function handleRefill() {
+            if (gameState.energy < gameState.maxEnergy) {
+                gameState.energy += 1;
+                updateUI();
+            } else {
+                alert("Energy engine capacity is completely full.");
+            }
         }
 
-        async function buyEnergy() {
-            // 1. Approve PVLT to the Treasury address
-            const token = new ethers.Contract(PVLT_ADDR, ["function approve(address, uint256)"], signer);
-            await (await token.approve("0x3c25FE15e6fa0Eeb226Af53D1c9D8f8FA8BA21bc", ethers.utils.parseEther("100"))).wait();
-            // 2. Buy
-            const game = new ethers.Contract(GAME_ADDR, ABI, signer);
-            await (await game.buyEnergy()).wait();
-            updateUI();
+        // Equivalent to the contract buyEnergy() function
+        function handleBuyEnergy() {
+            if (gameState.walletBalance >= 100) {
+                gameState.walletBalance -= 100;
+                gameState.treasuryBalance += 100; // Directly updates contract treasury
+                gameState.paidUser = true;
+                gameState.maxEnergy = 10000;
+                gameState.energy = 10000;
+                updateUI();
+            } else {
+                alert("Insufficient wallet balance to purchase premium upgrade.");
+            }
         }
-        
-        async function claim() {
-            const game = new ethers.Contract(GAME_ADDR, ABI, signer);
-            await (await game.claimRewards()).wait();
-            alert("Claimed!");
+
+        // Equivalent to the contract convertPoints() function
+        function handleConvert() {
+            if (gameState.points >= 100) {
+                gameState.points -= 100;
+                gameState.burnedGPVLT += 1;
+                gameState.totalBurnedGPVLTGlobal += 1; // trackBurn(1) inside treasury
+                updateUI();
+            } else {
+                alert("Minimum processing requirement of 100 points not met.");
+            }
         }
+
+        // Equivalent to the contract claimRewards() function
+        function handleClaim() {
+            if (gameState.burnedGPVLT >= 100 && gameState.burnedGPVLT <= 1000) {
+                let reward = Math.floor(gameState.burnedGPVLT / 100);
+                gameState.walletBalance += reward;
+                gameState.treasuryBalance -= reward;
+                gameState.totalRewardsPaid += reward;
+                gameState.burnedGPVLT = 0;
+                updateUI();
+                alert(`Claim Successful! Dispatched ${reward} PVLT rewards via TreasuryVolt execution vector.`);
+            } else {
+                alert("Validation Rejected: Target claim bracket bounds must be between 100 and 1000 gPVLT.");
+            }
+        }
+
+        // Primary initialization run
+        updateUI();
     </script>
 </body>
 </html>
