@@ -1,296 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt Game</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #1a1a2e; color: #fff; margin: 0; padding: 0; text-align: center; }
-        
-        /* Locked Top Navigation Styling */
-        .topnav { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            display: flex; 
-            justify-content: space-around; 
-            background: #2c3e50; 
-            padding: 15px 0; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3); 
-            font-weight: bold; 
-            font-size: 0.9rem; 
-            z-index: 1000; 
+        /* Modern Dark Theme */
+        body {
+            background-color: #1a1a2e;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
         }
-        .nav-item { display: flex; flex-direction: column; }
-        .nav-item span { color: #2ecc71; margin-top: 3px; }
 
-        /* Padding-top to keep content clear of the fixed nav */
-        .container { padding: 90px 20px 20px 20px; max-width: 400px; margin: 0 auto; }
-        
-        /* Tap Button */
-        .btn-tap { background-color: #2ecc71; color: #1a1a2e; height: 120px; width: 120px; border-radius: 50%; border: none; font-weight: bold; cursor: pointer; font-size: 1.5rem; margin: 30px auto; display: block; box-shadow: 0 6px 0 #27ae60; transition: transform 0.1s; }
-        .btn-tap:active:not(:disabled) { transform: scale(0.95); box-shadow: 0 2px 0 #27ae60; }
-        
-        /* Control Buttons */
-        button { width: 100%; padding: 14px; margin: 10px 0; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 1rem; color: white; }
-        .btn-connect { background-color: #3498db; margin-bottom: 25px; }
-        .btn-action { background-color: #e67e22; }
-        button:disabled { opacity: 0.3; cursor: not-allowed; }
-        
-        #status-feed { font-size: 0.8rem; color: #95a5a6; margin-top: 20px; }
+        /* Stats Bar (Top) */
+        .stats-bar {
+            background-color: #2c3e50;
+            width: 100%;
+            padding: 20px 0;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .stat-item { text-align: center; }
+        .stat-value { color: #2ecc71; font-weight: bold; display: block; margin-top: 5px; }
+
+        /* TAP Button (Center) */
+        .tap-circle {
+            background-color: #2ecc71;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            margin: 60px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a1a2e;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #27ae60;
+            transition: transform 0.1s;
+        }
+        .tap-circle:active { transform: scale(0.95); }
+
+        /* Action Buttons (Bottom) */
+        .btn-action {
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            width: 85%;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
-    <nav class="topnav">
-        <div class="nav-item">⚡ Energy <span id="energy">Locked</span></div>
-        <div class="nav-item">💎 Points <span id="points">Locked</span></div>
-        <div class="nav-item">🪙 gPVLT <span id="gpvlt">Locked</span></div>
-    </nav>
-
-    <div class="container">
-        
-        <button id="tap-button" class="btn-tap" onclick="handleLocalTap()" disabled>TAP</button>
-
-        <button id="wallet-btn" class="btn-connect" onclick="toggleWallet()">Connect Wallet</button>
-        
-        <button id="buy-energy-btn" class="btn-action" onclick="confirmRefill()" disabled>Buy 10,000 Energy (100 PVLT)</button>
-        <button id="convert-btn" class="btn-action" onclick="handleLocalConvert()" disabled>Convert 100 Points → 1 gPVLT</button>
-        <button id="claim-btn" class="btn-action" onclick="claimReward()" disabled>Claim Reward (100-1000 gPVLT)</button>
-
-        <p id="status-feed">Please load app within a Web3 interface browser.</p>
+    <div class="stats-bar">
+        <div class="stat-item">⚡ Energy <span class="stat-value" id="energy">9,995</span></div>
+        <div class="stat-item">💎 Points <span class="stat-value" id="points">5</span></div>
+        <div class="stat-item">🪙 gPVLT <span class="stat-value" id="gpvlt">0</span></div>
     </div>
 
-    <script>
-        const POLYGON_CHAIN_ID = "0x89";
-        const CONTRACT_ADDRESSES = {
-            PVLT_ADDRESS: "0x078C5e46F8e56DD87489C599aD80Bdd33D268720",
-            TREASURY_ADDRESS: "0x9d414a46dCa706F6805C37D20C18dA277A0b5dF9",
-            GAME_ADDRESS: "0x5D28B2249dB78817A1b72cD7eff9977D13299f3C"
-        };
+    <div class="tap-circle" onclick="handleTap()">TAP</div>
 
-        const ABIs = {
-            PVLT: [
-                "function balanceOf(address account) view returns (uint256)",
-                "function allowance(address owner, address spender) view returns (uint256)",
-                "function approve(address spender, uint256 amount) returns (bool)"
-            ],
-            PepeVoltGame: [
-                "function players(address) view returns (uint256 energy, uint256 points, uint256 burnedGPVLT, bool paidUser, uint256 lastClaimDay)",
-                "function buyEnergy() external",
-                "function convertPoints() external"
-            ],
-            TreasuryVolt: [
-                "function claimRewards() external"
-            ]
-        };
+    <button class="btn-action">Disconnect: 0xBa5B...1DFE</button>
+    <button class="btn-action">Buy 10,000 Energy (100 PVLT)</button>
+    <button class="btn-action">Convert 10 Points → 1 gPVLT</button>
+    <button class="btn-action">Claim Reward (10-1000 gPVLT)</button>
 
-        let provider, signer, userAddress;
-        let pvltContract, gameContract, treasuryContract;
-        let isWalletConnected = false;
-        let actionInFlight = false;
-
-        // Local UI State Tracking Variables
-        let localEnergy = 0;
-        let localPoints = 0;
-        let localGpvlt = 0;
-
-        async function checkAndSwitchNetwork() {
-            try {
-                const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
-                if (currentChainId !== POLYGON_CHAIN_ID) {
-                    document.getElementById('status-feed').innerText = "Routing to Polygon Network...";
-                    try {
-                        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: POLYGON_CHAIN_ID }] });
-                    } catch (err) {
-                        if (err.code === 4902) {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [{
-                                    chainId: POLYGON_CHAIN_ID,
-                                    chainName: 'Polygon Mainnet',
-                                    nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-                                    rpcUrls: ['https://polygon-rpc.com/'],
-                                    blockExplorerUrls: ['https://polygonscan.com/']
-                                }]
-                            });
-                        } else { throw err; }
-                    }
-                }
-                return true;
-            } catch (err) {
-                document.getElementById('status-feed').innerText = "Network confirmation aborted.";
-                return false;
-            }
-        }
-
-        async function toggleWallet() {
-            if (isWalletConnected) {
-                isWalletConnected = false; userAddress = null; provider = null; signer = null; pvltContract = null; gameContract = null; treasuryContract = null;
-                document.getElementById('wallet-btn').innerText = "Connect Wallet";
-                setButtonsState(true);
-                updateUIHTML(true);
-                document.getElementById('status-feed').innerText = "Session cleared.";
-            } else {
-                if (!window.ethereum) { alert("Please target a secure Web3 infrastructure browser layer."); return; }
-                try {
-                    if (!await checkAndSwitchNetwork()) return;
-                    provider = new ethers.BrowserProvider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
-                    signer = await provider.getSigner();
-                    userAddress = await signer.getAddress();
-
-                    pvltContract = new ethers.Contract(CONTRACT_ADDRESSES.PVLT, ABIs.PVLT, signer);
-                    gameContract = new ethers.Contract(CONTRACT_ADDRESSES.PepeVoltGame, ABIs.PepeVoltGame, signer);
-                    treasuryContract = new ethers.Contract(CONTRACT_ADDRESSES.TreasuryVolt, ABIs.TreasuryVolt, signer);
-
-                    isWalletConnected = true;
-                    document.getElementById('wallet-btn').innerText = `Disconnect: ${userAddress.substring(0,6)}...${userAddress.substring(38)}`;
-                    setButtonsState(false);
-                    await syncContractState();
-                } catch (err) {
-                    console.error(err);
-                    document.getElementById('status-feed').innerText = "Authentication failure.";
-                }
-            }
-        }
-
-        function setButtonsState(disabled) {
-            document.getElementById('tap-button').disabled = disabled;
-            document.getElementById('convert-btn').disabled = disabled;
-            document.getElementById('claim-btn').disabled = disabled;
-            document.getElementById('buy-energy-btn').disabled = disabled;
-        }
-
-        function updateUIHTML(isLocked = false) {
-            if (isLocked) {
-                document.getElementById('energy').innerText = "Locked";
-                document.getElementById('points').innerText = "Locked";
-                document.getElementById('gpvlt').innerText = "Locked";
-            }
-        }
-
-        async function syncContractState() {
-            if (!gameContract || !userAddress || !isWalletConnected || actionInFlight) return;
-            try {
-                const playerData = await gameContract.players(userAddress);
-
-                localEnergy = Number(playerData.energy);
-                localPoints = Number(playerData.points);
-                localGpvlt = Number(playerData.burnedGPVLT);
-
-                document.getElementById('energy').innerText = localEnergy.toLocaleString();
-                document.getElementById('points').innerText = localPoints.toLocaleString();
-                document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
-                document.getElementById('status-feed').innerText = "Live contract status synchronized.";
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        // INSTANT TAP LOGIC: Updates top nav immediately
-        function handleLocalTap() {
-            if (!isWalletConnected) return;
-
-            if (localEnergy > 0) {
-                localEnergy -= 1;
-                localPoints += 1;
-
-                document.getElementById('energy').innerText = localEnergy.toLocaleString();
-                document.getElementById('points').innerText = localPoints.toLocaleString();
-                document.getElementById('status-feed').innerText = "Tap recorded locally.";
-            } else {
-                document.getElementById('status-feed').innerText = "Out of energy!";
-            }
-        }
-
-        // INSTANT CONVERT LOGIC: Subtracts 100 Points (💎), Adds 1 gPVLT (🪙) straight to navbar instantly
-        function handleLocalConvert() {
-            if (!isWalletConnected) return;
-
-            if (localPoints >= 100) {
-                localPoints -= 100;
-                localGpvlt += 1;
-
-                document.getElementById('points').innerText = localPoints.toLocaleString();
-                document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
-                document.getElementById('status-feed').innerText = "Converted 100 Points to 1 gPVLT locally!";
-            } else {
-                document.getElementById('status-feed').innerText = "Insufficient Points! You need at least 100 points to convert.";
-            }
-        }
-
-        async function confirmRefill() {
-            if (!isWalletConnected || actionInFlight) return;
-            try {
-                actionInFlight = true;
-                const price = ethers.parseEther("100");
-                const currentAllowance = await pvltContract.allowance(userAddress, CONTRACT_ADDRESSES.PepeVoltGame);
-                
-                if (currentAllowance < price) {
-                    document.getElementById('status-feed').innerText = "Approving PVLT expenditure...";
-                    const approveTx = await pvltContract.approve(CONTRACT_ADDRESSES.PepeVoltGame, price);
-                    await approveTx.wait(1);
-                }
-
-                document.getElementById('status-feed').innerText = "Recharging total capacity...";
-                const buyTx = await gameContract.buyEnergy();
-                await buyTx.wait(1);
-                document.getElementById('status-feed').innerText = "Energy balance restored on-chain.";
-            } catch (err) {
-                document.getElementById('status-feed').innerText = "Acquisition aborted.";
-            } finally {
-                actionInFlight = false;
-                await syncContractState();
-            }
-        }
-
-        // REWARD CLAIM LOGIC: Updates top nav instantly and triggers the TreasuryVolt payout
-        async function claimReward() {
-            if (!isWalletConnected || actionInFlight) return;
-
-            if (localGpvlt < 100) {
-                alert("Requirement unmet: You need a minimum of 100 gPVLT to claim rewards.");
-                document.getElementById('status-feed').innerText = "Claim aborted.";
-                return;
-            }
-
-            // Cap execution maximum at 1000 gPVLT per transaction cycle matching contract thresholds
-            let claimAmount = localGpvlt;
-            if (claimAmount > 1000) {
-                claimAmount = 1000;
-            }
-
-            try {
-                actionInFlight = true;
-                document.getElementById('status-feed').innerText = `Sending reward request to TreasuryVolt...`;
-                
-                // Route transaction via TreasuryVolt deployment explicitly
-                const tx = await treasuryContract.claimRewards();
-                
-                document.getElementById('status-feed').innerText = "Awaiting transaction block finality...";
-                await tx.wait(1);
-
-                // Deduct claimed values on top navbar instantly
-                localGpvlt -= claimAmount;
-                document.getElementById('gpvlt').innerText = localGpvlt.toLocaleString();
-
-                document.getElementById('status-feed').innerText = `Successfully claimed PVLT directly from TreasuryVolt!`;
-            } catch (err) {
-                console.error(err);
-                document.getElementById('status-feed').innerText = "Transaction failed or rejected by contract limitations.";
-            } finally {
-                actionInFlight = false;
-                await syncContractState();
-            }
-        }
-
-        if (window.ethereum) {
-            window.ethereum.on('chainChanged', () => window.location.reload());
-            window.ethereum.on('accountsChanged', () => window.location.reload());
-        }
-    </script>
 </body>
 </html>
