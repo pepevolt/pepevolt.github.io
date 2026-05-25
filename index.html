@@ -139,28 +139,7 @@
             </button>
         </div>
 
-        <div class="w-full glass-panel rounded-xl mt-1 overflow-hidden transition-all duration-300">
-            <button onclick="toggleContractPanel()" class="w-full px-4 py-2.5 flex justify-between items-center text-[11px] font-bold text-slate-400 tracking-wide hover:bg-white/5 transition-colors cursor-pointer outline-none">
-                <span><i class="fa-solid fa-file-contract mr-1.5 text-emerald-500/70"></i> System Contracts</span>
-                <i id="panelChevron" class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200"></i>
-            </button>
-            <div id="contractDetails" class="hidden px-4 pb-3 pt-1 flex flex-col gap-1.5 border-t border-slate-900/40 text-[10px] text-slate-400 font-mono">
-                <div class="flex justify-between items-center bg-black/20 p-1.5 rounded-md">
-                    <span class="text-slate-500">PVLT Token:</span>
-                    <span class="text-slate-300">0xb801...862a</span>
-                </div>
-                <div class="flex justify-between items-center bg-black/20 p-1.5 rounded-md">
-                    <span class="text-slate-500">Game Core:</span>
-                    <span class="text-slate-300">0x1518...B82D</span>
-                </div>
-                <div class="flex justify-between items-center bg-black/20 p-1.5 rounded-md">
-                    <span class="text-slate-500">Treasury:</span>
-                    <span class="text-slate-300">0x3c25...21bc</span>
-                </div>
-            </div>
-        </div>
-
-        <p id="userTier" class="text-[10px] text-slate-500 font-medium text-center mt-1 tracking-wide">
+        <p id="userTier" class="text-[10px] text-slate-500 font-medium text-center mt-2 tracking-wide">
             Please connect wallet to read ecosystem states.
         </p>
     </section>
@@ -214,10 +193,10 @@
             const infoFooter = document.getElementById('userTier');
             if (isPaid) {
                 infoFooter.innerText = "✨ Premium Tier Identity Sync Active";
-                infoFooter.className = "text-[10px] text-emerald-400 font-bold text-center mt-1 tracking-wide";
+                infoFooter.className = "text-[10px] text-emerald-400 font-bold text-center mt-2 tracking-wide";
             } else {
                 infoFooter.innerText = "Standard Play Profile Active";
-                infoFooter.className = "text-[10px] text-slate-500 font-medium text-center mt-1 tracking-wide";
+                infoFooter.className = "text-[10px] text-slate-500 font-medium text-center mt-2 tracking-wide";
             }
 
             const percent = localMaxEnergy > 0 ? (localEnergy / localMaxEnergy) * 100 : 0;
@@ -372,7 +351,6 @@
             handleTapAction(e);
         });
 
-        // FIXED METHOD: Safely requests permission for exactly 100 tokens instead of Unlimited
         async function handleBuyEnergy() {
             if (!gameContract) return alert("Please establish structural wallet connection first.");
             try {
@@ -381,8 +359,6 @@
                 
                 if (currentAllowance < price) {
                     document.getElementById('userTier').innerText = "Approving exactly 100 PVLT allowance for Game Contract...";
-                    
-                    // Request exactly 100 token clearance limit
                     const approveTx = await pvltContract.approve(CONTRACT_ADDRESSES.PepeVoltGame, price);
                     await approveTx.wait(1);
                 }
@@ -426,20 +402,6 @@
                 console.error(err);
                 alert("Claim checks unfulfilled. Validate parameters.");
                 await syncContractState();
-            }
-        }
-
-        function toggleContractPanel() {
-            const panel = document.getElementById('contractDetails');
-            const chevron = document.getElementById('panelChevron');
-            const isHidden = panel.classList.contains('hidden');
-            
-            if(isHidden) {
-                panel.classList.remove('hidden');
-                chevron.style.transform = 'rotate(180deg)';
-            } else {
-                panel.classList.add('hidden');
-                chevron.style.transform = 'rotate(0deg)';
             }
         }
 
