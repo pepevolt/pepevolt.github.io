@@ -325,99 +325,70 @@ statusEl.innerText = text;
 
 /* ================= CONNECT WALLET ================= */
 
-async function connectWallet(){
+async function connectWallet() {
+  try {
+    setStatus("Connecting wallet...");
 
-try{
+    let wcProvider;
 
-if(!window.ethereum){
+    // 1. Injected wallet (MetaMask, Trust Wallet, etc.)
+    if (window.ethereum && window.ethereum.isMetaMask) {
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+    }
 
-alert(
-"Open inside MetaMask or Trust Wallet browser"
-);
+    // 2. WalletConnect fallback (ALL other browsers)
+    else {
+      const WalletConnectProvider =
+        window.WalletConnectEthereumProvider?.default ||
+        window.WalletConnectEthereumProvider;
 
-return;
+      if (!WalletConnectProvider) {
+        alert("Wallet not supported in this browser. Open MetaMask or Trust Wallet.");
+        return;
+      }
 
-}
+      wcProvider = await WalletConnectProvider.init({
+        projectId: "1731f99148b9cf6107dee70b6efb14b7",
+        chains: [137], // Polygon
+        showQrModal: true
+      });
 
-setStatus("Connecting wallet...");
+      await wcProvider.enable();
 
-await window.ethereum.request({
-method:"eth_requestAccounts"
-});
+      provider = new ethers.providers.Web3Provider(wcProvider);
+    }
 
-provider =
-new ethers.providers.Web3Provider(
-window.ethereum
-);
+    const network = await provider.getNetwork();
 
-const network =
-await provider.getNetwork();
+    if (network.chainId !== 137) {
+      try {
+        await provider.send("wallet_switchEthereumChain", [
+          { chainId: "0x89" }
+        ]);
+      } catch (err) {
+        alert("Please switch to Polygon network");
+        return;
+      }
+    }
 
-if(network.chainId !== 137){
+    signer = provider.getSigner();
+    wallet = await signer.getAddress();
 
-try{
+    walletDisplay.innerText =
+      wallet.slice(0, 6) + "..." + wallet.slice(-4);
 
-await window.ethereum.request({
-method:"wallet_switchEthereumChain",
-params:[{
-chainId:"0x89"
-}]
-});
+    game = new ethers.Contract(GAME_ADDRESS, GAME_ABI, signer);
+    treasury = new ethers.Contract(TREASURY_ADDRESS, TREASURY_ABI, signer);
 
-}catch(err){
+    await loadPlayer();
+    setStatus("Connected");
 
-alert("Switch to Polygon Mainnet");
-
-setStatus("Wrong network");
-
-return;
-
-}
-
-}
-
-signer =
-provider.getSigner();
-
-wallet =
-await signer.getAddress();
-
-walletDisplay.innerText =
-wallet.slice(0,6) +
-"..." +
-wallet.slice(-4);
-
-game =
-new ethers.Contract(
-GAME_ADDRESS,
-GAME_ABI,
-signer
-);
-
-treasury =
-new ethers.Contract(
-TREASURY_ADDRESS,
-TREASURY_ABI,
-signer
-);
-
-await loadPlayer();
-
-setStatus("Wallet connected");
-
-}catch(err){
-
-console.log(err);
-
-setStatus("Connection failed");
-
-alert(
-err.message ||
-"Wallet connection failed"
-);
-
-}
-
+  } catch (err) {
+    console.log(err);
+    setStatus("Connection failed");
+    alert(err?.message || "Wallet connection failed");
+  }
 }
 
 /* ================= LOAD PLAYER ================= */
