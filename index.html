@@ -1,62 +1,135 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>PVLT GAME</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>PVLT DApp</title>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
 
 <style>
 body {
     margin:0;
     font-family: Arial;
-    background:#111;
+    background:#0f0f0f;
     color:white;
     text-align:center;
 }
 
-button {
+.container {
     padding:20px;
-    font-size:20px;
-    margin-top:20px;
-    width:80%;
+    margin-top:80px;
 }
 
-#box {
-    margin-top:100px;
+button {
+    width:90%;
+    padding:15px;
+    margin:10px 0;
+    font-size:16px;
+    border:none;
+    border-radius:10px;
+}
+
+.primary { background:#2ecc71; color:black; }
+.danger { background:#e74c3c; color:white; }
+.info { background:#3498db; color:white; }
+
+.card {
+    background:#1c1c1c;
+    padding:15px;
+    border-radius:10px;
+    margin-top:10px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="box">
-    <h1>PVLT TAP</h1>
-    <p id="points">0</p>
+<div class="container">
 
-    <button onclick="tap()">TAP</button>
+    <h2>PVLT GAME DAPP</h2>
+
+    <button class="info" onclick="connectWallet()">Connect Wallet</button>
+
+    <div class="card">
+        <p>Wallet: <span id="wallet">Not connected</span></p>
+        <p>Energy: <span id="energy">-</span></p>
+    </div>
+
+    <button class="primary" onclick="tap()">TAP</button>
+    <button class="primary" onclick="buyEnergy()">BUY ENERGY (0.001 ETH)</button>
+    <button class="danger" onclick="claim()">CLAIM REWARDS</button>
+
 </div>
 
 <script>
-let points = 0;
+
+const TREASURY_ADDRESS = "TREASURY_ADDRESS";
+const PVLT_ADDRESS = "PVLT_ADDRESS";
+
+let provider, signer, user, treasury;
+
+async function connectWallet() {
+    if (!window.ethereum) return alert("Install MetaMask");
+
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    user = await signer.getAddress();
+
+    document.getElementById("wallet").innerText = user;
+
+    treasury = new ethers.Contract(
+        TREASURY_ADDRESS,
+        [
+            "function users(address) view returns (uint256 energy, uint256 lastTap, uint256 lastClaim)",
+            "function tap(address user)",
+            "function buyEnergy(address user) payable",
+            "function claim(address user)"
+        ],
+        signer
+    );
+
+    loadData();
+}
+
+async function loadData() {
+    const data = await treasury.users(user);
+    document.getElementById("energy").innerText = data.energy.toString();
+}
 
 async function tap() {
-    const wallet = "demo_wallet";
-
-    const res = await fetch("/tap", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({wallet})
-    });
-
-    if (!res.ok) {
-        alert("Blocked or cooldown");
-        return;
+    try {
+        const tx = await treasury.tap(user);
+        await tx.wait();
+        loadData();
+    } catch (e) {
+        alert("Tap failed (cooldown or energy)");
     }
-
-    const data = await res.json();
-    points += data.reward;
-
-    document.getElementById("points").innerText = points;
 }
+
+async function buyEnergy() {
+    try {
+        const tx = await treasury.buyEnergy(user, {
+            value: ethers.parseEther("0.001")
+        });
+        await tx.wait();
+        loadData();
+    } catch (e) {
+        alert("Buy failed");
+    }
+}
+
+async function claim() {
+    try {
+        const tx = await treasury.claim(user);
+        await tx.wait();
+        loadData();
+    } catch (e) {
+        alert("Claim failed (cooldown or empty pool)");
+    }
+}
+
 </script>
 
 </body>
