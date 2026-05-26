@@ -9,10 +9,7 @@
         .top-nav { width: 100%; max-width: 320px; display: flex; justify-content: space-between; padding: 10px 0; margin-bottom: 20px; font-size: 14px; font-weight: bold; }
         .tap-circle { width: 200px; height: 200px; border-radius: 50%; background: linear-gradient(to bottom, #77b897 50%, #4a4f56 50%); display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 24px; margin: 20px 0; cursor: pointer; user-select: none; }
         .main-container { background-color: #1a1f26; padding: 20px; border-radius: 15px; width: 100%; max-width: 320px; text-align: center; }
-        
-        /* Wrapper for the Web Component to match your button layout */
-        .wallet-btn-wrapper { width: 100%; max-width: 320px; margin: 8px 0; }
-        
+        .btn { background-color: #3b82f6; color: white; padding: 12px; border-radius: 8px; border: none; width: 100%; max-width: 320px; margin: 8px 0; cursor: pointer; font-weight: 600; }
         .secondary-btn { background-color: #2d3748; color: #a0aec0; padding: 12px; border-radius: 8px; border: none; width: 100%; margin: 8px 0; cursor: not-allowed; }
     </style>
 </head>
@@ -26,9 +23,7 @@
 
     <div class="tap-circle" onclick="console.log('Tapped!')">TAP!</div>
 
-    <div class="wallet-btn-wrapper">
-        <w3m-button balance="hide" size="md" />
-    </div>
+    <button id="connectBtn" class="btn">Connect Wallet</button>
     
     <div class="main-container">
         <button class="secondary-btn">Buy</button>
@@ -43,7 +38,7 @@
 
         const projectId = '1731f99148b9cf6107dee70b6efb14b7';
 
-        createAppKit({
+        const modal = createAppKit({
             adapters: [new EthersAdapter()],
             networks: [polygon],
             metadata: {
@@ -54,6 +49,25 @@
             },
             projectId,
             features: { analytics: true }
+        });
+
+        // Ensure the button is fully loaded before attaching the event
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('connectBtn');
+            
+            btn.addEventListener('click', () => {
+                modal.open();
+            });
+
+            // Update button text on state change
+            modal.subscribeState((state) => {
+                if (state.isConnected && state.address) {
+                    const address = state.address;
+                    btn.innerText = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+                } else {
+                    btn.innerText = "Connect Wallet";
+                }
+            });
         });
     </script>
 </body>
