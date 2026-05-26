@@ -1,133 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PVLT DApp</title>
-
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
-
-<style>
-body {
-    margin:0;
-    font-family: Arial;
-    background:#0f0f0f;
-    color:white;
-    text-align:center;
-}
-
-.container {
-    padding:20px;
-    margin-top:80px;
-}
-
-button {
-    width:90%;
-    padding:15px;
-    margin:10px 0;
-    font-size:16px;
-    border:none;
-    border-radius:10px;
-}
-
-.primary { background:#2ecc71; color:black; }
-.danger { background:#e74c3c; color:white; }
-.info { background:#3498db; color:white; }
-
-.card {
-    background:#1c1c1c;
-    padding:15px;
-    border-radius:10px;
-    margin-top:10px;
-}
-</style>
 </head>
 
-<body>
+<body style="background:#111;color:white;text-align:center;font-family:Arial">
 
-<div class="container">
+<h2>PVLT ECOSYSTEM</h2>
 
-    <h2>PVLT GAME DAPP</h2>
+<button onclick="connect()">CONNECT</button>
 
-    <button class="info" onclick="connectWallet()">Connect Wallet</button>
+<p>Energy: <span id="e">-</span></p>
+<p>Points: <span id="p">-</span></p>
 
-    <div class="card">
-        <p>Wallet: <span id="wallet">Not connected</span></p>
-        <p>Energy: <span id="energy">-</span></p>
-    </div>
-
-    <button class="primary" onclick="tap()">TAP</button>
-    <button class="primary" onclick="buyEnergy()">BUY ENERGY (0.001 ETH)</button>
-    <button class="danger" onclick="claim()">CLAIM REWARDS</button>
-
-</div>
+<button onclick="tap()">TAP</button>
+<button onclick="convert()">CONVERT</button>
 
 <script>
 
-const TREASURY_ADDRESS = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
-const PVLT_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
+const GAME = "YOUR_GAME_ADDRESS";
+let provider, signer, game, user;
 
-let provider, signer, user, treasury;
-
-async function connectWallet() {
-    if (!window.ethereum) return alert("Install MetaMask");
+async function connect() {
 
     provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
     user = await signer.getAddress();
 
-    document.getElementById("wallet").innerText = user;
+    game = new ethers.Contract(GAME, [
+        "function players(address) view returns (uint256 energy,uint256 points,uint256 lastTap,uint256 stake,uint256 joined,uint256 nonce,uint256 risk)",
+        "function tap(uint256 nonce)",
+        "function convertPoints()",
+        "function refillEnergy() payable"
+    ], signer);
 
-    treasury = new ethers.Contract(
-        TREASURY_ADDRESS,
-        [
-            "function users(address) view returns (uint256 energy, uint256 lastTap, uint256 lastClaim)",
-            "function tap(address user)",
-            "function buyEnergy(address user) payable",
-            "function claim(address user)"
-        ],
-        signer
-    );
-
-    loadData();
+    load();
 }
 
-async function loadData() {
-    const data = await treasury.users(user);
-    document.getElementById("energy").innerText = data.energy.toString();
+async function load() {
+    const p = await game.players(user);
+    document.getElementById("e").innerText = p.energy;
+    document.getElementById("p").innerText = p.points;
 }
 
 async function tap() {
-    try {
-        const tx = await treasury.tap(user);
-        await tx.wait();
-        loadData();
-    } catch (e) {
-        alert("Tap failed (cooldown or energy)");
-    }
+    const p = await game.players(user);
+    const tx = await game.tap(p.nonce);
+    await tx.wait();
+    load();
 }
 
-async function buyEnergy() {
-    try {
-        const tx = await treasury.buyEnergy(user, {
-            value: ethers.parseEther("0.001")
-        });
-        await tx.wait();
-        loadData();
-    } catch (e) {
-        alert("Buy failed");
-    }
-}
-
-async function claim() {
-    try {
-        const tx = await treasury.claim(user);
-        await tx.wait();
-        loadData();
-    } catch (e) {
-        alert("Claim failed (cooldown or empty pool)");
-    }
+async function convert() {
+    const tx = await game.convertPoints();
+    await tx.wait();
+    load();
 }
 
 </script>
