@@ -2,26 +2,65 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tap Game</title>
+<title>PVLT Tap Game</title>
+
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
 
 <style>
-body { background:#0f0f0f; color:white; font-family:Arial; text-align:center; }
-.nav { display:flex; justify-content:space-around; padding:10px; background:#1a1a1a; }
-.box { padding:10px; }
-.tap { font-size:40px; padding:40px; margin-top:40px; background:#333; border-radius:20px; }
-button { margin:10px; padding:10px; }
-.bar { width:80%; height:20px; background:#333; margin:20px auto; border-radius:10px; }
-.fill { height:100%; width:0%; background:lime; }
+body {
+    margin:0;
+    font-family: Arial;
+    background:#0f0f0f;
+    color:white;
+    text-align:center;
+}
+
+.nav {
+    display:flex;
+    justify-content:space-around;
+    padding:10px;
+    background:#1c1c1c;
+}
+
+.card {
+    margin:10px;
+}
+
+.tap {
+    margin-top:40px;
+    font-size:40px;
+    padding:50px;
+    background:#333;
+    border-radius:20px;
+}
+
+button {
+    padding:10px;
+    margin:5px;
+}
+
+.bar {
+    width:80%;
+    height:12px;
+    background:#333;
+    margin:20px auto;
+    border-radius:10px;
+}
+
+.fill {
+    height:100%;
+    width:0%;
+    background:lime;
+}
 </style>
 </head>
 
 <body>
 
 <div class="nav">
-  <div class="box">Energy: <span id="e">0</span></div>
-  <div class="box">Points: <span id="p">0</span></div>
-  <div class="box">PVLT: <span id="t">0</span></div>
+  <div>Energy: <span id="e">0</span></div>
+  <div>Points: <span id="p">0</span></div>
+  <div>Pending: <span id="r">0</span></div>
 </div>
 
 <button onclick="connect()">Connect Wallet</button>
@@ -32,60 +71,63 @@ button { margin:10px; padding:10px; }
 
 <button onclick="buy()">Buy 10000 Energy (100 PVLT)</button>
 <button onclick="convert()">Convert Points</button>
+<button onclick="claim()">Claim PVLT</button>
 
 <script>
-let provider, signer, contract, token;
+let provider, signer, contract, user;
 
-const GAME = "YOUR_GAME";
-const TOKEN = "YOUR_PVLT";
+const GAME = "YOUR_GAME_ADDRESS";
+const ABI = [
+ "function tap()",
+ "function buyEnergy()",
+ "function convert(uint256)",
+ "function claim()",
+ "function getPlayer(address) view returns (uint256,uint256,uint256,uint256)"
+];
 
-async function connect(){
+async function connect() {
     provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
+    user = await signer.getAddress();
 
-    contract = new ethers.Contract(GAME, [
-        "function players(address) view returns (uint256 energy,uint256 points,uint256 totalTaps)",
-        "function tap()",
-        "function buyEnergy()",
-        "function convert(uint256)"
-    ], signer);
-
-    token = new ethers.Contract(TOKEN, [
-        "function balanceOf(address) view returns (uint256)"
-    ], signer);
+    contract = new ethers.Contract(GAME, ABI, signer);
 
     load();
 }
 
-async function load(){
-    const user = await signer.getAddress();
-    const p = await contract.players(user);
-    const bal = await token.balanceOf(user);
+async function load() {
+    const p = await contract.getPlayer(user);
 
-    document.getElementById("e").innerText = p.energy;
-    document.getElementById("p").innerText = p.points;
-    document.getElementById("t").innerText = ethers.formatEther(bal);
+    document.getElementById("e").innerText = p[0];
+    document.getElementById("p").innerText = p[1];
+    document.getElementById("r").innerText = p[2];
 
-    let percent = Math.min((p.totalTaps % 1000)/10,100);
+    let percent = Math.min((p[3] % 1000) / 10, 100);
     document.getElementById("bar").style.width = percent + "%";
 }
 
-async function tap(){
-    let tx = await contract.tap();
+async function tap() {
+    const tx = await contract.tap();
     await tx.wait();
     load();
 }
 
-async function buy(){
-    let tx = await contract.buyEnergy();
+async function buy() {
+    const tx = await contract.buyEnergy();
     await tx.wait();
     load();
 }
 
-async function convert(){
-    let amt = prompt("Points to convert:");
-    let tx = await contract.convert(amt);
+async function convert() {
+    let amt = prompt("Enter points:");
+    const tx = await contract.convert(amt);
+    await tx.wait();
+    load();
+}
+
+async function claim() {
+    const tx = await contract.claim();
     await tx.wait();
     load();
 }
