@@ -1,62 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PepeVolt Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+    <style>
+        body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        .tap-btn:active { transform: scale(0.95); }
+    </style>
 </head>
-<body class="bg-slate-950 text-white min-h-screen p-4 flex flex-col items-center">
+<body class="bg-slate-950 text-white font-sans min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="w-full max-w-sm flex justify-between items-center mb-8">
-        <h1 class="text-2xl font-black text-emerald-400">PEPEVOLT</h1>
-        <button id="walletBtn" onclick="connectWallet()" class="bg-emerald-900 border border-emerald-500 px-4 py-1 rounded-full text-sm">Connect</button>
-    </div>
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl">
+        <h1 class="text-2xl font-black text-center text-emerald-400 mb-6">⚡ PEPEVOLT</h1>
 
-    <div class="w-full max-w-sm bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl">
-        
-        <div class="mb-6">
-            <div class="flex justify-between text-xs text-slate-400 mb-1">
-                <span>ENERGY</span>
-                <span id="energyVal">--/--</span>
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-slate-800 p-4 rounded-xl text-center border border-slate-700">
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest">Energy</p>
+                <p id="energy" class="text-xl font-bold text-blue-400">--</p>
             </div>
-            <div class="w-full bg-slate-800 h-4 rounded-full overflow-hidden">
-                <div id="energyBar" class="bg-blue-500 h-full w-0 transition-all duration-500"></div>
+            <div class="bg-slate-800 p-4 rounded-xl text-center border border-slate-700">
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest">Points</p>
+                <p id="points" class="text-xl font-bold text-yellow-400">--</p>
             </div>
         </div>
 
-        <button onclick="handleTap()" class="w-full aspect-square bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-full flex flex-col items-center justify-center shadow-lg active:scale-95 transition-transform mb-6">
-            <span class="text-6xl">⚡</span>
-            <span class="text-lg font-bold mt-2">TAP TO EARN</span>
+        <button onclick="handleTap()" 
+                class="tap-btn w-full aspect-square bg-gradient-to-tr from-emerald-600 to-emerald-400 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.3)] transition-all mb-8">
+            <span class="text-8xl">⚡</span>
         </button>
 
-        <div class="grid grid-cols-2 gap-4 text-center">
-            <div class="bg-slate-800 p-3 rounded-xl">
-                <p class="text-[10px] text-slate-400">POINTS</p>
-                <p id="pointsVal" class="font-bold">0</p>
-            </div>
-            <div class="bg-slate-800 p-3 rounded-xl">
-                <p class="text-[10px] text-slate-400">PVLT BALANCE</p>
-                <p id="pvltVal" class="font-bold">0</p>
-            </div>
+        <div class="grid grid-cols-2 gap-3">
+            <button onclick="connectWallet()" class="bg-slate-800 py-3 rounded-lg hover:bg-slate-700 text-sm font-semibold transition">Connect Wallet</button>
+            <button onclick="claimRewards()" class="bg-indigo-600 py-3 rounded-lg hover:bg-indigo-500 text-sm font-semibold transition">Claim Rewards</button>
         </div>
-    </div>
-
-    <div class="w-full max-w-sm mt-6 grid grid-cols-3 gap-2">
-        <button onclick="refillEnergy()" class="bg-slate-800 p-3 rounded-xl text-xs">Refill</button>
-        <button onclick="claimRewards()" class="bg-indigo-900 p-3 rounded-xl text-xs border border-indigo-500">Claim</button>
-        <button onclick="approveTreasury()" class="bg-slate-800 p-3 rounded-xl text-xs">Approve</button>
+        
+        <div class="mt-4 text-center">
+            <p class="text-xs text-slate-500">PVLT: <span id="pvltBalance">0</span></p>
+            <button onclick="approveTreasury()" class="text-emerald-500 text-xs underline mt-2">Approve Treasury</button>
+        </div>
     </div>
 
     <script>
-        // Use your addresses from the screenshots
-        const PVLT_ADDR = "0x5f7dF6862F439B691507Dc20069F4F73A37cb08B";
-        const TREASURY_ADDR = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
-        const GAME_ADDR = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
+        // Contract Addresses
+        const pvltAddress = "0x5f7dF6862F439B691507Dc20069F4F73A37cb08B";
+        const treasuryAddress = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
+        const gameAddress = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
 
-        // Add logic to refresh data from the contract mappings (e.g., players(address))
-        async function updateUI() {
-            // 1. Fetch balance from PVLT contract
-            // 2. Fetch player stats from GAME contract
-            // 3. Update DOM elements
+        // Logic
+        async function connectWallet() {
+            if (window.ethereum) {
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                refreshStats();
+            } else { alert("Please install MetaMask."); }
+        }
+
+        async function handleTap() {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const game = new ethers.Contract(gameAddress, [/* Insert Game ABI from your previous code */], signer);
+            try {
+                const tx = await game.tap();
+                await tx.wait();
+                refreshStats();
+            } catch (err) { console.error(err); }
+        }
+
+        async function refreshStats() {
+            // Add your logic here to fetch and update DOM elements
+            console.log("Stats refreshed");
         }
     </script>
 </body>
