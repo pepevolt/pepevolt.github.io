@@ -51,7 +51,6 @@
             text-align: center;
         }
 
-        /* Standard button class */
         .btn {
             background-color: #3b82f6;
             color: white;
@@ -98,13 +97,13 @@
     <script type="module">
         import { createAppKit } from 'https://esm.sh/@reown/appkit@latest';
         import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
-        import { mainnet, arbitrum } from 'https://esm.sh/@reown/appkit/networks@latest';
+        import { polygon } from 'https://esm.sh/@reown/appkit/networks@latest';
 
         const projectId = '1731f99148b9cf6107dee70b6efb14b7';
 
         const modal = createAppKit({
             adapters: [new EthersAdapter()],
-            networks: [mainnet, arbitrum],
+            networks: [polygon], // Set specifically to Polygon
             metadata: {
                 name: 'PepeVolt',
                 description: 'PepeVolt Game',
@@ -115,14 +114,14 @@
             features: { analytics: true }
         });
 
-        // Link button to open modal
         const btn = document.getElementById('connectBtn');
         btn.onclick = () => modal.open();
 
-        // Optional: Update button text when wallet connects
         modal.subscribeState((state) => {
             if (state.isConnected) {
-                btn.innerText = "Connected";
+                // Shorten address to look professional
+                const address = state.address;
+                btn.innerText = address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : "Connected";
             } else {
                 btn.innerText = "Connect Wallet";
             }
