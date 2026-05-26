@@ -1,222 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
-<head>
-
-<meta charset="UTF-8">
-
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-/>
-
-<title>PVLT Tap Game</title>
-
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
-
-<style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
--webkit-tap-highlight-color:transparent;
-}
-
-html,
-body{
-width:100%;
-height:100%;
-overflow:hidden;
-background:#020b18;
-font-family:Arial,sans-serif;
-color:white;
-touch-action:manipulation;
-}
-
-body{
-display:flex;
-flex-direction:column;
-}
-
-.topbar{
-width:100%;
-padding:14px 18px;
-background:#091426;
-display:flex;
-justify-content:space-between;
-align-items:center;
-font-size:14px;
-font-weight:bold;
-}
-
-.main{
-flex:1;
-display:flex;
-flex-direction:column;
-align-items:center;
-padding:20px;
-overflow-y:auto;
-}
-
-.tapBtn{
-width:240px;
-height:240px;
-border:none;
-border-radius:50%;
-margin-top:20px;
-background:
-linear-gradient(
-135deg,
-#00ff99,
-#00ccff
-);
-display:flex;
-justify-content:center;
-align-items:center;
-font-size:42px;
-font-weight:800;
-color:#021018;
-box-shadow:
-0 0 40px rgba(0,255,180,0.3);
-cursor:pointer;
-transition:0.08s;
-}
-
-.tapBtn:active{
-transform:scale(0.95);
-}
-
-.card{
-width:100%;
-max-width:380px;
-margin-top:28px;
-background:rgba(255,255,255,0.04);
-border:1px solid rgba(255,255,255,0.08);
-border-radius:18px;
-padding:18px;
-display:flex;
-flex-direction:column;
-gap:14px;
-}
-
-.wallet{
-width:100%;
-padding:15px;
-border:none;
-border-radius:12px;
-background:#0c1628;
-color:white;
-font-size:14px;
-text-align:center;
-}
-
-.actionBtn{
-width:100%;
-padding:15px;
-border:none;
-border-radius:12px;
-font-size:15px;
-font-weight:bold;
-background:
-linear-gradient(
-90deg,
-#00ff99,
-#00ccff
-);
-color:black;
-cursor:pointer;
-}
-
-.actionBtn:active{
-transform:scale(0.98);
-}
-
-.info{
-margin-top:16px;
-font-size:12px;
-line-height:1.7;
-opacity:0.8;
-text-align:center;
-max-width:380px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="topbar">
-
-<div>
-🔋 <span id="energy">0</span>
-</div>
-
-<div>
-⚡ <span id="points">0</span>
-</div>
-
-<div>
-💎 <span id="gpvlt">0</span>
-</div>
-
-</div>
-
-<div class="main">
-
-<button
-class="tapBtn"
-id="tapBtn"
->
-TAP
-</button>
-
-<div class="card">
-
-<div
-class="wallet"
-id="walletDisplay"
->
-NOT CONNECTED
-</div>
-
-<button
-class="actionBtn"
-id="connectBtn"
->
-CONNECT WALLET
-</button>
-
-<button
-class="actionBtn"
-id="refillBtn"
->
-REFILL ENERGY
-</button>
-
-<button
-class="actionBtn"
-id="convertBtn"
->
-CONVERT POINTS
-</button>
-
-<button
-class="actionBtn"
-id="claimBtn"
->
-CLAIM PVLT
-</button>
-
-</div>
-
-<div class="info">
-10 Points = 1 gPVLT<br>
-10 gPVLT = 1 PVLT
-</div>
-
-</div>
+<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
 
 <script>
 
@@ -225,6 +9,9 @@ const GAME_ADDRESS =
 
 const TREASURY_ADDRESS =
 "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
+
+const PROJECT_ID =
+"1731f99148b9cf6107dee70b6efb14b7";
 
 const GAME_ABI = [
 
@@ -266,13 +53,9 @@ async function connectWallet(){
 
 try{
 
-if(!window.ethereum){
+/* ================= INJECTED WALLET ================= */
 
-alert("Install MetaMask");
-
-return;
-
-}
+if(window.ethereum){
 
 await window.ethereum.request({
 method:"eth_requestAccounts"
@@ -283,19 +66,77 @@ new ethers.providers.Web3Provider(
 window.ethereum
 );
 
+}
+
+/* ================= WALLETCONNECT ================= */
+
+else{
+
+const EthereumProvider =
+window.EthereumProvider ||
+window["@walletconnect/ethereum-provider"];
+
+if(!EthereumProvider){
+
+alert("WalletConnect failed to load");
+
+return;
+
+}
+
+const wcProvider =
+await EthereumProvider.init({
+
+projectId: PROJECT_ID,
+
+chains:[137],
+
+showQrModal:true,
+
+methods:[
+"eth_sendTransaction",
+"personal_sign",
+"eth_signTransaction",
+"eth_signTypedData",
+"eth_signTypedData_v4"
+]
+
+});
+
+await wcProvider.connect();
+
+provider =
+new ethers.providers.Web3Provider(
+wcProvider
+);
+
+}
+
+/* ================= NETWORK ================= */
+
 const network =
 await provider.getNetwork();
 
 if(network.chainId !== 137){
 
-await window.ethereum.request({
-method:"wallet_switchEthereumChain",
-params:[{
-chainId:"0x89"
-}]
-});
+try{
+
+await provider.send(
+"wallet_switchEthereumChain",
+[{ chainId:"0x89" }]
+);
+
+}catch(switchError){
+
+console.log(switchError);
+
+alert("Please switch to Polygon Mainnet");
 
 }
+
+}
+
+/* ================= SIGNER ================= */
 
 signer =
 provider.getSigner();
@@ -303,10 +144,14 @@ provider.getSigner();
 wallet =
 await signer.getAddress();
 
+/* ================= UI ================= */
+
 walletDisplay.innerText =
 wallet.slice(0,6) +
 "..." +
 wallet.slice(-4);
+
+/* ================= CONTRACTS ================= */
 
 game =
 new ethers.Contract(
@@ -322,6 +167,8 @@ TREASURY_ABI,
 signer
 );
 
+/* ================= LOAD PLAYER ================= */
+
 loadPlayer();
 
 }catch(err){
@@ -329,12 +176,15 @@ loadPlayer();
 console.log(err);
 
 alert(
-err.message || "Wallet connection failed"
+err.message ||
+"Wallet connection failed"
 );
 
 }
 
 }
+
+/* ================= LOAD PLAYER ================= */
 
 async function loadPlayer(){
 
@@ -361,6 +211,8 @@ console.log(err);
 }
 
 }
+
+/* ================= TAP ================= */
 
 async function tapGame(){
 
@@ -391,6 +243,8 @@ alert("Tap failed");
 
 }
 
+/* ================= REFILL ================= */
+
 async function refillEnergy(){
 
 if(!game){
@@ -420,6 +274,8 @@ alert("Refill failed");
 
 }
 
+/* ================= CONVERT ================= */
+
 async function convertPoints(){
 
 if(!game){
@@ -448,6 +304,8 @@ alert("Need 10 points");
 }
 
 }
+
+/* ================= CLAIM ================= */
 
 async function claimPVLT(){
 
@@ -479,6 +337,8 @@ alert("Claim failed");
 }
 
 }
+
+/* ================= BUTTONS ================= */
 
 document
 .getElementById("connectBtn")
@@ -515,6 +375,8 @@ document
 claimPVLT
 );
 
+/* ================= AUTO RECONNECT ================= */
+
 window.addEventListener(
 "load",
 async()=>{
@@ -522,7 +384,7 @@ async()=>{
 if(window.ethereum){
 
 const accounts =
-await ethereum.request({
+await window.ethereum.request({
 method:"eth_accounts"
 });
 
@@ -538,6 +400,3 @@ connectWallet();
 );
 
 </script>
-
-</body>
-</html>
