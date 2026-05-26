@@ -5,75 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PepeVolt UI</title>
     <style>
-        body {
-            background-color: #0d1117;
-            color: white;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
-        }
-
-        .top-nav {
-            width: 100%;
-            max-width: 320px;
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            margin-bottom: 20px;
-            font-size: 14px;
-            font-weight: bold;
-        }
-
-        .tap-circle {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: linear-gradient(to bottom, #77b897 50%, #4a4f56 50%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 24px;
-            margin: 20px 0;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .main-container {
-            background-color: #1a1f26;
-            padding: 20px;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 320px;
-            text-align: center;
-        }
-
-        .btn {
-            background-color: #3b82f6;
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            width: 100%;
-            max-width: 320px;
-            margin: 8px 0;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .secondary-btn {
-            background-color: #2d3748;
-            color: #a0aec0;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            width: 100%;
-            margin: 8px 0;
-            cursor: not-allowed;
-        }
+        body { background-color: #0d1117; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .top-nav { width: 100%; max-width: 320px; display: flex; justify-content: space-between; padding: 10px 0; margin-bottom: 20px; font-size: 14px; font-weight: bold; }
+        .tap-circle { width: 200px; height: 200px; border-radius: 50%; background: linear-gradient(to bottom, #77b897 50%, #4a4f56 50%); display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 24px; margin: 20px 0; cursor: pointer; user-select: none; }
+        .main-container { background-color: #1a1f26; padding: 20px; border-radius: 15px; width: 100%; max-width: 320px; text-align: center; }
+        .btn { background-color: #3b82f6; color: white; padding: 12px; border-radius: 8px; border: none; width: 100%; max-width: 320px; margin: 8px 0; cursor: pointer; font-weight: 600; }
+        .secondary-btn { background-color: #2d3748; color: #a0aec0; padding: 12px; border-radius: 8px; border: none; width: 100%; margin: 8px 0; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -103,11 +40,11 @@
 
         const modal = createAppKit({
             adapters: [new EthersAdapter()],
-            networks: [polygon], // Set specifically to Polygon
+            networks: [polygon],
             metadata: {
                 name: 'PepeVolt',
                 description: 'PepeVolt Game',
-                url: window.location.origin,
+                url: 'https://pepevolt.github.io', // Ensure this matches your GitHub Pages URL
                 icons: ['https://avatars.githubusercontent.com/u/179229932']
             },
             projectId,
@@ -119,9 +56,8 @@
 
         modal.subscribeState((state) => {
             if (state.isConnected) {
-                // Shorten address to look professional
                 const address = state.address;
-                btn.innerText = address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : "Connected";
+                btn.innerText = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
             } else {
                 btn.innerText = "Connect Wallet";
             }
