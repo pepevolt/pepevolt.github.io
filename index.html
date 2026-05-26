@@ -16,7 +16,6 @@
             margin: 0;
         }
 
-        /* Top Navigation Bar */
         .top-nav {
             width: 100%;
             max-width: 320px;
@@ -79,11 +78,14 @@
 <body>
 
     <div class="top-nav">
-        <div>⚡ 0</div> <div>💎 0</div> <div>🪙 0</div> </div>
+        <div>⚡ 0</div>
+        <div>💎 0</div>
+        <div>🪙 0</div>
+    </div>
 
     <div class="tap-circle" onclick="console.log('Tapped!')">TAP!</div>
 
-    <button class="btn" style="max-width: 320px;">Connect Wallet</button>
+    <button id="walletBtn" class="btn" style="max-width: 320px;" onclick="toggleWallet()">Connect Wallet</button>
     
     <div class="main-container">
         <button class="secondary-btn">Buy</button>
@@ -91,5 +93,21 @@
         <button class="secondary-btn">Claim</button>
     </div>
 
+    <script>
+        let isConnected = false;
+
+        function toggleWallet() {
+            const btn = document.getElementById('walletBtn');
+            if (!isConnected) {
+                // Logic to connect (e.g., window.ethereum.request)
+                btn.innerText = "0x8ed3...324b"; // Simulated address
+                isConnected = true;
+            } else {
+                // Logic to disconnect
+                btn.innerText = "Connect Wallet";
+                isConnected = false;
+            }
+        }
+    </script>
 </body>
 </html>
