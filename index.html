@@ -3,14 +3,12 @@
 <head>
 <meta charset="UTF-8">
 
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
 <title>PepeVolt</title>
 
 <style>
+
 *{
   margin:0;
   padding:0;
@@ -36,22 +34,16 @@ body{
   width:100%;
   max-width:430px;
   height:100vh;
-  height:100dvh;
   background: radial-gradient(circle at top,#183153 0%,#07111f 75%);
   display:flex;
   flex-direction:column;
-  padding:
-  max(16px, env(safe-area-inset-top))
-  16px
-  max(16px, env(safe-area-inset-bottom));
-  overflow:hidden;
+  padding:16px;
 }
 
+/* TOP */
 .top-nav{
-  width:100%;
   display:flex;
   gap:10px;
-  margin-top:5px;
 }
 
 .nav-box{
@@ -59,14 +51,13 @@ body{
   background:rgba(255,255,255,0.05);
   border:1px solid rgba(255,255,255,0.08);
   border-radius:18px;
-  padding:12px 8px;
+  padding:12px;
   text-align:center;
 }
 
 .nav-title{
   font-size:11px;
   color:#9fb2d0;
-  margin-bottom:6px;
 }
 
 .nav-value{
@@ -75,28 +66,20 @@ body{
   color:white;
 }
 
-.wallet-wrap{
-  width:100%;
-  margin-top:16px;
-}
-
+/* BUTTON */
 #connectBtn{
+  margin-top:14px;
   width:100%;
   border:none;
-  outline:none;
   border-radius:18px;
   padding:15px;
-  color:white;
   font-size:16px;
   font-weight:bold;
-  cursor:pointer;
+  color:white;
   background:linear-gradient(135deg,#00b894,#00cec9);
 }
 
-#connectBtn:active{
-  transform:scale(0.98);
-}
-
+/* CENTER */
 .center{
   flex:1;
   display:flex;
@@ -104,7 +87,9 @@ body{
   align-items:center;
 }
 
+/* TAP CIRCLE */
 .tap-circle{
+  position:relative;
   width:min(62vw,240px);
   height:min(62vw,240px);
   border-radius:50%;
@@ -115,40 +100,46 @@ body{
   align-items:center;
   box-shadow:0 0 80px rgba(255,180,0,0.45);
   cursor:pointer;
-  user-select:none;
 }
 
-.tap-circle:active{
-  transform:scale(0.95);
+/* PROGRESS RING */
+.progress-ring{
+  position:absolute;
+  top:-8px;
+  left:-8px;
+  width:calc(100% + 16px);
+  height:calc(100% + 16px);
+  transform:rotate(-90deg);
 }
 
-.tap-circle img{
-  width:30%;
-  height:30%;
-  pointer-events:none;
+circle{
+  fill:none;
+  stroke-width:10;
 }
 
+.bg{
+  stroke:rgba(255,255,255,0.15);
+}
+
+.fg{
+  stroke:#00cec9;
+  stroke-linecap:round;
+  transition:stroke-dashoffset 0.3s linear;
+}
+
+/* ACTIONS */
 .actions{
-  width:100%;
   display:flex;
   flex-direction:column;
   gap:12px;
 }
 
 .action-btn{
-  width:100%;
-  border:none;
-  outline:none;
-  border-radius:18px;
   padding:16px;
+  border:none;
+  border-radius:18px;
   color:white;
-  font-size:16px;
   font-weight:bold;
-  cursor:pointer;
-}
-
-.action-btn:active{
-  transform:scale(0.98);
 }
 
 .buy{
@@ -159,12 +150,11 @@ body{
   background:linear-gradient(135deg,#ffb347,#ff7b54);
 }
 
+/* FLOAT */
 .float{
   position:fixed;
   color:white;
   font-weight:bold;
-  pointer-events:none;
-  z-index:9999;
   animation:floatUp 1s linear forwards;
 }
 
@@ -172,6 +162,7 @@ body{
   0%{opacity:1;transform:translateY(0);}
   100%{opacity:0;transform:translateY(-70px);}
 }
+
 </style>
 </head>
 
@@ -196,75 +187,90 @@ body{
     </div>
   </div>
 
-  <div class="wallet-wrap">
-    <button id="connectBtn">Connect Wallet</button>
-  </div>
+  <button id="connectBtn">Connect Wallet</button>
 
   <div class="center">
+
     <div class="tap-circle" id="tapBtn">
-      <img src="https://cdn-icons-png.flaticon.com/512/825/825508.png">
+
+      <!-- PROGRESS RING -->
+      <svg class="progress-ring">
+        <circle class="bg" cx="120" cy="120" r="110"></circle>
+        <circle class="fg" cx="120" cy="120" r="110"></circle>
+      </svg>
+
+      <img src="https://cdn-icons-png.flaticon.com/512/825/825508.png" width="30%">
+
     </div>
+
   </div>
 
   <div class="actions">
-    <button class="action-btn buy" id="buyBtn">
-      Buy 10000 Energy
-    </button>
-
-    <button class="action-btn claim" id="claimBtn">
-      Claim PVLT
-    </button>
+    <button class="action-btn buy" id="buyBtn">Buy 10000 Energy</button>
+    <button class="action-btn claim" id="claimBtn">Claim PVLT</button>
   </div>
 
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 
 <script>
 
 const connectBtn = document.getElementById('connectBtn');
 const tapBtn = document.getElementById('tapBtn');
-const buyBtn = document.getElementById('buyBtn');
-const claimBtn = document.getElementById('claimBtn');
 
 const energyEl = document.getElementById('energy');
 const pointsEl = document.getElementById('points');
 const pvltEl = document.getElementById('pvlt');
 
-let connected = false;
-let userAddress = '';
+const fg = document.querySelector('.fg');
 
-let energy = 100;
-let points = 0;
-let pvlt = 0;
+let connected=false;
+let energy=100;
+let points=0;
+let pvlt=0;
+
+const MAX_ENERGY=100;
+
+/* RING SETUP */
+const radius = 110;
+const circumference = 2 * Math.PI * radius;
+
+fg.style.strokeDasharray = circumference;
+fg.style.strokeDashoffset = 0;
+
+/* UPDATE RING */
+function updateRing(){
+  const percent = energy / MAX_ENERGY;
+  fg.style.strokeDashoffset = circumference * (1 - percent);
+}
+
+/* ENERGY REGEN +1 PER SECOND */
+setInterval(()=>{
+  if(energy < MAX_ENERGY){
+    energy += 1;
+    energyEl.innerText = energy;
+    updateRing();
+  }
+},1000);
 
 /* CONNECT */
 connectBtn.addEventListener('click', async ()=>{
 
-  try{
-
-    if(!window.ethereum){
-      alert('Please Install MetaMask');
-      return;
-    }
-
-    const accounts = await window.ethereum.request({
-      method:'eth_requestAccounts'
-    });
-
-    userAddress = accounts[0];
-    connected = true;
-
-    connectBtn.innerText =
-      userAddress.slice(0,6) + '...' + userAddress.slice(-4);
-
-  }catch(err){
-    alert('Wallet Connection Failed');
+  if(!window.ethereum){
+    alert('Install MetaMask');
+    return;
   }
 
+  const accounts = await window.ethereum.request({
+    method:'eth_requestAccounts'
+  });
+
+  connectBtn.innerText =
+    accounts[0].slice(0,6)+'...'+accounts[0].slice(-4);
+
+  connected=true;
 });
 
-/* TAP (UPDATED RULES) */
+/* TAP */
 tapBtn.addEventListener('click',(e)=>{
 
   if(!connected){
@@ -272,78 +278,32 @@ tapBtn.addEventListener('click',(e)=>{
     return;
   }
 
-  if(energy <= 0){
+  if(energy<=0){
     alert('No Energy');
     return;
   }
 
-  /* -1 ENERGY */
-  energy -= 1;
+  energy-=1;
+  points+=1;
 
-  /* +1 POINT */
-  points += 1;
-
-  /* 1000 POINTS = 1 PVLT */
-  if(points >= 1000){
-    const minted = Math.floor(points / 1000);
-    points = points % 1000;
-    pvlt += minted;
+  if(points>=1000){
+    pvlt += Math.floor(points/1000);
+    points = points%1000;
   }
 
-  energyEl.innerText = energy;
-  pointsEl.innerText = points;
-  pvltEl.innerText = pvlt;
+  energyEl.innerText=energy;
+  pointsEl.innerText=points;
+  pvltEl.innerText=pvlt;
 
-  const float = document.createElement('div');
-  float.className = 'float';
-  float.innerText = '+1 Point';
-  float.style.left = e.clientX + 'px';
-  float.style.top = e.clientY + 'px';
+  updateRing();
 
-  document.body.appendChild(float);
-
-  setTimeout(()=> float.remove(), 1000);
-});
-
-/* BUY ENERGY */
-buyBtn.addEventListener('click',()=>{
-
-  if(!connected){
-    alert('Connect Wallet First');
-    return;
-  }
-
-  if(pvlt < 100){
-    alert('Need 100 PVLT');
-    return;
-  }
-
-  pvlt -= 100;
-  energy += 10000;
-
-  energyEl.innerText = energy;
-  pvltEl.innerText = pvlt;
-
-  alert('+10000 Energy Added');
-});
-
-/* CLAIM */
-claimBtn.addEventListener('click',()=>{
-
-  if(!connected){
-    alert('Connect Wallet First');
-    return;
-  }
-
-  if(pvlt <= 0){
-    alert('No PVLT To Claim');
-    return;
-  }
-
-  alert(pvlt + ' PVLT Claimed To Wallet:\n\n' + userAddress);
-
-  pvlt = 0;
-  pvltEl.innerText = pvlt;
+  const f=document.createElement('div');
+  f.className='float';
+  f.innerText='+1 Point';
+  f.style.left=e.clientX+'px';
+  f.style.top=e.clientY+'px';
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(),1000);
 
 });
 
