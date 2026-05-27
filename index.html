@@ -57,7 +57,7 @@
     <div class="modal-overlay" id="buyModal">
         <div class="modal-box">
             <h3>Buy Energy Pack</h3>
-            <p>Buy <b>100,000 Energy</b> for <b>100 PVLT</b></p>
+            <p>Buy <b>10,000 Energy</b> for <b>100 PVLT</b></p>
             <div class="modal-buttons">
                 <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
                 <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
@@ -151,7 +151,7 @@
                 if(data.energy !== undefined) {
                     energy = data.energy;
                     updateUI();
-                    alert("100,000 Energy Added Successfully!");
+                    alert("10,000 Energy Added Successfully!");
                 }
             } catch(err){ 
                 console.error(err);
