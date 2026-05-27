@@ -40,7 +40,6 @@ body{
   padding:16px;
 }
 
-/* TOP */
 .top-nav{
   display:flex;
   gap:10px;
@@ -66,7 +65,6 @@ body{
   color:white;
 }
 
-/* CONNECT */
 #connectBtn{
   margin-top:14px;
   width:100%;
@@ -79,7 +77,6 @@ body{
   background:linear-gradient(135deg,#00b894,#00cec9);
 }
 
-/* CENTER */
 .center{
   flex:1;
   display:flex;
@@ -87,7 +84,6 @@ body{
   align-items:center;
 }
 
-/* TAP CIRCLE */
 .tap-circle{
   position:relative;
   width:min(60vw,230px);
@@ -102,7 +98,6 @@ body{
   cursor:pointer;
 }
 
-/* SVG perfectly centered */
 .progress-ring{
   position:absolute;
   inset:0;
@@ -111,7 +106,14 @@ body{
   transform:rotate(-90deg);
 }
 
-/* ACTIONS */
+.fg{
+  stroke:#00cec9;
+  stroke-width:8;
+  fill:none;
+  stroke-linecap:round;
+  transition:stroke-dashoffset 0.3s linear;
+}
+
 .actions{
   display:flex;
   flex-direction:column;
@@ -134,7 +136,6 @@ body{
   background:linear-gradient(135deg,#ffb347,#ff7b54);
 }
 
-/* FLOAT */
 .float{
   position:fixed;
   color:white;
@@ -178,10 +179,9 @@ body{
 
     <div class="tap-circle" id="tapBtn">
 
-      <!-- PERFECTLY ALIGNED RING -->
       <svg class="progress-ring">
-        <circle cx="50%" cy="50%" r="48%" stroke="rgba(255,255,255,0.15)" stroke-width="8" fill="none"/>
-        <circle class="fg" cx="50%" cy="50%" r="48%" stroke="#00cec9" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <circle cx="50%" cy="50%" r="48%" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
+        <circle class="fg" cx="50%" cy="50%" r="48%" />
       </svg>
 
       <img src="https://cdn-icons-png.flaticon.com/512/825/825508.png" width="32%">
@@ -200,61 +200,60 @@ body{
 <script>
 
 const connectBtn=document.getElementById('connectBtn');
-const tapBtn=document.getElementById('tapBtn');
-
 const energyEl=document.getElementById('energy');
 const pointsEl=document.getElementById('points');
 const pvltEl=document.getElementById('pvlt');
-
 const fg=document.querySelector('.fg');
 
 let connected=false;
+
 let energy=100;
 let points=0;
 let pvlt=0;
 
 const MAX_ENERGY=100;
 
-/* RING SETUP (responsive fix) */
-const radius = 48;
-const circumference = 2 * Math.PI * radius;
+/* RING SETUP */
+const radius=48;
+const circumference=2*Math.PI*radius;
 
-fg.style.strokeDasharray = circumference;
-fg.style.strokeDashoffset = 0;
+fg.style.strokeDasharray=circumference;
+fg.style.strokeDashoffset=0;
 
 function updateRing(){
-  const percent = energy / MAX_ENERGY;
-  fg.style.strokeDashoffset = circumference * (1 - percent);
+  const percent=energy/MAX_ENERGY;
+  fg.style.strokeDashoffset=circumference*(1-percent);
 }
 
-/* ENERGY REGEN */
+/* ⚡ ENERGY REGEN FIXED: +1 EVERY 5 SECONDS */
 setInterval(()=>{
-  if(energy < MAX_ENERGY){
+  if(energy<MAX_ENERGY){
     energy++;
     energyEl.innerText=energy;
     updateRing();
   }
-},1000);
+},5000);
 
 /* CONNECT */
-connectBtn.addEventListener('click', async ()=>{
+connectBtn.addEventListener('click',async()=>{
+
   if(!window.ethereum){
     alert('Install MetaMask');
     return;
   }
 
-  const accounts = await window.ethereum.request({
+  const accounts=await window.ethereum.request({
     method:'eth_requestAccounts'
   });
 
-  connectBtn.innerText =
+  connectBtn.innerText=
     accounts[0].slice(0,6)+'...'+accounts[0].slice(-4);
 
   connected=true;
 });
 
 /* TAP */
-tapBtn.addEventListener('click',(e)=>{
+document.getElementById('tapBtn').addEventListener('click',(e)=>{
 
   if(!connected){
     alert('Connect Wallet First');
@@ -270,8 +269,8 @@ tapBtn.addEventListener('click',(e)=>{
   points++;
 
   if(points>=1000){
-    pvlt += Math.floor(points/1000);
-    points = points%1000;
+    pvlt+=Math.floor(points/1000);
+    points=points%1000;
   }
 
   energyEl.innerText=energy;
