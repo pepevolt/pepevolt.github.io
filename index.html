@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect Wallet</title>
+    <title>PepeVolt | Connect</title>
     <style>
         body {
             display: flex;
@@ -15,7 +15,7 @@
             font-family: sans-serif;
         }
         #connect-button {
-            padding: 12px 24px;
+            padding: 14px 28px;
             font-size: 16px;
             font-weight: 600;
             color: #ffffff;
@@ -23,9 +23,13 @@
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            transition: 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
-        #connect-button:hover { background-color: #2563eb; }
+        #connect-button:hover {
+            background-color: #2563eb;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -33,30 +37,33 @@
     <button id="connect-button">Connect Wallet</button>
 
     <script type="module">
-        import { createWeb3Modal, defaultConfig } from 'https://cdn.jsdelivr.net/npm/@web3modal/ethers@latest/+esm'
+        import { createAppKit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@latest/+esm'
+        import { EthersAdapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers@latest/+esm'
+        import { mainnet } from 'https://cdn.jsdelivr.net/npm/@reown/appkit/networks@latest/+esm'
 
-        // IMPORTANT: Replace this with your own ID from https://cloud.walletconnect.com/
-        const projectId = '1731f99148b9cf6107dee70b6efb14b7' 
+        // 1. Get your Project ID from https://cloud.reown.com/
+        const projectId = 'YOUR_ACTUAL_PROJECT_ID'
 
+        // 2. Metadata (Must match your site)
         const metadata = {
-            name: 'My Website',
-            description: 'Connect Wallet Example',
-            url: window.location.origin, 
+            name: 'PepeVolt',
+            description: 'Connect to your wallet',
+            url: 'https://pepevolt.github.io', 
             icons: ['https://avatars.githubusercontent.com/u/37784886']
         }
 
-        const modal = createWeb3Modal({
-            ethersConfig: defaultConfig({ metadata }),
-            chains: [{
-                chainId: 1,
-                name: 'Ethereum',
-                currency: 'ETH',
-                explorerUrl: 'https://etherscan.io',
-                rpcUrl: 'https://cloudflare-eth.com'
-            }],
-            projectId
+        // 3. Create Modal Instance
+        const modal = createAppKit({
+            adapters: [new EthersAdapter()],
+            networks: [mainnet],
+            metadata,
+            projectId,
+            features: {
+                analytics: true 
+            }
         })
 
+        // 4. Attach event
         document.getElementById('connect-button').addEventListener('click', () => {
             modal.open()
         })
