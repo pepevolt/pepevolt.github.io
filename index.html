@@ -7,13 +7,41 @@
 
 <style>
 body {
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
     margin:0;
     background:#0f0f12;
     font-family:sans-serif;
+    color:white;
+}
+
+/* TOP NAV */
+.top-nav {
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    padding:12px 10px;
+    background:#11131a;
+    border-bottom:1px solid #222;
+    font-size:20px;
+}
+
+/* NAV ITEMS */
+.nav-item {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-weight:600;
+}
+
+/* CENTER CONTENT */
+.center {
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
 }
 
 #connect-button {
@@ -37,17 +65,25 @@ body {
 
 <body>
 
-<button id="connect-button">Connect Wallet</button>
+<!-- TOP NAV -->
+<div class="top-nav">
+    <div class="nav-item">⚡ 0</div>
+    <div class="nav-item">🪙 0</div>
+    <div class="nav-item">💎 0</div>
+</div>
+
+<!-- CENTER BUTTON -->
+<div class="center">
+    <button id="connect-button">Connect Wallet</button>
+</div>
 
 <script type="module">
 import { createAppKit } from "https://esm.sh/@reown/appkit"
 import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers"
 import { mainnet, polygon } from "https://esm.sh/@reown/appkit/networks"
 
-// IMPORTANT: must match Reown Cloud project settings
 const projectId = "1731f99148b9cf6107dee70b6efb14b7"
 
-// Create modal
 const modal = createAppKit({
     projectId,
     adapters: [new EthersAdapter()],
@@ -60,13 +96,9 @@ const modal = createAppKit({
     }
 })
 
-// Button opens wallet modal
-document.getElementById("connect-button").addEventListener("click", async () => {
-    try {
-        modal.open()
-    } catch (e) {
-        console.log("Wallet modal error:", e)
-    }
+// OPEN WALLET
+document.getElementById("connect-button").addEventListener("click", () => {
+    modal.open()
 })
 </script>
 
