@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+/>
 
 <title>PepeVolt</title>
 
@@ -21,47 +24,53 @@ html,body{
   height:100%;
   overflow:hidden;
   font-family:Arial,sans-serif;
-  background:#050b16;
-  color:white;
+  background:#06101d;
+  touch-action:manipulation;
 }
 
-/* MAIN APP */
+/* APP */
 
 .app{
+
   width:100%;
   max-width:430px;
+
+  height:100vh;
   height:100dvh;
+
   margin:auto;
-  position:relative;
 
   background:
-  radial-gradient(circle at top,#13233d 0%,#050b16 70%);
-
-  overflow:hidden;
+  radial-gradient(circle at top,#13233d 0%,#07111f 75%);
 
   display:flex;
   flex-direction:column;
-  align-items:center;
 
   padding:
-  env(safe-area-inset-top)
+  max(16px, env(safe-area-inset-top))
   16px
-  env(safe-area-inset-bottom);
+  max(16px, env(safe-area-inset-bottom));
+
+  position:relative;
+
+  overflow:hidden;
 }
 
 /* TOP NAV */
 
 .top-nav{
+
   width:100%;
+
   display:flex;
-  justify-content:space-between;
   gap:10px;
-  margin-top:10px;
+
+  margin-top:5px;
 }
 
 .nav-box{
+
   flex:1;
-  min-width:0;
 
   background:rgba(255,255,255,0.05);
 
@@ -78,33 +87,44 @@ html,body{
 }
 
 .nav-title{
+
   font-size:11px;
-  color:#9eb0cb;
+  color:#9fb2d0;
+
   margin-bottom:6px;
 }
 
 .nav-value{
-  font-size:17px;
+
+  font-size:18px;
   font-weight:bold;
+  color:white;
 }
 
-/* CONNECT BUTTON */
+/* CONNECT */
 
 .wallet-wrap{
+
   width:100%;
   margin-top:16px;
 }
 
 #connectBtn{
+
   width:100%;
+
   border:none;
+  outline:none;
+
   border-radius:18px;
+
   padding:15px;
 
-  font-size:15px;
+  font-size:16px;
   font-weight:bold;
 
   color:white;
+
   cursor:pointer;
 
   background:
@@ -115,35 +135,35 @@ html,body{
   );
 
   box-shadow:
-  0 0 25px rgba(0,255,200,0.2);
+  0 0 25px rgba(0,255,200,0.25);
 
-  transition:0.15s;
+  position:relative;
+  z-index:10;
 }
 
 #connectBtn:active{
   transform:scale(0.98);
 }
 
-/* CENTER AREA */
+/* CENTER */
 
-.center-area{
+.center{
+
   flex:1;
-
-  width:100%;
 
   display:flex;
   justify-content:center;
   align-items:center;
 
-  position:relative;
+  width:100%;
 }
 
-/* TAP BUTTON */
+/* TAP */
 
 .tap-circle{
 
-  width:min(58vw,240px);
-  height:min(58vw,240px);
+  width:min(60vw,240px);
+  height:min(60vw,240px);
 
   border-radius:50%;
 
@@ -154,21 +174,22 @@ html,body{
   #ff8800
   );
 
-  border:7px solid rgba(255,255,255,0.9);
+  border:8px solid rgba(255,255,255,0.9);
 
   display:flex;
   justify-content:center;
   align-items:center;
 
+  box-shadow:
+  0 0 80px rgba(255,180,0,0.4),
+  inset 0 0 35px rgba(255,255,255,0.15);
+
   cursor:pointer;
 
-  box-shadow:
-  0 0 70px rgba(255,170,0,0.45),
-  inset 0 0 30px rgba(255,255,255,0.15);
-
-  transition:0.08s;
+  user-select:none;
 
   position:relative;
+  z-index:10;
 }
 
 .tap-circle:active{
@@ -176,38 +197,49 @@ html,body{
 }
 
 .tap-circle img{
+
   width:28%;
   height:28%;
+
   object-fit:contain;
-  user-select:none;
+
   pointer-events:none;
 }
 
-/* ACTION BUTTONS */
+/* BUTTONS */
 
 .actions{
+
   width:100%;
+
   display:flex;
   flex-direction:column;
+
   gap:12px;
 
-  margin-bottom:14px;
+  margin-bottom:10px;
 }
 
 .action-btn{
+
   width:100%;
+
   border:none;
+  outline:none;
+
   border-radius:18px;
 
   padding:16px;
 
   color:white;
+
   font-size:16px;
   font-weight:bold;
 
   cursor:pointer;
 
-  transition:0.15s;
+  position:relative;
+  z-index:10;
 }
 
 .action-btn:active{
@@ -216,38 +248,32 @@ html,body{
 
 .buy{
   background:
-  linear-gradient(
-  135deg,
-  #00b894,
-  #00cec9
-  );
+  linear-gradient(135deg,#00b894,#00cec9);
 }
 
 .convert{
   background:
-  linear-gradient(
-  135deg,
-  #6c5ce7,
-  #8e7dff
-  );
+  linear-gradient(135deg,#6c5ce7,#8e7dff);
 }
 
 .claim{
   background:
-  linear-gradient(
-  135deg,
-  #ffb347,
-  #ff7b54
-  );
+  linear-gradient(135deg,#ffb347,#ff7b54);
 }
 
-/* FLOAT TEXT */
+/* FLOAT */
 
 .float{
-  position:absolute;
+
+  position:fixed;
+
   color:white;
+
   font-weight:bold;
+
   pointer-events:none;
+
+  z-index:9999;
 
   animation:floatUp 1s linear forwards;
 }
@@ -267,15 +293,11 @@ html,body{
 
 /* MOBILE FIX */
 
-@media (max-height:700px){
+@media(max-height:700px){
 
   .tap-circle{
     width:190px;
     height:190px;
-  }
-
-  .actions{
-    gap:10px;
   }
 
   .action-btn{
@@ -295,22 +317,37 @@ html,body{
   <div class="top-nav">
 
     <div class="nav-box">
-      <div class="nav-title">⚡ Energy</div>
-      <div class="nav-value" id="energy">
+      <div class="nav-title">
+        ⚡ Energy
+      </div>
+
+      <div
+      class="nav-value"
+      id="energy">
         100
       </div>
     </div>
 
     <div class="nav-box">
-      <div class="nav-title">💎 gPVLT</div>
-      <div class="nav-value" id="gpvlt">
+      <div class="nav-title">
+        💎 gPVLT
+      </div>
+
+      <div
+      class="nav-value"
+      id="gpvlt">
         0
       </div>
     </div>
 
     <div class="nav-box">
-      <div class="nav-title">🪙 PVLT</div>
-      <div class="nav-value" id="pvlt">
+      <div class="nav-title">
+        🪙 PVLT
+      </div>
+
+      <div
+      class="nav-value"
+      id="pvlt">
         0
       </div>
     </div>
@@ -329,9 +366,11 @@ html,body{
 
   <!-- CENTER -->
 
-  <div class="center-area">
+  <div class="center">
 
-    <div class="tap-circle" id="tapBtn">
+    <div
+    class="tap-circle"
+    id="tapBtn">
 
       <img
       src="https://cdn-icons-png.flaticon.com/512/825/825508.png">
@@ -340,19 +379,25 @@ html,body{
 
   </div>
 
-  <!-- ACTIONS -->
+  <!-- BUTTONS -->
 
   <div class="actions">
 
-    <button class="action-btn buy">
+    <button
+    class="action-btn buy"
+    id="buyBtn">
       Buy
     </button>
 
-    <button class="action-btn convert">
+    <button
+    class="action-btn convert"
+    id="convertBtn">
       Convert
     </button>
 
-    <button class="action-btn claim">
+    <button
+    class="action-btn claim"
+    id="claimBtn">
       Claim
     </button>
 
@@ -362,6 +407,8 @@ html,body{
 
 <script type="module">
 
+/* WALLET */
+
 import { createAppKit }
 from 'https://esm.sh/@reown/appkit@latest';
 
@@ -370,6 +417,9 @@ from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
 
 import { polygon }
 from 'https://esm.sh/@reown/appkit/networks@latest';
+
+const connectBtn =
+document.getElementById('connectBtn');
 
 const projectId =
 '1731f99148b9cf6107dee70b6efb14b7';
@@ -397,14 +447,23 @@ const modal = createAppKit({
 
 });
 
-const connectBtn =
-document.getElementById('connectBtn');
+/* CONNECT CLICK */
 
-connectBtn.addEventListener('click',()=>{
+connectBtn.onclick = async ()=>{
 
-  modal.open();
+  try{
 
-});
+    await modal.open();
+
+  }catch(err){
+
+    console.log(err);
+
+  }
+
+};
+
+/* WALLET STATE */
 
 modal.subscribeState((state)=>{
 
@@ -426,25 +485,51 @@ modal.subscribeState((state)=>{
 
 });
 
-/* TAP SYSTEM */
+/* GAME */
 
 const tapBtn =
 document.getElementById('tapBtn');
+
+const buyBtn =
+document.getElementById('buyBtn');
+
+const convertBtn =
+document.getElementById('convertBtn');
+
+const claimBtn =
+document.getElementById('claimBtn');
+
+const energyEl =
+document.getElementById('energy');
+
+const gpvltEl =
+document.getElementById('gpvlt');
+
+const pvltEl =
+document.getElementById('pvlt');
 
 let energy = 100;
 let points = 0;
 let gpvlt = 0;
 let pvlt = 0;
 
-tapBtn.addEventListener('click',(e)=>{
+/* TAP */
 
-  if(energy <= 0) return;
+tapBtn.onclick = (e)=>{
+
+  if(energy <= 0){
+
+    alert('No Energy');
+
+    return;
+  }
 
   energy--;
   points++;
 
-  document.getElementById('energy')
-  .innerText = energy;
+  energyEl.innerText = energy;
+
+  /* 100 POINTS = 1 GPVLT */
 
   if(points >= 100){
 
@@ -452,9 +537,10 @@ tapBtn.addEventListener('click',(e)=>{
 
     gpvlt++;
 
-    document.getElementById('gpvlt')
-    .innerText = gpvlt;
+    gpvltEl.innerText = gpvlt;
   }
+
+  /* 100 GPVLT = 1 PVLT */
 
   if(gpvlt >= 100){
 
@@ -462,14 +548,12 @@ tapBtn.addEventListener('click',(e)=>{
 
     pvlt++;
 
-    document.getElementById('gpvlt')
-    .innerText = gpvlt;
+    gpvltEl.innerText = gpvlt;
 
-    document.getElementById('pvlt')
-    .innerText = pvlt;
+    pvltEl.innerText = pvlt;
   }
 
-  /* FLOATING */
+  /* FLOAT */
 
   const float =
   document.createElement('div');
@@ -478,22 +562,77 @@ tapBtn.addEventListener('click',(e)=>{
 
   float.innerText = '+1';
 
-  const rect =
-  tapBtn.getBoundingClientRect();
-
   float.style.left =
-  rect.left + rect.width/2 - 10 + 'px';
+  e.clientX + 'px';
 
   float.style.top =
-  rect.top + rect.height/2 - 20 + 'px';
+  e.clientY + 'px';
 
   document.body.appendChild(float);
 
   setTimeout(()=>{
+
     float.remove();
+
   },1000);
 
-});
+};
+
+/* BUY */
+
+buyBtn.onclick = ()=>{
+
+  energy += 100;
+
+  energyEl.innerText = energy;
+
+  alert('+100 Energy');
+
+};
+
+/* CONVERT */
+
+convertBtn.onclick = ()=>{
+
+  if(points < 100){
+
+    alert('Need 100 Points');
+
+    return;
+  }
+
+  points -= 100;
+
+  gpvlt++;
+
+  gpvltEl.innerText = gpvlt;
+
+  alert('+1 gPVLT');
+
+};
+
+/* CLAIM */
+
+claimBtn.onclick = ()=>{
+
+  if(gpvlt < 100){
+
+    alert('Need 100 gPVLT');
+
+    return;
+  }
+
+  gpvlt -= 100;
+
+  pvlt++;
+
+  gpvltEl.innerText = gpvlt;
+
+  pvltEl.innerText = pvlt;
+
+  alert('+1 PVLT');
+
+};
 
 </script>
 
