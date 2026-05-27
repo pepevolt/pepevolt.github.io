@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>PVLT Mining</title>
+<title>PVLT Mining Game</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
@@ -61,46 +61,30 @@ body{
   justify-content:center;
   align-items:center;
   flex-direction:column;
-  gap:20px;
+  gap:18px;
 }
 
-/* MINING BUTTON */
-.mineBtn{
+/* MINE BUTTON */
+.mine{
   width:min(240px, 70vw);
   height:min(240px, 70vw);
   border-radius:50%;
-  background:radial-gradient(circle at 30% 30%, #ffd700, #ff7b00);
-  box-shadow:0 0 60px rgba(255,180,0,0.25);
+  background:radial-gradient(circle at 30% 30%, #ffd700, #ff6a00);
   display:flex;
   justify-content:center;
   align-items:center;
   font-size:22px;
   font-weight:bold;
   user-select:none;
-  transition:0.1s;
+  box-shadow:0 0 50px rgba(255,170,0,0.25);
+  transition:0.08s;
 }
 
-.mineBtn:active{
-  transform:scale(0.94);
+.mine:active{
+  transform:scale(0.95);
 }
 
-/* PROGRESS */
-.bar{
-  width:70%;
-  height:10px;
-  background:#1c2235;
-  border-radius:20px;
-  overflow:hidden;
-}
-
-.fill{
-  height:100%;
-  width:50%;
-  background:linear-gradient(90deg,#ffb300,#ff3d00);
-  transition:0.2s;
-}
-
-/* BUTTON */
+/* BUTTONS */
 button{
   padding:10px 16px;
   border:none;
@@ -109,40 +93,35 @@ button{
   color:white;
   backdrop-filter: blur(10px);
 }
+
+button:active{
+  transform:scale(0.97);
+}
 </style>
 </head>
 
 <body>
 
-<!-- TOP -->
+<!-- TOP STATS -->
 <div class="topbar">
   <div class="stat">⚡ Energy <b id="energy">50</b></div>
-  <div class="stat">⛏ Mined <b id="points">0</b></div>
+  <div class="stat">⛏ Points <b id="points">0</b></div>
   <div class="stat">🪙 PVLT <b id="pvlt">0</b></div>
 </div>
 
 <!-- WALLET -->
 <div class="wallet">
-  <button onclick="connectWallet()">Connect Wallet</button>
+  <button onclick="connect()">Connect Wallet</button>
   <div id="wallet">Not Connected</div>
 </div>
 
-<!-- MAIN -->
+<!-- GAME -->
 <div class="main">
 
-  <div class="mineBtn" onclick="mine()">
-    MINE
-  </div>
+  <div class="mine" onclick="mine()">MINE</div>
 
-  <div class="bar">
-    <div class="fill" id="fill"></div>
-  </div>
+  <button onclick="claim()">Claim Rewards</button>
 
-  <div style="font-size:12px;opacity:0.8">
-    Mining Rate: +1 / tap • Auto regen energy
-  </div>
-
-  <button onclick="claim()">Claim PVLT</button>
 </div>
 
 <script>
@@ -150,27 +129,12 @@ let energy = 50;
 let points = 0;
 let pvlt = 0;
 
-let signer, user;
+let signer;
+let user;
+let nonce = 0;
 
-/* UI */
-function update(){
-  document.getElementById("energy").innerText = energy;
-  document.getElementById("points").innerText = points;
-  document.getElementById("pvlt").innerText = pvlt;
-
-  let percent = (energy/50)*100;
-  document.getElementById("fill").style.width = percent + "%";
-}
-
-/* MINING */
-function mine(){
-  if(energy <= 0) return;
-
-  energy--;
-  points++;
-
-  update();
-}
+/* CONTRACT CONFIG */
+const contractAddress = "YOUR_MINING_CONTRACT_ADDRESS";
 
 /* ENERGY REGEN */
 setInterval(()=>{
@@ -180,8 +144,25 @@ setInterval(()=>{
   }
 }, 2500);
 
-/* WALLET */
-async function connectWallet(){
+/* UPDATE UI */
+function update(){
+  document.getElementById("energy").innerText = energy;
+  document.getElementById("points").innerText = points;
+  document.getElementById("pvlt").innerText = pvlt;
+}
+
+/* MINE */
+function mine(){
+  if(energy <= 0) return;
+
+  energy--;
+  points++;
+
+  update();
+}
+
+/* CONNECT WALLET */
+async function connect(){
   if(!window.ethereum){
     alert("Install MetaMask");
     return;
@@ -197,19 +178,53 @@ async function connectWallet(){
     user.slice(0,6)+"..."+user.slice(-4);
 }
 
-/* CLAIM (mock logic ready for smart contract) */
+/* CLAIM (SIGNATURE-BASED READY) */
 async function claim(){
-  let tokens = Math.floor(points / 100);
-  if(tokens <= 0){
-    alert("Need more mining!");
+  if(!signer){
+    alert("Connect wallet first");
     return;
   }
 
-  pvlt += tokens;
-  points = 0;
+  let rewardPoints = points;
+  if(rewardPoints < 100){
+    alert("Need at least 100 points");
+    return;
+  }
 
-  alert("Claimed "+tokens+" PVLT (test mode)");
-  update();
+  try{
+    /* CREATE MESSAGE HASH */
+    const message = ethers.utils.solidityKeccak256(
+      ["address","uint","uint","address"],
+      [user, rewardPoints, nonce, contractAddress]
+    );
+
+    /* SIGN MESSAGE */
+    const signature = await signer.signMessage(
+      ethers.utils.arrayify(message)
+    );
+
+    /* HERE YOU WOULD CALL CONTRACT */
+    console.log({
+      user,
+      rewardPoints,
+      nonce,
+      signature
+    });
+
+    /* MOCK REWARD (replace with real contract call) */
+    let earned = Math.floor(rewardPoints / 100);
+    pvlt += earned;
+
+    points = 0;
+    nonce++;
+
+    alert("Claimed " + earned + " PVLT (mock)");
+
+    update();
+
+  } catch(e){
+    alert("Claim failed");
+  }
 }
 
 update();
