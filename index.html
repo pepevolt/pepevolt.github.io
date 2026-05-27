@@ -57,7 +57,7 @@
     <div class="modal-overlay" id="buyModal">
         <div class="modal-box">
             <h3>Buy Energy Pack</h3>
-            <p>Buy <b>10,000 Energy</b> for <b>100 PVLT</b></p>
+            <p>Buy <b>100,000 Energy</b> for <b>100 PVLT</b></p>
             <div class="modal-buttons">
                 <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
                 <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
@@ -73,54 +73,90 @@
 
         let web3Provider, wallet = "", points = 0, energy = 50, gpvlt = 0;
 
-        // Force a fresh provider connection whenever an action is taken
-        async function getFreshProvider() {
-            if (!window.ethereum) throw new Error("No wallet detected");
-            return new ethers.providers.Web3Provider(window.ethereum);
+        window.addEventListener('load', async () => {
+            if (window.ethereum && window.ethereum.selectedAddress) { await connectWallet(); }
+        });
+
+        function updateUI(){
+            document.getElementById("energy").innerText = Math.floor(energy);
+            document.getElementById("points").innerText = Math.floor(points);
+            document.getElementById("gpvlt").innerText = Number(gpvlt).toFixed(4);
+        }
+
+        async function saveProgress() {
+            if (!wallet) return;
+            try { await fetch(API + "/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wallet, points, energy }) }); }
+            catch (err) { console.error("Auto-save failed"); }
+        }
+
+        function tap(){
+            if(!wallet){ alert("Connect wallet first"); return; }
+            if(energy > 0){ points += 1; energy -= 1; updateUI(); } 
+            else { alert("Not enough energy!"); }
+        }
+
+        function openBuyModal(){ if(!wallet){ alert("Connect wallet first"); return; } document.getElementById("buyModal").classList.add("active"); }
+        function closeBuyModal(){ document.getElementById("buyModal").classList.remove("active"); }
+
+        async function connectWallet(){
+            try {
+                if(window.ethereum){
+                    await window.ethereum.request({method:"eth_requestAccounts"});
+                    web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+                } else {
+                    const wcProvider = await window["@walletconnect/ethereum-provider"].EthereumProvider.init({
+                        projectId: PROJECT_ID, chains:[137], showQrModal:true
+                    });
+                    await wcProvider.connect();
+                    web3Provider = new ethers.providers.Web3Provider(wcProvider);
+                }
+                const signer = web3Provider.getSigner();
+                wallet = await signer.getAddress();
+                document.getElementById("walletInput").value = wallet.slice(0,6) + "..." + wallet.slice(-4);
+                document.getElementById("walletBtn").innerText = "CONNECTED";
+                document.getElementById("walletStatus").style.display = "block";
+                
+                const res = await fetch(API + "/user", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet})});
+                const data = await res.json();
+                points = data.points || 0; energy = data.energy || 50; gpvlt = data.gpvlt || 0; updateUI();
+            } catch(err){ console.error(err); alert("Connection failed."); }
         }
 
         async function executeEnergyPurchase(){
             const btn = document.getElementById("confirmPaymentBtn");
+            btn.innerText = "Processing..."; btn.disabled = true;
             try {
-                btn.innerText = "Connecting..."; btn.disabled = true;
-                
-                // 1. Get fresh provider to avoid stale session errors
-                const provider = await getFreshProvider();
-                const signer = provider.getSigner();
-                
+                const signer = web3Provider.getSigner();
                 const contract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function transfer(address,uint256)"], signer);
-                
-                btn.innerText = "Confirm in Wallet...";
-                // 2. Set gas limit explicitly to avoid mobile estimation failures
-                const tx = await contract.transfer(GAME_TREASURY_ADDRESS, ethers.utils.parseUnits("100", TOKEN_DECIMALS), { gasLimit: 200000 });
-                
-                btn.innerText = "Mining...";
+                const tx = await contract.transfer(GAME_TREASURY_ADDRESS, ethers.utils.parseUnits("100", TOKEN_DECIMALS));
                 await tx.wait();
-                
-                const res = await fetch(API + "/refill", {
-                    method:"POST", 
-                    headers:{"Content-Type":"application/json"}, 
-                    body:JSON.stringify({wallet, txHash: tx.hash})
-                });
+                const res = await fetch(API + "/refill", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet, txHash: tx.hash})});
                 const data = await res.json();
-                
-                if(data.energy !== undefined) {
-                    energy = data.energy;
-                    updateUI();
-                    alert("Success! 10,000 Energy added.");
-                }
-            } catch(err){ 
-                console.error(err);
-                alert("Transaction failed. Ensure you are on Polygon Network and have sufficient MATIC for gas."); 
-            } finally { 
-                btn.innerText = "Confirm"; 
-                btn.disabled = false; 
-                closeBuyModal(); 
-            }
+                if(data.energy !== undefined) { energy = data.energy; updateUI(); alert("Energy Added!"); }
+            } catch(err){ console.error(err); alert("Transaction failed."); } finally { btn.innerText = "Confirm"; btn.disabled = false; closeBuyModal(); }
         }
 
-        // ... (Keep your existing tap, connectWallet, swapPoints, and claimPVLT functions here)
-        
+        async function swapPoints(){
+            if(!wallet){ alert("Connect wallet first"); return; }
+            if(points < 100){ alert("Minimum 100 Points required to swap"); return; }
+            try {
+                const res = await fetch(API + "/swap-points", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet, points})});
+                const data = await res.json();
+                points = 0; gpvlt = data.gpvlt; updateUI(); alert("Points swapped!");
+            } catch(err){ alert("Swap failed"); }
+        }
+
+        async function claimPVLT(){
+            if(!wallet){ alert("Connect wallet first"); return; }
+            if(gpvlt < 10){ alert("Need minimum 10 gPVLT to claim"); return; }
+            try {
+                const signer = web3Provider.getSigner();
+                await (await new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function approve(address,uint256)"], signer).approve(GAME_TREASURY_ADDRESS, ethers.utils.parseUnits(gpvlt.toString(), TOKEN_DECIMALS))).wait();
+                await fetch(API + "/claim-gpvlt", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet})});
+                gpvlt = 0; updateUI(); alert("PVLT claimed!");
+            } catch(err){ alert("Claim failed"); }
+        }
+
         setInterval(()=>{ if(energy < 50){ energy += 1; updateUI(); } }, 30000);
         setInterval(saveProgress, 15000);
         updateUI();
