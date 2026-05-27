@@ -3,91 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt | Official Treasury Dashboard</title>
+    <title>PepeVolt | Tap & Earn</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <style>
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body { background-color: #0f172a; color: white; font-family: sans-serif; }
+        .stat-card { background: #1e293b; border: 1px solid #334155; }
+        .tap-circle { 
+            width: 280px; height: 280px; 
+            background: radial-gradient(circle, #34d399 0%, #10b981 100%);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-weight: bold; font-size: 2rem; transition: transform 0.1s;
+        }
+        .tap-circle:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans">
+<body class="flex flex-col items-center min-h-screen p-4">
 
-    <nav class="glass sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-green-500 rounded-full animate-pulse"></div>
-            <span class="font-bold text-xl tracking-tight">PepeVolt</span>
+    <div class="flex gap-4 w-full max-w-sm mb-8">
+        <div class="stat-card flex-1 p-3 rounded-xl text-center">
+            <p class="text-[10px] uppercase text-slate-400">Energy</p>
+            <p id="energy" class="font-bold">0</p>
         </div>
-        <button id="walletBtn" class="bg-slate-800 hover:bg-slate-700 px-6 py-2 rounded-full border border-slate-600 transition-all font-medium">
-            Connect Wallet
-        </button>
-    </nav>
-
-    <main class="max-w-5xl mx-auto p-6 mt-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div class="glass p-6 rounded-2xl shadow-xl">
-                <p class="text-slate-400 text-sm uppercase tracking-wider font-semibold">Energy Level</p>
-                <h2 id="energy" class="text-4xl font-bold mt-2 text-green-400">--</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl shadow-xl">
-                <p class="text-slate-400 text-sm uppercase tracking-wider font-semibold">Total Points</p>
-                <h2 id="points" class="text-4xl font-bold mt-2 text-blue-400">--</h2>
-            </div>
-            <div class="glass p-6 rounded-2xl shadow-xl">
-                <p class="text-slate-400 text-sm uppercase tracking-wider font-semibold">Status</p>
-                <h2 id="status" class="text-lg font-bold mt-4 text-slate-500">Disconnected</h2>
-            </div>
+        <div class="stat-card flex-1 p-3 rounded-xl text-center">
+            <p class="text-[10px] uppercase text-slate-400">Points</p>
+            <p id="points" class="font-bold">0</p>
         </div>
+        <div class="stat-card flex-1 p-3 rounded-xl text-center">
+            <p class="text-[10px] uppercase text-slate-400">PVLT</p>
+            <p id="pvlt" class="font-bold">0</p>
+        </div>
+    </div>
 
-        <section>
-            <h3 class="text-xl font-semibold mb-6">Game Operations</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button onclick="handleAction('tap')" class="bg-green-600 hover:bg-green-500 p-6 rounded-2xl text-center font-bold transition-transform hover:scale-[1.02]">TAP TO EARN</button>
-                <button onclick="handleAction('refillEnergy')" class="glass p-6 rounded-2xl hover:bg-white/5 transition-all">Refill Energy</button>
-                <button onclick="handleAction('convertPoints')" class="glass p-6 rounded-2xl hover:bg-white/5 transition-all">Convert to PVLT</button>
-            </div>
-        </section>
-    </main>
+    <button onclick="handleAction('tap')" class="tap-circle shadow-[0_0_50px_rgba(16,185,129,0.3)] mb-8">
+        TAP!
+    </button>
+
+    <button id="connectBtn" class="w-full max-w-sm bg-blue-600 py-4 rounded-xl font-bold mb-6">
+        Connect Wallet
+    </button>
+
+    <div class="w-full max-w-sm space-y-3">
+        <button onclick="handleAction('refillEnergy')" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700">Refill Energy</button>
+        <button onclick="handleAction('convertPoints')" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700">Convert</button>
+        <button onclick="handleAction('claimRewards')" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700">Claim</button>
+    </div>
 
     <script>
-        const GAME_ADDRESS = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
-        const ABI = [
-            {"inputs":[],"name":"tap","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[],"name":"refillEnergy","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[],"name":"convertPoints","outputs":[],"stateMutability":"nonpayable","type":"function"},
-            {"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"players","outputs":[{"internalType":"uint256","name":"energy","type":"uint256"},{"internalType":"uint256","name":"points","type":"uint256"},{"internalType":"uint256","name":"burnedGPVLT","type":"uint256"},{"internalType":"bool","name":"paidUser","type":"bool"},{"internalType":"uint256","name":"lastClaimDay","type":"uint256"}],"stateMutability":"view","type":"function"}
-        ];
+        // Configuration
+        const CONTRACT_ADDRESS = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
+        const ABI = [{"inputs":[],"name":"tap","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"refillEnergy","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"convertPoints","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"players","outputs":[{"internalType":"uint256","name":"energy","type":"uint256"},{"internalType":"uint256","name":"points","type":"uint256"},{"internalType":"uint256","name":"burnedGPVLT","type":"uint256"},{"internalType":"bool","name":"paidUser","type":"bool"},{"internalType":"uint256","name":"lastClaimDay","type":"uint256"}],"stateMutability":"view","type":"function"}];
 
-        let signer, gameContract;
+        let provider, signer, contract;
 
-        document.getElementById('walletBtn').onclick = async () => {
-            const provider = new ethers.BrowserProvider(window.ethereum);
+        document.getElementById('connectBtn').onclick = async () => {
+            provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
-            gameContract = new ethers.Contract(GAME_ADDRESS, ABI, signer);
-            
-            document.getElementById('walletBtn').innerText = "Wallet Connected";
-            document.getElementById('status').innerText = "Active";
-            document.getElementById('status').className = "text-lg font-bold mt-4 text-green-400";
+            contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+            document.getElementById('connectBtn').innerText = "Wallet Connected";
             updateStats();
         };
 
         async function updateStats() {
-            if (!gameContract) return;
+            if (!contract) return;
             const addr = await signer.getAddress();
-            const stats = await gameContract.players(addr);
+            const stats = await contract.players(addr);
             document.getElementById('energy').innerText = stats.energy.toString();
             document.getElementById('points').innerText = stats.points.toString();
         }
 
         async function handleAction(fn) {
+            if (!contract) return alert("Connect Wallet first!");
             try {
-                const tx = await gameContract[fn]();
-                document.getElementById('status').innerText = "Processing...";
+                const tx = await contract[fn]();
                 await tx.wait();
                 updateStats();
-                document.getElementById('status').innerText = "Active";
-            } catch (err) {
-                alert("Transaction rejected or failed.");
-            }
+            } catch (e) { console.error(e); }
         }
     </script>
 </body>
