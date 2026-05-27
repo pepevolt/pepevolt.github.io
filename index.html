@@ -57,7 +57,7 @@
     <div class="modal-overlay" id="buyModal">
         <div class="modal-box">
             <h3>Buy Energy Pack</h3>
-            <p>Buy <b>10,000 Energy</b> for <b>100 PVLT</b></p>
+            <p>Buy <b>100,000 Energy</b> for <b>100 PVLT</b></p>
             <div class="modal-buttons">
                 <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
                 <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
@@ -100,17 +100,15 @@
 
         async function connectWallet(){
             try {
-                if (!web3Provider) {
-                    if(window.ethereum){
-                        await window.ethereum.request({method:"eth_requestAccounts"});
-                        web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-                    } else {
-                        const wcProvider = await window["@walletconnect/ethereum-provider"].EthereumProvider.init({
-                            projectId: PROJECT_ID, chains:[137], showQrModal:true
-                        });
-                        await wcProvider.connect();
-                        web3Provider = new ethers.providers.Web3Provider(wcProvider);
-                    }
+                if (window.ethereum) {
+                    await window.ethereum.request({method:"eth_requestAccounts"});
+                    web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+                } else {
+                    const wcProvider = await window["@walletconnect/ethereum-provider"].EthereumProvider.init({
+                        projectId: PROJECT_ID, chains:[137], showQrModal:true
+                    });
+                    await wcProvider.connect();
+                    web3Provider = new ethers.providers.Web3Provider(wcProvider);
                 }
                 const signer = web3Provider.getSigner();
                 wallet = await signer.getAddress();
@@ -123,8 +121,7 @@
                 points = data.points || 0; energy = data.energy || 50; gpvlt = data.gpvlt || 0; updateUI();
             } catch(err){ 
                 console.error(err); 
-                web3Provider = null;
-                alert("Connection failed."); 
+                alert("Connection failed. Please ensure you are on Polygon network."); 
             }
         }
 
@@ -132,13 +129,18 @@
             const btn = document.getElementById("confirmPaymentBtn");
             try {
                 btn.innerText = "Processing..."; btn.disabled = true;
+                
+                // Refresh provider connection
+                if(!window.ethereum) throw new Error("No provider");
+                web3Provider = new ethers.providers.Web3Provider(window.ethereum);
                 const signer = web3Provider.getSigner();
-                // Send transaction
+                
                 const contract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function transfer(address,uint256)"], signer);
-                const tx = await contract.transfer(GAME_TREASURY_ADDRESS, ethers.utils.parseUnits("100", TOKEN_DECIMALS));
+                
+                // Add gas limit to prevent transaction failure on mobile
+                const tx = await contract.transfer(GAME_TREASURY_ADDRESS, ethers.utils.parseUnits("100", TOKEN_DECIMALS), { gasLimit: 150000 });
                 await tx.wait();
                 
-                // Notify server to update energy
                 const res = await fetch(API + "/refill", {
                     method:"POST", 
                     headers:{"Content-Type":"application/json"}, 
@@ -146,7 +148,6 @@
                 });
                 const data = await res.json();
                 
-                // Reflect update on UI
                 if(data.energy !== undefined) {
                     energy = data.energy;
                     updateUI();
@@ -154,7 +155,7 @@
                 }
             } catch(err){ 
                 console.error(err);
-                alert("Transaction failed or cancelled."); 
+                alert("Transaction failed: " + (err.message || "User rejected or insufficient funds")); 
             } finally { 
                 btn.innerText = "Confirm"; 
                 btn.disabled = false; 
