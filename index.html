@@ -17,23 +17,32 @@ const modal = createAppKit({
     }
 })
 
-// open modal
 document.getElementById("connect-button").addEventListener("click", () => {
-    modal.open({ view: "Connect" })
+    modal.open()
+    
+    // Start checking connection AFTER modal opens
+    checkWalletConnection()
 })
 
-/*
-====================================================
-✅ REDIRECT AFTER WALLET CONNECT
-====================================================
-*/
-modal.subscribeState((state) => {
-    if (state?.address) {
-        console.log("Connected wallet:", state.address)
+async function checkWalletConnection() {
+    const interval = setInterval(async () => {
+        try {
+            // get wallet client from appkit
+            const walletClient = await modal.getWalletProvider?.()
 
-        setTimeout(() => {
-            window.location.href = "https://pepevolt.github.io/dashboard.html"
-        }, 700)
-    }
-})
+            if (walletClient?.accounts?.length > 0) {
+                clearInterval(interval)
+
+                const address = walletClient.accounts[0]
+                console.log("Connected:", address)
+
+                // redirect
+                window.location.href =
+                    "https://pepevolt.github.io/dashboard.html"
+            }
+        } catch (e) {
+            console.log("waiting for wallet...")
+        }
+    }, 500)
+}
 </script>
