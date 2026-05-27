@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PepeVolt | Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PepeVolt | Tap & Earn</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { createAppKit, defaultConfig } from 'https://esm.sh/@reown/appkit@1.0.0';
@@ -17,15 +18,24 @@
         const TOKEN_ABI = [{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}];
 
         const modal = createAppKit({
-            adapters: [defaultConfig({ metadata: { name: 'PepeVolt', description: 'Tap', url: 'https://pepevolt.github.io', icons: [] } })],
+            adapters: [defaultConfig({ metadata: { name: 'PepeVolt', description: 'Tap to Earn', url: 'https://pepevolt.github.io', icons: [] } })],
             networks: [mainnet],
             projectId
         });
 
         let signer, gameContract, tokenContract;
 
-        // Make connection trigger available
-        document.getElementById('connectBtn').onclick = () => modal.open();
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Connect Button
+            document.getElementById('connectBtn').addEventListener('click', () => modal.open());
+
+            // Game Action Buttons
+            document.getElementById('tapBtn').addEventListener('click', () => handleAction('tap'));
+            document.getElementById('refillBtn').addEventListener('click', () => handleAction('refillEnergy'));
+            document.getElementById('convertBtn').addEventListener('click', () => handleAction('convertPoints'));
+            document.getElementById('claimBtn').addEventListener('click', () => handleAction('claimRewards'));
+        });
 
         modal.subscribeState(async (state) => {
             if (state.isConnected) {
@@ -40,17 +50,18 @@
 
         async function updateStats() {
             if (!signer) return;
-            const addr = await signer.getAddress();
-            const stats = await gameContract.players(addr);
-            const balance = await tokenContract.balanceOf(addr);
-            document.getElementById('energy').innerText = stats.energy.toString();
-            document.getElementById('points').innerText = stats.points.toString();
-            document.getElementById('pvlt').innerText = (Number(balance) / 1e18).toFixed(2);
+            try {
+                const addr = await signer.getAddress();
+                const stats = await gameContract.players(addr);
+                const balance = await tokenContract.balanceOf(addr);
+                document.getElementById('energy').innerText = stats.energy.toString();
+                document.getElementById('points').innerText = stats.points.toString();
+                document.getElementById('pvlt').innerText = (Number(balance) / 1e18).toFixed(2);
+            } catch (e) { console.error("Stats update failed:", e); }
         }
 
-        // IMPORTANT: Attach functions to window so buttons can find them
-        window.handleAction = async (fn) => {
-            if (!gameContract) return alert("Connect Wallet first!");
+        async function handleAction(fn) {
+            if (!gameContract) return alert("Please connect your wallet first!");
             try {
                 const tx = await gameContract[fn]();
                 document.getElementById('connectBtn').innerText = "Processing...";
@@ -58,26 +69,37 @@
                 updateStats();
                 document.getElementById('connectBtn').innerText = "Wallet Connected";
             } catch (e) { 
-                console.error(e); 
-                alert("Transaction Failed");
+                console.error(e);
+                alert("Transaction failed or was rejected.");
             }
-        };
+        }
     </script>
+    <style>
+        body { background-color: #0f172a; color: white; font-family: sans-serif; }
+        .stat-card { background: #1e293b; border: 1px solid #334155; }
+        .tap-circle { 
+            width: 280px; height: 280px; background: radial-gradient(circle, #34d399 0%, #10b981 100%);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-weight: bold; font-size: 2rem; transition: transform 0.1s;
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-white flex flex-col items-center min-h-screen p-4">
+<body class="flex flex-col items-center min-h-screen p-4">
+
     <div class="flex gap-2 w-full max-w-sm mb-8">
-        <div class="bg-slate-800 p-3 rounded-xl flex-1 text-center"><p class="text-[10px] text-slate-400 uppercase">Energy</p><p id="energy" class="font-bold">0</p></div>
-        <div class="bg-slate-800 p-3 rounded-xl flex-1 text-center"><p class="text-[10px] text-slate-400 uppercase">Points</p><p id="points" class="font-bold">0</p></div>
-        <div class="bg-slate-800 p-3 rounded-xl flex-1 text-center"><p class="text-[10px] text-slate-400 uppercase">PVLT</p><p id="pvlt" class="font-bold">0</p></div>
+        <div class="stat-card flex-1 p-3 rounded-xl text-center"><p class="text-[10px] text-slate-400 uppercase">Energy</p><p id="energy" class="font-bold">0</p></div>
+        <div class="stat-card flex-1 p-3 rounded-xl text-center"><p class="text-[10px] text-slate-400 uppercase">Points</p><p id="points" class="font-bold">0</p></div>
+        <div class="stat-card flex-1 p-3 rounded-xl text-center"><p class="text-[10px] text-slate-400 uppercase">PVLT</p><p id="pvlt" class="font-bold">0</p></div>
     </div>
 
-    <button onclick="handleAction('tap')" class="w-64 h-64 bg-green-500 rounded-full mb-8 font-bold text-2xl">TAP!</button>
+    <button id="tapBtn" class="tap-circle mb-8 shadow-[0_0_50px_rgba(16,185,129,0.3)]">TAP!</button>
+    
     <button id="connectBtn" class="w-full max-w-sm bg-blue-600 py-4 rounded-xl font-bold mb-6">Connect Wallet</button>
 
     <div class="w-full max-w-sm space-y-3">
-        <button onclick="handleAction('refillEnergy')" class="w-full bg-slate-800 p-4 rounded-xl">Refill Energy</button>
-        <button onclick="handleAction('convertPoints')" class="w-full bg-slate-800 p-4 rounded-xl">Convert</button>
-        <button onclick="handleAction('claimRewards')" class="w-full bg-yellow-600 p-4 rounded-xl font-bold">Claim Rewards</button>
+        <button id="refillBtn" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700">Refill Energy</button>
+        <button id="convertBtn" class="w-full bg-slate-800 p-4 rounded-xl border border-slate-700">Convert</button>
+        <button id="claimBtn" class="w-full bg-yellow-600 p-4 rounded-xl font-bold text-slate-900">Claim Rewards</button>
     </div>
 </body>
 </html>
