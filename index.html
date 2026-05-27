@@ -114,15 +114,15 @@ const modal = createAppKit({
         url: window.location.origin,
         icons: ["https://avatars.githubusercontent.com/u/37784886"]
     }
-})
+});
 
-// GAME STATE
+/* ---------------- STATE ---------------- */
 let isConnected = false;
-let energy = 50;
+let energy = 0;
 let points = 0;
 let pvlt = 0;
 
-// UPDATE UI
+/* ---------------- UI UPDATE ---------------- */
 function updateUI() {
     if (!isConnected) return;
 
@@ -131,7 +131,18 @@ function updateUI() {
     document.getElementById("pvlt").innerText = `💎 ${pvlt}`;
 }
 
-// ENABLE GAME
+/* ---------------- LOCK GAME ---------------- */
+function lockGame() {
+    isConnected = false;
+
+    document.getElementById("tap-circle").innerText = "LOCKED";
+
+    document.querySelectorAll("#buy-energy, #claim-pvlt").forEach(btn => {
+        btn.classList.add("locked");
+    });
+}
+
+/* ---------------- UNLOCK GAME ---------------- */
 function unlockGame() {
     isConnected = true;
 
@@ -141,17 +152,16 @@ function unlockGame() {
 
     document.getElementById("tap-circle").innerText = "TAP";
 
-    document.querySelectorAll(".locked").forEach(btn => {
+    document.querySelectorAll("#buy-energy, #claim-pvlt").forEach(btn => {
         btn.classList.remove("locked");
     });
 
     updateUI();
 }
 
-// TAP
+/* ---------------- TAP ---------------- */
 document.getElementById("tap-circle").addEventListener("click", () => {
     if (!isConnected) return;
-
     if (energy <= 0) return;
 
     energy -= 1;
@@ -165,17 +175,23 @@ document.getElementById("tap-circle").addEventListener("click", () => {
     updateUI();
 });
 
-// CONNECT WALLET
+/* ---------------- CONNECT WALLET ---------------- */
 document.getElementById("connect-button").addEventListener("click", async () => {
-    await modal.open();
+    modal.open();
 
-    // unlock after connect (simple delay safe method)
-    setTimeout(() => {
-        unlockGame();
-    }, 1000);
+    const check = setInterval(async () => {
+        try {
+            const provider = await modal.getWalletProvider?.();
+
+            if (provider?.accounts?.length > 0) {
+                clearInterval(check);
+                unlockGame();
+            }
+        } catch (e) {}
+    }, 500);
 });
 
-// BUY ENERGY
+/* ---------------- BUY ENERGY ---------------- */
 document.getElementById("buy-energy").addEventListener("click", () => {
     if (!isConnected) return;
 
@@ -183,14 +199,16 @@ document.getElementById("buy-energy").addEventListener("click", () => {
     updateUI();
 });
 
-// CLAIM PVLT
+/* ---------------- CLAIM PVLT ---------------- */
 document.getElementById("claim-pvlt").addEventListener("click", () => {
     if (!isConnected) return;
 
-    alert(`Claimed ${pvlt} PVLT (demo)`);
+    alert(`Claimed ${pvlt} PVLT`);
     pvlt = 0;
     updateUI();
 });
+
+lockGame();
 </script>
 
 </body>
