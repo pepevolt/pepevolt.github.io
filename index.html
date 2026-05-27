@@ -25,12 +25,12 @@ html,body{
   overflow:hidden;
   font-family:Arial,sans-serif;
   background:#07111f;
-  touch-action:manipulation;
 }
 
 body{
   display:flex;
   justify-content:center;
+  align-items:center;
 }
 
 /* APP */
@@ -44,15 +44,15 @@ body{
   height:100dvh;
 
   background:
-  radial-gradient(circle at top,#142847 0%,#07111f 75%);
+  radial-gradient(circle at top,#183153 0%,#07111f 75%);
+
+  display:flex;
+  flex-direction:column;
 
   padding:
   max(16px, env(safe-area-inset-top))
   16px
   max(16px, env(safe-area-inset-bottom));
-
-  display:flex;
-  flex-direction:column;
 
   overflow:hidden;
 }
@@ -65,13 +65,15 @@ body{
 
   display:flex;
   gap:10px;
+
+  margin-top:5px;
 }
 
 .nav-box{
 
   flex:1;
 
-  background:rgba(255,255,255,0.06);
+  background:rgba(255,255,255,0.05);
 
   border:
   1px solid rgba(255,255,255,0.08);
@@ -86,17 +88,18 @@ body{
 .nav-title{
 
   font-size:11px;
-  color:#9db0cf;
+
+  color:#9fb2d0;
 
   margin-bottom:6px;
 }
 
 .nav-value{
 
-  color:white;
-
   font-size:18px;
   font-weight:bold;
+
+  color:white;
 }
 
 /* CONNECT */
@@ -104,6 +107,7 @@ body{
 .wallet-wrap{
 
   width:100%;
+
   margin-top:16px;
 }
 
@@ -118,10 +122,10 @@ body{
 
   padding:15px;
 
+  color:white;
+
   font-size:16px;
   font-weight:bold;
-
-  color:white;
 
   cursor:pointer;
 
@@ -131,6 +135,10 @@ body{
   #00b894,
   #00cec9
   );
+}
+
+#connectBtn:active{
+  transform:scale(0.98);
 }
 
 /* CENTER */
@@ -186,7 +194,7 @@ body{
   pointer-events:none;
 }
 
-/* ACTIONS */
+/* BUTTONS */
 
 .actions{
 
@@ -217,19 +225,26 @@ body{
   cursor:pointer;
 }
 
-.buy{
-  background:
-  linear-gradient(135deg,#00b894,#00cec9);
+.action-btn:active{
+  transform:scale(0.98);
 }
 
-.convert{
+.buy{
   background:
-  linear-gradient(135deg,#6c5ce7,#8e7dff);
+  linear-gradient(
+  135deg,
+  #00b894,
+  #00cec9
+  );
 }
 
 .claim{
   background:
-  linear-gradient(135deg,#ffb347,#ff7b54);
+  linear-gradient(
+  135deg,
+  #ffb347,
+  #ff7b54
+  );
 }
 
 /* FLOAT */
@@ -274,6 +289,7 @@ body{
   <div class="top-nav">
 
     <div class="nav-box">
+
       <div class="nav-title">
         ⚡ Energy
       </div>
@@ -283,9 +299,11 @@ body{
       id="energy">
         100
       </div>
+
     </div>
 
     <div class="nav-box">
+
       <div class="nav-title">
         💎 gPVLT
       </div>
@@ -295,9 +313,11 @@ body{
       id="gpvlt">
         0
       </div>
+
     </div>
 
     <div class="nav-box">
+
       <div class="nav-title">
         🪙 PVLT
       </div>
@@ -307,6 +327,7 @@ body{
       id="pvlt">
         0
       </div>
+
     </div>
 
   </div>
@@ -343,26 +364,18 @@ body{
     <button
     class="action-btn buy"
     id="buyBtn">
-      Buy Energy
-    </button>
-
-    <button
-    class="action-btn convert"
-    id="convertBtn">
-      Convert
+      Buy 10000 Energy
     </button>
 
     <button
     class="action-btn claim"
     id="claimBtn">
-      Claim
+      Claim PVLT
     </button>
 
   </div>
 
 </div>
-
-<!-- ETHERS -->
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 
@@ -378,9 +391,6 @@ document.getElementById('tapBtn');
 
 const buyBtn =
 document.getElementById('buyBtn');
-
-const convertBtn =
-document.getElementById('convertBtn');
 
 const claimBtn =
 document.getElementById('claimBtn');
@@ -414,7 +424,7 @@ connectBtn.addEventListener('click', async ()=>{
 
     if(!window.ethereum){
 
-      alert('Install MetaMask');
+      alert('Please Install MetaMask');
 
       return;
     }
@@ -463,9 +473,11 @@ tapBtn.addEventListener('click',(e)=>{
     return;
   }
 
+  /* ENERGY */
+
   energy--;
 
-  /* 1 TAP = 1 GPVLT */
+  /* 1 TAP = 1 gPVLT */
 
   gpvlt++;
 
@@ -511,7 +523,7 @@ tapBtn.addEventListener('click',(e)=>{
 
 });
 
-/* BUY */
+/* BUY ENERGY */
 
 buyBtn.addEventListener('click',()=>{
 
@@ -529,51 +541,27 @@ buyBtn.addEventListener('click',()=>{
     return;
   }
 
+  /* COST */
+
   pvlt -= 100;
 
+  /* REFILL */
+
   energy += 10000;
+
+  /* UPDATE */
 
   energyEl.innerText = energy;
 
   pvltEl.innerText = pvlt;
 
-  alert('+10000 Energy');
-
-});
-
-/* CONVERT */
-
-convertBtn.addEventListener('click',()=>{
-
-  if(!connected){
-
-    alert('Connect Wallet First');
-
-    return;
-  }
-
-  if(gpvlt < 100){
-
-    alert('Need 100 gPVLT');
-
-    return;
-  }
-
-  gpvlt -= 100;
-
-  pvlt += 1;
-
-  gpvltEl.innerText = gpvlt;
-
-  pvltEl.innerText = pvlt;
-
-  alert('+1 PVLT');
+  alert('+10000 Energy Added');
 
 });
 
 /* CLAIM */
 
-claimBtn.addEventListener('click', async ()=>{
+claimBtn.addEventListener('click',()=>{
 
   if(!connected){
 
@@ -584,16 +572,22 @@ claimBtn.addEventListener('click', async ()=>{
 
   if(pvlt <= 0){
 
-    alert('No PVLT');
+    alert('No PVLT To Claim');
 
     return;
   }
 
   alert(
+
     pvlt +
-    ' PVLT Claimed To:\n\n'
+
+    ' PVLT Claimed To Wallet:\n\n'
+
     + userAddress
+
   );
+
+  /* RESET */
 
   pvlt = 0;
 
