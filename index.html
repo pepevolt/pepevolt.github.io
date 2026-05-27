@@ -1,186 +1,138 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>PepeVolt</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PVLT Tap Game</title>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
 body {
-    margin:0;
-    background:#0f0f12;
-    font-family:sans-serif;
-    color:white;
+  margin:0;
+  font-family:Arial;
+  background:#0b0f1a;
+  color:white;
+  text-align:center;
 }
 
-/* TOP NAV */
-.top-nav {
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    display:flex;
-    justify-content:space-around;
-    align-items:center;
-    padding:12px 10px;
-    background:#11131a;
-    border-bottom:1px solid #222;
-    font-size:18px;
+.container {
+  padding:20px;
 }
 
-/* CENTER */
-.center {
-    height:100vh;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    gap:18px;
-}
-
-/* TAP CIRCLE */
-.tap-circle {
-    width:140px;
-    height:140px;
-    border-radius:50%;
-    background:radial-gradient(circle at 30% 30%, #3b82f6, #1e293b);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    font-size:18px;
-    font-weight:700;
-    cursor:pointer;
-    user-select:none;
-    box-shadow:0 0 20px rgba(59,130,246,0.6);
-    transition:0.2s;
-}
-
-.tap-circle:active {
-    transform:scale(0.92);
-}
-
-/* BUTTONS */
 button {
-    padding:12px 20px;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:600;
+  padding:12px 18px;
+  border:none;
+  border-radius:10px;
+  margin:10px;
+  font-size:16px;
 }
 
-#connect-button { background:#3b82f6; color:white; }
-#buy-energy { background:#f59e0b; color:white; }
-#claim-pvlt { background:#10b981; color:white; }
+#tapArea {
+  width:200px;
+  height:200px;
+  border-radius:50%;
+  background:linear-gradient(145deg,#ff00cc,#3333ff);
+  margin:30px auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  font-weight:bold;
+  user-select:none;
+}
+
+.energy {
+  margin-top:10px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- TOP NAV -->
-<div class="top-nav">
-    <div id="energy">⚡ 0</div>
-    <div id="points">🪙 0</div>
-    <div id="pvlt">💎 0</div>
+<div class="container">
+
+<h2>⚡ PVLT Tap Game</h2>
+
+<button onclick="connectWallet()">Connect Wallet</button>
+<div id="wallet">Not connected</div>
+
+<div id="tapArea">TAP</div>
+
+<div class="energy">
+Energy: <span id="energy">50</span>/50
 </div>
 
-<!-- CENTER -->
-<div class="center">
+<div>
+Points: <span id="points">0</span>
+</div>
 
-    <div class="tap-circle" id="tap-circle">TAP</div>
-
-    <button id="connect-button">Connect Wallet</button>
-    <button id="buy-energy">Buy Energy</button>
-    <button id="claim-pvlt">Claim PVLT</button>
+<button onclick="claim()">Claim PVLT</button>
 
 </div>
 
-<script type="module">
-import { createAppKit } from "https://esm.sh/@reown/appkit"
-import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers"
-import { mainnet, polygon } from "https://esm.sh/@reown/appkit/networks"
-
-const modal = createAppKit({
-    projectId: "1731f99148b9cf6107dee70b6efb14b7",
-    adapters: [new EthersAdapter()],
-    networks: [mainnet, polygon],
-    metadata: {
-        name: "PepeVolt",
-        description: "Connect Wallet",
-        url: window.location.origin,
-        icons: ["https://avatars.githubusercontent.com/u/37784886"]
-    }
-});
-
-/* ---------------- STATE ---------------- */
-let isConnected = false;
-let chainId = null;
+<script>
+let provider, signer, user;
 
 let energy = 50;
 let points = 0;
-let pvlt = 0;
 
-/* ---------------- UI ---------------- */
-function updateUI() {
-    document.getElementById("energy").innerText = `⚡ ${energy}`;
-    document.getElementById("points").innerText = `🪙 ${points}`;
-    document.getElementById("pvlt").innerText = `💎 ${pvlt}`;
+const contractAddress = "YOUR_CONTRACT_ADDRESS_HERE";
+
+const abi = [
+"function reward(address to, uint amount) external"
+];
+
+async function connectWallet() {
+  if (!window.ethereum) return alert("Install MetaMask");
+
+  provider = new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  signer = provider.getSigner();
+  user = await signer.getAddress();
+
+  document.getElementById("wallet").innerText = user;
 }
 
-/* ---------------- TAP (ONLY POLYGON ALLOWED) ---------------- */
-document.getElementById("tap-circle").addEventListener("click", () => {
-    if (!isConnected) return;
-    if (chainId !== 137) return; // ONLY POLYGON
+function regenEnergy() {
+  setInterval(() => {
+    if (energy < 50) energy++;
+    document.getElementById("energy").innerText = energy;
+  }, 3000);
+}
+regenEnergy();
 
-    if (energy <= 0) return;
+document.getElementById("tapArea").onclick = () => {
+  if (energy <= 0) return alert("No energy!");
 
-    energy -= 1;
-    points += 1;
+  energy--;
+  points++;
 
-    if (points >= 100) {
-        pvlt += Math.floor(points / 100);
-        points = points % 100;
-    }
+  document.getElementById("energy").innerText = energy;
+  document.getElementById("points").innerText = points;
+};
 
-    updateUI();
-});
+async function claim() {
+  if (!signer) return alert("Connect wallet first");
 
-/* ---------------- CONNECT WALLET ---------------- */
-document.getElementById("connect-button").addEventListener("click", () => {
-    modal.open();
-});
+  const contract = new ethers.Contract(contractAddress, abi, signer);
 
-/* ---------------- WALLET STATE LISTENER ---------------- */
-modal.subscribeState(async (state) => {
-    if (state?.address) {
-        isConnected = true;
+  // 100 points = 1 PVLT (example rule)
+  let tokens = Math.floor(points / 100);
 
-        const provider = await modal.getWalletProvider?.();
+  if (tokens <= 0) return alert("Not enough points");
 
-        try {
-            const network = await provider?.getNetwork?.();
-            chainId = Number(network?.chainId);
-        } catch (e) {
-            chainId = null;
-        }
+  try {
+    const tx = await contract.reward(user, tokens);
+    await tx.wait();
 
-        updateUI();
-    }
-});
+    alert("Claimed " + tokens + " PVLT!");
+    points = 0;
 
-/* ---------------- BUY ENERGY ---------------- */
-document.getElementById("buy-energy").addEventListener("click", () => {
-    energy += 50;
-    updateUI();
-});
-
-/* ---------------- CLAIM PVLT ---------------- */
-document.getElementById("claim-pvlt").addEventListener("click", () => {
-    alert(`Claimed ${pvlt} PVLT`);
-    pvlt = 0;
-    updateUI();
-});
-
-updateUI();
+  } catch (e) {
+    alert("Transaction failed");
+  }
+}
 </script>
 
 </body>
