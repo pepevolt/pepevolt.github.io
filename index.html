@@ -71,11 +71,6 @@ button {
 #connect-button { background:#3b82f6; color:white; }
 #buy-energy { background:#f59e0b; color:white; }
 #claim-pvlt { background:#10b981; color:white; }
-
-.locked {
-    opacity:0.4;
-    pointer-events:none;
-}
 </style>
 </head>
 
@@ -83,19 +78,19 @@ button {
 
 <!-- TOP NAV -->
 <div class="top-nav">
-    <div id="energy">⚡ -</div>
-    <div id="points">🪙 -</div>
-    <div id="pvlt">💎 -</div>
+    <div id="energy">⚡ 0</div>
+    <div id="points">🪙 0</div>
+    <div id="pvlt">💎 0</div>
 </div>
 
 <!-- CENTER -->
 <div class="center">
 
-    <div class="tap-circle" id="tap-circle">LOCKED</div>
+    <div class="tap-circle" id="tap-circle">TAP</div>
 
     <button id="connect-button">Connect Wallet</button>
-    <button id="buy-energy" class="locked">Buy Energy</button>
-    <button id="claim-pvlt" class="locked">Claim PVLT</button>
+    <button id="buy-energy">Buy Energy</button>
+    <button id="claim-pvlt">Claim PVLT</button>
 
 </div>
 
@@ -118,7 +113,9 @@ const modal = createAppKit({
 
 /* ---------------- STATE ---------------- */
 let isConnected = false;
-let energy = 0;
+let chainId = null;
+
+let energy = 50;
 let points = 0;
 let pvlt = 0;
 
@@ -129,37 +126,11 @@ function updateUI() {
     document.getElementById("pvlt").innerText = `💎 ${pvlt}`;
 }
 
-/* ---------------- LOCK ---------------- */
-function lockGame() {
-    isConnected = false;
-
-    document.getElementById("tap-circle").innerText = "LOCKED";
-
-    document.querySelectorAll("#buy-energy, #claim-pvlt").forEach(btn => {
-        btn.classList.add("locked");
-    });
-}
-
-/* ---------------- UNLOCK ---------------- */
-function unlockGame() {
-    isConnected = true;
-
-    energy = 50;
-    points = 0;
-    pvlt = 0;
-
-    document.getElementById("tap-circle").innerText = "TAP";
-
-    document.querySelectorAll("#buy-energy, #claim-pvlt").forEach(btn => {
-        btn.classList.remove("locked");
-    });
-
-    updateUI();
-}
-
-/* ---------------- TAP ---------------- */
+/* ---------------- TAP (ONLY POLYGON ALLOWED) ---------------- */
 document.getElementById("tap-circle").addEventListener("click", () => {
     if (!isConnected) return;
+    if (chainId !== 137) return; // ONLY POLYGON
+
     if (energy <= 0) return;
 
     energy -= 1;
@@ -178,32 +149,38 @@ document.getElementById("connect-button").addEventListener("click", () => {
     modal.open();
 });
 
-/* ✅ REAL WALLET CONNECTION LISTENER */
-modal.subscribeState((state) => {
+/* ---------------- WALLET STATE LISTENER ---------------- */
+modal.subscribeState(async (state) => {
     if (state?.address) {
-        unlockGame();
+        isConnected = true;
+
+        const provider = await modal.getWalletProvider?.();
+
+        try {
+            const network = await provider?.getNetwork?.();
+            chainId = Number(network?.chainId);
+        } catch (e) {
+            chainId = null;
+        }
+
+        updateUI();
     }
 });
 
 /* ---------------- BUY ENERGY ---------------- */
 document.getElementById("buy-energy").addEventListener("click", () => {
-    if (!isConnected) return;
-
     energy += 50;
     updateUI();
 });
 
 /* ---------------- CLAIM PVLT ---------------- */
 document.getElementById("claim-pvlt").addEventListener("click", () => {
-    if (!isConnected) return;
-
     alert(`Claimed ${pvlt} PVLT`);
     pvlt = 0;
     updateUI();
 });
 
-/* INIT */
-lockGame();
+updateUI();
 </script>
 
 </body>
