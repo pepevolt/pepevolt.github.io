@@ -25,18 +25,10 @@ body {
     padding:12px 10px;
     background:#11131a;
     border-bottom:1px solid #222;
-    font-size:20px;
+    font-size:18px;
 }
 
-/* NAV ITEMS */
-.nav-item {
-    display:flex;
-    align-items:center;
-    gap:6px;
-    font-weight:600;
-}
-
-/* CENTER LAYOUT */
+/* CENTER */
 .center {
     height:100vh;
     display:flex;
@@ -68,52 +60,18 @@ body {
     box-shadow:0 0 35px rgba(59,130,246,0.9);
 }
 
-/* CONNECT BUTTON */
-#connect-button {
-    padding:14px 28px;
-    font-size:16px;
-    font-weight:600;
-    color:#fff;
-    background:#3b82f6;
+/* BUTTONS */
+button {
+    padding:12px 20px;
     border:none;
-    border-radius:50px;
+    border-radius:10px;
     cursor:pointer;
-    transition:0.3s;
-}
-
-#connect-button:hover {
-    background:#2563eb;
-    transform:scale(1.05);
-}
-
-/* EXTRA BUTTONS */
-.action-btn {
-    width:180px;
-    padding:12px;
-    font-size:14px;
     font-weight:600;
-    color:white;
-    border:none;
-    border-radius:12px;
-    cursor:pointer;
-    transition:0.2s;
 }
 
-.buy-energy {
-    background:#f59e0b;
-}
-
-.buy-energy:hover {
-    background:#d97706;
-}
-
-.claim-pvlt {
-    background:#10b981;
-}
-
-.claim-pvlt:hover {
-    background:#059669;
-}
+#connect-button { background:#3b82f6; color:white; }
+#buy-energy { background:#f59e0b; color:white; }
+#claim-pvlt { background:#10b981; color:white; }
 </style>
 </head>
 
@@ -121,25 +79,19 @@ body {
 
 <!-- TOP NAV -->
 <div class="top-nav">
-    <div class="nav-item">⚡ 0</div>
-    <div class="nav-item">🪙 0</div>
-    <div class="nav-item">💎 0</div>
+    <div id="energy">⚡ 50</div>
+    <div id="points">🪙 0</div>
+    <div id="pvlt">💎 0</div>
 </div>
 
 <!-- CENTER -->
 <div class="center">
 
-    <!-- TAP CIRCLE -->
-    <div class="tap-circle" id="tap-circle">
-        TAP
-    </div>
+    <div class="tap-circle" id="tap-circle">TAP</div>
 
-    <!-- CONNECT BUTTON -->
     <button id="connect-button">Connect Wallet</button>
-
-    <!-- NEW BUTTONS -->
-    <button class="action-btn buy-energy" id="buy-energy">Buy Energy</button>
-    <button class="action-btn claim-pvlt" id="claim-pvlt">Claim PVLT</button>
+    <button id="buy-energy">Buy Energy</button>
+    <button id="claim-pvlt">Claim PVLT</button>
 
 </div>
 
@@ -148,10 +100,8 @@ import { createAppKit } from "https://esm.sh/@reown/appkit"
 import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers"
 import { mainnet, polygon } from "https://esm.sh/@reown/appkit/networks"
 
-const projectId = "1731f99148b9cf6107dee70b6efb14b7"
-
 const modal = createAppKit({
-    projectId,
+    projectId: "1731f99148b9cf6107dee70b6efb14b7",
     adapters: [new EthersAdapter()],
     networks: [mainnet, polygon],
     metadata: {
@@ -162,25 +112,53 @@ const modal = createAppKit({
     }
 })
 
+// GAME STATE
+let energy = 50;
+let points = 0;
+let pvlt = 0;
+
+// UPDATE UI
+function updateUI() {
+    document.getElementById("energy").innerText = `⚡ ${energy}`;
+    document.getElementById("points").innerText = `🪙 ${points}`;
+    document.getElementById("pvlt").innerText = `💎 ${pvlt}`;
+}
+
+// TAP LOGIC
+document.getElementById("tap-circle").addEventListener("click", () => {
+    if (energy <= 0) return;
+
+    energy -= 1;
+    points += 1;
+
+    // convert points → PVLT
+    if (points >= 100) {
+        pvlt += Math.floor(points / 100);
+        points = points % 100;
+    }
+
+    updateUI();
+});
+
 // CONNECT WALLET
 document.getElementById("connect-button").addEventListener("click", () => {
     modal.open()
-})
-
-// TAP CLICK
-document.getElementById("tap-circle").addEventListener("click", () => {
-    console.log("Tapped!")
-})
+});
 
 // BUY ENERGY
 document.getElementById("buy-energy").addEventListener("click", () => {
-    console.log("Buy Energy clicked")
-})
+    energy += 50;
+    updateUI();
+});
 
 // CLAIM PVLT
 document.getElementById("claim-pvlt").addEventListener("click", () => {
-    console.log("Claim PVLT clicked")
-})
+    alert(`Claimed ${pvlt} PVLT (demo)`);
+    pvlt = 0;
+    updateUI();
+});
+
+updateUI();
 </script>
 
 </body>
