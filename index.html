@@ -45,10 +45,14 @@
             <button class="actionBtn" id="walletBtn" onclick="connectWallet()">CONNECT WALLET</button>
             <div class="status" id="walletStatus">Wallet Connected</div>
             <button class="actionBtn" onclick="openBuyModal()">BUY ENERGY</button>
-            <button class="actionBtn" onclick="swapPoints()">SWAP POINTS → GPVLT</button>
+            <button class="actionBtn" onclick="swapPoints()">SWAP POINTS → gPVLT</button>
             <button class="actionBtn" onclick="claimPVLT()">CLAIM PVLT</button>
         </div>
-        <div class="info">1 Tap = 1 Point<br>10000 Points = 1 GPVLT<br>100 GPVLT = 1 PVLT</div>
+        <div class="info">
+            1 Tap = 1 Point<br>
+            100 Points = 1 gPVLT<br>
+            10 gPVLT = 1 PVLT
+        </div>
     </div>
     <div class="modal-overlay" id="buyModal">
         <div class="modal-box">
@@ -70,9 +74,7 @@
         let web3Provider, wallet = "", points = 0, energy = 50, gpvlt = 0;
 
         window.addEventListener('load', async () => {
-            if (window.ethereum && window.ethereum.selectedAddress) {
-                await connectWallet();
-            }
+            if (window.ethereum && window.ethereum.selectedAddress) { await connectWallet(); }
         });
 
         function updateUI(){
@@ -122,7 +124,7 @@
             } catch(err){ 
                 console.error(err); 
                 web3Provider = null;
-                alert("Connection failed. Please ensure your wallet app is connected to Polygon."); 
+                alert("Connection failed."); 
             }
         }
 
@@ -140,6 +142,7 @@
 
         async function swapPoints(){
             if(!wallet){ alert("Connect wallet first"); return; }
+            if(points < 100){ alert("Minimum 100 Points required to swap"); return; }
             try {
                 const res = await fetch(API + "/swap-points", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet, points})});
                 const data = await res.json();
@@ -149,6 +152,7 @@
 
         async function claimPVLT(){
             if(!wallet){ alert("Connect wallet first"); return; }
+            if(gpvlt < 10){ alert("Need minimum 10 gPVLT to claim"); return; }
             try {
                 const signer = web3Provider.getSigner();
                 await (await new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function approve(address,uint256)"], signer).approve(GAME_TREASURY_ADDRESS, ethers.utils.parseUnits(gpvlt.toString(), TOKEN_DECIMALS))).wait();
