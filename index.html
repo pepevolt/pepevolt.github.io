@@ -1,8 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1.0,
+maximum-scale=1.0,
+user-scalable=no"/>
+
 <title>PepeVolt</title>
 
 <style>
@@ -32,7 +37,10 @@ body{
   width:100%;
   max-width:430px;
   height:100dvh;
-  background: radial-gradient(circle at top,#183153 0%,#07111f 75%);
+  background:
+  radial-gradient(circle at top,
+  #183153 0%,
+  #07111f 75%);
   display:flex;
   flex-direction:column;
   padding:16px;
@@ -72,7 +80,10 @@ body{
   font-size:16px;
   font-weight:bold;
   color:white;
-  background:linear-gradient(135deg,#00b894,#00cec9);
+  background:
+  linear-gradient(135deg,
+  #00b894,
+  #00cec9);
   cursor:pointer;
 }
 
@@ -88,12 +99,16 @@ body{
   width:min(60vw,230px);
   height:min(60vw,230px);
   border-radius:50%;
-  background: radial-gradient(circle at 30% 30%,#00d2a8,#00a884);
+  background:
+  radial-gradient(circle at 30% 30%,
+  #00d2a8,
+  #00a884);
   border:8px solid rgba(255,255,255,0.08);
   display:flex;
   justify-content:center;
   align-items:center;
-  box-shadow:0 0 70px rgba(0,255,180,0.25);
+  box-shadow:
+  0 0 70px rgba(0,255,180,0.25);
   cursor:pointer;
   overflow:hidden;
 }
@@ -118,20 +133,26 @@ body{
 }
 
 .buy{
-  background:linear-gradient(135deg,#00b894,#00cec9);
+  background:
+  linear-gradient(135deg,
+  #00b894,
+  #00cec9);
 }
 
 .claim{
-  background:linear-gradient(135deg,#ffb347,#ff7b54);
+  background:
+  linear-gradient(135deg,
+  #ffb347,
+  #ff7b54);
 }
 
 .float{
   position:fixed;
   color:white;
   font-weight:bold;
-  animation:floatUp 1s linear forwards;
   pointer-events:none;
-  z-index:999;
+  animation:floatUp 1s linear forwards;
+  z-index:9999;
 }
 
 @keyframes floatUp{
@@ -145,18 +166,9 @@ body{
   }
 }
 
-/* HIDE WEB3MODAL BUTTON */
-w3m-button{
-  position:fixed;
-  opacity:0;
-  pointer-events:none;
-  z-index:-999;
-}
-
 </style>
 
-<!-- OFFICIAL WALLETCONNECT -->
-<script type="module" src="https://unpkg.com/@web3modal/html@2.7.1/dist/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 </head>
 
@@ -167,29 +179,51 @@ w3m-button{
   <div class="top-nav">
 
     <div class="nav-box">
-      <div class="nav-title">⚡ Energy</div>
-      <div class="nav-value" id="energy">100</div>
+      <div class="nav-title">
+        ⚡ Energy
+      </div>
+
+      <div class="nav-value"
+      id="energy">
+        100
+      </div>
     </div>
 
     <div class="nav-box">
-      <div class="nav-title">💎 Points</div>
-      <div class="nav-value" id="points">0</div>
+      <div class="nav-title">
+        💎 Points
+      </div>
+
+      <div class="nav-value"
+      id="points">
+        0
+      </div>
     </div>
 
     <div class="nav-box">
-      <div class="nav-title">🪙 PVLT</div>
-      <div class="nav-value" id="pvlt">0</div>
+      <div class="nav-title">
+        🪙 PVLT
+      </div>
+
+      <div class="nav-value"
+      id="pvlt">
+        0
+      </div>
     </div>
 
   </div>
 
-  <button id="connectBtn">Connect Wallet</button>
+  <button id="connectBtn">
+    Connect Wallet
+  </button>
 
   <div class="center">
 
-    <div class="tap-circle" id="tapBtn">
+    <div class="tap-circle"
+    id="tapBtn">
 
-      <img src="https://i.imgur.com/8Km9tLL.png">
+      <img
+      src="https://i.imgur.com/8Km9tLL.png">
 
     </div>
 
@@ -209,106 +243,95 @@ w3m-button{
 
 </div>
 
-<!-- REAL WALLETCONNECT BUTTON -->
-<w3m-button></w3m-button>
-
 <script type="module">
 
 import {
-  EthereumClient,
-  w3mConnectors,
-  w3mProvider
-} from "https://unpkg.com/@web3modal/ethereum@2.7.1"
-
-import {
-  Web3Modal
-} from "https://unpkg.com/@web3modal/html@2.7.1"
-
-import {
-  configureChains,
-  createConfig
-} from "https://unpkg.com/@wagmi/core@1.4.13"
-
-import {
-  mainnet
-} from "https://unpkg.com/@wagmi/core@1.4.13/chains"
-
-const chains = [mainnet]
-
-const projectId =
-"1731f99148b9cf6107dee70b6efb14b7"
-
-const { publicClient } = configureChains(
-  chains,
-  [w3mProvider({ projectId })]
-)
-
-const wagmiConfig = createConfig({
-  autoConnect:true,
-  connectors:w3mConnectors({
-    projectId,
-    chains
-  }),
-  publicClient
-})
-
-const ethereumClient =
-new EthereumClient(
-  wagmiConfig,
-  chains
-)
-
-new Web3Modal(
-  {
-    projectId,
-    walletImages:{
-      trust:
-      "https://trustwallet.com/assets/images/media/assets/TWT.png"
-    },
-    themeMode:"dark",
-    themeVariables:{
-      "--w3m-accent":"#00b894"
-    }
-  },
-  ethereumClient
-)
+  EthereumProvider
+} from
+"https://esm.sh/@walletconnect/ethereum-provider@2.11.0"
 
 const connectBtn =
 document.getElementById("connectBtn")
 
-connectBtn.onclick = () => {
+let provider = null
+let account = null
 
-  const realBtn =
-  document.querySelector("w3m-button")
+/* CONNECT */
 
-  const shadowBtn =
-  realBtn.shadowRoot.querySelector("button")
+connectBtn.onclick = async ()=>{
 
-  shadowBtn.click()
+  try{
+
+    provider =
+    await EthereumProvider.init({
+
+      projectId:
+      "1731f99148b9cf6107dee70b6efb14b7",
+
+      chains:[1],
+
+      showQrModal:true,
+
+      methods:[
+        "eth_sendTransaction",
+        "personal_sign",
+        "eth_signTypedData"
+      ],
+
+      optionalMethods:[
+        "eth_accounts",
+        "eth_requestAccounts",
+        "eth_chainId"
+      ],
+
+      rpcMap:{
+        1:
+        "https://rpc.ankr.com/eth"
+      },
+
+      metadata:{
+        name:"PepeVolt",
+
+        description:
+        "PepeVolt Game",
+
+        url:
+        window.location.origin,
+
+        icons:[
+          "https://cdn-icons-png.flaticon.com/512/825/825508.png"
+        ]
+      }
+
+    })
+
+    await provider.connect()
+
+    const accounts =
+    await provider.request({
+      method:"eth_accounts"
+    })
+
+    account = accounts[0]
+
+    connectBtn.innerText =
+    account.slice(0,6)
+    +"..."
+    +account.slice(-4)
+
+  }catch(err){
+
+    console.log(err)
+
+    alert(
+      "Wallet connection failed"
+    )
+
+  }
 
 }
 
-/* AUTO UPDATE CONNECT BUTTON */
-
-setInterval(()=>{
-
-  const text =
-  document.querySelector("w3m-button")
-    ?.shadowRoot
-    ?.textContent
-    ?.trim()
-
-  if(
-    text &&
-    text.length > 6 &&
-    !text.includes("Connect")
-  ){
-    connectBtn.innerText = text
-  }
-
-},1000)
-
-/* TAP GAME */
+/* TAP */
 
 let energy = 100
 let points = 0
@@ -323,19 +346,23 @@ document.getElementById("points")
 const pvltEl =
 document.getElementById("pvlt")
 
-document.getElementById("tapBtn")
+document
+.getElementById("tapBtn")
 .onclick = (e)=>{
 
-  const connected =
-  connectBtn.innerText !== "Connect Wallet"
+  if(!account){
 
-  if(!connected){
-    alert("Connect Wallet First")
+    alert(
+      "Connect Wallet First"
+    )
+
     return
   }
 
   if(energy <= 0){
+
     alert("No Energy")
+
     return
   }
 
@@ -344,10 +371,11 @@ document.getElementById("tapBtn")
 
   if(points >= 1000){
 
-    pvlt += Math.floor(points / 1000)
+    pvlt += Math.floor(
+      points / 1000
+    )
 
     points = points % 1000
-
   }
 
   energyEl.innerText = energy
@@ -358,10 +386,14 @@ document.getElementById("tapBtn")
   document.createElement("div")
 
   f.className = "float"
-  f.innerText = "+1 Point"
 
-  f.style.left = e.clientX + "px"
-  f.style.top = e.clientY + "px"
+  f.innerText = "+1"
+
+  f.style.left =
+  e.clientX + "px"
+
+  f.style.top =
+  e.clientY + "px"
 
   document.body.appendChild(f)
 
@@ -379,7 +411,8 @@ setInterval(()=>{
 
     energy++
 
-    energyEl.innerText = energy
+    energyEl.innerText =
+    energy
 
   }
 
