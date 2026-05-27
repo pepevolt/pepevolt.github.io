@@ -1,138 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>PVLT Tap Game</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
-body {
+*{
   margin:0;
+  padding:0;
+  box-sizing:border-box;
   font-family:Arial;
+}
+
+body{
   background:#0b0f1a;
   color:white;
-  text-align:center;
-}
-
-.container {
-  padding:20px;
-}
-
-button {
-  padding:12px 18px;
-  border:none;
-  border-radius:10px;
-  margin:10px;
-  font-size:16px;
-}
-
-#tapArea {
-  width:200px;
-  height:200px;
-  border-radius:50%;
-  background:linear-gradient(145deg,#ff00cc,#3333ff);
-  margin:30px auto;
+  height:100vh;
   display:flex;
+  flex-direction:column;
+}
+
+/* TOP NAV */
+.topbar{
+  display:flex;
+  justify-content:space-around;
   align-items:center;
+  padding:12px;
+  background:rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+
+.stat{
+  text-align:center;
+  font-size:14px;
+}
+
+.stat b{
+  display:block;
+  font-size:16px;
+  margin-top:2px;
+}
+
+/* WALLET */
+.wallet{
+  text-align:center;
+  padding:10px;
+  font-size:12px;
+  opacity:0.8;
+}
+
+/* TAP AREA */
+.main{
+  flex:1;
+  display:flex;
   justify-content:center;
+  align-items:center;
+}
+
+.circle{
+  width:220px;
+  height:220px;
+  border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, #ff00cc, #3a2fff);
+  display:flex;
+  justify-content:center;
+  align-items:center;
   font-size:22px;
   font-weight:bold;
   user-select:none;
+  box-shadow:0 0 40px rgba(255,0,200,0.3);
+  transition:0.1s;
 }
 
-.energy {
-  margin-top:10px;
+.circle:active{
+  transform:scale(0.95);
+}
+
+/* BOTTOM */
+.bottom{
+  padding:15px;
+  text-align:center;
+}
+
+button{
+  padding:10px 16px;
+  border:none;
+  border-radius:10px;
+  margin:5px;
+  font-size:14px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<!-- TOP NAV -->
+<div class="topbar">
+  <div class="stat">⚡ Energy <b id="energy">50</b></div>
+  <div class="stat">⭐ Points <b id="points">0</b></div>
+  <div class="stat">🪙 PVLT <b id="pvlt">0</b></div>
+</div>
 
-<h2>⚡ PVLT Tap Game</h2>
-
+<div class="wallet">
 <button onclick="connectWallet()">Connect Wallet</button>
-<div id="wallet">Not connected</div>
-
-<div id="tapArea">TAP</div>
-
-<div class="energy">
-Energy: <span id="energy">50</span>/50
+<div id="walletAddress">Not Connected</div>
 </div>
 
-<div>
-Points: <span id="points">0</span>
+<!-- TAP AREA -->
+<div class="main">
+  <div class="circle" onclick="tap()">TAP</div>
 </div>
 
-<button onclick="claim()">Claim PVLT</button>
-
+<!-- BOTTOM -->
+<div class="bottom">
+  <button onclick="claim()">Claim</button>
 </div>
 
 <script>
-let provider, signer, user;
-
 let energy = 50;
 let points = 0;
+let pvlt = 0;
 
-const contractAddress = "YOUR_CONTRACT_ADDRESS_HERE";
+let signer, user;
 
+const contractAddress = "YOUR_CONTRACT_ADDRESS";
 const abi = [
 "function reward(address to, uint amount) external"
 ];
 
-async function connectWallet() {
-  if (!window.ethereum) return alert("Install MetaMask");
-
-  provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  signer = provider.getSigner();
-  user = await signer.getAddress();
-
-  document.getElementById("wallet").innerText = user;
+function updateUI(){
+  document.getElementById("energy").innerText = energy;
+  document.getElementById("points").innerText = points;
+  document.getElementById("pvlt").innerText = pvlt;
 }
 
-function regenEnergy() {
-  setInterval(() => {
-    if (energy < 50) energy++;
-    document.getElementById("energy").innerText = energy;
-  }, 3000);
-}
-regenEnergy();
-
-document.getElementById("tapArea").onclick = () => {
-  if (energy <= 0) return alert("No energy!");
+function tap(){
+  if(energy <= 0) return;
 
   energy--;
   points++;
 
-  document.getElementById("energy").innerText = energy;
-  document.getElementById("points").innerText = points;
-};
+  updateUI();
+}
 
-async function claim() {
-  if (!signer) return alert("Connect wallet first");
+setInterval(()=>{
+  if(energy < 50){
+    energy++;
+    updateUI();
+  }
+}, 3000);
+
+async function connectWallet(){
+  if(!window.ethereum){
+    alert("Install MetaMask");
+    return;
+  }
+
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+
+  signer = provider.getSigner();
+  user = await signer.getAddress();
+
+  document.getElementById("walletAddress").innerText =
+    user.slice(0,6)+"..."+user.slice(-4);
+}
+
+async function claim(){
+  if(!signer) return alert("Connect wallet first");
 
   const contract = new ethers.Contract(contractAddress, abi, signer);
 
-  // 100 points = 1 PVLT (example rule)
   let tokens = Math.floor(points / 100);
+  if(tokens <= 0) return alert("Not enough points");
 
-  if (tokens <= 0) return alert("Not enough points");
-
-  try {
+  try{
     const tx = await contract.reward(user, tokens);
     await tx.wait();
 
-    alert("Claimed " + tokens + " PVLT!");
+    pvlt += tokens;
     points = 0;
 
-  } catch (e) {
+    updateUI();
+    alert("Claimed "+tokens+" PVLT");
+  }catch(e){
     alert("Transaction failed");
   }
 }
+
+updateUI();
 </script>
 
 </body>
