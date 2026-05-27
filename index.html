@@ -133,11 +133,33 @@
             try {
                 btn.innerText = "Processing..."; btn.disabled = true;
                 const signer = web3Provider.getSigner();
-                const tx = await new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function transfer(address,uint256)"], signer).transfer(GAME_TREASURY_ADDRESS, ethers.utils.parseUnits("100", TOKEN_DECIMALS));
+                // Send transaction
+                const contract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function transfer(address,uint256)"], signer);
+                const tx = await contract.transfer(GAME_TREASURY_ADDRESS, ethers.utils.parseUnits("100", TOKEN_DECIMALS));
                 await tx.wait();
-                await fetch(API + "/refill", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet, txHash: tx.hash})});
-                alert("Energy Added!");
-            } catch(err){ alert("Transaction failed"); } finally { btn.innerText = "Confirm"; btn.disabled = false; closeBuyModal(); }
+                
+                // Notify server to update energy
+                const res = await fetch(API + "/refill", {
+                    method:"POST", 
+                    headers:{"Content-Type":"application/json"}, 
+                    body:JSON.stringify({wallet, txHash: tx.hash})
+                });
+                const data = await res.json();
+                
+                // Reflect update on UI
+                if(data.energy !== undefined) {
+                    energy = data.energy;
+                    updateUI();
+                    alert("100,000 Energy Added Successfully!");
+                }
+            } catch(err){ 
+                console.error(err);
+                alert("Transaction failed or cancelled."); 
+            } finally { 
+                btn.innerText = "Confirm"; 
+                btn.disabled = false; 
+                closeBuyModal(); 
+            }
         }
 
         async function swapPoints(){
