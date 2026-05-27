@@ -33,7 +33,7 @@ body{
 .app{
   width:100%;
   max-width:430px;
-  height:100vh;
+  height:100dvh;
   background: radial-gradient(circle at top,#183153 0%,#07111f 75%);
   display:flex;
   flex-direction:column;
@@ -66,7 +66,7 @@ body{
   color:white;
 }
 
-/* BUTTON */
+/* CONNECT */
 #connectBtn{
   margin-top:14px;
   width:100%;
@@ -90,41 +90,25 @@ body{
 /* TAP CIRCLE */
 .tap-circle{
   position:relative;
-  width:min(62vw,240px);
-  height:min(62vw,240px);
+  width:min(60vw,230px);
+  height:min(60vw,230px);
   border-radius:50%;
   background: radial-gradient(circle at 30% 30%,#ffcc00,#ff8800);
   border:8px solid white;
   display:flex;
   justify-content:center;
   align-items:center;
-  box-shadow:0 0 80px rgba(255,180,0,0.45);
+  box-shadow:0 0 70px rgba(255,180,0,0.4);
   cursor:pointer;
 }
 
-/* PROGRESS RING */
+/* SVG perfectly centered */
 .progress-ring{
   position:absolute;
-  top:-8px;
-  left:-8px;
-  width:calc(100% + 16px);
-  height:calc(100% + 16px);
+  inset:0;
+  width:100%;
+  height:100%;
   transform:rotate(-90deg);
-}
-
-circle{
-  fill:none;
-  stroke-width:10;
-}
-
-.bg{
-  stroke:rgba(255,255,255,0.15);
-}
-
-.fg{
-  stroke:#00cec9;
-  stroke-linecap:round;
-  transition:stroke-dashoffset 0.3s linear;
 }
 
 /* ACTIONS */
@@ -156,6 +140,7 @@ circle{
   color:white;
   font-weight:bold;
   animation:floatUp 1s linear forwards;
+  pointer-events:none;
 }
 
 @keyframes floatUp{
@@ -193,13 +178,13 @@ circle{
 
     <div class="tap-circle" id="tapBtn">
 
-      <!-- PROGRESS RING -->
+      <!-- PERFECTLY ALIGNED RING -->
       <svg class="progress-ring">
-        <circle class="bg" cx="120" cy="120" r="110"></circle>
-        <circle class="fg" cx="120" cy="120" r="110"></circle>
+        <circle cx="50%" cy="50%" r="48%" stroke="rgba(255,255,255,0.15)" stroke-width="8" fill="none"/>
+        <circle class="fg" cx="50%" cy="50%" r="48%" stroke="#00cec9" stroke-width="8" fill="none" stroke-linecap="round"/>
       </svg>
 
-      <img src="https://cdn-icons-png.flaticon.com/512/825/825508.png" width="30%">
+      <img src="https://cdn-icons-png.flaticon.com/512/825/825508.png" width="32%">
 
     </div>
 
@@ -214,14 +199,14 @@ circle{
 
 <script>
 
-const connectBtn = document.getElementById('connectBtn');
-const tapBtn = document.getElementById('tapBtn');
+const connectBtn=document.getElementById('connectBtn');
+const tapBtn=document.getElementById('tapBtn');
 
-const energyEl = document.getElementById('energy');
-const pointsEl = document.getElementById('points');
-const pvltEl = document.getElementById('pvlt');
+const energyEl=document.getElementById('energy');
+const pointsEl=document.getElementById('points');
+const pvltEl=document.getElementById('pvlt');
 
-const fg = document.querySelector('.fg');
+const fg=document.querySelector('.fg');
 
 let connected=false;
 let energy=100;
@@ -230,31 +215,29 @@ let pvlt=0;
 
 const MAX_ENERGY=100;
 
-/* RING SETUP */
-const radius = 110;
+/* RING SETUP (responsive fix) */
+const radius = 48;
 const circumference = 2 * Math.PI * radius;
 
 fg.style.strokeDasharray = circumference;
 fg.style.strokeDashoffset = 0;
 
-/* UPDATE RING */
 function updateRing(){
   const percent = energy / MAX_ENERGY;
   fg.style.strokeDashoffset = circumference * (1 - percent);
 }
 
-/* ENERGY REGEN +1 PER SECOND */
+/* ENERGY REGEN */
 setInterval(()=>{
   if(energy < MAX_ENERGY){
-    energy += 1;
-    energyEl.innerText = energy;
+    energy++;
+    energyEl.innerText=energy;
     updateRing();
   }
 },1000);
 
 /* CONNECT */
 connectBtn.addEventListener('click', async ()=>{
-
   if(!window.ethereum){
     alert('Install MetaMask');
     return;
@@ -283,8 +266,8 @@ tapBtn.addEventListener('click',(e)=>{
     return;
   }
 
-  energy-=1;
-  points+=1;
+  energy--;
+  points++;
 
   if(points>=1000){
     pvlt += Math.floor(points/1000);
