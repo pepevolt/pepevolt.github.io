@@ -11,31 +11,21 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #0f0f12; /* Modern Dark Mode */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f0f12;
+            font-family: sans-serif;
         }
-
         #connect-button {
             padding: 12px 24px;
             font-size: 16px;
             font-weight: 600;
             color: #ffffff;
-            background-color: #3b82f6; /* Modern Blue */
+            background-color: #3b82f6;
             border: none;
-            border-radius: 50px; /* Pill Shape */
+            border-radius: 50px;
             cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transition: 0.3s;
         }
-
-        #connect-button:hover {
-            background-color: #2563eb;
-            transform: scale(1.05); /* Slight pop effect */
-        }
-
-        #connect-button:active {
-            transform: scale(0.98);
-        }
+        #connect-button:hover { background-color: #2563eb; }
     </style>
 </head>
 <body>
@@ -45,10 +35,18 @@
     <script type="module">
         import { createWeb3Modal, defaultConfig } from 'https://cdn.jsdelivr.net/npm/@web3modal/ethers@latest/+esm'
 
-        const projectId = '1731f99148b9cf6107dee70b6efb14b7' // Replace with your actual Project ID
+        // IMPORTANT: Replace this with your own ID from https://cloud.walletconnect.com/
+        const projectId = '1731f99148b9cf6107dee70b6efb14b7' 
+
+        const metadata = {
+            name: 'My Website',
+            description: 'Connect Wallet Example',
+            url: window.location.origin, 
+            icons: ['https://avatars.githubusercontent.com/u/37784886']
+        }
 
         const modal = createWeb3Modal({
-            ethersConfig: defaultConfig({ metadata: { name: 'My App', description: 'Web3 App', url: 'https://mywebsite.com', icons: [] } }),
+            ethersConfig: defaultConfig({ metadata }),
             chains: [{
                 chainId: 1,
                 name: 'Ethereum',
