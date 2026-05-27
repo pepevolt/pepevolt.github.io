@@ -88,21 +88,6 @@ body{
   cursor:pointer;
 }
 
-.progress-ring{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  transform:rotate(-90deg);
-}
-
-.fg{
-  stroke:#00cec9;
-  stroke-width:8;
-  fill:none;
-  stroke-linecap:round;
-}
-
 .actions{
   display:flex;
   flex-direction:column;
@@ -120,7 +105,6 @@ body{
 .buy{background:linear-gradient(135deg,#00b894,#00cec9);}
 .claim{background:linear-gradient(135deg,#ffb347,#ff7b54);}
 
-/* WALLET MODAL */
 .modal{
   position:fixed;
   inset:0;
@@ -191,10 +175,6 @@ body{
 
   <div class="center">
     <div class="tap-circle" id="tapBtn">
-      <svg class="progress-ring">
-        <circle cx="50%" cy="50%" r="48%" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
-        <circle class="fg" cx="50%" cy="50%" r="48%" />
-      </svg>
       <img src="https://cdn-icons-png.flaticon.com/512/825/825508.png" width="32%">
     </div>
   </div>
@@ -203,39 +183,25 @@ body{
     <button class="action-btn buy">Buy 10000 Energy</button>
     <button class="action-btn claim">Claim PVLT</button>
   </div>
+
 </div>
 
-<!-- WALLET MODAL -->
+<!-- MODAL -->
 <div class="modal" id="walletModal">
   <div class="modal-box">
     <h3>Select Wallet</h3>
-
     <button class="meta" id="metaBtn">MetaMask</button>
     <button class="wc" id="wcBtn">WalletConnect</button>
-
     <button onclick="closeModal()">Cancel</button>
   </div>
 </div>
 
-<script type="module">
-import { EthereumClient, w3mConnectors, w3mProvider } 
-from "https://unpkg.com/@web3modal/ethereum@2.7.1";
-
-import { Web3Modal } 
-from "https://unpkg.com/@web3modal/html@2.7.1";
-
-import { createConfig, configureChains, connect } 
-from "https://unpkg.com/@wagmi/core@1.4.13";
-
-import { mainnet } 
-from "https://unpkg.com/@wagmi/core@1.4.13/chains";
-
-const connectBtn = document.getElementById('connectBtn');
-const modal = document.getElementById('walletModal');
+<script>
+const connectBtn = document.getElementById("connectBtn");
+const modal = document.getElementById("walletModal");
 
 let account = null;
 
-/* SIMPLE MODAL */
 connectBtn.onclick = () => {
   modal.style.display = "flex";
 };
@@ -245,76 +211,92 @@ window.closeModal = () => {
 };
 
 /* META MASK */
-document.getElementById('metaBtn').onclick = async () => {
-  if(!window.ethereum){
+document.getElementById("metaBtn").onclick = async () => {
+  if (!window.ethereum) {
     alert("Install MetaMask");
     return;
   }
 
   const acc = await window.ethereum.request({
-    method:"eth_requestAccounts"
+    method: "eth_requestAccounts"
   });
 
   account = acc[0];
   connectBtn.innerText = account.slice(0,6)+"..."+account.slice(-4);
-  modal.style.display="none";
+  modal.style.display = "none";
 };
 
-/* WALLETCONNECT (REAL POPUP/QR) */
-document.getElementById('wcBtn').onclick = async () => {
+/* WALLETCONNECT FIXED */
+document.getElementById("wcBtn").onclick = async () => {
+  try {
+    const { EthereumProvider } = await import(
+      "https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.es.js"
+    );
 
-  const { EthereumProvider } = await import(
-    "https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.es.js"
-  );
+    const provider = await EthereumProvider.init({
+      projectId: "1731f99148b9cf6107dee70b6efb14b7",
+      chains: [1],
+      showQrModal: true,
+      rpcMap: {
+        1: "https://rpc.ankr.com/eth"
+      },
+      metadata: {
+        name: "PepeVolt",
+        description: "Tap Game",
+        url: window.location.origin,
+        icons: ["https://cdn-icons-png.flaticon.com/512/825/825508.png"]
+      }
+    });
 
-  const provider = await EthereumProvider.init({
-    projectId: "1731f99148b9cf6107dee70b6efb14b7",
-    chains: [1],
-    showQrModal: true
-  });
+    await provider.connect();
 
-  await provider.enable();
+    const accounts = await provider.request({
+      method: "eth_accounts"
+    });
 
-  const accounts = await provider.request({ method: "eth_accounts" });
+    account = accounts[0];
+    connectBtn.innerText = account.slice(0,6)+"..."+account.slice(-4);
 
-  account = accounts[0];
-  connectBtn.innerText = account.slice(0,6)+"..."+account.slice(-4);
+    modal.style.display = "none";
 
-  modal.style.display="none";
+  } catch (e) {
+    console.log(e);
+    alert("WalletConnect failed. Open console.");
+  }
 };
 
-/* TAP GAME */
-let energy=100, points=0, pvlt=0;
-const energyEl=document.getElementById('energy');
-const pointsEl=document.getElementById('points');
-const pvltEl=document.getElementById('pvlt');
+/* TAP */
+let energy = 100;
+let points = 0;
+let pvlt = 0;
 
-document.getElementById('tapBtn').onclick=(e)=>{
-  if(!account){
+document.getElementById("tapBtn").onclick = (e) => {
+  if (!account) {
     alert("Connect Wallet First");
     return;
   }
 
-  if(energy<=0) return;
+  if (energy <= 0) return;
 
-  energy--; points++;
+  energy--;
+  points++;
 
-  if(points>=1000){
-    pvlt += Math.floor(points/1000);
-    points = points%1000;
+  if (points >= 1000) {
+    pvlt += Math.floor(points / 1000);
+    points = points % 1000;
   }
 
-  energyEl.innerText=energy;
-  pointsEl.innerText=points;
-  pvltEl.innerText=pvlt;
+  document.getElementById("energy").innerText = energy;
+  document.getElementById("points").innerText = points;
+  document.getElementById("pvlt").innerText = pvlt;
 
-  const f=document.createElement('div');
-  f.className='float';
-  f.innerText='+1';
-  f.style.left=e.clientX+'px';
-  f.style.top=e.clientY+'px';
+  const f = document.createElement("div");
+  f.className = "float";
+  f.innerText = "+1";
+  f.style.left = e.clientX + "px";
+  f.style.top = e.clientY + "px";
   document.body.appendChild(f);
-  setTimeout(()=>f.remove(),1000);
+  setTimeout(() => f.remove(), 1000);
 };
 </script>
 
