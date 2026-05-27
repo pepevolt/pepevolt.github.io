@@ -43,7 +43,7 @@ body {
     flex-direction:column;
     justify-content:center;
     align-items:center;
-    gap:25px;
+    gap:18px;
 }
 
 /* TAP CIRCLE */
@@ -85,6 +85,35 @@ body {
     background:#2563eb;
     transform:scale(1.05);
 }
+
+/* EXTRA BUTTONS */
+.action-btn {
+    width:180px;
+    padding:12px;
+    font-size:14px;
+    font-weight:600;
+    color:white;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.buy-energy {
+    background:#f59e0b;
+}
+
+.buy-energy:hover {
+    background:#d97706;
+}
+
+.claim-pvlt {
+    background:#10b981;
+}
+
+.claim-pvlt:hover {
+    background:#059669;
+}
 </style>
 </head>
 
@@ -107,6 +136,10 @@ body {
 
     <!-- CONNECT BUTTON -->
     <button id="connect-button">Connect Wallet</button>
+
+    <!-- NEW BUTTONS -->
+    <button class="action-btn buy-energy" id="buy-energy">Buy Energy</button>
+    <button class="action-btn claim-pvlt" id="claim-pvlt">Claim PVLT</button>
 
 </div>
 
@@ -134,9 +167,19 @@ document.getElementById("connect-button").addEventListener("click", () => {
     modal.open()
 })
 
-// TAP CLICK (future game logic)
+// TAP CLICK
 document.getElementById("tap-circle").addEventListener("click", () => {
     console.log("Tapped!")
+})
+
+// BUY ENERGY
+document.getElementById("buy-energy").addEventListener("click", () => {
+    console.log("Buy Energy clicked")
+})
+
+// CLAIM PVLT
+document.getElementById("claim-pvlt").addEventListener("click", () => {
+    console.log("Claim PVLT clicked")
 })
 </script>
 
