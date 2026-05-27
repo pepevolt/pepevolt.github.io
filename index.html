@@ -16,13 +16,15 @@ body{
   justify-content:center;
 }
 
-.app{
-  width:100%;
-  max-width:430px;
-  height:100vh;
-  padding:16px;
-  display:flex;
-  flex-direction:column;
+.app {
+  width: 100vw; /* Use viewport width */
+  max-width: 430px;
+  height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  padding: 16px;
+  box-sizing: border-box; /* Crucial: includes padding in total width/height */
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Adds consistent spacing between components */
 }
 
 .top{
@@ -38,11 +40,12 @@ body{
   text-align:center;
 }
 
-.center{
-  flex:1;
-  display:flex;
-  justify-content:center;
-  align-items:center;
+.center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* Prevents button overflow */
 }
 
 .circle{
@@ -56,14 +59,11 @@ body{
   position:relative;
 }
 
-button{
-  padding:14px;
-  border:none;
-  border-radius:12px;
-  margin-top:10px;
-  font-weight:bold;
-  cursor:pointer;
+button {
+  width: 100%; /* Ensures full width */
+  box-sizing: border-box;
 }
+
 
 .buy{background:#00cec9;color:white;}
 .claim{background:#ff7b54;color:white;}
