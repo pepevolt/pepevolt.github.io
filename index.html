@@ -69,6 +69,12 @@
 
         let web3Provider, wallet = "", points = 0, energy = 50, gpvlt = 0;
 
+        window.addEventListener('load', async () => {
+            if (window.ethereum && window.ethereum.selectedAddress) {
+                await connectWallet();
+            }
+        });
+
         function updateUI(){
             document.getElementById("energy").innerText = Math.floor(energy);
             document.getElementById("points").innerText = Math.floor(points);
@@ -92,19 +98,32 @@
 
         async function connectWallet(){
             try {
-                if(window.ethereum){ await window.ethereum.request({method:"eth_requestAccounts"}); web3Provider = new ethers.providers.Web3Provider(window.ethereum); }
-                else {
-                    const wcProvider = await window["@walletconnect/ethereum-provider"].EthereumProvider.init({projectId: PROJECT_ID, chains:[137], showQrModal:true});
-                    await wcProvider.connect(); web3Provider = new ethers.providers.Web3Provider(wcProvider);
+                if (!web3Provider) {
+                    if(window.ethereum){
+                        await window.ethereum.request({method:"eth_requestAccounts"});
+                        web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+                    } else {
+                        const wcProvider = await window["@walletconnect/ethereum-provider"].EthereumProvider.init({
+                            projectId: PROJECT_ID, chains:[137], showQrModal:true
+                        });
+                        await wcProvider.connect();
+                        web3Provider = new ethers.providers.Web3Provider(wcProvider);
+                    }
                 }
-                wallet = await web3Provider.getSigner().getAddress();
+                const signer = web3Provider.getSigner();
+                wallet = await signer.getAddress();
                 document.getElementById("walletInput").value = wallet.slice(0,6) + "..." + wallet.slice(-4);
                 document.getElementById("walletBtn").innerText = "CONNECTED";
                 document.getElementById("walletStatus").style.display = "block";
+                
                 const res = await fetch(API + "/user", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet})});
                 const data = await res.json();
                 points = data.points || 0; energy = data.energy || 50; gpvlt = data.gpvlt || 0; updateUI();
-            } catch(err){ console.error(err); alert("Wallet connection failed"); }
+            } catch(err){ 
+                console.error(err); 
+                web3Provider = null;
+                alert("Connection failed. Please ensure your wallet app is connected to Polygon."); 
+            }
         }
 
         async function executeEnergyPurchase(){
