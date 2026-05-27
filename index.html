@@ -1,52 +1,341 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Points Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1,
+maximum-scale=1,
+user-scalable=no">
+
+<title>PVLT Tap Game</title>
+
+<style>
+
+/* ================= RESET ================= */
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+background:#08111f;
+font-family:Arial;
+color:white;
+touch-action:manipulation;
+-webkit-text-size-adjust:100%;
+overscroll-behavior:none;
+}
+
+body{
+display:flex;
+flex-direction:column;
+}
+
+.nav{
+display:flex;
+justify-content:space-between;
+padding:14px;
+background:#101b2e;
+font-size:12px;
+}
+
+.container{
+flex:1;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding:20px;
+}
+
+.tap{
+width:220px;
+height:220px;
+border-radius:50%;
+border:none;
+margin-top:20px;
+background:linear-gradient(135deg,#00ff99,#00ccff);
+display:flex;
+align-items:center;
+justify-content:center;
+overflow:hidden;
+position:relative;
+touch-action:manipulation;
+user-select:none;
+-webkit-user-select:none;
+}
+
+.tap:active{ transform:scale(0.96); }
+
+.tapLogo{
+width:75%;
+height:75%;
+object-fit:contain;
+pointer-events:none;
+}
+
+.bigCard{
+width:90%;
+max-width:380px;
+margin-top:20px;
+padding:18px;
+background:rgba(255,255,255,0.05);
+border:1px solid rgba(255,255,255,0.08);
+border-radius:16px;
+display:flex;
+flex-direction:column;
+gap:12px;
+}
+
+input{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+background:#111827;
+color:white;
+}
+
+button{
+width:100%;
+padding:14px;
+border:none;
+border-radius:10px;
+font-weight:bold;
+background:linear-gradient(90deg,#00ff99,#00ccff);
+color:black;
+}
+
+.status{
+font-size:12px;
+text-align:center;
+margin-top:5px;
+display:none;
+}
+
+</style>
+
 </head>
-<body class="bg-gray-100 p-8">
-    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800">Points Controller</h1>
 
-        <div class="space-y-4 mb-8">
-            <div class="bg-gray-50 p-3 rounded">
-                <p class="text-sm text-gray-500">Energy Price</p>
-                <p class="font-mono font-semibold break-all">100,000,000,000,000,000,000</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-blue-50 p-3 rounded">
-                    <p class="text-sm text-blue-600">Free Cap</p>
-                    <p class="text-xl font-bold">50</p>
-                </div>
-                <div class="bg-green-50 p-3 rounded">
-                    <p class="text-sm text-green-600">Paid Cap</p>
-                    <p class="text-xl font-bold">10,000</p>
-                </div>
-            </div>
-        </div>
+<body>
 
-        <div class="space-y-3">
-            <button onclick="handleTap()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
-                Tap
-            </button>
-            <button onclick="handleConvert()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
-                Convert Points
-            </button>
-        </div>
-    </div>
+<div class="nav">
+<div>🔋 <span id="energy">50</span></div>
+<div>⚡ <span id="points">0</span></div>
+<div>💎 <span id="tokens">0</span></div>
+</div>
 
-    <script>
-        function handleTap() {
-            console.log("Tap function triggered");
-            // Add your ethers.js or web3.js contract interaction here
-        }
+<div class="container">
 
-        function handleConvert() {
-            console.log("Convert Points function triggered");
-            // Add your ethers.js or web3.js contract interaction here
-        }
-    </script>
+<button class="tap" onclick="tap()">
+  <img src="images/IMG_1850.png" class="tapLogo">
+</button>
+
+<div class="bigCard">
+
+<input id="walletInput" placeholder="Paste BSC wallet">
+
+<button id="walletBtn" onclick="toggleWallet()">
+CONNECT WALLET
+</button>
+
+<div id="walletStatus" class="status">Wallet Connected</div>
+
+<button onclick="buyEnergy()">BUY ENERGY (REFILL)</button>
+
+<button onclick="claim()">CLAIM TOKENS</button>
+
+</div>
+
+</div>
+
+<script>
+
+/* ================= STATE ================= */
+
+let wallet = "";
+let points = 0;
+let energy = 50;
+let lastClaimTime = 0;
+
+/* ================= STORAGE ================= */
+
+function saveState(){
+  if(!wallet) return;
+
+  localStorage.setItem(wallet, JSON.stringify({
+    points,
+    energy,
+    lastClaimTime
+  }));
+}
+
+function loadState(addr){
+  let data = localStorage.getItem(addr);
+
+  if(data){
+    let obj = JSON.parse(data);
+    points = obj.points || 0;
+    energy = obj.energy || 50;
+    lastClaimTime = obj.lastClaimTime || 0;
+  } else {
+    points = 0;
+    energy = 50;
+    lastClaimTime = 0;
+  }
+}
+
+/* ================= UI ================= */
+
+function updateUI(){
+document.getElementById("energy").innerText = energy;
+document.getElementById("points").innerText = points;
+document.getElementById("tokens").innerText =
+(points / 10000).toFixed(4);
+}
+
+/* ================= TAP ================= */
+
+function tap(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+if(energy <= 0){
+alert("No energy");
+return;
+}
+
+energy--;
+points++;
+
+saveState();
+updateUI();
+}
+
+/* ================= WALLET ================= */
+
+function toggleWallet(){
+
+const input = document.getElementById("walletInput");
+const btn = document.getElementById("walletBtn");
+const status = document.getElementById("walletStatus");
+
+if(wallet){
+
+wallet = "";
+points = 0;
+energy = 50;
+
+input.value = "";
+
+btn.innerText = "CONNECT WALLET";
+
+status.style.display = "none";
+
+updateUI();
+
+return;
+}
+
+let w = input.value.trim();
+
+if(!w.startsWith("0x") || w.length !== 42){
+alert("Invalid wallet");
+return;
+}
+
+wallet = w.toLowerCase();
+
+loadState(wallet);
+
+btn.innerText = "DISCONNECT WALLET";
+
+status.style.display = "block";
+
+updateUI();
+}
+
+/* ================= BUY ENERGY ================= */
+
+function buyEnergy(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+let amt = prompt("Enter Energy Amount (10000 Energy = $1)");
+
+if(!amt || isNaN(amt) || amt <= 0) return;
+
+let energyAmount = Number(amt);
+let price = energyAmount / 10000;
+
+alert("Price: $" + price.toFixed(4) + " (BNB payment placeholder)");
+
+energy += energyAmount;
+
+saveState();
+updateUI();
+}
+
+/* ================= CLAIM (UPDATED) ================= */
+
+function claim(){
+
+if(!wallet){
+alert("Connect wallet first");
+return;
+}
+
+let now = Date.now();
+let ONE_DAY = 24 * 60 * 60 * 1000;
+
+if(now - lastClaimTime < ONE_DAY){
+alert("You can claim only once per day");
+return;
+}
+
+let tokens = points / 10000;
+
+if(tokens < 100){
+alert("Minimum 100 tokens required");
+return;
+}
+
+if(tokens > 500){
+tokens = 500;
+}
+
+/* RESET POINTS AFTER CLAIM */
+points = 0;
+
+/* SAVE CLAIM TIME */
+lastClaimTime = now;
+
+/* SIMULATED TRANSFER TO WALLET */
+alert(
+"CLAIM SUCCESS\n" +
+"Sent: " + tokens.toFixed(4) + " TOKENS\n" +
+"Wallet: " + wallet
+);
+
+saveState();
+updateUI();
+}
+
+</script>
+
 </body>
 </html>
