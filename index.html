@@ -2,232 +2,193 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>PVLT Mining Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PepeVolt DApp</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:Arial, sans-serif;
+body {
+    margin:0;
+    font-family:Arial;
+    background:#0b0f1a;
+    color:white;
+    text-align:center;
 }
 
-body{
-  background:#070a12;
-  color:white;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
+header {
+    padding:15px;
+    background:#11182a;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
 }
 
-/* TOP BAR */
-.topbar{
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  padding:12px;
-  background:rgba(255,255,255,0.05);
-  backdrop-filter: blur(12px);
-  border-bottom:1px solid rgba(255,255,255,0.08);
+button {
+    padding:10px 15px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:bold;
 }
 
-.stat{
-  text-align:center;
-  font-size:12px;
+#connectBtn { background:#00d4ff; }
+#tapArea {
+    margin:40px auto;
+    width:200px;
+    height:200px;
+    border-radius:50%;
+    background:radial-gradient(circle,#00d4ff,#0066ff);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+    user-select:none;
 }
 
-.stat b{
-  display:block;
-  font-size:14px;
-  margin-top:3px;
+.panel {
+    margin-top:20px;
 }
 
-/* WALLET */
-.wallet{
-  text-align:center;
-  padding:10px;
-  font-size:12px;
-  opacity:0.8;
-}
-
-/* MAIN */
-.main{
-  flex:1;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  gap:18px;
-}
-
-/* MINE BUTTON */
-.mine{
-  width:min(240px, 70vw);
-  height:min(240px, 70vw);
-  border-radius:50%;
-  background:radial-gradient(circle at 30% 30%, #ffd700, #ff6a00);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:22px;
-  font-weight:bold;
-  user-select:none;
-  box-shadow:0 0 50px rgba(255,170,0,0.25);
-  transition:0.08s;
-}
-
-.mine:active{
-  transform:scale(0.95);
-}
-
-/* BUTTONS */
-button{
-  padding:10px 16px;
-  border:none;
-  border-radius:12px;
-  background:#ffffff10;
-  color:white;
-  backdrop-filter: blur(10px);
-}
-
-button:active{
-  transform:scale(0.97);
+.small {
+    font-size:14px;
+    opacity:0.8;
 }
 </style>
 </head>
 
 <body>
 
-<!-- TOP STATS -->
-<div class="topbar">
-  <div class="stat">⚡ Energy <b id="energy">50</b></div>
-  <div class="stat">⛏ Points <b id="points">0</b></div>
-  <div class="stat">🪙 PVLT <b id="pvlt">0</b></div>
+<header>
+    <div>⚡ PepeVolt</div>
+    <button id="connectBtn">Connect Wallet</button>
+</header>
+
+<div class="panel">
+    <h3>PVLT Balance: <span id="pvltBal">0</span></h3>
+    <h3>Energy: <span id="energy">50</span>/50</h3>
+    <p class="small">Tap to earn points → convert in game contract</p>
 </div>
 
-<!-- WALLET -->
-<div class="wallet">
-  <button onclick="connect()">Connect Wallet</button>
-  <div id="wallet">Not Connected</div>
-</div>
+<div id="tapArea">TAP</div>
 
-<!-- GAME -->
-<div class="main">
-
-  <div class="mine" onclick="mine()">MINE</div>
-
-  <button onclick="claim()">Claim Rewards</button>
-
+<div class="panel">
+    <button id="claimBtn">Claim Rewards</button>
+    <button id="buyBtn">Buy Energy</button>
 </div>
 
 <script>
+const PVLT_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
+const TREASURY_ADDRESS = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
+const GAME_ADDRESS = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
+
+let provider, signer, user;
+
+// --- Minimal ERC20 ABI ---
+const ERC20_ABI = [
+"function balanceOf(address) view returns (uint256)",
+"function transfer(address to, uint amount) returns (bool)"
+];
+
+// --- Game ABI (ASSUMED COMMON FUNCTIONS) ---
+const GAME_ABI = [
+"function tap()",
+"function claim()",
+"function buyEnergy() payable"
+];
+
+// contracts
+let pvlt, game;
+
 let energy = 50;
-let points = 0;
-let pvlt = 0;
+let maxEnergy = 50;
 
-let signer;
-let user;
-let nonce = 0;
+async function connectWallet() {
+    if (!window.ethereum) {
+        alert("Install MetaMask");
+        return;
+    }
 
-/* CONTRACT CONFIG */
-const contractAddress = "YOUR_MINING_CONTRACT_ADDRESS";
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+    user = await signer.getAddress();
 
-/* ENERGY REGEN */
-setInterval(()=>{
-  if(energy < 50){
-    energy++;
-    update();
-  }
-}, 2500);
+    pvlt = new ethers.Contract(PVLT_ADDRESS, ERC20_ABI, signer);
+    game = new ethers.Contract(GAME_ADDRESS, GAME_ABI, signer);
 
-/* UPDATE UI */
-function update(){
-  document.getElementById("energy").innerText = energy;
-  document.getElementById("points").innerText = points;
-  document.getElementById("pvlt").innerText = pvlt;
+    document.getElementById("connectBtn").innerText = "Connected";
+
+    loadData();
 }
 
-/* MINE */
-function mine(){
-  if(energy <= 0) return;
-
-  energy--;
-  points++;
-
-  update();
+async function loadData() {
+    try {
+        const bal = await pvlt.balanceOf(user);
+        document.getElementById("pvltBal").innerText =
+            ethers.utils.formatUnits(bal, 18);
+    } catch (e) {
+        console.log(e);
+    }
 }
 
-/* CONNECT WALLET */
-async function connect(){
-  if(!window.ethereum){
-    alert("Install MetaMask");
-    return;
-  }
+async function tap() {
+    if (!game) return alert("Connect wallet first");
 
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
+    if (energy <= 0) return alert("No energy");
 
-  signer = provider.getSigner();
-  user = await signer.getAddress();
+    energy--;
+    document.getElementById("energy").innerText = energy;
 
-  document.getElementById("wallet").innerText =
-    user.slice(0,6)+"..."+user.slice(-4);
+    try {
+        let tx = await game.tap();
+        await tx.wait();
+        loadData();
+    } catch (e) {
+        console.log("Tap error:", e);
+    }
 }
 
-/* CLAIM (SIGNATURE-BASED READY) */
-async function claim(){
-  if(!signer){
-    alert("Connect wallet first");
-    return;
-  }
+// energy regen (frontend simulation)
+setInterval(() => {
+    if (energy < maxEnergy) {
+        energy++;
+        document.getElementById("energy").innerText = energy;
+    }
+}, 3000);
 
-  let rewardPoints = points;
-  if(rewardPoints < 100){
-    alert("Need at least 100 points");
-    return;
-  }
+async function claim() {
+    if (!game) return;
 
-  try{
-    /* CREATE MESSAGE HASH */
-    const message = ethers.utils.solidityKeccak256(
-      ["address","uint","uint","address"],
-      [user, rewardPoints, nonce, contractAddress]
-    );
-
-    /* SIGN MESSAGE */
-    const signature = await signer.signMessage(
-      ethers.utils.arrayify(message)
-    );
-
-    /* HERE YOU WOULD CALL CONTRACT */
-    console.log({
-      user,
-      rewardPoints,
-      nonce,
-      signature
-    });
-
-    /* MOCK REWARD (replace with real contract call) */
-    let earned = Math.floor(rewardPoints / 100);
-    pvlt += earned;
-
-    points = 0;
-    nonce++;
-
-    alert("Claimed " + earned + " PVLT (mock)");
-
-    update();
-
-  } catch(e){
-    alert("Claim failed");
-  }
+    try {
+        let tx = await game.claim();
+        await tx.wait();
+        loadData();
+    } catch (e) {
+        alert("Claim failed or not supported");
+    }
 }
 
-update();
+async function buyEnergy() {
+    if (!game) return;
+
+    try {
+        let tx = await game.buyEnergy({
+            value: ethers.utils.parseEther("0.001")
+        });
+        await tx.wait();
+        energy = maxEnergy;
+        document.getElementById("energy").innerText = energy;
+    } catch (e) {
+        alert("Buy failed or not supported");
+    }
+}
+
+// events
+document.getElementById("connectBtn").onclick = connectWallet;
+document.getElementById("tapArea").onclick = tap;
+document.getElementById("claimBtn").onclick = claim;
+document.getElementById("buyBtn").onclick = buyEnergy;
 </script>
 
 </body>
