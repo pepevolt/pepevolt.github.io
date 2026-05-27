@@ -105,35 +105,53 @@ body{
 .buy{background:linear-gradient(135deg,#00b894,#00cec9);}
 .claim{background:linear-gradient(135deg,#ffb347,#ff7b54);}
 
+/* MODAL STYLES */
 .modal{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,0.6);
+  background:rgba(0,0,0,0.8);
   display:none;
   justify-content:center;
   align-items:center;
+  z-index: 1000;
 }
 
 .modal-box{
-  width:85%;
-  background:#0f1c2e;
+  width:90%;
+  max-width:400px;
+  background:#14161a;
+  border:1px solid #2a2e35;
   border-radius:20px;
   padding:20px;
   color:white;
 }
 
-.modal-box button{
-  width:100%;
-  margin-top:10px;
-  padding:12px;
-  border:none;
-  border-radius:12px;
-  font-weight:bold;
-  cursor:pointer;
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: bold;
 }
 
-.meta{background:#f6851b;color:white;}
-.wc{background:#3b99fc;color:white;}
+.wallet-option {
+  background: #1c2026;
+  border: 1px solid #2a2e35;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  color: white;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.wallet-option:hover { background: #2a2e35; }
+.badge { font-size: 10px; background: #2a2e35; padding: 2px 6px; border-radius: 4px; color: #aaa; }
 
 .float{
   position:fixed;
@@ -186,13 +204,34 @@ body{
 
 </div>
 
-<!-- MODAL -->
 <div class="modal" id="walletModal">
   <div class="modal-box">
-    <h3>Select Wallet</h3>
-    <button class="meta" id="metaBtn">MetaMask</button>
-    <button class="wc" id="wcBtn">WalletConnect</button>
-    <button onclick="closeModal()">Cancel</button>
+    <div class="modal-header">
+      <span>Connect Wallet</span>
+      <span style="cursor:pointer" onclick="closeModal()">✕</span>
+    </div>
+    
+    <div class="wallet-option" id="metaBtn">
+      <span>MetaMask</span>
+      <span class="badge">RECENT</span>
+    </div>
+    
+    <div class="wallet-option" id="wcBtn">
+      <span>Trust Wallet</span>
+    </div>
+    
+    <div class="wallet-option">
+      <span>Binance Wallet</span>
+    </div>
+    
+    <div class="wallet-option">
+      <span>Coinbase</span>
+    </div>
+    
+    <div class="wallet-option">
+      <span>All Wallets</span>
+      <span class="badge">540+</span>
+    </div>
   </div>
 </div>
 
