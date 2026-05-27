@@ -2,13 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-
 <title>PepeVolt</title>
 
 <style>
-
 *{
   margin:0;
   padding:0;
@@ -54,16 +51,8 @@ body{
   text-align:center;
 }
 
-.nav-title{
-  font-size:11px;
-  color:#9fb2d0;
-}
-
-.nav-value{
-  font-size:18px;
-  font-weight:bold;
-  color:white;
-}
+.nav-title{font-size:11px;color:#9fb2d0;}
+.nav-value{font-size:18px;font-weight:bold;color:white;}
 
 #connectBtn{
   margin-top:14px;
@@ -75,6 +64,7 @@ body{
   font-weight:bold;
   color:white;
   background:linear-gradient(135deg,#00b894,#00cec9);
+  cursor:pointer;
 }
 
 .center{
@@ -111,7 +101,6 @@ body{
   stroke-width:8;
   fill:none;
   stroke-linecap:round;
-  transition:stroke-dashoffset 0.3s linear;
 }
 
 .actions{
@@ -128,13 +117,39 @@ body{
   font-weight:bold;
 }
 
-.buy{
-  background:linear-gradient(135deg,#00b894,#00cec9);
+.buy{background:linear-gradient(135deg,#00b894,#00cec9);}
+.claim{background:linear-gradient(135deg,#ffb347,#ff7b54);}
+
+/* WALLET MODAL */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  display:none;
+  justify-content:center;
+  align-items:center;
 }
 
-.claim{
-  background:linear-gradient(135deg,#ffb347,#ff7b54);
+.modal-box{
+  width:85%;
+  background:#0f1c2e;
+  border-radius:20px;
+  padding:20px;
+  color:white;
 }
+
+.modal-box button{
+  width:100%;
+  margin-top:10px;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.meta{background:#f6851b;color:white;}
+.wc{background:#3b99fc;color:white;}
 
 .float{
   position:fixed;
@@ -148,7 +163,6 @@ body{
   0%{opacity:1;transform:translateY(0);}
   100%{opacity:0;transform:translateY(-70px);}
 }
-
 </style>
 </head>
 
@@ -176,119 +190,132 @@ body{
   <button id="connectBtn">Connect Wallet</button>
 
   <div class="center">
-
     <div class="tap-circle" id="tapBtn">
-
       <svg class="progress-ring">
         <circle cx="50%" cy="50%" r="48%" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
         <circle class="fg" cx="50%" cy="50%" r="48%" />
       </svg>
-
       <img src="https://cdn-icons-png.flaticon.com/512/825/825508.png" width="32%">
-
     </div>
-
   </div>
 
   <div class="actions">
-    <button class="action-btn buy" id="buyBtn">Buy 10000 Energy</button>
-    <button class="action-btn claim" id="claimBtn">Claim PVLT</button>
+    <button class="action-btn buy">Buy 10000 Energy</button>
+    <button class="action-btn claim">Claim PVLT</button>
   </div>
-
 </div>
 
-<script>
+<!-- WALLET MODAL -->
+<div class="modal" id="walletModal">
+  <div class="modal-box">
+    <h3>Select Wallet</h3>
 
-const connectBtn=document.getElementById('connectBtn');
+    <button class="meta" id="metaBtn">MetaMask</button>
+    <button class="wc" id="wcBtn">WalletConnect</button>
+
+    <button onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<script type="module">
+import { EthereumClient, w3mConnectors, w3mProvider } 
+from "https://unpkg.com/@web3modal/ethereum@2.7.1";
+
+import { Web3Modal } 
+from "https://unpkg.com/@web3modal/html@2.7.1";
+
+import { createConfig, configureChains, connect } 
+from "https://unpkg.com/@wagmi/core@1.4.13";
+
+import { mainnet } 
+from "https://unpkg.com/@wagmi/core@1.4.13/chains";
+
+const connectBtn = document.getElementById('connectBtn');
+const modal = document.getElementById('walletModal');
+
+let account = null;
+
+/* SIMPLE MODAL */
+connectBtn.onclick = () => {
+  modal.style.display = "flex";
+};
+
+window.closeModal = () => {
+  modal.style.display = "none";
+};
+
+/* META MASK */
+document.getElementById('metaBtn').onclick = async () => {
+  if(!window.ethereum){
+    alert("Install MetaMask");
+    return;
+  }
+
+  const acc = await window.ethereum.request({
+    method:"eth_requestAccounts"
+  });
+
+  account = acc[0];
+  connectBtn.innerText = account.slice(0,6)+"..."+account.slice(-4);
+  modal.style.display="none";
+};
+
+/* WALLETCONNECT (REAL POPUP/QR) */
+document.getElementById('wcBtn').onclick = async () => {
+
+  const { EthereumProvider } = await import(
+    "https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.es.js"
+  );
+
+  const provider = await EthereumProvider.init({
+    projectId: "1731f99148b9cf6107dee70b6efb14b7",
+    chains: [1],
+    showQrModal: true
+  });
+
+  await provider.enable();
+
+  const accounts = await provider.request({ method: "eth_accounts" });
+
+  account = accounts[0];
+  connectBtn.innerText = account.slice(0,6)+"..."+account.slice(-4);
+
+  modal.style.display="none";
+};
+
+/* TAP GAME */
+let energy=100, points=0, pvlt=0;
 const energyEl=document.getElementById('energy');
 const pointsEl=document.getElementById('points');
 const pvltEl=document.getElementById('pvlt');
-const fg=document.querySelector('.fg');
 
-let connected=false;
-
-let energy=100;
-let points=0;
-let pvlt=0;
-
-const MAX_ENERGY=100;
-
-/* RING SETUP */
-const radius=48;
-const circumference=2*Math.PI*radius;
-
-fg.style.strokeDasharray=circumference;
-fg.style.strokeDashoffset=0;
-
-function updateRing(){
-  const percent=energy/MAX_ENERGY;
-  fg.style.strokeDashoffset=circumference*(1-percent);
-}
-
-/* ⚡ ENERGY REGEN FIXED: +1 EVERY 5 SECONDS */
-setInterval(()=>{
-  if(energy<MAX_ENERGY){
-    energy++;
-    energyEl.innerText=energy;
-    updateRing();
-  }
-},5000);
-
-/* CONNECT */
-connectBtn.addEventListener('click',async()=>{
-
-  if(!window.ethereum){
-    alert('Install MetaMask');
+document.getElementById('tapBtn').onclick=(e)=>{
+  if(!account){
+    alert("Connect Wallet First");
     return;
   }
 
-  const accounts=await window.ethereum.request({
-    method:'eth_requestAccounts'
-  });
+  if(energy<=0) return;
 
-  connectBtn.innerText=
-    accounts[0].slice(0,6)+'...'+accounts[0].slice(-4);
-
-  connected=true;
-});
-
-/* TAP */
-document.getElementById('tapBtn').addEventListener('click',(e)=>{
-
-  if(!connected){
-    alert('Connect Wallet First');
-    return;
-  }
-
-  if(energy<=0){
-    alert('No Energy');
-    return;
-  }
-
-  energy--;
-  points++;
+  energy--; points++;
 
   if(points>=1000){
-    pvlt+=Math.floor(points/1000);
-    points=points%1000;
+    pvlt += Math.floor(points/1000);
+    points = points%1000;
   }
 
   energyEl.innerText=energy;
   pointsEl.innerText=points;
   pvltEl.innerText=pvlt;
 
-  updateRing();
-
   const f=document.createElement('div');
   f.className='float';
-  f.innerText='+1 Point';
+  f.innerText='+1';
   f.style.left=e.clientX+'px';
   f.style.top=e.clientY+'px';
   document.body.appendChild(f);
   setTimeout(()=>f.remove(),1000);
-
-});
-
+};
 </script>
 
 </body>
