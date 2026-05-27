@@ -2,43 +2,29 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>PepeVolt</title>
 
 <style>
-*{
+body{
   margin:0;
-  padding:0;
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-}
-
-html,body{
-  width:100%;
-  height:100%;
-  overflow:hidden;
   font-family:Arial;
   background:#07111f;
-}
-
-body{
+  color:white;
   display:flex;
   justify-content:center;
-  align-items:center;
 }
 
 .app{
   width:100%;
   max-width:430px;
-  height:100dvh;
+  height:100vh;
+  padding:16px;
   display:flex;
   flex-direction:column;
-  padding:16px;
-  gap:14px;
 }
 
-/* TOP */
 .top{
   display:flex;
   gap:10px;
@@ -46,36 +32,12 @@ body{
 
 .box{
   flex:1;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:14px;
+  background:#ffffff10;
+  padding:10px;
+  border-radius:12px;
   text-align:center;
-  padding:10px 6px;
-  color:white;
 }
 
-.label{
-  font-size:11px;
-  opacity:0.7;
-}
-
-.value{
-  font-size:18px;
-  font-weight:bold;
-}
-
-/* CONNECT */
-#connectBtn{
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:14px;
-  font-weight:bold;
-  color:white;
-  background:linear-gradient(135deg,#00b894,#00cec9);
-}
-
-/* CENTER */
 .center{
   flex:1;
   display:flex;
@@ -84,39 +46,28 @@ body{
 }
 
 .circle{
-  width:min(65vw,240px);
-  height:min(65vw,240px);
+  width:220px;
+  height:220px;
   border-radius:50%;
-  background:radial-gradient(circle at 30% 30%,#ffcc00,#ff8800);
-  border:8px solid white;
+  background:orange;
   display:flex;
   justify-content:center;
   align-items:center;
-  font-size:22px;
-  font-weight:bold;
-  color:#111;
-  box-shadow:0 0 60px rgba(255,180,0,0.4);
-  cursor:pointer;
-  user-select:none;
+  position:relative;
 }
 
-/* BUTTONS */
-.actions{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.btn{
+button{
   padding:14px;
   border:none;
-  border-radius:14px;
+  border-radius:12px;
+  margin-top:10px;
   font-weight:bold;
-  color:white;
+  cursor:pointer;
 }
 
-.buy{background:#00cec9;}
-.claim{background:#ff7b54;}
+.buy{background:#00cec9;color:white;}
+.claim{background:#ff7b54;color:white;}
+.connect{background:#00b894;color:white;}
 
 </style>
 </head>
@@ -126,32 +77,19 @@ body{
 <div class="app">
 
   <div class="top">
-    <div class="box">
-      <div class="label">⚡ Energy</div>
-      <div class="value" id="energy">100</div>
-    </div>
-
-    <div class="box">
-      <div class="label">💎 Points</div>
-      <div class="value" id="points">0</div>
-    </div>
-
-    <div class="box">
-      <div class="label">🪙 PVLT</div>
-      <div class="value" id="pvlt">0</div>
-    </div>
+    <div class="box">⚡ <div id="energy">100</div></div>
+    <div class="box">💎 <div id="points">0</div></div>
+    <div class="box">🪙 <div id="pvlt">0</div></div>
   </div>
 
-  <button id="connectBtn">Connect Wallet</button>
+  <button class="connect" id="connectBtn">Connect Wallet</button>
 
   <div class="center">
     <div class="circle" id="tapBtn">TAP</div>
   </div>
 
-  <div class="actions">
-    <button class="btn buy" id="buyBtn">Buy 10000 Energy (100 PVLT)</button>
-    <button class="btn claim" id="claimBtn">Claim PVLT</button>
-  </div>
+  <button class="buy" id="buyBtn">Buy 10000 Energy (100 PVLT)</button>
+  <button class="claim" id="claimBtn">Claim PVLT</button>
 
 </div>
 
@@ -159,126 +97,78 @@ body{
 
 <script>
 
-/* CONTRACT CONFIG */
-const GAME_ADDRESS = "0xYourGameContract";
-const TOKEN_ADDRESS = "0xYourPVLTToken";
+const GAME_CONTRACT_ADDRESS="0xYourGame";
+const PVLT_ADDRESS="0xYourToken";
 
-const GAME_ABI = [
-  "function tap()",
-  "function buyEnergy()",
-  "function claim()",
-  "function getPlayer(address) view returns (uint256,uint256,uint256)"
+const ABI_GAME=[
+"function tap()",
+"function buyEnergy()",
+"function claim()",
+"function getPlayer(address) view returns(uint256,uint256,uint256)"
 ];
 
-const ERC20_ABI = [
-  "function approve(address spender, uint256 amount) returns (bool)"
+const ABI_ERC20=[
+"function approve(address,uint256) returns(bool)"
 ];
 
-/* STATE */
-let game;
-let connected = false;
+let provider,signer,game,user;
 
-/* UI */
-const energyEl = document.getElementById("energy");
-const pointsEl = document.getElementById("points");
-const pvltEl = document.getElementById("pvlt");
+let energy=100,points=0,pvlt=0;
+let connected=false;
 
-/* CONNECT WALLET (FIXED) */
-document.getElementById("connectBtn").onclick = async () => {
-  try {
+const energyEl=document.getElementById("energy");
+const pointsEl=document.getElementById("points");
+const pvltEl=document.getElementById("pvlt");
 
-    if (!window.ethereum) {
-      alert("MetaMask not found");
-      return;
-    }
+document.getElementById("connectBtn").onclick=async()=>{
 
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts"
-    });
+  await ethereum.request({method:"eth_requestAccounts"});
 
-    if (!accounts || accounts.length === 0) {
-      alert("No wallet found");
-      return;
-    }
+  provider=new ethers.providers.Web3Provider(window.ethereum);
+  signer=provider.getSigner();
 
-    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-    const signer = provider.getSigner();
+  user=await signer.getAddress();
 
-    const user = await signer.getAddress();
+  game=new ethers.Contract(GAME_CONTRACT_ADDRESS,ABI_GAME,signer);
 
-    game = new ethers.Contract(GAME_ADDRESS, GAME_ABI, signer);
-
-    window.user = user;
-    window.signer = signer;
-
-    connected = true;
-
-    document.getElementById("connectBtn").innerText =
-      user.slice(0,6) + "..." + user.slice(-4);
-
-  } catch (err) {
-    console.error(err);
-    alert("Wallet connection failed");
-  }
+  connected=true;
 };
 
-/* TAP */
-document.getElementById("tapBtn").onclick = async () => {
-  try {
+document.getElementById("tapBtn").onclick=async()=>{
 
-    if (!connected) return alert("Connect wallet first");
+  if(!connected) return alert("Connect wallet");
 
-    await game.tap();
+  await game.tap();
 
-    const data = await game.getPlayer(window.user);
+  const data=await game.getPlayer(user);
 
-    energyEl.innerText = data[0].toNumber();
-    pointsEl.innerText = data[1].toNumber();
-    pvltEl.innerText = data[2].toNumber();
+  energy=data[0].toNumber();
+  points=data[1].toNumber();
+  pvlt=data[2].toNumber();
 
-  } catch (err) {
-    console.error(err);
-    alert("Tap failed");
-  }
+  energyEl.innerText=energy;
+  pointsEl.innerText=points;
+  pvltEl.innerText=pvlt;
 };
 
-/* BUY ENERGY */
-document.getElementById("buyBtn").onclick = async () => {
-  try {
+document.getElementById("buyBtn").onclick=async()=>{
 
-    if (!connected) return alert("Connect wallet first");
+  const token=new ethers.Contract(PVLT_ADDRESS,ABI_ERC20,signer);
 
-    const token = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, window.signer);
+  await token.approve(GAME_CONTRACT_ADDRESS,ethers.utils.parseEther("100"));
+  await game.buyEnergy();
 
-    await token.approve(GAME_ADDRESS, ethers.utils.parseEther("100"));
-    await game.buyEnergy();
-
-    const data = await game.getPlayer(window.user);
-
-    energyEl.innerText = data[0].toNumber();
-
-  } catch (err) {
-    console.error(err);
-    alert("Buy failed");
-  }
 };
 
-/* CLAIM */
-document.getElementById("claimBtn").onclick = async () => {
-  try {
+document.getElementById("claimBtn").onclick=async()=>{
 
-    if (!connected) return alert("Connect wallet first");
+  await game.claim();
 
-    await game.claim();
+  const data=await game.getPlayer(user);
 
-    const data = await game.getPlayer(window.user);
+  pvlt=data[2].toNumber();
+  pvltEl.innerText=pvlt;
 
-    pvltEl.innerText = data[2].toNumber();
-
-  } catch (err) {
-    console.error(err);
-    alert("Claim failed");
-  }
 };
 
 </script>
