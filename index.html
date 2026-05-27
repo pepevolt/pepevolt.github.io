@@ -1,53 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>PepeVolt</title>
-
-<style>
-body {
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    margin:0;
-    background:#0f0f12;
-    font-family:sans-serif;
-}
-
-#connect-button {
-    padding:14px 28px;
-    font-size:16px;
-    font-weight:600;
-    color:#fff;
-    background:#3b82f6;
-    border:none;
-    border-radius:50px;
-    cursor:pointer;
-    transition:0.3s;
-}
-
-#connect-button:hover {
-    background:#2563eb;
-    transform:scale(1.05);
-}
-</style>
-</head>
-
-<body>
-
-<button id="connect-button">Connect Wallet</button>
-
 <script type="module">
 import { createAppKit } from "https://esm.sh/@reown/appkit"
 import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers"
 import { mainnet, polygon } from "https://esm.sh/@reown/appkit/networks"
 
-// IMPORTANT: must match Reown Cloud project settings
 const projectId = "1731f99148b9cf6107dee70b6efb14b7"
 
-// Create modal
 const modal = createAppKit({
     projectId,
     adapters: [new EthersAdapter()],
@@ -60,15 +17,23 @@ const modal = createAppKit({
     }
 })
 
-// Button opens wallet modal
-document.getElementById("connect-button").addEventListener("click", async () => {
-    try {
-        modal.open()
-    } catch (e) {
-        console.log("Wallet modal error:", e)
+// open modal
+document.getElementById("connect-button").addEventListener("click", () => {
+    modal.open({ view: "Connect" })
+})
+
+/*
+====================================================
+✅ REDIRECT AFTER WALLET CONNECT
+====================================================
+*/
+modal.subscribeState((state) => {
+    if (state?.address) {
+        console.log("Connected wallet:", state.address)
+
+        setTimeout(() => {
+            window.location.href = "https://pepevolt.github.io/dashboard.html"
+        }, 700)
     }
 })
 </script>
-
-</body>
-</html>
