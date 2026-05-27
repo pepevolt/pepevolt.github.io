@@ -284,8 +284,6 @@ body{
 
 <div class="app">
 
-  <!-- TOP NAV -->
-
   <div class="top-nav">
 
     <div class="nav-box">
@@ -305,12 +303,12 @@ body{
     <div class="nav-box">
 
       <div class="nav-title">
-        💎 gPVLT
+        💎 Points
       </div>
 
       <div
       class="nav-value"
-      id="gpvlt">
+      id="points">
         0
       </div>
 
@@ -332,8 +330,6 @@ body{
 
   </div>
 
-  <!-- CONNECT -->
-
   <div class="wallet-wrap">
 
     <button id="connectBtn">
@@ -341,8 +337,6 @@ body{
     </button>
 
   </div>
-
-  <!-- TAP -->
 
   <div class="center">
 
@@ -356,8 +350,6 @@ body{
     </div>
 
   </div>
-
-  <!-- BUTTONS -->
 
   <div class="actions">
 
@@ -398,8 +390,8 @@ document.getElementById('claimBtn');
 const energyEl =
 document.getElementById('energy');
 
-const gpvltEl =
-document.getElementById('gpvlt');
+const pointsEl =
+document.getElementById('points');
 
 const pvltEl =
 document.getElementById('pvlt');
@@ -412,7 +404,7 @@ let userAddress = '';
 
 let energy = 100;
 
-let gpvlt = 0;
+let points = 0;
 
 let pvlt = 0;
 
@@ -477,15 +469,15 @@ tapBtn.addEventListener('click',(e)=>{
 
   energy--;
 
-  /* 1 TAP = 1 gPVLT */
+  /* 1 TAP = 1 Point */
 
-  gpvlt++;
+  points++;
 
   /* AUTO CONVERT */
 
-  if(gpvlt >= 100){
+  if(points >= 100){
 
-    gpvlt -= 100;
+    points -= 100;
 
     pvlt += 1;
   }
@@ -494,7 +486,7 @@ tapBtn.addEventListener('click',(e)=>{
 
   energyEl.innerText = energy;
 
-  gpvltEl.innerText = gpvlt;
+  pointsEl.innerText = points;
 
   pvltEl.innerText = pvlt;
 
@@ -505,7 +497,7 @@ tapBtn.addEventListener('click',(e)=>{
 
   float.className = 'float';
 
-  float.innerText = '+1 gPVLT';
+  float.innerText = '+1 Point';
 
   float.style.left =
   e.clientX + 'px';
