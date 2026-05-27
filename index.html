@@ -2,16 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-content="width=device-width,
-initial-scale=1.0,
-maximum-scale=1.0,
-user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
 <title>PepeVolt</title>
 
 <style>
-
 *{
   margin:0;
   padding:0;
@@ -165,7 +160,6 @@ body{
     transform:translateY(-70px);
   }
 }
-
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
@@ -177,248 +171,117 @@ body{
 <div class="app">
 
   <div class="top-nav">
-
     <div class="nav-box">
-      <div class="nav-title">
-        ⚡ Energy
-      </div>
-
-      <div class="nav-value"
-      id="energy">
-        100
-      </div>
+      <div class="nav-title">⚡ Energy</div>
+      <div class="nav-value" id="energy">100</div>
     </div>
-
     <div class="nav-box">
-      <div class="nav-title">
-        💎 Points
-      </div>
-
-      <div class="nav-value"
-      id="points">
-        0
-      </div>
+      <div class="nav-title">💎 Points</div>
+      <div class="nav-value" id="points">0</div>
     </div>
-
     <div class="nav-box">
-      <div class="nav-title">
-        🪙 PVLT
-      </div>
-
-      <div class="nav-value"
-      id="pvlt">
-        0
-      </div>
+      <div class="nav-title">🪙 PVLT</div>
+      <div class="nav-value" id="pvlt">0</div>
     </div>
-
   </div>
 
-  <button id="connectBtn">
-    Connect Wallet
-  </button>
+  <button id="connectBtn">Connect Wallet</button>
 
   <div class="center">
-
-    <div class="tap-circle"
-    id="tapBtn">
-
-      <img
-      src="https://i.imgur.com/8Km9tLL.png">
-
+    <div class="tap-circle" id="tapBtn">
+      <img src="https://i.imgur.com/8Km9tLL.png">
     </div>
-
   </div>
 
   <div class="actions">
-
-    <button class="action-btn buy">
-      Buy 10000 Energy
-    </button>
-
-    <button class="action-btn claim">
-      Claim PVLT
-    </button>
-
+    <button class="action-btn buy">Buy 10000 Energy</button>
+    <button class="action-btn claim">Claim PVLT</button>
   </div>
 
 </div>
 
 <script type="module">
 
-import {
-  EthereumProvider
-} from
-"https://esm.sh/@walletconnect/ethereum-provider@2.11.0"
+import { EthereumProvider } from "https://esm.sh/@walletconnect/ethereum-provider@2.11.0"
 
-const connectBtn =
-document.getElementById("connectBtn")
-
+const connectBtn = document.getElementById("connectBtn")
 let provider = null
 let account = null
 
-/* CONNECT */
-
+/* CONNECT - Configured for Polygon */
 connectBtn.onclick = async ()=>{
-
   try{
-
-    provider =
-    await EthereumProvider.init({
-
-      projectId:
-      "1731f99148b9cf6107dee70b6efb14b7",
-
-      chains:[1],
-
-      showQrModal:true,
-
-      methods:[
-        "eth_sendTransaction",
-        "personal_sign",
-        "eth_signTypedData"
-      ],
-
-      optionalMethods:[
-        "eth_accounts",
-        "eth_requestAccounts",
-        "eth_chainId"
-      ],
-
-      rpcMap:{
-        1:
-        "https://rpc.ankr.com/eth"
+    provider = await EthereumProvider.init({
+      projectId: "1731f99148b9cf6107dee70b6efb14b7",
+      chains: [137], // Polygon Mainnet
+      showQrModal: true,
+      methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData"],
+      optionalMethods: ["eth_accounts", "eth_requestAccounts", "eth_chainId"],
+      rpcMap: {
+        137: "https://polygon-rpc.com"
       },
-
-      metadata:{
-        name:"PepeVolt",
-
-        description:
-        "PepeVolt Game",
-
-        url:
-        window.location.origin,
-
-        icons:[
-          "https://cdn-icons-png.flaticon.com/512/825/825508.png"
-        ]
+      metadata: {
+        name: "PepeVolt",
+        description: "PepeVolt Game",
+        url: window.location.origin,
+        icons: ["https://cdn-icons-png.flaticon.com/512/825/825508.png"]
       }
-
     })
 
     await provider.connect()
-
-    const accounts =
-    await provider.request({
-      method:"eth_accounts"
-    })
-
+    const accounts = await provider.request({ method: "eth_accounts" })
     account = accounts[0]
-
-    connectBtn.innerText =
-    account.slice(0,6)
-    +"..."
-    +account.slice(-4)
-
-  }catch(err){
-
+    connectBtn.innerText = account.slice(0,6) + "..." + account.slice(-4)
+  } catch(err) {
     console.log(err)
-
-    alert(
-      "Wallet connection failed"
-    )
-
+    alert("Wallet connection failed")
   }
-
 }
 
 /* TAP */
-
 let energy = 100
 let points = 0
 let pvlt = 0
 
-const energyEl =
-document.getElementById("energy")
+const energyEl = document.getElementById("energy")
+const pointsEl = document.getElementById("points")
+const pvltEl = document.getElementById("pvlt")
 
-const pointsEl =
-document.getElementById("points")
-
-const pvltEl =
-document.getElementById("pvlt")
-
-document
-.getElementById("tapBtn")
-.onclick = (e)=>{
-
+document.getElementById("tapBtn").onclick = (e)=>{
   if(!account){
-
-    alert(
-      "Connect Wallet First"
-    )
-
+    alert("Connect Wallet First")
     return
   }
-
   if(energy <= 0){
-
     alert("No Energy")
-
     return
   }
-
   energy--
   points++
-
   if(points >= 1000){
-
-    pvlt += Math.floor(
-      points / 1000
-    )
-
+    pvlt += Math.floor(points / 1000)
     points = points % 1000
   }
-
   energyEl.innerText = energy
   pointsEl.innerText = points
   pvltEl.innerText = pvlt
-
-  const f =
-  document.createElement("div")
-
+  const f = document.createElement("div")
   f.className = "float"
-
   f.innerText = "+1"
-
-  f.style.left =
-  e.clientX + "px"
-
-  f.style.top =
-  e.clientY + "px"
-
+  f.style.left = e.clientX + "px"
+  f.style.top = e.clientY + "px"
   document.body.appendChild(f)
-
-  setTimeout(()=>{
-    f.remove()
-  },1000)
-
+  setTimeout(()=>{ f.remove() },1000)
 }
 
 /* ENERGY REGEN */
-
 setInterval(()=>{
-
   if(energy < 100){
-
     energy++
-
-    energyEl.innerText =
-    energy
-
+    energyEl.innerText = energy
   }
-
 },5000)
 
 </script>
-
 </body>
 </html>
