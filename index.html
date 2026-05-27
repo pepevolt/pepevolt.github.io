@@ -28,6 +28,11 @@ html,body{
   touch-action:manipulation;
 }
 
+body{
+  display:flex;
+  justify-content:center;
+}
+
 /* APP */
 
 .app{
@@ -37,8 +42,6 @@ html,body{
 
   height:100vh;
   height:100dvh;
-
-  margin:auto;
 
   background:
   radial-gradient(circle at top,#13233d 0%,#07111f 75%);
@@ -51,9 +54,9 @@ html,body{
   16px
   max(16px, env(safe-area-inset-bottom));
 
-  position:relative;
-
   overflow:hidden;
+
+  position:relative;
 }
 
 /* TOP NAV */
@@ -136,9 +139,6 @@ html,body{
 
   box-shadow:
   0 0 25px rgba(0,255,200,0.25);
-
-  position:relative;
-  z-index:10;
 }
 
 #connectBtn:active{
@@ -154,16 +154,14 @@ html,body{
   display:flex;
   justify-content:center;
   align-items:center;
-
-  width:100%;
 }
 
 /* TAP */
 
 .tap-circle{
 
-  width:min(60vw,240px);
-  height:min(60vw,240px);
+  width:min(62vw,240px);
+  height:min(62vw,240px);
 
   border-radius:50%;
 
@@ -181,32 +179,29 @@ html,body{
   align-items:center;
 
   box-shadow:
-  0 0 80px rgba(255,180,0,0.4),
+  0 0 80px rgba(255,180,0,0.45),
   inset 0 0 35px rgba(255,255,255,0.15);
 
   cursor:pointer;
 
   user-select:none;
-
-  position:relative;
-  z-index:10;
 }
 
 .tap-circle:active{
-  transform:scale(0.94);
+  transform:scale(0.95);
 }
 
 .tap-circle img{
 
-  width:28%;
-  height:28%;
+  width:30%;
+  height:30%;
 
   object-fit:contain;
 
   pointer-events:none;
 }
 
-/* BUTTONS */
+/* ACTIONS */
 
 .actions{
 
@@ -237,9 +232,6 @@ html,body{
   font-weight:bold;
 
   cursor:pointer;
-
-  position:relative;
-  z-index:10;
 }
 
 .action-btn:active{
@@ -288,20 +280,6 @@ html,body{
   100%{
     opacity:0;
     transform:translateY(-70px);
-  }
-}
-
-/* MOBILE FIX */
-
-@media(max-height:700px){
-
-  .tap-circle{
-    width:190px;
-    height:190px;
-  }
-
-  .action-btn{
-    padding:14px;
   }
 }
 
@@ -364,7 +342,7 @@ html,body{
 
   </div>
 
-  <!-- CENTER -->
+  <!-- TAP -->
 
   <div class="center">
 
@@ -386,7 +364,7 @@ html,body{
     <button
     class="action-btn buy"
     id="buyBtn">
-      Buy
+      Buy Energy
     </button>
 
     <button
@@ -447,7 +425,10 @@ const modal = createAppKit({
 
 });
 
-/* CONNECT CLICK */
+let walletConnected = false;
+let walletAddress = null;
+
+/* CONNECT */
 
 connectBtn.onclick = async ()=>{
 
@@ -463,20 +444,24 @@ connectBtn.onclick = async ()=>{
 
 };
 
-/* WALLET STATE */
+/* STATE */
 
 modal.subscribeState((state)=>{
 
   if(state.isConnected && state.address){
 
-    const address = state.address;
+    walletConnected = true;
+
+    walletAddress = state.address;
 
     connectBtn.innerText =
-    address.slice(0,6)
+    state.address.slice(0,6)
     + '...'
-    + address.slice(-4);
+    + state.address.slice(-4);
 
   }else{
+
+    walletConnected = false;
 
     connectBtn.innerText =
     'Connect Wallet';
@@ -485,7 +470,7 @@ modal.subscribeState((state)=>{
 
 });
 
-/* GAME */
+/* ELEMENTS */
 
 const tapBtn =
 document.getElementById('tapBtn');
@@ -508,14 +493,26 @@ document.getElementById('gpvlt');
 const pvltEl =
 document.getElementById('pvlt');
 
+/* GAME STATE */
+
 let energy = 100;
-let points = 0;
+
 let gpvlt = 0;
+
 let pvlt = 0;
+
+let pendingPVLT = 0;
 
 /* TAP */
 
 tapBtn.onclick = (e)=>{
+
+  if(!walletConnected){
+
+    alert('Connect Wallet First');
+
+    return;
+  }
 
   if(energy <= 0){
 
@@ -525,33 +522,27 @@ tapBtn.onclick = (e)=>{
   }
 
   energy--;
-  points++;
 
-  energyEl.innerText = energy;
+  /* 1 TAP = 1 gPVLT */
 
-  /* 100 POINTS = 1 GPVLT */
+  gpvlt++;
 
-  if(points >= 100){
-
-    points = 0;
-
-    gpvlt++;
-
-    gpvltEl.innerText = gpvlt;
-  }
-
-  /* 100 GPVLT = 1 PVLT */
+  /* AUTO CONVERT */
 
   if(gpvlt >= 100){
 
-    gpvlt = 0;
+    gpvlt -= 100;
 
-    pvlt++;
-
-    gpvltEl.innerText = gpvlt;
-
-    pvltEl.innerText = pvlt;
+    pvlt += 1;
   }
+
+  /* UPDATE */
+
+  energyEl.innerText = energy;
+
+  gpvltEl.innerText = gpvlt;
+
+  pvltEl.innerText = pvlt;
 
   /* FLOAT */
 
@@ -560,7 +551,7 @@ tapBtn.onclick = (e)=>{
 
   float.className = 'float';
 
-  float.innerText = '+1';
+  float.innerText = '+1 gPVLT';
 
   float.style.left =
   e.clientX + 'px';
@@ -578,15 +569,33 @@ tapBtn.onclick = (e)=>{
 
 };
 
-/* BUY */
+/* BUY ENERGY */
 
 buyBtn.onclick = ()=>{
 
-  energy += 100;
+  if(!walletConnected){
+
+    alert('Connect Wallet First');
+
+    return;
+  }
+
+  if(pvlt < 100){
+
+    alert('Need 100 PVLT');
+
+    return;
+  }
+
+  pvlt -= 100;
+
+  energy += 10000;
 
   energyEl.innerText = energy;
 
-  alert('+100 Energy');
+  pvltEl.innerText = pvlt;
+
+  alert('+10000 Energy');
 
 };
 
@@ -594,26 +603,12 @@ buyBtn.onclick = ()=>{
 
 convertBtn.onclick = ()=>{
 
-  if(points < 100){
+  if(!walletConnected){
 
-    alert('Need 100 Points');
+    alert('Connect Wallet First');
 
     return;
   }
-
-  points -= 100;
-
-  gpvlt++;
-
-  gpvltEl.innerText = gpvlt;
-
-  alert('+1 gPVLT');
-
-};
-
-/* CLAIM */
-
-claimBtn.onclick = ()=>{
 
   if(gpvlt < 100){
 
@@ -624,13 +619,43 @@ claimBtn.onclick = ()=>{
 
   gpvlt -= 100;
 
-  pvlt++;
+  pvlt += 1;
 
   gpvltEl.innerText = gpvlt;
 
   pvltEl.innerText = pvlt;
 
   alert('+1 PVLT');
+
+};
+
+/* CLAIM */
+
+claimBtn.onclick = async ()=>{
+
+  if(!walletConnected){
+
+    alert('Connect Wallet First');
+
+    return;
+  }
+
+  if(pvlt <= 0){
+
+    alert('No PVLT');
+
+    return;
+  }
+
+  alert(
+    pvlt +
+    ' PVLT Sent To Wallet:\n\n'
+    + walletAddress
+  );
+
+  pvlt = 0;
+
+  pvltEl.innerText = pvlt;
 
 };
 
