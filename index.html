@@ -1,42 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt</title>
-    <style>
-        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #0f0f12; font-family: sans-serif; }
-        #connect-button { padding: 14px 28px; font-size: 16px; font-weight: 600; color: #ffffff; background-color: #3b82f6; border: none; border-radius: 50px; cursor: pointer; transition: 0.3s; }
-        #connect-button:hover { background-color: #2563eb; transform: scale(1.05); }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PepeVolt</title>
+
+<style>
+body {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    margin:0;
+    background:#0f0f12;
+    font-family:sans-serif;
+}
+
+#connect-button {
+    padding:14px 28px;
+    font-size:16px;
+    font-weight:600;
+    color:#fff;
+    background:#3b82f6;
+    border:none;
+    border-radius:50px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+#connect-button:hover {
+    background:#2563eb;
+    transform:scale(1.05);
+}
+</style>
 </head>
+
 <body>
 
-    <button id="connect-button">Connect Wallet</button>
+<button id="connect-button">Connect Wallet</button>
 
-    <script type="module">
-        import { createAppKit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@latest/+esm'
-        import { EthersAdapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers@latest/+esm'
-        import { mainnet } from 'https://cdn.jsdelivr.net/npm/@reown/appkit/networks@latest/+esm'
+<script type="module">
+import { createAppKit } from "https://esm.sh/@reown/appkit"
+import { EthersAdapter } from "https://esm.sh/@reown/appkit-adapter-ethers"
+import { mainnet, polygon } from "https://esm.sh/@reown/appkit/networks"
 
-        // Ensure this ID is correct and the domain is authorized in Reown Cloud
-        const projectId = '1731f99148b9cf6107dee70b6efb14b7' 
+// IMPORTANT: must match Reown Cloud project settings
+const projectId = "1731f99148b9cf6107dee70b6efb14b7"
 
-        const modal = createAppKit({
-            adapters: [new EthersAdapter()],
-            networks: [mainnet],
-            metadata: {
-                name: 'PepeVolt',
-                description: 'Connect Wallet',
-                url: 'https://pepevolt.github.io',
-                icons: ['https://avatars.githubusercontent.com/u/37784886']
-            },
-            projectId
-        })
+// Create modal
+const modal = createAppKit({
+    projectId,
+    adapters: [new EthersAdapter()],
+    networks: [mainnet, polygon],
+    metadata: {
+        name: "PepeVolt",
+        description: "Connect Wallet",
+        url: window.location.origin,
+        icons: ["https://avatars.githubusercontent.com/u/37784886"]
+    }
+})
 
-        document.getElementById('connect-button').addEventListener('click', () => {
-            modal.open()
-        })
-    </script>
+// Button opens wallet modal
+document.getElementById("connect-button").addEventListener("click", async () => {
+    try {
+        modal.open()
+    } catch (e) {
+        console.log("Wallet modal error:", e)
+    }
+})
+</script>
+
 </body>
 </html>
