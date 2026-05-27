@@ -2,111 +2,97 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PepeVolt | Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PepeVolt Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .tab-active { border-bottom: 2px solid #34d399; color: #34d399; }
+        /* Fixed container to prevent layout shifting */
+        body { background: #0b0f19; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 450px; min-height: 100vh; background: #0f172a; position: relative; }
+        .glass { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.05); }
     </style>
 </head>
-<body class="bg-slate-950 text-white min-h-screen p-6 flex flex-col items-center">
+<body>
 
-    <div class="grid grid-cols-3 gap-3 w-full max-w-sm mb-6">
-        <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] text-slate-400 uppercase">Energy</p><p id="energy" class="font-bold">0</p></div>
-        <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] text-slate-400 uppercase">Points</p><p id="points" class="font-bold">0</p></div>
-        <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] text-slate-400 uppercase">PVLT</p><p id="pvlt" class="font-bold">0</p></div>
+<div class="app-container p-6 flex flex-col">
+    <div class="grid grid-cols-3 gap-2 mb-8">
+        <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] text-slate-400">ENERGY</p><p id="energy" class="font-bold">0</p></div>
+        <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] text-slate-400">POINTS</p><p id="points" class="font-bold">0</p></div>
+        <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] text-slate-400">PVLT</p><p id="pvlt" class="font-bold">0</p></div>
     </div>
 
-    <div class="flex gap-8 mb-8 border-b border-slate-800 w-full max-w-sm justify-center">
-        <button onclick="showTab('game')" id="tabGame" class="pb-2 tab-active">Game</button>
-        <button onclick="showTab('treasury')" id="tabTreasury" class="pb-2">Treasury</button>
-    </div>
-
-    <div id="gameSection" class="w-full max-w-sm space-y-4">
-        <button id="tapBtn" class="w-64 h-64 bg-emerald-500 rounded-full mx-auto block font-bold text-3xl shadow-[0_0_40px_rgba(16,185,129,0.3)]">TAP!</button>
-        <button id="refillBtn" class="w-full glass p-4 rounded-xl border border-slate-700">Refill Energy</button>
-        <button id="convertBtn" class="w-full glass p-4 rounded-xl border border-slate-700">Convert Points</button>
-    </div>
-
-    <div id="treasurySection" class="hidden w-full max-w-sm space-y-4">
-        <div class="glass p-6 rounded-xl text-center">
-            <p class="text-sm text-slate-400">Total Revenue</p>
-            <h2 id="totalRev" class="text-2xl font-bold">0 PVLT</h2>
+    <div id="view-game" class="flex-grow flex flex-col items-center">
+        <button id="tapBtn" class="w-64 h-64 bg-emerald-500 rounded-full mb-8 shadow-[0_0_60px_rgba(16,185,129,0.2)] font-bold text-3xl">TAP!</button>
+        <div class="w-full space-y-3">
+            <button id="refillBtn" class="w-full glass p-4 rounded-xl text-left">Refill Energy</button>
+            <button id="convertBtn" class="w-full glass p-4 rounded-xl text-left">Convert Points</button>
         </div>
+    </div>
+
+    <div id="view-treasury" class="hidden flex-grow flex flex-col items-center justify-center">
+        <h2 class="text-xl font-bold mb-4">Treasury Rewards</h2>
         <button id="claimBtn" class="w-full bg-yellow-600 p-4 rounded-xl font-bold text-slate-900">Claim Rewards</button>
     </div>
 
-    <button id="connectBtn" class="mt-8 w-full max-w-sm bg-blue-600 py-4 rounded-xl font-bold">Connect Wallet</button>
+    <div class="grid grid-cols-2 gap-4 mt-8 border-t border-slate-800 pt-4">
+        <button onclick="switchTab('game')" class="text-sm font-bold text-emerald-400">DISCOVER</button>
+        <button onclick="switchTab('treasury')" class="text-sm font-bold text-slate-400">TREASURY</button>
+    </div>
 
-    <script type="module">
-        import { createAppKit, defaultConfig } from 'https://esm.sh/@reown/appkit@1.0.0';
-        import { mainnet } from 'https://esm.sh/@reown/appkit/networks@1.0.0';
-        import { BrowserProvider, Contract, formatUnits } from 'https://esm.sh/ethers@6.12.1';
+    <button id="connectBtn" class="mt-6 w-full bg-blue-600 py-3 rounded-lg font-bold">Connect Wallet</button>
+</div>
 
-        const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
-        const GAME_ADDR = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
-        const TREASURY_ADDR = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
-        const PVLT_ADDR = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
+<script type="module">
+    import { createAppKit, defaultConfig } from 'https://esm.sh/@reown/appkit@1.0.0';
+    import { mainnet } from 'https://esm.sh/@reown/appkit/networks@1.0.0';
+    import { BrowserProvider, Contract, formatUnits } from 'https://esm.sh/ethers@6.12.1';
 
-        const GAME_ABI = [{"inputs":[],"name":"tap","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"refillEnergy","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"convertPoints","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"players","outputs":[{"internalType":"uint256","name":"energy","type":"uint256"},{"internalType":"uint256","name":"points","type":"uint256"},{"internalType":"uint256","name":"burnedGPVLT","type":"uint256"},{"internalType":"bool","name":"paidUser","type":"bool"},{"internalType":"uint256","name":"lastClaimDay","type":"uint256"}],"stateMutability":"view","type":"function"}];
-        const TREASURY_ABI = [{"inputs":[],"name":"claimRewards","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"totalRevenue","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}];
-        const TOKEN_ABI = [{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}];
+    const modal = createAppKit({
+        adapters: [defaultConfig({ metadata: { name: 'PepeVolt', description: 'Dashboard', url: 'https://pepevolt.github.io', icons: [] } })],
+        networks: [mainnet],
+        projectId: '1731f99148b9cf6107dee70b6efb14b7'
+    });
 
-        const modal = createAppKit({
-            adapters: [defaultConfig({ metadata: { name: 'PepeVolt', description: 'Dashboard', url: 'https://pepevolt.github.io', icons: [] } })],
-            networks: [mainnet],
-            projectId: PROJECT_ID
-        });
+    // Contract Logic
+    const G_ADDR = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
+    const T_ADDR = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
+    const P_ADDR = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
 
-        let signer, gameContract, treasuryContract, tokenContract;
+    let game, treasury, token, signer;
 
-        document.getElementById('connectBtn').onclick = () => modal.open();
+    document.getElementById('connectBtn').onclick = () => modal.open();
 
-        modal.subscribeState(async (state) => {
-            if (state.isConnected) {
-                const provider = new BrowserProvider(modal.getWalletProvider());
-                signer = await provider.getSigner();
-                gameContract = new Contract(GAME_ADDR, GAME_ABI, signer);
-                treasuryContract = new Contract(TREASURY_ADDR, TREASURY_ABI, signer);
-                tokenContract = new Contract(PVLT_ADDR, TOKEN_ABI, signer);
-                document.getElementById('connectBtn').innerText = "Wallet Connected";
-                refreshData();
-            }
-        });
-
-        async function refreshData() {
-            if (!signer) return;
-            const addr = await signer.getAddress();
-            const [stats, balance, rev] = await Promise.all([
-                gameContract.players(addr),
-                tokenContract.balanceOf(addr),
-                treasuryContract.totalRevenue()
-            ]);
-            document.getElementById('energy').innerText = stats.energy.toString();
-            document.getElementById('points').innerText = stats.points.toString();
-            document.getElementById('pvlt').innerText = formatUnits(balance, 18).substring(0, 5);
-            document.getElementById('totalRev').innerText = formatUnits(rev, 18).substring(0, 5) + " PVLT";
+    modal.subscribeState(async (state) => {
+        if (state.isConnected) {
+            const provider = new BrowserProvider(modal.getWalletProvider());
+            signer = await provider.getSigner();
+            game = new Contract(G_ADDR, [{"inputs":[],"name":"tap","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"refillEnergy","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"convertPoints","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"players","outputs":[{"internalType":"uint256","name":"energy","type":"uint256"},{"internalType":"uint256","name":"points","type":"uint256"},{"internalType":"uint256","name":"burnedGPVLT","type":"uint256"},{"internalType":"bool","name":"paidUser","type":"bool"},{"internalType":"uint256","name":"lastClaimDay","type":"uint256"}],"stateMutability":"view","type":"function"}], signer);
+            treasury = new Contract(T_ADDR, [{"inputs":[],"name":"claimRewards","outputs":[],"stateMutability":"nonpayable","type":"function"}], signer);
+            token = new Contract(P_ADDR, [{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}], signer);
+            
+            document.getElementById('connectBtn').innerText = "Wallet Connected";
+            update();
         }
+    });
 
-        window.showTab = (tab) => {
-            document.getElementById('gameSection').classList.toggle('hidden', tab !== 'game');
-            document.getElementById('treasurySection').classList.toggle('hidden', tab !== 'treasury');
-            document.getElementById('tabGame').classList.toggle('tab-active', tab === 'game');
-            document.getElementById('tabTreasury').classList.toggle('tab-active', tab === 'treasury');
-        };
+    async function update() {
+        const addr = await signer.getAddress();
+        const [stats, bal] = await Promise.all([game.players(addr), token.balanceOf(addr)]);
+        document.getElementById('energy').innerText = stats.energy.toString();
+        document.getElementById('points').innerText = stats.points.toString();
+        document.getElementById('pvlt').innerText = formatUnits(bal, 18).substring(0, 4);
+    }
 
-        window.handleAction = async (contract, fn) => {
-            try {
-                const tx = await contract[fn]();
-                await tx.wait();
-                refreshData();
-            } catch (e) { alert("Action failed"); }
-        };
+    // Button Handlers
+    document.getElementById('tapBtn').onclick = async () => { await game.tap(); update(); };
+    document.getElementById('refillBtn').onclick = async () => { await game.refillEnergy(); update(); };
+    document.getElementById('convertBtn').onclick = async () => { await game.convertPoints(); update(); };
+    document.getElementById('claimBtn').onclick = async () => { await treasury.claimRewards(); };
 
-        document.getElementById('tapBtn').onclick = () => handleAction(gameContract, 'tap');
-        document.getElementById('refillBtn').onclick = () => handleAction(gameContract, 'refillEnergy');
-        document.getElementById('convertBtn').onclick = () => handleAction(gameContract, 'convertPoints');
-        document.getElementById('claimBtn').onclick = () => handleAction(treasuryContract, 'claimRewards');
-    </script>
+    window.switchTab = (tab) => {
+        document.getElementById('view-game').classList.toggle('hidden', tab !== 'game');
+        document.getElementById('view-treasury').classList.toggle('hidden', tab !== 'treasury');
+    };
+</script>
 </body>
 </html>
