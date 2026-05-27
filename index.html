@@ -7,8 +7,6 @@
 <title>PepeVolt</title>
 
 <style>
-
-/* RESET */
 *{
   margin:0;
   padding:0;
@@ -19,19 +17,17 @@
 html,body{
   width:100%;
   height:100%;
-  background:#07111f;
-  font-family:Arial;
   overflow:hidden;
+  font-family:Arial;
+  background:#07111f;
 }
 
-/* CENTER WRAPPER */
 body{
   display:flex;
   justify-content:center;
   align-items:center;
 }
 
-/* APP CONTAINER */
 .app{
   width:100%;
   max-width:430px;
@@ -42,7 +38,7 @@ body{
   gap:14px;
 }
 
-/* TOP BAR */
+/* TOP */
 .top{
   display:flex;
   gap:10px;
@@ -79,7 +75,7 @@ body{
   background:linear-gradient(135deg,#00b894,#00cec9);
 }
 
-/* CENTER AREA */
+/* CENTER */
 .center{
   flex:1;
   display:flex;
@@ -87,7 +83,6 @@ body{
   align-items:center;
 }
 
-/* TAP CIRCLE */
 .circle{
   width:min(65vw,240px);
   height:min(65vw,240px);
@@ -164,99 +159,126 @@ body{
 
 <script>
 
-/* CONTRACTS */
-const GAME_ADDRESS="0xYourGame";
-const TOKEN_ADDRESS="0xYourToken";
+/* CONTRACT CONFIG */
+const GAME_ADDRESS = "0xYourGameContract";
+const TOKEN_ADDRESS = "0xYourPVLTToken";
 
-const GAME_ABI=[
-"function tap()",
-"function buyEnergy()",
-"function claim()",
-"function getPlayer(address) view returns(uint256,uint256,uint256)"
+const GAME_ABI = [
+  "function tap()",
+  "function buyEnergy()",
+  "function claim()",
+  "function getPlayer(address) view returns (uint256,uint256,uint256)"
 ];
 
-const ERC20_ABI=[
-"function approve(address,uint256) returns(bool)"
+const ERC20_ABI = [
+  "function approve(address spender, uint256 amount) returns (bool)"
 ];
 
 /* STATE */
-let provider,signer,game,user;
-let connected=false;
-
-let energy=100,points=0,pvlt=0;
+let game;
+let connected = false;
 
 /* UI */
-const energyEl=document.getElementById("energy");
-const pointsEl=document.getElementById("points");
-const pvltEl=document.getElementById("pvlt");
+const energyEl = document.getElementById("energy");
+const pointsEl = document.getElementById("points");
+const pvltEl = document.getElementById("pvlt");
 
-/* CONNECT */
-document.getElementById("connectBtn").onclick=async()=>{
+/* CONNECT WALLET (FIXED) */
+document.getElementById("connectBtn").onclick = async () => {
+  try {
 
-  if(!window.ethereum){
-    alert("Install MetaMask");
-    return;
+    if (!window.ethereum) {
+      alert("MetaMask not found");
+      return;
+    }
+
+    const accounts = await window.ethereum.request({
+      method: "eth_requestAccounts"
+    });
+
+    if (!accounts || accounts.length === 0) {
+      alert("No wallet found");
+      return;
+    }
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+    const signer = provider.getSigner();
+
+    const user = await signer.getAddress();
+
+    game = new ethers.Contract(GAME_ADDRESS, GAME_ABI, signer);
+
+    window.user = user;
+    window.signer = signer;
+
+    connected = true;
+
+    document.getElementById("connectBtn").innerText =
+      user.slice(0,6) + "..." + user.slice(-4);
+
+  } catch (err) {
+    console.error(err);
+    alert("Wallet connection failed");
   }
-
-  await ethereum.request({method:"eth_requestAccounts"});
-
-  provider=new ethers.providers.Web3Provider(window.ethereum);
-  signer=provider.getSigner();
-  user=await signer.getAddress();
-
-  game=new ethers.Contract(GAME_ADDRESS,GAME_ABI,signer);
-
-  connected=true;
-
-  document.getElementById("connectBtn").innerText=
-    user.slice(0,6)+"..."+user.slice(-4);
 };
 
 /* TAP */
-document.getElementById("tapBtn").onclick=async()=>{
+document.getElementById("tapBtn").onclick = async () => {
+  try {
 
-  if(!connected) return alert("Connect wallet");
+    if (!connected) return alert("Connect wallet first");
 
-  await game.tap();
+    await game.tap();
 
-  const data=await game.getPlayer(user);
+    const data = await game.getPlayer(window.user);
 
-  energy=data[0].toNumber();
-  points=data[1].toNumber();
-  pvlt=data[2].toNumber();
+    energyEl.innerText = data[0].toNumber();
+    pointsEl.innerText = data[1].toNumber();
+    pvltEl.innerText = data[2].toNumber();
 
-  energyEl.innerText=energy;
-  pointsEl.innerText=points;
-  pvltEl.innerText=pvlt;
+  } catch (err) {
+    console.error(err);
+    alert("Tap failed");
+  }
 };
 
 /* BUY ENERGY */
-document.getElementById("buyBtn").onclick=async()=>{
+document.getElementById("buyBtn").onclick = async () => {
+  try {
 
-  if(!connected) return alert("Connect wallet");
+    if (!connected) return alert("Connect wallet first");
 
-  const token=new ethers.Contract(TOKEN_ADDRESS,ERC20_ABI,signer);
+    const token = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, window.signer);
 
-  await token.approve(GAME_ADDRESS,ethers.utils.parseEther("100"));
-  await game.buyEnergy();
+    await token.approve(GAME_ADDRESS, ethers.utils.parseEther("100"));
+    await game.buyEnergy();
 
-  const data=await game.getPlayer(user);
+    const data = await game.getPlayer(window.user);
 
-  energy=data[0].toNumber();
-  energyEl.innerText=energy;
+    energyEl.innerText = data[0].toNumber();
+
+  } catch (err) {
+    console.error(err);
+    alert("Buy failed");
+  }
 };
 
 /* CLAIM */
-document.getElementById("claimBtn").onclick=async()=>{
+document.getElementById("claimBtn").onclick = async () => {
+  try {
 
-  if(!connected) return alert("Connect wallet");
+    if (!connected) return alert("Connect wallet first");
 
-  await game.claim();
+    await game.claim();
 
-  const data=await game.getPlayer(user);
+    const data = await game.getPlayer(window.user);
 
-  pvlt=data[2].toNumber();
-  pvltEl.innerText=pvlt;
+    pvltEl.innerText = data[2].toNumber();
+
+  } catch (err) {
+    console.error(err);
+    alert("Claim failed");
+  }
 };
 
 </script>
