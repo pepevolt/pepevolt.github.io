@@ -1,700 +1,422 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
-
 <meta name="viewport"
 content="width=device-width,
 initial-scale=1.0,
 maximum-scale=1.0,
-user-scalable=no">
+user-scalable=no"/>
 
-<title>PVLT Tap Game</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-
-<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
+<title>PepeVolt</title>
 
 <style>
 
-/* ================= RESET ================= */
-
 *{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
 }
 
 html,body{
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#020b18;
-    font-family:Arial,sans-serif;
-    color:white;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  font-family:Arial,sans-serif;
+  background:#07111f;
 }
-
-/* ================= BODY ================= */
 
 body{
-    display:flex;
-    flex-direction:column;
+  display:flex;
+  justify-content:center;
+  align-items:center;
 }
 
-/* ================= TOP BAR ================= */
-
-.topbar{
-    width:100%;
-    padding:14px 18px;
-    background:#091426;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    font-size:14px;
-    font-weight:bold;
+.app{
+  width:100%;
+  max-width:430px;
+  height:100dvh;
+  background:
+  radial-gradient(circle at top,
+  #183153 0%,
+  #07111f 75%);
+  display:flex;
+  flex-direction:column;
+  padding:16px;
 }
 
-/* ================= MAIN ================= */
-
-.main{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding:20px;
-    overflow-y:auto;
+.top-nav{
+  display:flex;
+  gap:10px;
 }
 
-/* ================= TAP BUTTON ================= */
-
-.tapBtn{
-    width:240px;
-    height:240px;
-    border:none;
-    border-radius:50%;
-    overflow:hidden;
-    margin-top:20px;
-    background:linear-gradient(
-    135deg,
-    #00ff99,
-    #00ccff);
-
-    display:flex;
-    justify-content:center;
-    align-items:center;
-
-    box-shadow:
-    0 0 30px rgba(0,255,180,0.25);
-
-    cursor:pointer;
-    touch-action:manipulation;
+.nav-box{
+  flex:1;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:18px;
+  padding:12px;
+  text-align:center;
 }
 
-.tapBtn:active{
-    transform:scale(0.96);
+.nav-title{
+  font-size:11px;
+  color:#9fb2d0;
 }
 
-.tapBtn img{
-    width:78%;
-    height:78%;
-    object-fit:contain;
-    pointer-events:none;
+.nav-value{
+  font-size:18px;
+  font-weight:bold;
+  color:white;
 }
 
-/* ================= CARD ================= */
-
-.card{
-    width:100%;
-    max-width:380px;
-    margin-top:28px;
-
-    background:
-    rgba(255,255,255,0.04);
-
-    border:
-    1px solid rgba(255,255,255,0.08);
-
-    border-radius:18px;
-
-    padding:18px;
-
-    display:flex;
-    flex-direction:column;
-    gap:14px;
+#connectBtn{
+  margin-top:14px;
+  width:100%;
+  border:none;
+  border-radius:18px;
+  padding:15px;
+  font-size:16px;
+  font-weight:bold;
+  color:white;
+  background:
+  linear-gradient(135deg,
+  #00b894,
+  #00cec9);
+  cursor:pointer;
 }
 
-/* ================= INPUT ================= */
-
-input{
-    width:100%;
-    padding:15px;
-    border:none;
-    border-radius:12px;
-    background:#0c1628;
-    color:white;
-    font-size:14px;
-    outline:none;
+.center{
+  flex:1;
+  display:flex;
+  justify-content:center;
+  align-items:center;
 }
 
-/* ================= BUTTON ================= */
-
-.actionBtn{
-    width:100%;
-    padding:15px;
-    border:none;
-    border-radius:12px;
-    font-size:15px;
-    font-weight:bold;
-
-    background:
-    linear-gradient(
-    90deg,
-    #00ff99,
-    #00ccff);
-
-    color:black;
-    cursor:pointer;
+.tap-circle{
+  position:relative;
+  width:min(60vw,230px);
+  height:min(60vw,230px);
+  border-radius:50%;
+  background:
+  radial-gradient(circle at 30% 30%,
+  #00d2a8,
+  #00a884);
+  border:8px solid rgba(255,255,255,0.08);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  box-shadow:
+  0 0 70px rgba(0,255,180,0.25);
+  cursor:pointer;
+  overflow:hidden;
 }
 
-/* ================= STATUS ================= */
-
-.status{
-    text-align:center;
-    font-size:12px;
-    opacity:0.8;
-    display:none;
+.tap-circle img{
+  width:80%;
+  object-fit:contain;
 }
 
-/* ================= INFO ================= */
-
-.info{
-    margin-top:16px;
-    font-size:12px;
-    line-height:1.7;
-    opacity:0.8;
-    text-align:center;
-    max-width:380px;
+.actions{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
 }
 
-/* ================= FLOAT ================= */
+.action-btn{
+  padding:16px;
+  border:none;
+  border-radius:18px;
+  color:white;
+  font-weight:bold;
+}
+
+.buy{
+  background:
+  linear-gradient(135deg,
+  #00b894,
+  #00cec9);
+}
+
+.claim{
+  background:
+  linear-gradient(135deg,
+  #ffb347,
+  #ff7b54);
+}
 
 .float{
-    position:fixed;
-    color:white;
-    font-weight:bold;
-    pointer-events:none;
-    animation:floatUp 1s linear forwards;
-    z-index:9999;
+  position:fixed;
+  color:white;
+  font-weight:bold;
+  pointer-events:none;
+  animation:floatUp 1s linear forwards;
+  z-index:9999;
 }
 
 @keyframes floatUp{
-    0%{
-        opacity:1;
-        transform:translateY(0);
-    }
-
-    100%{
-        opacity:0;
-        transform:translateY(-70px);
-    }
-}
-
-/* ================= MODAL ================= */
-
-.modal-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.82);
-
-    display:flex;
-    justify-content:center;
-    align-items:center;
-
-    z-index:9999;
-
-    opacity:0;
-    pointer-events:none;
-
-    transition:0.25s;
-}
-
-.modal-overlay.active{
+  0%{
     opacity:1;
-    pointer-events:auto;
-}
-
-.modal-box{
-    width:92%;
-    max-width:360px;
-
-    background:#111827;
-
-    border:
-    1px solid rgba(255,255,255,0.08);
-
-    border-radius:22px;
-
-    padding:22px;
-}
-
-.modal-title{
-    font-size:18px;
-    font-weight:bold;
-    margin-bottom:18px;
-}
-
-.wallet-option{
-    width:100%;
-    padding:16px;
-    margin-bottom:12px;
-
-    border:none;
-    border-radius:14px;
-
-    background:#1f2937;
-
-    color:white;
-
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-
-    cursor:pointer;
-}
-
-.wallet-option:last-child{
-    margin-bottom:0;
-}
-
-.badge{
-    font-size:11px;
-    opacity:0.7;
+    transform:translateY(0);
+  }
+  100%{
+    opacity:0;
+    transform:translateY(-70px);
+  }
 }
 
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
 </head>
 
 <body>
 
-<div class="topbar">
+<div class="app">
 
-    <div>
-        🔋 <span id="energy">50</span>
+  <div class="top-nav">
+
+    <div class="nav-box">
+      <div class="nav-title">
+        ⚡ Energy
+      </div>
+
+      <div class="nav-value"
+      id="energy">
+        100
+      </div>
     </div>
 
-    <div>
-        ⚡ <span id="points">0</span>
+    <div class="nav-box">
+      <div class="nav-title">
+        💎 Points
+      </div>
+
+      <div class="nav-value"
+      id="points">
+        0
+      </div>
     </div>
 
-    <div>
-        💎 <span id="pvltg">0.0000</span>
+    <div class="nav-box">
+      <div class="nav-title">
+        🪙 PVLT
+      </div>
+
+      <div class="nav-value"
+      id="pvlt">
+        0
+      </div>
     </div>
 
-</div>
+  </div>
 
-<div class="main">
+  <button id="connectBtn">
+    Connect Wallet
+  </button>
 
-    <button class="tapBtn" onclick="tap(event)">
-        <img src="https://i.imgur.com/8Km9tLL.png">
+  <div class="center">
+
+    <div class="tap-circle"
+    id="tapBtn">
+
+      <img
+      src="https://i.imgur.com/8Km9tLL.png">
+
+    </div>
+
+  </div>
+
+  <div class="actions">
+
+    <button class="action-btn buy">
+      Buy 10000 Energy
     </button>
 
-    <div class="card">
+    <button class="action-btn claim">
+      Claim PVLT
+    </button>
 
-        <input
-        id="walletInput"
-        placeholder="Connect Polygon Wallet"
-        readonly>
-
-        <button
-        class="actionBtn"
-        onclick="openWalletModal()">
-
-            CONNECT WALLET
-
-        </button>
-
-        <div
-        class="status"
-        id="walletStatus">
-
-            Wallet Connected
-
-        </div>
-
-        <button
-        class="actionBtn">
-
-            BUY ENERGY
-
-        </button>
-
-        <button
-        class="actionBtn">
-
-            SWAP POINTS → PVLTG
-
-        </button>
-
-        <button
-        class="actionBtn">
-
-            CLAIM PVLT
-
-        </button>
-
-    </div>
-
-    <div class="info">
-
-        1 Tap = 1 Point<br>
-        10000 Points = 1 PVLTG<br>
-        100 PVLTG = 1 PVLT
-
-    </div>
+  </div>
 
 </div>
 
-<div
-class="modal-overlay"
-id="walletModal">
+<script type="module">
 
-    <div class="modal-box">
+import {
+  EthereumProvider
+} from
+"https://esm.sh/@walletconnect/ethereum-provider@2.11.0"
 
-        <div class="modal-title">
-            Connect Wallet
-        </div>
+const connectBtn =
+document.getElementById("connectBtn")
 
-    </div>
+let provider = null
+let account = null
 
-</div>
+/* CONNECT */
 
-<script>
+connectBtn.onclick = async ()=>{
 
-/* ================= CONFIG ================= */
+  try{
 
-const API =
-"https://pvlt-server.onrender.com"
+    provider =
+    await EthereumProvider.init({
 
-const PROJECT_ID =
-"1731f99148b9cf6107dee70b6efb14b7"
+      projectId:
+      "1731f99148b9cf6107dee70b6efb14b7",
 
-/* ================= STATE ================= */
+      chains:[1],
 
-let web3Provider
-let wallet = ""
+      showQrModal:true,
 
-let points = 0
-let energy = 50
-let pvltg = 0
+      methods:[
+        "eth_sendTransaction",
+        "personal_sign",
+        "eth_signTypedData"
+      ],
 
-/* ================= UI ================= */
+      optionalMethods:[
+        "eth_accounts",
+        "eth_requestAccounts",
+        "eth_chainId"
+      ],
 
-function updateUI(){
+      rpcMap:{
+        1:
+        "https://rpc.ankr.com/eth"
+      },
 
-    document
-    .getElementById("energy")
-    .innerText = energy
+      metadata:{
+        name:"PepeVolt",
 
-    document
-    .getElementById("points")
-    .innerText = points
+        description:
+        "PepeVolt Game",
 
-    document
-    .getElementById("pvltg")
-    .innerText =
-    Number(pvltg).toFixed(4)
-}
+        url:
+        window.location.origin,
 
-/* ================= MODAL ================= */
+        icons:[
+          "https://cdn-icons-png.flaticon.com/512/825/825508.png"
+        ]
+      }
 
-function openWalletModal(){
+    })
 
-    document
-    .getElementById("walletModal")
-    .classList.add("active")
-}
+    await provider.connect()
 
-function closeWalletModal(){
+    const accounts =
+    await provider.request({
+      method:"eth_accounts"
+    })
 
-    document
-    .getElementById("walletModal")
-    .classList.remove("active")
-}
+    account = accounts[0]
 
-/* ================= METAMASK ================= */
-
-async function connectMetaMask(){
-
-    try{
-
-        if(!window.ethereum){
-
-            alert("Install MetaMask")
-
-            return
-        }
-
-        await window.ethereum.request({
-            method:"eth_requestAccounts"
-        })
-
-        web3Provider =
-        new ethers.providers.Web3Provider(
-            window.ethereum
-        )
-
-        const signer =
-        web3Provider.getSigner()
-
-        wallet =
-        await signer.getAddress()
-
-        walletConnected()
-
-    }catch(err){
-
-        console.log(err)
-
-        alert(
-            "MetaMask connection failed"
-        )
-    }
-}
-
-/* ================= WALLETCONNECT ================= */
-
-async function connectWalletConnect(){
-
-    try{
-
-        const WalletConnectProvider =
-        window["@walletconnect/ethereum-provider"]
-        .EthereumProvider
-
-        const wcProvider =
-        await WalletConnectProvider.init({
-
-            projectId:
-            PROJECT_ID,
-
-            chains:[137],
-
-            showQrModal:true,
-
-            methods:[
-                "eth_sendTransaction",
-                "personal_sign",
-                "eth_signTypedData"
-            ],
-
-            optionalMethods:[
-                "eth_accounts",
-                "eth_requestAccounts",
-                "eth_chainId"
-            ],
-
-            rpcMap:{
-                137:
-                "https://polygon-rpc.com"
-            },
-
-            metadata:{
-                name:"PepeVolt",
-
-                description:
-                "PepeVolt Game",
-
-                url:
-                window.location.origin,
-
-                icons:[
-                    "https://cdn-icons-png.flaticon.com/512/825/825508.png"
-                ]
-            }
-
-        })
-
-        await wcProvider.connect()
-
-        web3Provider =
-        new ethers.providers.Web3Provider(
-            wcProvider
-        )
-
-        const signer =
-        web3Provider.getSigner()
-
-        wallet =
-        await signer.getAddress()
-
-        walletConnected()
-
-    }catch(err){
-
-        console.log(err)
-
-        alert(
-            "WalletConnect failed"
-        )
-    }
-}
-
-/* ================= WALLET CONNECTED ================= */
-
-async function walletConnected(){
-
-    closeWalletModal()
-
-    document
-    .getElementById("walletInput")
-    .value =
-    wallet.slice(0,6)
+    connectBtn.innerText =
+    account.slice(0,6)
     +"..."
-    +wallet.slice(-4)
+    +account.slice(-4)
 
-    document
-    .getElementById("walletStatus")
-    .style.display = "block"
+  }catch(err){
 
-    try{
+    console.log(err)
 
-        const res =
-        await fetch(API+"/user",{
+    alert(
+      "Wallet connection failed"
+    )
 
-            method:"POST",
+  }
 
-            headers:{
-                "Content-Type":
-                "application/json"
-            },
-
-            body:JSON.stringify({
-                wallet
-            })
-
-        })
-
-        const data =
-        await res.json()
-
-        points =
-        data.points || 0
-
-        energy =
-        data.energy || 50
-
-        pvltg =
-        data.pvltg || 0
-
-        updateUI()
-
-    }catch(err){
-
-        console.log(err)
-    }
 }
 
-/* ================= TAP ================= */
+/* TAP */
 
-async function tap(e){
+let energy = 100
+let points = 0
+let pvlt = 0
 
-    if(!wallet){
+const energyEl =
+document.getElementById("energy")
 
-        alert(
-            "Connect wallet first"
-        )
+const pointsEl =
+document.getElementById("points")
 
-        return
-    }
+const pvltEl =
+document.getElementById("pvlt")
 
-    if(energy <= 0){
+document
+.getElementById("tapBtn")
+.onclick = (e)=>{
 
-        alert("No Energy")
+  if(!account){
 
-        return
-    }
+    alert(
+      "Connect Wallet First"
+    )
 
-    try{
+    return
+  }
 
-        const res =
-        await fetch(API+"/tap",{
+  if(energy <= 0){
 
-            method:"POST",
+    alert("No Energy")
 
-            headers:{
-                "Content-Type":
-                "application/json"
-            },
+    return
+  }
 
-            body:JSON.stringify({
-                wallet
-            })
+  energy--
+  points++
 
-        })
+  if(points >= 1000){
 
-        const data =
-        await res.json()
+    pvlt += Math.floor(
+      points / 1000
+    )
 
-        if(data.error){
+    points = points % 1000
+  }
 
-            alert(data.error)
+  energyEl.innerText = energy
+  pointsEl.innerText = points
+  pvltEl.innerText = pvlt
 
-            return
-        }
+  const f =
+  document.createElement("div")
 
-        points =
-        data.points
+  f.className = "float"
 
-        energy =
-        data.energy
+  f.innerText = "+1"
 
-        updateUI()
+  f.style.left =
+  e.clientX + "px"
 
-        const f =
-        document.createElement("div")
+  f.style.top =
+  e.clientY + "px"
 
-        f.className = "float"
+  document.body.appendChild(f)
 
-        f.innerText = "+1"
+  setTimeout(()=>{
+    f.remove()
+  },1000)
 
-        f.style.left =
-        e.clientX + "px"
-
-        f.style.top =
-        e.clientY + "px"
-
-        document.body.appendChild(f)
-
-        setTimeout(()=>{
-            f.remove()
-        },1000)
-
-    }catch(err){
-
-        console.log(err)
-
-        alert("Tap failed")
-    }
 }
 
-/* ================= ENERGY REGEN ================= */
+/* ENERGY REGEN */
 
 setInterval(()=>{
 
-    if(energy < 50){
+  if(energy < 100){
 
-        energy++
+    energy++
 
-        updateUI()
-    }
+    energyEl.innerText =
+    energy
 
-},30000)
+  }
 
-/* ================= START ================= */
-
-updateUI()
+},5000)
 
 </script>
 
