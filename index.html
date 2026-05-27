@@ -2,79 +2,40 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>PepeVolt</title>
 
 <style>
-
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-}
-
-html,body{
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  font-family:Arial,sans-serif;
-  background:#07111f;
-}
-
 body{
+  margin:0;
+  font-family:Arial;
+  background:#07111f;
+  color:white;
   display:flex;
   justify-content:center;
-  align-items:center;
 }
 
 .app{
   width:100%;
   max-width:430px;
-  height:100dvh;
-  background: radial-gradient(circle at top,#183153 0%,#07111f 75%);
+  height:100vh;
+  padding:16px;
   display:flex;
   flex-direction:column;
-  padding:16px;
 }
 
-.top-nav{
+.top{
   display:flex;
   gap:10px;
 }
 
-.nav-box{
+.box{
   flex:1;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:18px;
-  padding:12px;
+  background:#ffffff10;
+  padding:10px;
+  border-radius:12px;
   text-align:center;
-}
-
-.nav-title{
-  font-size:11px;
-  color:#9fb2d0;
-}
-
-.nav-value{
-  font-size:18px;
-  font-weight:bold;
-  color:white;
-}
-
-#connectBtn{
-  margin-top:14px;
-  width:100%;
-  border:none;
-  border-radius:18px;
-  padding:15px;
-  font-size:16px;
-  font-weight:bold;
-  color:white;
-  background:linear-gradient(135deg,#00b894,#00cec9);
 }
 
 .center{
@@ -84,70 +45,29 @@ body{
   align-items:center;
 }
 
-.tap-circle{
-  position:relative;
-  width:min(60vw,230px);
-  height:min(60vw,230px);
+.circle{
+  width:220px;
+  height:220px;
   border-radius:50%;
-  background: radial-gradient(circle at 30% 30%,#ffcc00,#ff8800);
-  border:8px solid white;
+  background:orange;
   display:flex;
   justify-content:center;
   align-items:center;
-  box-shadow:0 0 70px rgba(255,180,0,0.4);
+  position:relative;
+}
+
+button{
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  margin-top:10px;
+  font-weight:bold;
   cursor:pointer;
 }
 
-.progress-ring{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  transform:rotate(-90deg);
-}
-
-.fg{
-  stroke:#00cec9;
-  stroke-width:8;
-  fill:none;
-  stroke-linecap:round;
-  transition:stroke-dashoffset 0.3s linear;
-}
-
-.actions{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.action-btn{
-  padding:16px;
-  border:none;
-  border-radius:18px;
-  color:white;
-  font-weight:bold;
-}
-
-.buy{
-  background:linear-gradient(135deg,#00b894,#00cec9);
-}
-
-.claim{
-  background:linear-gradient(135deg,#ffb347,#ff7b54);
-}
-
-.float{
-  position:fixed;
-  color:white;
-  font-weight:bold;
-  animation:floatUp 1s linear forwards;
-  pointer-events:none;
-}
-
-@keyframes floatUp{
-  0%{opacity:1;transform:translateY(0);}
-  100%{opacity:0;transform:translateY(-70px);}
-}
+.buy{background:#00cec9;color:white;}
+.claim{background:#ff7b54;color:white;}
+.connect{background:#00b894;color:white;}
 
 </style>
 </head>
@@ -156,138 +76,100 @@ body{
 
 <div class="app">
 
-  <div class="top-nav">
-    <div class="nav-box">
-      <div class="nav-title">⚡ Energy</div>
-      <div class="nav-value" id="energy">100</div>
-    </div>
-
-    <div class="nav-box">
-      <div class="nav-title">💎 Points</div>
-      <div class="nav-value" id="points">0</div>
-    </div>
-
-    <div class="nav-box">
-      <div class="nav-title">🪙 PVLT</div>
-      <div class="nav-value" id="pvlt">0</div>
-    </div>
+  <div class="top">
+    <div class="box">⚡ <div id="energy">100</div></div>
+    <div class="box">💎 <div id="points">0</div></div>
+    <div class="box">🪙 <div id="pvlt">0</div></div>
   </div>
 
-  <button id="connectBtn">Connect Wallet</button>
+  <button class="connect" id="connectBtn">Connect Wallet</button>
 
   <div class="center">
-
-    <div class="tap-circle" id="tapBtn">
-
-      <svg class="progress-ring">
-        <circle cx="50%" cy="50%" r="48%" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
-        <circle class="fg" cx="50%" cy="50%" r="48%" />
-      </svg>
-
-      <img src="https://cdn-icons-png.flaticon.com/512/825/825508.png" width="32%">
-
-    </div>
-
+    <div class="circle" id="tapBtn">TAP</div>
   </div>
 
-  <div class="actions">
-    <button class="action-btn buy" id="buyBtn">Buy 10000 Energy</button>
-    <button class="action-btn claim" id="claimBtn">Claim PVLT</button>
-  </div>
+  <button class="buy" id="buyBtn">Buy 10000 Energy (100 PVLT)</button>
+  <button class="claim" id="claimBtn">Claim PVLT</button>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+
 <script>
 
-const connectBtn=document.getElementById('connectBtn');
-const energyEl=document.getElementById('energy');
-const pointsEl=document.getElementById('points');
-const pvltEl=document.getElementById('pvlt');
-const fg=document.querySelector('.fg');
+const GAME_CONTRACT_ADDRESS="0xYourGame";
+const PVLT_ADDRESS="0xYourToken";
 
+const ABI_GAME=[
+"function tap()",
+"function buyEnergy()",
+"function claim()",
+"function getPlayer(address) view returns(uint256,uint256,uint256)"
+];
+
+const ABI_ERC20=[
+"function approve(address,uint256) returns(bool)"
+];
+
+let provider,signer,game,user;
+
+let energy=100,points=0,pvlt=0;
 let connected=false;
 
-let energy=100;
-let points=0;
-let pvlt=0;
+const energyEl=document.getElementById("energy");
+const pointsEl=document.getElementById("points");
+const pvltEl=document.getElementById("pvlt");
 
-const MAX_ENERGY=100;
+document.getElementById("connectBtn").onclick=async()=>{
 
-/* RING SETUP */
-const radius=48;
-const circumference=2*Math.PI*radius;
+  await ethereum.request({method:"eth_requestAccounts"});
 
-fg.style.strokeDasharray=circumference;
-fg.style.strokeDashoffset=0;
+  provider=new ethers.providers.Web3Provider(window.ethereum);
+  signer=provider.getSigner();
 
-function updateRing(){
-  const percent=energy/MAX_ENERGY;
-  fg.style.strokeDashoffset=circumference*(1-percent);
-}
+  user=await signer.getAddress();
 
-/* ⚡ ENERGY REGEN FIXED: +1 EVERY 5 SECONDS */
-setInterval(()=>{
-  if(energy<MAX_ENERGY){
-    energy++;
-    energyEl.innerText=energy;
-    updateRing();
-  }
-},5000);
-
-/* CONNECT */
-connectBtn.addEventListener('click',async()=>{
-
-  if(!window.ethereum){
-    alert('Install MetaMask');
-    return;
-  }
-
-  const accounts=await window.ethereum.request({
-    method:'eth_requestAccounts'
-  });
-
-  connectBtn.innerText=
-    accounts[0].slice(0,6)+'...'+accounts[0].slice(-4);
+  game=new ethers.Contract(GAME_CONTRACT_ADDRESS,ABI_GAME,signer);
 
   connected=true;
-});
+};
 
-/* TAP */
-document.getElementById('tapBtn').addEventListener('click',(e)=>{
+document.getElementById("tapBtn").onclick=async()=>{
 
-  if(!connected){
-    alert('Connect Wallet First');
-    return;
-  }
+  if(!connected) return alert("Connect wallet");
 
-  if(energy<=0){
-    alert('No Energy');
-    return;
-  }
+  await game.tap();
 
-  energy--;
-  points++;
+  const data=await game.getPlayer(user);
 
-  if(points>=1000){
-    pvlt+=Math.floor(points/1000);
-    points=points%1000;
-  }
+  energy=data[0].toNumber();
+  points=data[1].toNumber();
+  pvlt=data[2].toNumber();
 
   energyEl.innerText=energy;
   pointsEl.innerText=points;
   pvltEl.innerText=pvlt;
+};
 
-  updateRing();
+document.getElementById("buyBtn").onclick=async()=>{
 
-  const f=document.createElement('div');
-  f.className='float';
-  f.innerText='+1 Point';
-  f.style.left=e.clientX+'px';
-  f.style.top=e.clientY+'px';
-  document.body.appendChild(f);
-  setTimeout(()=>f.remove(),1000);
+  const token=new ethers.Contract(PVLT_ADDRESS,ABI_ERC20,signer);
 
-});
+  await token.approve(GAME_CONTRACT_ADDRESS,ethers.utils.parseEther("100"));
+  await game.buyEnergy();
+
+};
+
+document.getElementById("claimBtn").onclick=async()=>{
+
+  await game.claim();
+
+  const data=await game.getPlayer(user);
+
+  pvlt=data[2].toNumber();
+  pvltEl.innerText=pvlt;
+
+};
 
 </script>
 
