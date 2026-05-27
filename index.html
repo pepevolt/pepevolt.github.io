@@ -3,96 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PepeVolt Dashboard</title>
+    <title>Points Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Fixed container to prevent layout shifting */
-        body { background: #0b0f19; display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 450px; min-height: 100vh; background: #0f172a; position: relative; }
-        .glass { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.05); }
-    </style>
 </head>
-<body>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Points Controller</h1>
 
-<div class="app-container p-6 flex flex-col">
-    <div class="grid grid-cols-3 gap-2 mb-8">
-        <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] text-slate-400">ENERGY</p><p id="energy" class="font-bold">0</p></div>
-        <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] text-slate-400">POINTS</p><p id="points" class="font-bold">0</p></div>
-        <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] text-slate-400">PVLT</p><p id="pvlt" class="font-bold">0</p></div>
-    </div>
+        <div class="space-y-4 mb-8">
+            <div class="bg-gray-50 p-3 rounded">
+                <p class="text-sm text-gray-500">Energy Price</p>
+                <p class="font-mono font-semibold break-all">100,000,000,000,000,000,000</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-blue-50 p-3 rounded">
+                    <p class="text-sm text-blue-600">Free Cap</p>
+                    <p class="text-xl font-bold">50</p>
+                </div>
+                <div class="bg-green-50 p-3 rounded">
+                    <p class="text-sm text-green-600">Paid Cap</p>
+                    <p class="text-xl font-bold">10,000</p>
+                </div>
+            </div>
+        </div>
 
-    <div id="view-game" class="flex-grow flex flex-col items-center">
-        <button id="tapBtn" class="w-64 h-64 bg-emerald-500 rounded-full mb-8 shadow-[0_0_60px_rgba(16,185,129,0.2)] font-bold text-3xl">TAP!</button>
-        <div class="w-full space-y-3">
-            <button id="refillBtn" class="w-full glass p-4 rounded-xl text-left">Refill Energy</button>
-            <button id="convertBtn" class="w-full glass p-4 rounded-xl text-left">Convert Points</button>
+        <div class="space-y-3">
+            <button onclick="handleTap()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
+                Tap
+            </button>
+            <button onclick="handleConvert()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+                Convert Points
+            </button>
         </div>
     </div>
 
-    <div id="view-treasury" class="hidden flex-grow flex flex-col items-center justify-center">
-        <h2 class="text-xl font-bold mb-4">Treasury Rewards</h2>
-        <button id="claimBtn" class="w-full bg-yellow-600 p-4 rounded-xl font-bold text-slate-900">Claim Rewards</button>
-    </div>
-
-    <div class="grid grid-cols-2 gap-4 mt-8 border-t border-slate-800 pt-4">
-        <button onclick="switchTab('game')" class="text-sm font-bold text-emerald-400">DISCOVER</button>
-        <button onclick="switchTab('treasury')" class="text-sm font-bold text-slate-400">TREASURY</button>
-    </div>
-
-    <button id="connectBtn" class="mt-6 w-full bg-blue-600 py-3 rounded-lg font-bold">Connect Wallet</button>
-</div>
-
-<script type="module">
-    import { createAppKit, defaultConfig } from 'https://esm.sh/@reown/appkit@1.0.0';
-    import { mainnet } from 'https://esm.sh/@reown/appkit/networks@1.0.0';
-    import { BrowserProvider, Contract, formatUnits } from 'https://esm.sh/ethers@6.12.1';
-
-    const modal = createAppKit({
-        adapters: [defaultConfig({ metadata: { name: 'PepeVolt', description: 'Dashboard', url: 'https://pepevolt.github.io', icons: [] } })],
-        networks: [mainnet],
-        projectId: '1731f99148b9cf6107dee70b6efb14b7'
-    });
-
-    // Contract Logic
-    const G_ADDR = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
-    const T_ADDR = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
-    const P_ADDR = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
-
-    let game, treasury, token, signer;
-
-    document.getElementById('connectBtn').onclick = () => modal.open();
-
-    modal.subscribeState(async (state) => {
-        if (state.isConnected) {
-            const provider = new BrowserProvider(modal.getWalletProvider());
-            signer = await provider.getSigner();
-            game = new Contract(G_ADDR, [{"inputs":[],"name":"tap","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"refillEnergy","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"convertPoints","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"players","outputs":[{"internalType":"uint256","name":"energy","type":"uint256"},{"internalType":"uint256","name":"points","type":"uint256"},{"internalType":"uint256","name":"burnedGPVLT","type":"uint256"},{"internalType":"bool","name":"paidUser","type":"bool"},{"internalType":"uint256","name":"lastClaimDay","type":"uint256"}],"stateMutability":"view","type":"function"}], signer);
-            treasury = new Contract(T_ADDR, [{"inputs":[],"name":"claimRewards","outputs":[],"stateMutability":"nonpayable","type":"function"}], signer);
-            token = new Contract(P_ADDR, [{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}], signer);
-            
-            document.getElementById('connectBtn').innerText = "Wallet Connected";
-            update();
+    <script>
+        function handleTap() {
+            console.log("Tap function triggered");
+            // Add your ethers.js or web3.js contract interaction here
         }
-    });
 
-    async function update() {
-        const addr = await signer.getAddress();
-        const [stats, bal] = await Promise.all([game.players(addr), token.balanceOf(addr)]);
-        document.getElementById('energy').innerText = stats.energy.toString();
-        document.getElementById('points').innerText = stats.points.toString();
-        document.getElementById('pvlt').innerText = formatUnits(bal, 18).substring(0, 4);
-    }
-
-    // Button Handlers
-    document.getElementById('tapBtn').onclick = async () => { await game.tap(); update(); };
-    document.getElementById('refillBtn').onclick = async () => { await game.refillEnergy(); update(); };
-    document.getElementById('convertBtn').onclick = async () => { await game.convertPoints(); update(); };
-    document.getElementById('claimBtn').onclick = async () => { await treasury.claimRewards(); };
-
-    window.switchTab = (tab) => {
-        document.getElementById('view-game').classList.toggle('hidden', tab !== 'game');
-        document.getElementById('view-treasury').classList.toggle('hidden', tab !== 'treasury');
-    };
-</script>
+        function handleConvert() {
+            console.log("Convert Points function triggered");
+            // Add your ethers.js or web3.js contract interaction here
+        }
+    </script>
 </body>
 </html>
