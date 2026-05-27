@@ -3,263 +3,135 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>PVLT Tap Game v3</title>
-
-<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<title>PVLT Tap Game</title>
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:linear-gradient(180deg,#070b14,#0b1a33);
-  color:white;
-  text-align:center;
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0b1220;
+  color: white;
+  text-align: center;
 }
 
-.container{
-  max-width:520px;
-  margin:auto;
-  padding:20px;
+.header {
+  padding: 15px;
+  font-size: 18px;
 }
 
-/* CARD */
-.card{
-  background:#111a2e;
-  padding:15px;
-  border-radius:14px;
-  margin:10px 0;
-  text-align:left;
+button {
+  padding: 12px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #2d6cdf;
+  color: white;
+  font-weight: bold;
 }
 
-/* BUTTONS */
-button{
-  width:100%;
-  padding:12px;
-  margin:8px 0;
-  border:none;
-  border-radius:12px;
-  font-size:16px;
-  background:#2b6fff;
-  color:white;
-  cursor:pointer;
+#tapArea {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle at top, #3ee6a8, #167dff);
+  margin: 40px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: bold;
+  user-select: none;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgba(0,255,200,0.4);
 }
 
-button:active{ transform:scale(0.97); }
-button:disabled{ background:#444; }
-
-/* ENERGY BAR */
-.bar{
-  width:100%;
-  height:12px;
-  background:#222;
-  border-radius:20px;
-  overflow:hidden;
-  margin-top:8px;
-}
-
-.fill{
-  height:100%;
-  width:0%;
-  background:linear-gradient(90deg,#00ff99,#00b3ff);
-  transition:0.4s;
-}
-
-/* GAME AREA */
-.game-area{
-  position:relative;
-  padding:25px;
-  margin-top:10px;
-  background:#0f1a30;
-  border-radius:16px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-
-/* CIRCULAR TAP */
-.tap-circle{
-  width:170px;
-  height:170px;
-  border-radius:50%;
-  background:radial-gradient(circle at 30% 30%, #2b6fff, #0a1b3d);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:20px;
-  font-weight:bold;
-  cursor:pointer;
-  user-select:none;
-  box-shadow:0 0 25px rgba(43,111,255,0.5);
-  transition:transform 0.1s ease;
-}
-
-.tap-circle:active{
-  transform:scale(0.94);
-}
-
-/* FLOAT TEXT */
-.float{
-  position:absolute;
-  color:#00ff99;
-  font-weight:bold;
-  animation:floatUp 0.8s ease-out forwards;
-  pointer-events:none;
-}
-
-@keyframes floatUp{
-  0%{opacity:1; transform:translateY(0);}
-  100%{opacity:0; transform:translateY(-60px);}
+.stats {
+  margin-top: 20px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
-
-<h2>⚡ PVLT TAP GAME</h2>
-
-<button id="connectBtn">Connect Wallet</button>
-
-<div class="card">
-<p><b>Wallet:</b> <span id="addr">-</span></p>
-<p><b>Energy:</b> <span id="energy">0</span></p>
-
-<div class="bar">
-  <div class="fill" id="energyBar"></div>
+<div class="header">
+  <button id="connectBtn">WalletConnect - Connect Your Wallet</button>
 </div>
 
-<p><b>Points:</b> <span id="points">0</span></p>
-<p><b>Burned:</b> <span id="burned">0</span></p>
+<div id="tapArea">TAP</div>
+
+<div class="stats">
+  <div>Points: <span id="points">0</span></div>
+  <div>Energy: <span id="energy">0</span></div>
 </div>
 
-<div class="game-area">
-  <h3>Tap Circle</h3>
+<button onclick="refill()">Refill Energy</button>
+<button onclick="convert()">Convert Points</button>
 
-  <div class="tap-circle" id="tapCircle">
-    👆 TAP
-  </div>
-</div>
-
-<button id="refillBtn" disabled>⚡ Refill Energy</button>
-<button id="convertBtn" disabled>🔁 Convert Points</button>
-<button id="claimBtn" disabled>💰 Claim Rewards</button>
-
-</div>
+<!-- WalletConnect + Ethers -->
+<script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+<script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
 
 <script>
-/* CONTRACTS */
+const PVLT_ABI = [ /* your ABI shortened in UI below not repeated for space */ ];
+const GAME_ABI = [ /* your ABI shortened */ ];
+const TREASURY_ABI = [ /* your ABI shortened */ ];
+
+const PVLT_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
 const GAME_ADDRESS = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
-const TREASURY_ADDRESS = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
 
-/* MINIMAL ABI */
-const GAME_ABI = [
-"function tap()",
-"function refillEnergy()",
-"function convertPoints()",
-"function players(address) view returns (uint256 energy,uint256 points,uint256 burnedGPVLT,bool paidUser,uint256 lastClaimDay)"
-];
+let provider, signer, gameContract, user;
 
-const TREASURY_ABI = [
-"function claimRewards()"
-];
-
-let provider, signer, user, game, treasury;
-
-/* UI */
 const connectBtn = document.getElementById("connectBtn");
-const tapCircle = document.getElementById("tapCircle");
-const refillBtn = document.getElementById("refillBtn");
-const convertBtn = document.getElementById("convertBtn");
-const claimBtn = document.getElementById("claimBtn");
 
-/* CONNECT */
-connectBtn.onclick = async () => {
-  if (!window.ethereum) return alert("Install wallet");
+async function connectWallet() {
+  const ethereumProvider = await WalletConnectEthereumProvider.init({
+    projectId: "1731f99148b9cf6107dee70b6efb14b7",
+    chains: [137], // Polygon
+    showQrModal: true,
+    methods: ["eth_sendTransaction", "eth_sign", "personal_sign"],
+    events: ["chainChanged", "accountsChanged"]
+  });
 
-  provider = new ethers.BrowserProvider(window.ethereum);
-  await window.ethereum.request({ method: "eth_requestAccounts" });
+  await ethereumProvider.connect();
 
-  signer = await provider.getSigner();
+  provider = new ethers.providers.Web3Provider(ethereumProvider);
+  signer = provider.getSigner();
   user = await signer.getAddress();
 
-  game = new ethers.Contract(GAME_ADDRESS, GAME_ABI, signer);
-  treasury = new ethers.Contract(TREASURY_ADDRESS, TREASURY_ABI, signer);
+  gameContract = new ethers.Contract(GAME_ADDRESS, GAME_ABI, signer);
 
-  document.getElementById("addr").innerText =
-    user.slice(0,6) + "..." + user.slice(-4);
+  connectBtn.innerText = "Connected: " + user.slice(0,6) + "...";
 
-  refillBtn.disabled = false;
-  convertBtn.disabled = false;
-  claimBtn.disabled = false;
-
-  load();
-  setInterval(load, 2500);
-};
-
-/* LOAD DATA */
-async function load(){
-  const p = await game.players(user);
-
-  let energy = Number(p.energy);
-  let points = Number(p.points);
-  let burned = Number(p.burnedGPVLT);
-
-  document.getElementById("energy").innerText = energy;
-  document.getElementById("points").innerText = points;
-  document.getElementById("burned").innerText = burned;
-
-  let percent = Math.min((energy / 100) * 100, 100);
-  document.getElementById("energyBar").style.width = percent + "%";
+  loadStats();
 }
 
-/* TAP */
-tapCircle.onclick = async (e) => {
-  try{
-    spawnFloat();
+connectBtn.onclick = connectWallet;
 
-    const tx = await game.tap();
-    await tx.wait();
-
-    load();
-  }catch(err){
-    console.log(err);
-  }
+document.getElementById("tapArea").onclick = async () => {
+  if (!gameContract) return alert("Connect wallet first");
+  const tx = await gameContract.tap();
+  await tx.wait();
+  loadStats();
 };
 
-/* FLOAT ANIMATION */
-function spawnFloat(){
-  const el = document.createElement("div");
-  el.className = "float";
-  el.innerText = "+1";
-
-  const rect = tapCircle.getBoundingClientRect();
-
-  el.style.left = rect.left + rect.width/2 + "px";
-  el.style.top = rect.top + rect.height/2 + "px";
-
-  document.body.appendChild(el);
-  setTimeout(()=>el.remove(),800);
+async function loadStats() {
+  const data = await gameContract.players(user);
+  document.getElementById("points").innerText = data.points.toString();
+  document.getElementById("energy").innerText = data.energy.toString();
 }
 
-/* ACTIONS */
-refillBtn.onclick = async () => {
-  const tx = await game.refillEnergy();
+async function refill() {
+  if (!gameContract) return;
+  const tx = await gameContract.refillEnergy();
   await tx.wait();
-  load();
-};
+  loadStats();
+}
 
-convertBtn.onclick = async () => {
-  const tx = await game.convertPoints();
+async function convert() {
+  if (!gameContract) return;
+  const tx = await gameContract.convertPoints();
   await tx.wait();
-  load();
-};
-
-claimBtn.onclick = async () => {
-  const tx = await treasury.claimRewards();
-  await tx.wait();
-  load();
-};
+  loadStats();
+}
 </script>
 
 </body>
