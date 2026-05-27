@@ -36,14 +36,39 @@ body {
     font-weight:600;
 }
 
-/* CENTER CONTENT */
+/* CENTER LAYOUT */
 .center {
     height:100vh;
     display:flex;
+    flex-direction:column;
     justify-content:center;
     align-items:center;
+    gap:25px;
 }
 
+/* TAP CIRCLE */
+.tap-circle {
+    width:140px;
+    height:140px;
+    border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, #3b82f6, #1e293b);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:18px;
+    font-weight:700;
+    cursor:pointer;
+    user-select:none;
+    box-shadow:0 0 20px rgba(59,130,246,0.6);
+    transition:0.2s;
+}
+
+.tap-circle:active {
+    transform:scale(0.92);
+    box-shadow:0 0 35px rgba(59,130,246,0.9);
+}
+
+/* CONNECT BUTTON */
 #connect-button {
     padding:14px 28px;
     font-size:16px;
@@ -72,9 +97,17 @@ body {
     <div class="nav-item">💎 0</div>
 </div>
 
-<!-- CENTER BUTTON -->
+<!-- CENTER -->
 <div class="center">
+
+    <!-- TAP CIRCLE -->
+    <div class="tap-circle" id="tap-circle">
+        TAP
+    </div>
+
+    <!-- CONNECT BUTTON -->
     <button id="connect-button">Connect Wallet</button>
+
 </div>
 
 <script type="module">
@@ -96,9 +129,14 @@ const modal = createAppKit({
     }
 })
 
-// OPEN WALLET
+// CONNECT WALLET
 document.getElementById("connect-button").addEventListener("click", () => {
     modal.open()
+})
+
+// TAP CLICK (future game logic)
+document.getElementById("tap-circle").addEventListener("click", () => {
+    console.log("Tapped!")
 })
 </script>
 
