@@ -2,7 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Connect Wallet Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Wallet</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #0f0f12; /* Modern Dark Mode */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #connect-button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: #3b82f6; /* Modern Blue */
+            border: none;
+            border-radius: 50px; /* Pill Shape */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        #connect-button:hover {
+            background-color: #2563eb;
+            transform: scale(1.05); /* Slight pop effect */
+        }
+
+        #connect-button:active {
+            transform: scale(0.98);
+        }
+    </style>
 </head>
 <body>
 
@@ -11,26 +45,20 @@
     <script type="module">
         import { createWeb3Modal, defaultConfig } from 'https://cdn.jsdelivr.net/npm/@web3modal/ethers@latest/+esm'
 
-        // 1. Get Project ID from https://cloud.walletconnect.com/
-        const projectId = '1731f99148b9cf6107dee70b6efb14b7'
+        const projectId = 'YOUR_PROJECT_ID' // Replace with your actual Project ID
 
-        // 2. Define chains
-        const mainnet = {
-            chainId: 1,
-            name: 'Ethereum',
-            currency: 'ETH',
-            explorerUrl: 'https://etherscan.io',
-            rpcUrl: 'https://cloudflare-eth.com'
-        }
-
-        // 3. Create Modal
         const modal = createWeb3Modal({
             ethersConfig: defaultConfig({ metadata: { name: 'My App', description: 'Web3 App', url: 'https://mywebsite.com', icons: [] } }),
-            chains: [mainnet],
+            chains: [{
+                chainId: 1,
+                name: 'Ethereum',
+                currency: 'ETH',
+                explorerUrl: 'https://etherscan.io',
+                rpcUrl: 'https://cloudflare-eth.com'
+            }],
             projectId
         })
 
-        // 4. Attach event to button
         document.getElementById('connect-button').addEventListener('click', () => {
             modal.open()
         })
