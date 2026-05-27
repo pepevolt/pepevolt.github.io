@@ -57,7 +57,6 @@ body {
 
 .tap-circle:active {
     transform:scale(0.92);
-    box-shadow:0 0 35px rgba(59,130,246,0.9);
 }
 
 /* BUTTONS */
@@ -72,6 +71,11 @@ button {
 #connect-button { background:#3b82f6; color:white; }
 #buy-energy { background:#f59e0b; color:white; }
 #claim-pvlt { background:#10b981; color:white; }
+
+.locked {
+    opacity:0.4;
+    pointer-events:none;
+}
 </style>
 </head>
 
@@ -79,19 +83,19 @@ button {
 
 <!-- TOP NAV -->
 <div class="top-nav">
-    <div id="energy">⚡ 50</div>
-    <div id="points">🪙 0</div>
-    <div id="pvlt">💎 0</div>
+    <div id="energy">⚡ -</div>
+    <div id="points">🪙 -</div>
+    <div id="pvlt">💎 -</div>
 </div>
 
 <!-- CENTER -->
 <div class="center">
 
-    <div class="tap-circle" id="tap-circle">TAP</div>
+    <div class="tap-circle" id="tap-circle">LOCKED</div>
 
     <button id="connect-button">Connect Wallet</button>
-    <button id="buy-energy">Buy Energy</button>
-    <button id="claim-pvlt">Claim PVLT</button>
+    <button id="buy-energy" class="locked">Buy Energy</button>
+    <button id="claim-pvlt" class="locked">Claim PVLT</button>
 
 </div>
 
@@ -113,25 +117,46 @@ const modal = createAppKit({
 })
 
 // GAME STATE
+let isConnected = false;
 let energy = 50;
 let points = 0;
 let pvlt = 0;
 
 // UPDATE UI
 function updateUI() {
+    if (!isConnected) return;
+
     document.getElementById("energy").innerText = `⚡ ${energy}`;
     document.getElementById("points").innerText = `🪙 ${points}`;
     document.getElementById("pvlt").innerText = `💎 ${pvlt}`;
 }
 
-// TAP LOGIC
+// ENABLE GAME
+function unlockGame() {
+    isConnected = true;
+
+    energy = 50;
+    points = 0;
+    pvlt = 0;
+
+    document.getElementById("tap-circle").innerText = "TAP";
+
+    document.querySelectorAll(".locked").forEach(btn => {
+        btn.classList.remove("locked");
+    });
+
+    updateUI();
+}
+
+// TAP
 document.getElementById("tap-circle").addEventListener("click", () => {
+    if (!isConnected) return;
+
     if (energy <= 0) return;
 
     energy -= 1;
     points += 1;
 
-    // convert points → PVLT
     if (points >= 100) {
         pvlt += Math.floor(points / 100);
         points = points % 100;
@@ -141,24 +166,31 @@ document.getElementById("tap-circle").addEventListener("click", () => {
 });
 
 // CONNECT WALLET
-document.getElementById("connect-button").addEventListener("click", () => {
-    modal.open()
+document.getElementById("connect-button").addEventListener("click", async () => {
+    await modal.open();
+
+    // unlock after connect (simple delay safe method)
+    setTimeout(() => {
+        unlockGame();
+    }, 1000);
 });
 
 // BUY ENERGY
 document.getElementById("buy-energy").addEventListener("click", () => {
+    if (!isConnected) return;
+
     energy += 50;
     updateUI();
 });
 
 // CLAIM PVLT
 document.getElementById("claim-pvlt").addEventListener("click", () => {
+    if (!isConnected) return;
+
     alert(`Claimed ${pvlt} PVLT (demo)`);
     pvlt = 0;
     updateUI();
 });
-
-updateUI();
 </script>
 
 </body>
