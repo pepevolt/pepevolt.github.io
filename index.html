@@ -375,603 +375,157 @@ Confirm
 <script>
 
 /* ================= CONFIG ================= */
-
-const API =
-"https://pvlt-server.onrender.com";
-
-const PROJECT_ID =
-"1731f99148b9cf6107dee70b6efb14b7";
-
-/* REAL PVLT TOKEN */
-const PVLT_TOKEN_ADDRESS =
-"0x5f7df6862f439b691507dc20069f4f73a37cb08b";
-
-/* GPVLT TOKEN */
-const GPVLT_TOKEN_ADDRESS =
-"0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
-
-/* GAME ENGINE */
-const GAME_TREASURY_ADDRESS =
-"0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
-
-/* TOKEN DECIMALS */
+const API = "https://pvlt-server.onrender.com";
+const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
+const PVLT_TOKEN_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
+const GPVLT_TOKEN_ADDRESS = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
+const GAME_TREASURY_ADDRESS = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
 const TOKEN_DECIMALS = 18;
 
 /* ================= STATE ================= */
-
 let web3Provider;
 let wallet = "";
-
 let points = 0;
 let energy = 50;
 let gpvlt = 0;
 
 /* ================= UPDATE UI ================= */
-
 function updateUI(){
-
-document.getElementById(
-"energy"
-).innerText = energy;
-
-document.getElementById(
-"points"
-).innerText = points;
-
-document.getElementById(
-"gpvlt"
-).innerText =
-Number(gpvlt).toFixed(4);
-
+    document.getElementById("energy").innerText = energy;
+    document.getElementById("points").innerText = points;
+    document.getElementById("gpvlt").innerText = Number(gpvlt).toFixed(4);
 }
 
 /* ================= MODAL ================= */
-
 function openBuyModal(){
-
-if(!wallet){
-
-alert(
-"Connect wallet first"
-);
-
-return;
+    if(!wallet){ alert("Connect wallet first"); return; }
+    document.getElementById("buyModal").classList.add("active");
 }
-
-document
-.getElementById("buyModal")
-.classList.add("active");
-
-}
-
 function closeBuyModal(){
-
-document
-.getElementById("buyModal")
-.classList.remove("active");
-
+    document.getElementById("buyModal").classList.remove("active");
 }
-
 /* ================= CONNECT WALLET ================= */
-
 async function connectWallet(){
+    try{
+        if(window.ethereum){
+            await window.ethereum.request({method:"eth_requestAccounts"});
+            web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+        } else {
+            const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
+            const wcProvider = await WalletConnectProvider.init({projectId: PROJECT_ID, chains:[137], showQrModal:true});
+            await wcProvider.connect();
+            web3Provider = new ethers.providers.Web3Provider(wcProvider);
+        }
+        const signer = web3Provider.getSigner();
+        wallet = await signer.getAddress();
+        document.getElementById("walletInput").value = wallet.slice(0,6) + "..." + wallet.slice(-4);
+        document.getElementById("walletBtn").innerText = "CONNECTED";
+        document.getElementById("walletStatus").style.display = "block";
 
-try{
-
-if(window.ethereum){
-
-await window.ethereum.request({
-method:"eth_requestAccounts"
-});
-
-web3Provider =
-new ethers.providers.Web3Provider(
-window.ethereum
-);
-
-}else{
-
-const WalletConnectProvider =
-window[
-"@walletconnect/ethereum-provider"
-].EthereumProvider;
-
-const wcProvider =
-await WalletConnectProvider.init({
-
-projectId: PROJECT_ID,
-
-chains:[137],
-
-showQrModal:true
-
-});
-
-await wcProvider.connect();
-
-web3Provider =
-new ethers.providers.Web3Provider(
-wcProvider
-);
-
+        const res = await fetch(API + "/user", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet})});
+        const data = await res.json();
+        points = data.points || 0;
+        energy = data.energy || 50;
+        gpvlt = data.gpvlt || 0;
+        updateUI();
+    } catch(err){
+        console.error(err);
+        alert("Wallet connection failed");
+    }
 }
 
-const signer =
-web3Provider.getSigner();
-
-wallet =
-await signer.getAddress();
-
-document.getElementById(
-"walletInput"
-).value =
-wallet.slice(0,6)
-+ "..."
-+ wallet.slice(-4);
-
-document.getElementById(
-"walletBtn"
-).innerText =
-"CONNECTED";
-
-document.getElementById(
-"walletStatus"
-).style.display =
-"block";
-
-/* LOAD USER */
-
-const res =
-await fetch(
-API + "/user",
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-wallet
-})
-}
-);
-
-const data =
-await res.json();
-
-points =
-data.points || 0;
-
-energy =
-data.energy || 50;
-
-gpvlt =
-data.gpvlt || 0;
-
-updateUI();
-
-}catch(err){
-
-console.error(err);
-
-alert(
-"Wallet connection failed"
-);
-
-}
-
-}
 
 /* ================= TAP ================= */
-
 async function tap(){
-
-if(!wallet){
-
-alert(
-"Connect wallet first"
-);
-
-return;
+    if(!wallet){ alert("Connect wallet first"); return; }
+    try{
+        const res = await fetch(API + "/tap", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet})});
+        const data = await res.json();
+        if(data.error){ alert(data.error); return; }
+        points = data.points;
+        energy = data.energy;
+        updateUI();
+    } catch(err){ console.error(err); alert("Tap failed"); }
 }
 
-try{
-
-const res =
-await fetch(
-API + "/tap",
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-wallet
-})
-}
-);
-
-const data =
-await res.json();
-
-if(data.error){
-
-alert(data.error);
-
-return;
-}
-
-points =
-data.points;
-
-energy =
-data.energy;
-
-updateUI();
-
-}catch(err){
-
-console.error(err);
-
-alert(
-"Tap failed"
-);
-
-}
-
-}
 
 /* ================= BUY ENERGY ================= */
-
 async function executeEnergyPurchase(){
+    const confirmBtn = document.getElementById("confirmPaymentBtn");
+    try{
+        if(!wallet){ alert("Connect wallet first"); return; }
+        confirmBtn.innerText = "Processing...";
+        confirmBtn.disabled = true;
 
-const confirmBtn =
-document.getElementById(
-"confirmPaymentBtn"
-);
+        const network = await web3Provider.getNetwork();
+        if(Number(network.chainId) !== 137){ alert("Switch wallet to Polygon Mainnet"); return; }
 
-try{
+        const signer = web3Provider.getSigner();
+        const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function transfer(address to,uint256 amount) external returns(bool)", "function balanceOf(address owner) external view returns(uint256)"], signer);
+        const amount = ethers.utils.parseUnits("100", TOKEN_DECIMALS);
+        const rawBalance = await tokenContract.balanceOf(wallet);
+        
+        if(rawBalance.lt(amount)){ alert("Insufficient PVLT balance"); return; }
 
-if(!wallet){
+        const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, amount);
+        alert("Confirm transaction in wallet");
+        await tx.wait();
 
-alert(
-"Connect wallet first"
-);
-
-return;
+        const refillRes = await fetch(API + "/refill", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet, txHash: tx.hash})});
+        const refillData = await refillRes.json();
+        if(refillData.error){ alert(refillData.error); return; }
+        energy = refillData.energy;
+        updateUI();
+        alert("100,000 Energy Added Successfully");
+    } catch(err){
+        console.error(err);
+        alert("Transaction failed: " + (err.message || "Unknown error"));
+    } finally {
+        confirmBtn.innerText = "Confirm";
+        confirmBtn.disabled = false;
+        closeBuyModal();
+    }
 }
 
-confirmBtn.innerText =
-"Processing...";
-
-confirmBtn.disabled = true;
-
-/* NETWORK CHECK */
-
-const network =
-await web3Provider.getNetwork();
-
-if(network.chainId !== 137){
-
-alert(
-"Switch wallet to Polygon Mainnet"
-);
-
-return;
-}
-
-const signer =
-web3Provider.getSigner();
-
-/* REAL PVLT TOKEN */
-
-const tokenContract =
-new ethers.Contract(
-
-PVLT_TOKEN_ADDRESS,
-
-[
-"function transfer(address to,uint256 amount) external returns(bool)",
-"function balanceOf(address owner) external view returns(uint256)"
-],
-
-signer
-);
-
-/* COST */
-
-const amount =
-ethers.utils.parseUnits(
-"100",
-TOKEN_DECIMALS
-);
-
-/* BALANCE */
-
-const rawBalance =
-await tokenContract.balanceOf(
-wallet
-);
-
-console.log(
-"RAW BALANCE:",
-rawBalance.toString()
-);
-
-console.log(
-"FORMATTED:",
-ethers.utils.formatUnits(
-rawBalance,
-TOKEN_DECIMALS
-)
-);
-
-if(rawBalance.lt(amount)){
-
-alert(
-"Insufficient PVLT balance"
-);
-
-return;
-}
-
-/* SEND TX */
-
-const tx =
-await tokenContract.transfer(
-GAME_TREASURY_ADDRESS,
-amount
-);
-
-closeBuyModal();
-
-alert(
-"Confirm transaction in wallet"
-);
-
-await tx.wait();
-
-/* SERVER REFILL */
-
-const refillRes =
-await fetch(
-API + "/refill",
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-wallet,
-txHash: tx.hash
-
-})
-}
-);
-
-const refillData =
-await refillRes.json();
-
-if(refillData.error){
-
-alert(
-refillData.error
-);
-
-return;
-}
-
-energy =
-refillData.energy;
-
-updateUI();
-
-alert(
-"100,000 Energy Added Successfully"
-);
-
-}catch(err){
-
-console.error(err);
-
-let message =
-err.reason
-|| err.data?.message
-|| err.message
-|| "Unknown error";
-
-alert(
-"Transaction failed:\n\n"
-+ message
-);
-
-}finally{
-
-confirmBtn.innerText =
-"Confirm";
-
-confirmBtn.disabled = false;
-
-closeBuyModal();
-
-}
-
-}
 
 /* ================= SWAP ================= */
-
 async function swapPoints(){
-
-if(!wallet){
-
-alert(
-"Connect wallet first"
-);
-
-return;
+    if(!wallet){ alert("Connect wallet first"); return; }
+    try{
+        const res = await fetch(API + "/swap-points", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet})});
+        const data = await res.json();
+        if(data.error){ alert(data.error); return; }
+        points = 0;
+        gpvlt = data.gpvlt;
+        updateUI();
+        alert("Points swapped successfully");
+    } catch(err){ console.error(err); alert("Swap failed"); }
 }
 
-try{
 
-const res =
-await fetch(
-API + "/swap-points",
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-wallet
-})
-}
-);
-
-const data =
-await res.json();
-
-if(data.error){
-
-alert(data.error);
-
-return;
-}
-
-points = 0;
-
-gpvlt =
-data.gpvlt;
-
-updateUI();
-
-alert(
-"Points swapped successfully"
-);
-
-}catch(err){
-
-console.error(err);
-
-alert(
-"Swap failed"
-);
-
-}
-
-}
 
 /* ================= CLAIM ================= */
+async function claimPVLT(){
+    if(!wallet){ alert("Connect wallet first"); return; }
+    if(gpvlt < 100){ alert("Need minimum 100 GPVLT"); return; }
+    try{
+        const signer = web3Provider.getSigner();
+        const tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ["function approve(address spender,uint256 amount) external returns(bool)"], signer);
+        const amount = ethers.utils.parseUnits(gpvlt.toString(), TOKEN_DECIMALS);
+        const approveTx = await tokenContract.approve(GAME_TREASURY_ADDRESS, amount);
+        await approveTx.wait();
 
-async function claimgPVLT(){
-
-if(!wallet){
-
-alert(
-"Connect wallet first"
-);
-
-return;
+        const res = await fetch(API + "/claim-gpvlt", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({wallet})});
+        const data = await res.json();
+        if(data.error){ alert(data.error); return; }
+        gpvlt = 0;
+        updateUI();
+        alert("PVLT claimed successfully");
+    } catch(err){ console.error(err); alert("Claim failed"); }
 }
 
-if(gpvlt < 100){
-
-alert(
-"Need minimum 100 GPVLT"
-);
-
-return;
-}
-
-try{
-
-const signer =
-web3Provider.getSigner();
-
-const tokenContract =
-new ethers.Contract(
-
-PVLT_TOKEN_ADDRESS,
-
-[
-"function approve(address spender,uint256 amount) external returns(bool)"
-],
-
-signer
-);
-
-const amount =
-ethers.utils.parseUnits(
-pvltg.toString(),
-TOKEN_DECIMALS
-);
-
-const approveTx =
-await tokenContract.approve(
-GAME_TREASURY_ADDRESS,
-amount
-);
-
-await approveTx.wait();
-
-const res =
-await fetch(
-API + "/claim-gpvlt",
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-wallet
-})
-}
-);
-
-const data =
-await res.json();
-
-if(data.error){
-
-alert(data.error);
-
-return;
-}
-
-gpvlt = 0;
-
+setInterval(()=>{ if(energy < 50){ energy += 1; updateUI(); } }, 30000);
 updateUI();
-
-alert(
-"PVLT claimed successfully"
-);
-
-}catch(err){
-
-console.error(err);
-
-alert(
-"Claim failed"
-);
-
-}
-
-}
-
 /* ================= AUTO REFILL ================= */
 
 setInterval(()=>{
