@@ -1,37 +1,199 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>PepeVolt UI</title>
+
     <style>
-        body { background-color: #0d1117; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
-        .top-nav { width: 100%; max-width: 320px; display: flex; justify-content: space-between; padding: 10px 0; margin-bottom: 20px; font-size: 14px; font-weight: bold; }
-        .tap-circle { width: 200px; height: 200px; border-radius: 50%; background: linear-gradient(to bottom, #77b897 50%, #4a4f56 50%); display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 24px; margin: 20px 0; cursor: pointer; user-select: none; }
-        .main-container { background-color: #1a1f26; padding: 20px; border-radius: 15px; width: 100%; max-width: 320px; text-align: center; }
-        .btn { background-color: #3b82f6; color: white; padding: 12px; border-radius: 8px; border: none; width: 100%; max-width: 320px; margin: 8px 0; cursor: pointer; font-weight: 600; }
-        .secondary-btn { background-color: #2d3748; color: #a0aec0; padding: 12px; border-radius: 8px; border: none; width: 100%; margin: 8px 0; cursor: not-allowed; }
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body{
+            background:#0d1117;
+            color:white;
+            font-family:Arial, sans-serif;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            padding:20px;
+            min-height:100vh;
+            overflow-x:hidden;
+            touch-action:manipulation;
+        }
+
+        .top-nav{
+            width:100%;
+            max-width:340px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:14px 16px;
+            background:#161b22;
+            border-radius:14px;
+            margin-bottom:20px;
+            font-weight:bold;
+            font-size:15px;
+        }
+
+        .stat{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:4px;
+        }
+
+        .stat span:first-child{
+            font-size:18px;
+        }
+
+        .tap-circle{
+            width:220px;
+            height:220px;
+            border-radius:50%;
+            background:linear-gradient(180deg,#6ee7b7 0%,#22c55e 45%,#1f2937 45%,#111827 100%);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            font-weight:900;
+            font-size:34px;
+            margin:20px 0;
+            cursor:pointer;
+            user-select:none;
+            transition:0.08s ease;
+            border:5px solid #2d3748;
+            box-shadow:
+                0 0 25px rgba(34,197,94,0.3),
+                inset 0 0 20px rgba(255,255,255,0.08);
+        }
+
+        .tap-circle:active{
+            transform:scale(0.95);
+        }
+
+        .btn{
+            background:#2563eb;
+            color:white;
+            padding:14px;
+            border-radius:12px;
+            border:none;
+            width:100%;
+            max-width:340px;
+            margin:8px 0;
+            cursor:pointer;
+            font-weight:700;
+            font-size:15px;
+        }
+
+        .main-container{
+            width:100%;
+            max-width:340px;
+            background:#161b22;
+            padding:20px;
+            border-radius:16px;
+            margin-top:15px;
+        }
+
+        .secondary-btn{
+            background:#1f2937;
+            color:white;
+            padding:14px;
+            border-radius:12px;
+            border:none;
+            width:100%;
+            margin:10px 0;
+            cursor:pointer;
+            font-weight:700;
+            font-size:15px;
+        }
+
+        .secondary-btn:active{
+            transform:scale(0.98);
+        }
+
+        .info-box{
+            margin-top:18px;
+            font-size:14px;
+            color:#9ca3af;
+            line-height:1.6;
+        }
+
+        .floating{
+            position:absolute;
+            font-weight:bold;
+            color:#22c55e;
+            animation:floatUp 1s linear forwards;
+            pointer-events:none;
+        }
+
+        @keyframes floatUp{
+            0%{
+                opacity:1;
+                transform:translateY(0);
+            }
+            100%{
+                opacity:0;
+                transform:translateY(-70px);
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <div class="top-nav">
-        <div>⚡ 0</div>
-        <div>💎 0</div>
-        <div>🪙 0</div>
+        <div class="stat">
+            <span>👆</span>
+            <span id="points">0</span>
+        </div>
+
+        <div class="stat">
+            <span>💎</span>
+            <span id="gpvlt">0</span>
+        </div>
+
+        <div class="stat">
+            <span>🪙</span>
+            <span id="pvlt">0</span>
+        </div>
     </div>
 
-    <div class="tap-circle" onclick="console.log('Tapped!')">TAP!</div>
+    <div class="tap-circle" id="tapBtn">
+        TAP!
+    </div>
 
-    <button id="connectBtn" class="btn">Connect Wallet</button>
-    
+    <button id="connectBtn" class="btn">
+        Connect Wallet
+    </button>
+
     <div class="main-container">
-        <button class="secondary-btn">Buy</button>
-        <button class="secondary-btn">Convert</button>
-        <button class="secondary-btn">Claim</button>
+
+        <button class="secondary-btn" id="convertBtn">
+            Convert Points → gPVLT
+        </button>
+
+        <button class="secondary-btn" id="convertPVLTBtn">
+            Convert gPVLT → PVLT
+        </button>
+
+        <button class="secondary-btn" id="claimBtn">
+            Claim
+        </button>
+
+        <div class="info-box">
+            1 Tap = 1 Point<br>
+            100 Points = 100 gPVLT<br>
+            100 gPVLT = 1 PVLT
+        </div>
+
     </div>
 
     <script type="module">
+
         import { createAppKit } from 'https://esm.sh/@reown/appkit@latest';
         import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
         import { polygon } from 'https://esm.sh/@reown/appkit/networks@latest';
@@ -48,27 +210,139 @@
                 icons: ['https://avatars.githubusercontent.com/u/179229932']
             },
             projectId,
-            features: { analytics: true }
+            features: {
+                analytics: true
+            }
         });
 
-        // Ensure the button is fully loaded before attaching the event
+        // GAME VALUES
+        let points = 0;
+        let gpvlt = 0;
+        let pvlt = 0;
+
+        // ELEMENTS
+        const pointsEl = document.getElementById('points');
+        const gpvltEl = document.getElementById('gpvlt');
+        const pvltEl = document.getElementById('pvlt');
+
+        const tapBtn = document.getElementById('tapBtn');
+        const convertBtn = document.getElementById('convertBtn');
+        const convertPVLTBtn = document.getElementById('convertPVLTBtn');
+        const claimBtn = document.getElementById('claimBtn');
+
+        // UPDATE UI
+        function updateUI(){
+            pointsEl.innerText = points;
+            gpvltEl.innerText = gpvlt;
+            pvltEl.innerText = pvlt;
+        }
+
+        // TAP FUNCTION
+        tapBtn.addEventListener('click', (e) => {
+
+            points += 1;
+
+            updateUI();
+
+            // floating +1 effect
+            const float = document.createElement('div');
+            float.className = 'floating';
+            float.innerText = '+1';
+
+            float.style.left = e.pageX + 'px';
+            float.style.top = e.pageY + 'px';
+
+            document.body.appendChild(float);
+
+            setTimeout(() => {
+                float.remove();
+            }, 1000);
+        });
+
+        // CONVERT POINTS -> gPVLT
+        convertBtn.addEventListener('click', () => {
+
+            if(points < 100){
+                alert('Need at least 100 Points');
+                return;
+            }
+
+            const amount = Math.floor(points / 100);
+
+            points -= amount * 100;
+
+            // 100 points = 100 gPVLT
+            gpvlt += amount * 100;
+
+            updateUI();
+        });
+
+        // CONVERT gPVLT -> PVLT
+        convertPVLTBtn.addEventListener('click', () => {
+
+            if(gpvlt < 100){
+                alert('Need at least 100 gPVLT');
+                return;
+            }
+
+            const amount = Math.floor(gpvlt / 100);
+
+            gpvlt -= amount * 100;
+
+            // 100 gPVLT = 1 PVLT
+            pvlt += amount;
+
+            updateUI();
+        });
+
+        // CLAIM BUTTON
+        claimBtn.addEventListener('click', () => {
+
+            if(pvlt <= 0){
+                alert('No PVLT available');
+                return;
+            }
+
+            alert(`Claimed ${pvlt} PVLT`);
+
+            pvlt = 0;
+
+            updateUI();
+        });
+
+        // WALLET CONNECT
         document.addEventListener('DOMContentLoaded', () => {
+
             const btn = document.getElementById('connectBtn');
-            
-            btn.addEventListener('click', () => {
-                modal.open();
+
+            btn.addEventListener('click', async () => {
+                try{
+                    await modal.open();
+                }catch(err){
+                    console.log(err);
+                }
             });
 
-            // Update button text on state change
             modal.subscribeState((state) => {
-                if (state.isConnected && state.address) {
+
+                if(state.isConnected && state.address){
+
                     const address = state.address;
-                    btn.innerText = `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-                } else {
+
+                    btn.innerText =
+                        address.substring(0,6) +
+                        "..." +
+                        address.substring(address.length - 4);
+
+                }else{
                     btn.innerText = "Connect Wallet";
                 }
             });
         });
+
+        updateUI();
+
     </script>
+
 </body>
 </html>
