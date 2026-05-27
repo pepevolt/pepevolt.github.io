@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 
 <meta
 name="viewport"
@@ -24,7 +24,7 @@ html,body{
   height:100%;
   overflow:hidden;
   font-family:Arial,sans-serif;
-  background:#06101d;
+  background:#07111f;
   touch-action:manipulation;
 }
 
@@ -44,19 +44,17 @@ body{
   height:100dvh;
 
   background:
-  radial-gradient(circle at top,#13233d 0%,#07111f 75%);
-
-  display:flex;
-  flex-direction:column;
+  radial-gradient(circle at top,#142847 0%,#07111f 75%);
 
   padding:
   max(16px, env(safe-area-inset-top))
   16px
   max(16px, env(safe-area-inset-bottom));
 
-  overflow:hidden;
+  display:flex;
+  flex-direction:column;
 
-  position:relative;
+  overflow:hidden;
 }
 
 /* TOP NAV */
@@ -67,15 +65,13 @@ body{
 
   display:flex;
   gap:10px;
-
-  margin-top:5px;
 }
 
 .nav-box{
 
   flex:1;
 
-  background:rgba(255,255,255,0.05);
+  background:rgba(255,255,255,0.06);
 
   border:
   1px solid rgba(255,255,255,0.08);
@@ -85,23 +81,22 @@ body{
   padding:12px 8px;
 
   text-align:center;
-
-  backdrop-filter:blur(10px);
 }
 
 .nav-title{
 
   font-size:11px;
-  color:#9fb2d0;
+  color:#9db0cf;
 
   margin-bottom:6px;
 }
 
 .nav-value{
 
+  color:white;
+
   font-size:18px;
   font-weight:bold;
-  color:white;
 }
 
 /* CONNECT */
@@ -136,13 +131,6 @@ body{
   #00b894,
   #00cec9
   );
-
-  box-shadow:
-  0 0 25px rgba(0,255,200,0.25);
-}
-
-#connectBtn:active{
-  transform:scale(0.98);
 }
 
 /* CENTER */
@@ -172,15 +160,14 @@ body{
   #ff8800
   );
 
-  border:8px solid rgba(255,255,255,0.9);
+  border:8px solid white;
 
   display:flex;
   justify-content:center;
   align-items:center;
 
   box-shadow:
-  0 0 80px rgba(255,180,0,0.45),
-  inset 0 0 35px rgba(255,255,255,0.15);
+  0 0 80px rgba(255,180,0,0.45);
 
   cursor:pointer;
 
@@ -196,8 +183,6 @@ body{
   width:30%;
   height:30%;
 
-  object-fit:contain;
-
   pointer-events:none;
 }
 
@@ -211,8 +196,6 @@ body{
   flex-direction:column;
 
   gap:12px;
-
-  margin-bottom:10px;
 }
 
 .action-btn{
@@ -232,10 +215,6 @@ body{
   font-weight:bold;
 
   cursor:pointer;
-}
-
-.action-btn:active{
-  transform:scale(0.98);
 }
 
 .buy{
@@ -383,94 +362,16 @@ body{
 
 </div>
 
-<script type="module">
+<!-- ETHERS -->
 
-/* WALLET */
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
 
-import { createAppKit }
-from 'https://esm.sh/@reown/appkit@latest';
+<script>
 
-import { EthersAdapter }
-from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
-
-import { polygon }
-from 'https://esm.sh/@reown/appkit/networks@latest';
+/* ELEMENTS */
 
 const connectBtn =
 document.getElementById('connectBtn');
-
-const projectId =
-'1731f99148b9cf6107dee70b6efb14b7';
-
-const modal = createAppKit({
-
-  adapters:[new EthersAdapter()],
-
-  networks:[polygon],
-
-  metadata:{
-    name:'PepeVolt',
-    description:'PepeVolt Game',
-    url:'https://pepevolt.github.io',
-    icons:[
-      'https://avatars.githubusercontent.com/u/179229932'
-    ]
-  },
-
-  projectId,
-
-  features:{
-    analytics:true
-  }
-
-});
-
-let walletConnected = false;
-let walletAddress = null;
-
-/* CONNECT */
-
-connectBtn.onclick = async ()=>{
-
-  try{
-
-    await modal.open();
-
-  }catch(err){
-
-    console.log(err);
-
-  }
-
-};
-
-/* STATE */
-
-modal.subscribeState((state)=>{
-
-  if(state.isConnected && state.address){
-
-    walletConnected = true;
-
-    walletAddress = state.address;
-
-    connectBtn.innerText =
-    state.address.slice(0,6)
-    + '...'
-    + state.address.slice(-4);
-
-  }else{
-
-    walletConnected = false;
-
-    connectBtn.innerText =
-    'Connect Wallet';
-
-  }
-
-});
-
-/* ELEMENTS */
 
 const tapBtn =
 document.getElementById('tapBtn');
@@ -495,19 +396,60 @@ document.getElementById('pvlt');
 
 /* GAME STATE */
 
+let connected = false;
+
+let userAddress = '';
+
 let energy = 100;
 
 let gpvlt = 0;
 
 let pvlt = 0;
 
-let pendingPVLT = 0;
+/* CONNECT WALLET */
+
+connectBtn.addEventListener('click', async ()=>{
+
+  try{
+
+    if(!window.ethereum){
+
+      alert('Install MetaMask');
+
+      return;
+    }
+
+    const accounts =
+    await window.ethereum.request({
+
+      method:'eth_requestAccounts'
+
+    });
+
+    userAddress = accounts[0];
+
+    connected = true;
+
+    connectBtn.innerText =
+    userAddress.slice(0,6)
+    + '...'
+    + userAddress.slice(-4);
+
+  }catch(err){
+
+    console.log(err);
+
+    alert('Wallet Connection Failed');
+
+  }
+
+});
 
 /* TAP */
 
-tapBtn.onclick = (e)=>{
+tapBtn.addEventListener('click',(e)=>{
 
-  if(!walletConnected){
+  if(!connected){
 
     alert('Connect Wallet First');
 
@@ -523,7 +465,7 @@ tapBtn.onclick = (e)=>{
 
   energy--;
 
-  /* 1 TAP = 1 gPVLT */
+  /* 1 TAP = 1 GPVLT */
 
   gpvlt++;
 
@@ -567,13 +509,13 @@ tapBtn.onclick = (e)=>{
 
   },1000);
 
-};
+});
 
-/* BUY ENERGY */
+/* BUY */
 
-buyBtn.onclick = ()=>{
+buyBtn.addEventListener('click',()=>{
 
-  if(!walletConnected){
+  if(!connected){
 
     alert('Connect Wallet First');
 
@@ -597,13 +539,13 @@ buyBtn.onclick = ()=>{
 
   alert('+10000 Energy');
 
-};
+});
 
 /* CONVERT */
 
-convertBtn.onclick = ()=>{
+convertBtn.addEventListener('click',()=>{
 
-  if(!walletConnected){
+  if(!connected){
 
     alert('Connect Wallet First');
 
@@ -627,13 +569,13 @@ convertBtn.onclick = ()=>{
 
   alert('+1 PVLT');
 
-};
+});
 
 /* CLAIM */
 
-claimBtn.onclick = async ()=>{
+claimBtn.addEventListener('click', async ()=>{
 
-  if(!walletConnected){
+  if(!connected){
 
     alert('Connect Wallet First');
 
@@ -649,15 +591,15 @@ claimBtn.onclick = async ()=>{
 
   alert(
     pvlt +
-    ' PVLT Sent To Wallet:\n\n'
-    + walletAddress
+    ' PVLT Claimed To:\n\n'
+    + userAddress
   );
 
   pvlt = 0;
 
   pvltEl.innerText = pvlt;
 
-};
+});
 
 </script>
 
