@@ -122,16 +122,14 @@ let energy = 0;
 let points = 0;
 let pvlt = 0;
 
-/* ---------------- UI UPDATE ---------------- */
+/* ---------------- UI ---------------- */
 function updateUI() {
-    if (!isConnected) return;
-
     document.getElementById("energy").innerText = `⚡ ${energy}`;
     document.getElementById("points").innerText = `🪙 ${points}`;
     document.getElementById("pvlt").innerText = `💎 ${pvlt}`;
 }
 
-/* ---------------- LOCK GAME ---------------- */
+/* ---------------- LOCK ---------------- */
 function lockGame() {
     isConnected = false;
 
@@ -142,7 +140,7 @@ function lockGame() {
     });
 }
 
-/* ---------------- UNLOCK GAME ---------------- */
+/* ---------------- UNLOCK ---------------- */
 function unlockGame() {
     isConnected = true;
 
@@ -176,19 +174,15 @@ document.getElementById("tap-circle").addEventListener("click", () => {
 });
 
 /* ---------------- CONNECT WALLET ---------------- */
-document.getElementById("connect-button").addEventListener("click", async () => {
+document.getElementById("connect-button").addEventListener("click", () => {
     modal.open();
+});
 
-    const check = setInterval(async () => {
-        try {
-            const provider = await modal.getWalletProvider?.();
-
-            if (provider?.accounts?.length > 0) {
-                clearInterval(check);
-                unlockGame();
-            }
-        } catch (e) {}
-    }, 500);
+/* ✅ REAL WALLET CONNECTION LISTENER */
+modal.subscribeState((state) => {
+    if (state?.address) {
+        unlockGame();
+    }
 });
 
 /* ---------------- BUY ENERGY ---------------- */
@@ -208,6 +202,7 @@ document.getElementById("claim-pvlt").addEventListener("click", () => {
     updateUI();
 });
 
+/* INIT */
 lockGame();
 </script>
 
