@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>PVLT Tap Game</title>
+<title>PVLT Mining</title>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
@@ -16,7 +16,7 @@
 }
 
 body{
-  background:#0b0f1a;
+  background:#070a12;
   color:white;
   height:100vh;
   display:flex;
@@ -24,120 +24,125 @@ body{
   overflow:hidden;
 }
 
-/* SAFE AREA SUPPORT (iPhone notch fix) */
-body{
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
 /* TOP BAR */
 .topbar{
   display:flex;
-  justify-content:space-between;
+  justify-content:space-around;
   align-items:center;
-  padding:12px 16px;
+  padding:12px;
   background:rgba(255,255,255,0.05);
   backdrop-filter: blur(12px);
   border-bottom:1px solid rgba(255,255,255,0.08);
 }
 
 .stat{
-  flex:1;
   text-align:center;
   font-size:12px;
-  opacity:0.9;
 }
 
 .stat b{
   display:block;
   font-size:14px;
-  margin-top:2px;
-  color:#fff;
+  margin-top:3px;
 }
 
 /* WALLET */
 .wallet{
   text-align:center;
-  padding:10px 12px;
+  padding:10px;
   font-size:12px;
   opacity:0.8;
 }
 
-/* MAIN AREA */
+/* MAIN */
 .main{
   flex:1;
   display:flex;
   justify-content:center;
   align-items:center;
-  position:relative;
+  flex-direction:column;
+  gap:20px;
 }
 
-/* TAP CIRCLE */
-.circle{
-  width:min(260px, 70vw);
-  height:min(260px, 70vw);
+/* MINING BUTTON */
+.mineBtn{
+  width:min(240px, 70vw);
+  height:min(240px, 70vw);
   border-radius:50%;
-  background:radial-gradient(circle at 30% 30%, #ff00cc, #3a2fff);
+  background:radial-gradient(circle at 30% 30%, #ffd700, #ff7b00);
+  box-shadow:0 0 60px rgba(255,180,0,0.25);
   display:flex;
   justify-content:center;
   align-items:center;
   font-size:22px;
   font-weight:bold;
   user-select:none;
-  box-shadow:0 0 50px rgba(255,0,200,0.25);
-  transition:transform 0.08s ease;
+  transition:0.1s;
 }
 
-.circle:active{
-  transform:scale(0.95);
+.mineBtn:active{
+  transform:scale(0.94);
 }
 
-/* BOTTOM */
-.bottom{
-  padding:16px;
-  display:flex;
-  justify-content:center;
+/* PROGRESS */
+.bar{
+  width:70%;
+  height:10px;
+  background:#1c2235;
+  border-radius:20px;
+  overflow:hidden;
 }
 
+.fill{
+  height:100%;
+  width:50%;
+  background:linear-gradient(90deg,#ffb300,#ff3d00);
+  transition:0.2s;
+}
+
+/* BUTTON */
 button{
-  padding:12px 18px;
+  padding:10px 16px;
   border:none;
   border-radius:12px;
-  font-size:14px;
   background:#ffffff10;
   color:white;
   backdrop-filter: blur(10px);
-}
-
-button:active{
-  transform:scale(0.97);
 }
 </style>
 </head>
 
 <body>
 
-<!-- TOP STATS -->
+<!-- TOP -->
 <div class="topbar">
   <div class="stat">⚡ Energy <b id="energy">50</b></div>
-  <div class="stat">⭐ Points <b id="points">0</b></div>
+  <div class="stat">⛏ Mined <b id="points">0</b></div>
   <div class="stat">🪙 PVLT <b id="pvlt">0</b></div>
 </div>
 
 <!-- WALLET -->
 <div class="wallet">
   <button onclick="connectWallet()">Connect Wallet</button>
-  <div id="walletAddress">Not Connected</div>
+  <div id="wallet">Not Connected</div>
 </div>
 
-<!-- TAP AREA -->
+<!-- MAIN -->
 <div class="main">
-  <div class="circle" onclick="tap()">TAP</div>
-</div>
 
-<!-- CLAIM -->
-<div class="bottom">
-  <button onclick="claim()">Claim Rewards</button>
+  <div class="mineBtn" onclick="mine()">
+    MINE
+  </div>
+
+  <div class="bar">
+    <div class="fill" id="fill"></div>
+  </div>
+
+  <div style="font-size:12px;opacity:0.8">
+    Mining Rate: +1 / tap • Auto regen energy
+  </div>
+
+  <button onclick="claim()">Claim PVLT</button>
 </div>
 
 <script>
@@ -147,33 +152,33 @@ let pvlt = 0;
 
 let signer, user;
 
-const contractAddress = "YOUR_CONTRACT_ADDRESS";
-const abi = [
-"function reward(address to, uint amount) external"
-];
-
-function updateUI(){
+/* UI */
+function update(){
   document.getElementById("energy").innerText = energy;
   document.getElementById("points").innerText = points;
   document.getElementById("pvlt").innerText = pvlt;
+
+  let percent = (energy/50)*100;
+  document.getElementById("fill").style.width = percent + "%";
 }
 
-function tap(){
+/* MINING */
+function mine(){
   if(energy <= 0) return;
 
   energy--;
   points++;
 
-  updateUI();
+  update();
 }
 
 /* ENERGY REGEN */
 setInterval(()=>{
   if(energy < 50){
     energy++;
-    updateUI();
+    update();
   }
-}, 3000);
+}, 2500);
 
 /* WALLET */
 async function connectWallet(){
@@ -188,34 +193,26 @@ async function connectWallet(){
   signer = provider.getSigner();
   user = await signer.getAddress();
 
-  document.getElementById("walletAddress").innerText =
+  document.getElementById("wallet").innerText =
     user.slice(0,6)+"..."+user.slice(-4);
 }
 
-/* CLAIM */
+/* CLAIM (mock logic ready for smart contract) */
 async function claim(){
-  if(!signer) return alert("Connect wallet first");
-
-  const contract = new ethers.Contract(contractAddress, abi, signer);
-
   let tokens = Math.floor(points / 100);
-  if(tokens <= 0) return alert("Not enough points");
-
-  try{
-    const tx = await contract.reward(user, tokens);
-    await tx.wait();
-
-    pvlt += tokens;
-    points = 0;
-
-    updateUI();
-    alert("Claimed "+tokens+" PVLT");
-  }catch(e){
-    alert("Transaction failed");
+  if(tokens <= 0){
+    alert("Need more mining!");
+    return;
   }
+
+  pvlt += tokens;
+  points = 0;
+
+  alert("Claimed "+tokens+" PVLT (test mode)");
+  update();
 }
 
-updateUI();
+update();
 </script>
 
 </body>
