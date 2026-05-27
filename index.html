@@ -1,218 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>PepeVolt</title>
+<meta charset="UTF-8" />
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 
-  <style>
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+<title>PepeVolt</title>
 
-    body{
-      background:#07111f;
-      font-family:Arial, sans-serif;
-      color:white;
-      min-height:100vh;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      overflow:hidden;
-    }
+<style>
 
-    .app{
-      width:100%;
-      max-width:430px;
-      height:100vh;
-      background:
-      radial-gradient(circle at top,#13213d 0%,#07111f 70%);
-      border-radius:30px;
-      padding:20px;
-      position:relative;
-      overflow:hidden;
-      border:1px solid rgba(0,255,200,0.15);
-    }
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
 
-    /* TOP NAV */
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  font-family:Arial,sans-serif;
+  background:#050b16;
+  color:white;
+}
 
-    .top-nav{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      margin-top:10px;
-    }
+/* MAIN APP */
 
-    .nav-box{
-      flex:1;
-      background:rgba(255,255,255,0.05);
-      border:1px solid rgba(255,255,255,0.08);
-      border-radius:18px;
-      padding:12px 10px;
-      text-align:center;
-      backdrop-filter: blur(10px);
-      box-shadow:
-      0 0 20px rgba(0,0,0,0.3),
-      inset 0 0 10px rgba(255,255,255,0.03);
-    }
+.app{
+  width:100%;
+  max-width:430px;
+  height:100dvh;
+  margin:auto;
+  position:relative;
 
-    .nav-title{
-      font-size:12px;
-      color:#9fb2d0;
-      margin-bottom:5px;
-    }
+  background:
+  radial-gradient(circle at top,#13233d 0%,#050b16 70%);
 
-    .nav-value{
-      font-size:18px;
-      font-weight:bold;
-    }
+  overflow:hidden;
 
-    /* CONNECT */
+  display:flex;
+  flex-direction:column;
+  align-items:center;
 
-    .wallet-wrap{
-      margin-top:20px;
-    }
+  padding:
+  env(safe-area-inset-top)
+  16px
+  env(safe-area-inset-bottom);
+}
 
-    #connectBtn{
-      width:100%;
-      border:none;
-      border-radius:18px;
-      padding:15px;
-      font-size:16px;
-      font-weight:bold;
-      color:white;
-      cursor:pointer;
+/* TOP NAV */
 
-      background:linear-gradient(
-      135deg,
-      #00b894,
-      #00cec9
-      );
+.top-nav{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:10px;
+}
 
-      box-shadow:
-      0 0 25px rgba(0,255,200,0.3);
+.nav-box{
+  flex:1;
+  min-width:0;
 
-      transition:0.2s;
-    }
+  background:rgba(255,255,255,0.05);
 
-    #connectBtn:active{
-      transform:scale(0.98);
-    }
+  border:
+  1px solid rgba(255,255,255,0.08);
 
-    /* TAP AREA */
+  border-radius:18px;
 
-    .tap-area{
-      width:100%;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      margin-top:80px;
-      margin-bottom:80px;
-    }
+  padding:12px 8px;
 
-    .tap-circle{
-      width:220px;
-      height:220px;
-      border-radius:50%;
-      position:relative;
-      cursor:pointer;
+  text-align:center;
 
-      background:
-      radial-gradient(circle at 30% 30%, #ffcc00, #ff8800);
+  backdrop-filter:blur(10px);
+}
 
-      border:8px solid rgba(255,255,255,0.9);
+.nav-title{
+  font-size:11px;
+  color:#9eb0cb;
+  margin-bottom:6px;
+}
 
-      display:flex;
-      justify-content:center;
-      align-items:center;
+.nav-value{
+  font-size:17px;
+  font-weight:bold;
+}
 
-      box-shadow:
-      0 0 60px rgba(255,200,0,0.45),
-      inset 0 0 40px rgba(255,255,255,0.15);
+/* CONNECT BUTTON */
 
-      transition:0.1s;
-    }
+.wallet-wrap{
+  width:100%;
+  margin-top:16px;
+}
 
-    .tap-circle:active{
-      transform:scale(0.94);
-    }
+#connectBtn{
+  width:100%;
+  border:none;
+  border-radius:18px;
+  padding:15px;
 
-    .tap-circle img{
-      width:60px;
-      height:60px;
-      object-fit:contain;
-      pointer-events:none;
-      user-select:none;
-    }
+  font-size:15px;
+  font-weight:bold;
 
-    /* ACTIONS */
+  color:white;
+  cursor:pointer;
 
-    .actions{
-      position:absolute;
-      bottom:35px;
-      left:20px;
-      right:20px;
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
+  background:
+  linear-gradient(
+  135deg,
+  #00b894,
+  #00cec9
+  );
 
-    .action-btn{
-      border:none;
-      border-radius:18px;
-      padding:16px;
-      font-size:16px;
-      font-weight:bold;
-      color:white;
-      cursor:pointer;
-      transition:0.2s;
-    }
+  box-shadow:
+  0 0 25px rgba(0,255,200,0.2);
 
-    .action-btn:active{
-      transform:scale(0.98);
-    }
+  transition:0.15s;
+}
 
-    .buy{
-      background:linear-gradient(135deg,#00b894,#00cec9);
-      box-shadow:0 0 25px rgba(0,255,200,0.25);
-    }
+#connectBtn:active{
+  transform:scale(0.98);
+}
 
-    .convert{
-      background:linear-gradient(135deg,#6c5ce7,#a29bfe);
-      box-shadow:0 0 25px rgba(162,155,254,0.25);
-    }
+/* CENTER AREA */
 
-    .claim{
-      background:linear-gradient(135deg,#fdcb6e,#e17055);
-      box-shadow:0 0 25px rgba(253,203,110,0.25);
-    }
+.center-area{
+  flex:1;
 
-    /* FLOAT */
+  width:100%;
 
-    .floating{
-      position:absolute;
-      color:#fff;
-      font-weight:bold;
-      pointer-events:none;
-      animation:floatUp 1s ease forwards;
-      text-shadow:0 0 10px rgba(255,255,255,0.8);
-    }
+  display:flex;
+  justify-content:center;
+  align-items:center;
 
-    @keyframes floatUp{
-      0%{
-        opacity:1;
-        transform:translateY(0);
-      }
-      100%{
-        opacity:0;
-        transform:translateY(-80px);
-      }
-    }
-  </style>
+  position:relative;
+}
+
+/* TAP BUTTON */
+
+.tap-circle{
+
+  width:min(58vw,240px);
+  height:min(58vw,240px);
+
+  border-radius:50%;
+
+  background:
+  radial-gradient(
+  circle at 30% 30%,
+  #ffcc00,
+  #ff8800
+  );
+
+  border:7px solid rgba(255,255,255,0.9);
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  cursor:pointer;
+
+  box-shadow:
+  0 0 70px rgba(255,170,0,0.45),
+  inset 0 0 30px rgba(255,255,255,0.15);
+
+  transition:0.08s;
+
+  position:relative;
+}
+
+.tap-circle:active{
+  transform:scale(0.94);
+}
+
+.tap-circle img{
+  width:28%;
+  height:28%;
+  object-fit:contain;
+  user-select:none;
+  pointer-events:none;
+}
+
+/* ACTION BUTTONS */
+
+.actions{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+
+  margin-bottom:14px;
+}
+
+.action-btn{
+  width:100%;
+  border:none;
+  border-radius:18px;
+
+  padding:16px;
+
+  color:white;
+  font-size:16px;
+  font-weight:bold;
+
+  cursor:pointer;
+
+  transition:0.15s;
+}
+
+.action-btn:active{
+  transform:scale(0.98);
+}
+
+.buy{
+  background:
+  linear-gradient(
+  135deg,
+  #00b894,
+  #00cec9
+  );
+}
+
+.convert{
+  background:
+  linear-gradient(
+  135deg,
+  #6c5ce7,
+  #8e7dff
+  );
+}
+
+.claim{
+  background:
+  linear-gradient(
+  135deg,
+  #ffb347,
+  #ff7b54
+  );
+}
+
+/* FLOAT TEXT */
+
+.float{
+  position:absolute;
+  color:white;
+  font-weight:bold;
+  pointer-events:none;
+
+  animation:floatUp 1s linear forwards;
+}
+
+@keyframes floatUp{
+
+  0%{
+    opacity:1;
+    transform:translateY(0);
+  }
+
+  100%{
+    opacity:0;
+    transform:translateY(-70px);
+  }
+}
+
+/* MOBILE FIX */
+
+@media (max-height:700px){
+
+  .tap-circle{
+    width:190px;
+    height:190px;
+  }
+
+  .actions{
+    gap:10px;
+  }
+
+  .action-btn{
+    padding:14px;
+  }
+}
+
+</style>
 </head>
 
 <body>
@@ -225,17 +296,23 @@
 
     <div class="nav-box">
       <div class="nav-title">⚡ Energy</div>
-      <div class="nav-value" id="energy">100</div>
+      <div class="nav-value" id="energy">
+        100
+      </div>
     </div>
 
     <div class="nav-box">
       <div class="nav-title">💎 gPVLT</div>
-      <div class="nav-value" id="gpvlt">0</div>
+      <div class="nav-value" id="gpvlt">
+        0
+      </div>
     </div>
 
     <div class="nav-box">
       <div class="nav-title">🪙 PVLT</div>
-      <div class="nav-value" id="pvlt">0</div>
+      <div class="nav-value" id="pvlt">
+        0
+      </div>
     </div>
 
   </div>
@@ -243,18 +320,21 @@
   <!-- CONNECT -->
 
   <div class="wallet-wrap">
+
     <button id="connectBtn">
       Connect Wallet
     </button>
+
   </div>
 
-  <!-- TAP -->
+  <!-- CENTER -->
 
-  <div class="tap-area">
+  <div class="center-area">
 
     <div class="tap-circle" id="tapBtn">
 
-      <img src="https://cdn-icons-png.flaticon.com/512/825/825508.png">
+      <img
+      src="https://cdn-icons-png.flaticon.com/512/825/825508.png">
 
     </div>
 
@@ -282,105 +362,138 @@
 
 <script type="module">
 
-  import { createAppKit } from 'https://esm.sh/@reown/appkit@latest';
-  import { EthersAdapter } from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
-  import { polygon } from 'https://esm.sh/@reown/appkit/networks@latest';
+import { createAppKit }
+from 'https://esm.sh/@reown/appkit@latest';
 
-  const projectId = '1731f99148b9cf6107dee70b6efb14b7';
+import { EthersAdapter }
+from 'https://esm.sh/@reown/appkit-adapter-ethers@latest';
 
-  const modal = createAppKit({
-    adapters: [new EthersAdapter()],
-    networks: [polygon],
+import { polygon }
+from 'https://esm.sh/@reown/appkit/networks@latest';
 
-    metadata: {
-      name: 'PepeVolt',
-      description: 'PepeVolt Game',
-      url: 'https://pepevolt.github.io',
-      icons: ['https://avatars.githubusercontent.com/u/179229932']
-    },
+const projectId =
+'1731f99148b9cf6107dee70b6efb14b7';
 
-    projectId,
-    features: {
-      analytics: true
-    }
-  });
+const modal = createAppKit({
 
-  const connectBtn = document.getElementById('connectBtn');
+  adapters:[new EthersAdapter()],
 
-  connectBtn.addEventListener('click', () => {
-    modal.open();
-  });
+  networks:[polygon],
 
-  modal.subscribeState((state) => {
+  metadata:{
+    name:'PepeVolt',
+    description:'PepeVolt Game',
+    url:'https://pepevolt.github.io',
+    icons:[
+      'https://avatars.githubusercontent.com/u/179229932'
+    ]
+  },
 
-    if(state.isConnected && state.address){
+  projectId,
 
-      const address = state.address;
+  features:{
+    analytics:true
+  }
 
-      connectBtn.innerText =
-      address.slice(0,6) + "..." +
-      address.slice(-4);
+});
 
-    }else{
-      connectBtn.innerText = "Connect Wallet";
-    }
+const connectBtn =
+document.getElementById('connectBtn');
 
-  });
+connectBtn.addEventListener('click',()=>{
 
-  // TAP EFFECT
+  modal.open();
 
-  const tapBtn = document.getElementById('tapBtn');
+});
 
-  let energy = 100;
-  let points = 0;
-  let gpvlt = 0;
-  let pvlt = 0;
+modal.subscribeState((state)=>{
 
-  tapBtn.addEventListener('click', (e) => {
+  if(state.isConnected && state.address){
 
-    if(energy <= 0) return;
+    const address = state.address;
 
-    energy--;
-    points++;
+    connectBtn.innerText =
+    address.slice(0,6)
+    + '...'
+    + address.slice(-4);
 
-    document.getElementById('energy').innerText = energy;
+  }else{
 
-    // 100 points = 1 gPVLT
-    if(points >= 100){
+    connectBtn.innerText =
+    'Connect Wallet';
 
-      points = 0;
-      gpvlt++;
+  }
 
-      document.getElementById('gpvlt').innerText = gpvlt;
-    }
+});
 
-    // 100 gPVLT = 1 PVLT
-    if(gpvlt >= 100){
+/* TAP SYSTEM */
 
-      gpvlt = 0;
-      pvlt++;
+const tapBtn =
+document.getElementById('tapBtn');
 
-      document.getElementById('gpvlt').innerText = gpvlt;
-      document.getElementById('pvlt').innerText = pvlt;
-    }
+let energy = 100;
+let points = 0;
+let gpvlt = 0;
+let pvlt = 0;
 
-    // FLOATING TEXT
+tapBtn.addEventListener('click',(e)=>{
 
-    const float = document.createElement('div');
+  if(energy <= 0) return;
 
-    float.className = 'floating';
-    float.innerText = '+1';
+  energy--;
+  points++;
 
-    float.style.left = e.pageX + 'px';
-    float.style.top = e.pageY + 'px';
+  document.getElementById('energy')
+  .innerText = energy;
 
-    document.body.appendChild(float);
+  if(points >= 100){
 
-    setTimeout(()=>{
-      float.remove();
-    },1000);
+    points = 0;
 
-  });
+    gpvlt++;
+
+    document.getElementById('gpvlt')
+    .innerText = gpvlt;
+  }
+
+  if(gpvlt >= 100){
+
+    gpvlt = 0;
+
+    pvlt++;
+
+    document.getElementById('gpvlt')
+    .innerText = gpvlt;
+
+    document.getElementById('pvlt')
+    .innerText = pvlt;
+  }
+
+  /* FLOATING */
+
+  const float =
+  document.createElement('div');
+
+  float.className = 'float';
+
+  float.innerText = '+1';
+
+  const rect =
+  tapBtn.getBoundingClientRect();
+
+  float.style.left =
+  rect.left + rect.width/2 - 10 + 'px';
+
+  float.style.top =
+  rect.top + rect.height/2 - 20 + 'px';
+
+  document.body.appendChild(float);
+
+  setTimeout(()=>{
+    float.remove();
+  },1000);
+
+});
 
 </script>
 
