@@ -1,195 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>PepeVolt DApp</title>
-
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-
-<style>
-body {
-    margin:0;
-    font-family:Arial;
-    background:#0b0f1a;
-    color:white;
-    text-align:center;
-}
-
-header {
-    padding:15px;
-    background:#11182a;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-
-button {
-    padding:10px 15px;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:bold;
-}
-
-#connectBtn { background:#00d4ff; }
-#tapArea {
-    margin:40px auto;
-    width:200px;
-    height:200px;
-    border-radius:50%;
-    background:radial-gradient(circle,#00d4ff,#0066ff);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:22px;
-    user-select:none;
-}
-
-.panel {
-    margin-top:20px;
-}
-
-.small {
-    font-size:14px;
-    opacity:0.8;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Tap Game</title>
+    <style>
+        body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .nav { display: flex; gap: 20px; padding: 20px; }
+        .tap-area { width: 200px; height: 200px; background: orange; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; margin-top: 50px; box-shadow: 0 0 20px orange; }
+        .controls { margin-top: 30px; display: flex; gap: 10px; }
+        button { padding: 10px 20px; cursor: pointer; }
+    </style>
 </head>
-
 <body>
 
-<header>
-    <div>⚡ PepeVolt</div>
+<div class="nav">
+    <div>Energy: <span id="energy">50</span>/50</div>
+    <div>Points: <span id="points">0</span></div>
+    <div>PVLT: <span id="pvlt">0</span></div>
     <button id="connectBtn">Connect Wallet</button>
-</header>
-
-<div class="panel">
-    <h3>PVLT Balance: <span id="pvltBal">0</span></h3>
-    <h3>Energy: <span id="energy">50</span>/50</h3>
-    <p class="small">Tap to earn points → convert in game contract</p>
 </div>
 
-<div id="tapArea">TAP</div>
+<div class="tap-area" id="tapButton">TAP</div>
 
-<div class="panel">
-    <button id="claimBtn">Claim Rewards</button>
-    <button id="buyBtn">Buy Energy</button>
+<div class="controls">
+    <button onclick="buyEnergy()">Buy 10k Energy (100 PVLT)</button>
+    <button onclick="claimPvlt()">Claim PVLT</button>
 </div>
 
 <script>
-const PVLT_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
-const TREASURY_ADDRESS = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
-const GAME_ADDRESS = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
+    let energy = 50;
+    let points = 0;
+    let pvlt = 0;
 
-let provider, signer, user;
+    // Energy Refill Logic (50 per 3 seconds)
+    setInterval(() => {
+        if (energy < 50) {
+            energy = Math.min(energy + 1, 50);
+            document.getElementById('energy').innerText = energy;
+        }
+    }, 60); // 3000ms / 50 steps = 60ms
 
-// --- Minimal ERC20 ABI ---
-const ERC20_ABI = [
-"function balanceOf(address) view returns (uint256)",
-"function transfer(address to, uint amount) returns (bool)"
-];
+    // Tap Logic
+    document.getElementById('tapButton').addEventListener('click', () => {
+        if (energy > 0) {
+            energy--;
+            points++;
+            if (points >= 100) {
+                points -= 100;
+                pvlt++;
+            }
+            document.getElementById('energy').innerText = energy;
+            document.getElementById('points').innerText = points;
+            document.getElementById('pvlt').innerText = pvlt;
+        }
+    });
 
-// --- Game ABI (ASSUMED COMMON FUNCTIONS) ---
-const GAME_ABI = [
-"function tap()",
-"function claim()",
-"function buyEnergy() payable"
-];
-
-// contracts
-let pvlt, game;
-
-let energy = 50;
-let maxEnergy = 50;
-
-async function connectWallet() {
-    if (!window.ethereum) {
-        alert("Install MetaMask");
-        return;
+    function buyEnergy() {
+        if (pvlt >= 100) {
+            pvlt -= 100;
+            energy += 10000;
+            document.getElementById('pvlt').innerText = pvlt;
+            document.getElementById('energy').innerText = energy;
+            alert("Energy purchased!");
+        } else {
+            alert("Not enough PVLT!");
+        }
     }
 
-    provider = new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    signer = provider.getSigner();
-    user = await signer.getAddress();
-
-    pvlt = new ethers.Contract(PVLT_ADDRESS, ERC20_ABI, signer);
-    game = new ethers.Contract(GAME_ADDRESS, GAME_ABI, signer);
-
-    document.getElementById("connectBtn").innerText = "Connected";
-
-    loadData();
-}
-
-async function loadData() {
-    try {
-        const bal = await pvlt.balanceOf(user);
-        document.getElementById("pvltBal").innerText =
-            ethers.utils.formatUnits(bal, 18);
-    } catch (e) {
-        console.log(e);
+    function claimPvlt() {
+        if (pvlt >= 10) {
+            alert("Claiming " + pvlt + " PVLT to your wallet...");
+            // Integrate Web3.js here to trigger smart contract transaction
+        } else {
+            alert("Minimum 10 PVLT required to claim.");
+        }
     }
-}
-
-async function tap() {
-    if (!game) return alert("Connect wallet first");
-
-    if (energy <= 0) return alert("No energy");
-
-    energy--;
-    document.getElementById("energy").innerText = energy;
-
-    try {
-        let tx = await game.tap();
-        await tx.wait();
-        loadData();
-    } catch (e) {
-        console.log("Tap error:", e);
-    }
-}
-
-// energy regen (frontend simulation)
-setInterval(() => {
-    if (energy < maxEnergy) {
-        energy++;
-        document.getElementById("energy").innerText = energy;
-    }
-}, 3000);
-
-async function claim() {
-    if (!game) return;
-
-    try {
-        let tx = await game.claim();
-        await tx.wait();
-        loadData();
-    } catch (e) {
-        alert("Claim failed or not supported");
-    }
-}
-
-async function buyEnergy() {
-    if (!game) return;
-
-    try {
-        let tx = await game.buyEnergy({
-            value: ethers.utils.parseEther("0.001")
-        });
-        await tx.wait();
-        energy = maxEnergy;
-        document.getElementById("energy").innerText = energy;
-    } catch (e) {
-        alert("Buy failed or not supported");
-    }
-}
-
-// events
-document.getElementById("connectBtn").onclick = connectWallet;
-document.getElementById("tapArea").onclick = tap;
-document.getElementById("claimBtn").onclick = claim;
-document.getElementById("buyBtn").onclick = buyEnergy;
 </script>
-
 </body>
 </html>
