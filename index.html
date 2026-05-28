@@ -1,81 +1,337 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Tap Game</title>
-    <style>
-        body { background: #1a1a2e; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        .nav { display: flex; gap: 20px; padding: 20px; }
-        .tap-area { width: 200px; height: 200px; background: orange; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; margin-top: 50px; box-shadow: 0 0 20px orange; }
-        .controls { margin-top: 30px; display: flex; gap: 10px; }
-        button { padding: 10px 20px; cursor: pointer; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PepeVolt</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+body{
+    background:#0f172a;
+    color:white;
+    font-family:Arial, sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:100vh;
+    overflow:hidden;
+}
+
+/* TOP NAV */
+
+.nav{
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px;
+    background:#111827;
+    box-shadow:0 2px 10px rgba(0,0,0,.4);
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.stats{
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+.stat{
+    background:#1e293b;
+    padding:10px 14px;
+    border-radius:12px;
+    font-size:14px;
+}
+
+#connectBtn{
+    border:none;
+    background:#22c55e;
+    color:white;
+    padding:12px 18px;
+    border-radius:12px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+/* TAP AREA */
+
+.tap-wrapper{
+    flex:1;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    width:100%;
+}
+
+.tap-area{
+    width:260px;
+    height:260px;
+    border-radius:50%;
+    background:radial-gradient(circle at top,#facc15,#f97316);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:40px;
+    font-weight:bold;
+    cursor:pointer;
+    user-select:none;
+    box-shadow:
+        0 0 40px rgba(249,115,22,.7),
+        inset 0 0 30px rgba(255,255,255,.3);
+
+    transition:transform .08s ease;
+}
+
+.tap-area:active{
+    transform:scale(.95);
+}
+
+.disabled{
+    opacity:.5;
+    pointer-events:none;
+}
+
+/* CONTROLS */
+
+.controls{
+    width:100%;
+    padding:20px;
+    display:flex;
+    gap:12px;
+    justify-content:center;
+    flex-wrap:wrap;
+}
+
+.controls button{
+    border:none;
+    padding:14px 18px;
+    border-radius:14px;
+    font-weight:bold;
+    cursor:pointer;
+    background:#2563eb;
+    color:white;
+}
+
+/* FLOATING TEXT */
+
+.float{
+    position:absolute;
+    color:#22c55e;
+    font-weight:bold;
+    pointer-events:none;
+    animation:floatUp .8s linear forwards;
+}
+
+@keyframes floatUp{
+    0%{
+        opacity:1;
+        transform:translateY(0);
+    }
+    100%{
+        opacity:0;
+        transform:translateY(-60px);
+    }
+}
+
+</style>
 </head>
 <body>
 
 <div class="nav">
-    <div>Energy: <span id="energy">50</span>/50</div>
-    <div>Points: <span id="points">0</span></div>
-    <div>PVLT: <span id="pvlt">0</span></div>
-    <button id="connectBtn">Connect Wallet</button>
+
+    <div class="stats">
+        <div class="stat">
+            ⚡ Energy:
+            <span id="energy">50</span>
+            /
+            <span id="maxEnergy">50</span>
+        </div>
+
+        <div class="stat">
+            🟡 Points:
+            <span id="points">0</span>
+        </div>
+
+        <div class="stat">
+            💰 PVLT:
+            <span id="pvlt">0</span>
+        </div>
+    </div>
+
+    <button id="connectBtn">
+        Connect Wallet
+    </button>
+
 </div>
 
-<div class="tap-area" id="tapButton">TAP</div>
+<div class="tap-wrapper">
+    <div class="tap-area disabled" id="tapButton">
+        TAP
+    </div>
+</div>
 
 <div class="controls">
-    <button onclick="buyEnergy()">Buy 10k Energy (100 PVLT)</button>
-    <button onclick="claimPvlt()">Claim PVLT</button>
+    <button onclick="buyEnergy()">
+        Buy 10k Energy (100 PVLT)
+    </button>
+
+    <button onclick="claimPvlt()">
+        Claim PVLT
+    </button>
 </div>
 
 <script>
-    let energy = 50;
-    let points = 0;
-    let pvlt = 0;
 
-    // Energy Refill Logic (50 per 3 seconds)
-    setInterval(() => {
-        if (energy < 50) {
-            energy = Math.min(energy + 1, 50);
-            document.getElementById('energy').innerText = energy;
-        }
-    }, 60); // 3000ms / 50 steps = 60ms
+let connected = false;
 
-    // Tap Logic
-    document.getElementById('tapButton').addEventListener('click', () => {
-        if (energy > 0) {
-            energy--;
-            points++;
-            if (points >= 100) {
-                points -= 100;
-                pvlt++;
-            }
-            document.getElementById('energy').innerText = energy;
-            document.getElementById('points').innerText = points;
-            document.getElementById('pvlt').innerText = pvlt;
-        }
-    });
+let maxEnergy = 50;
+let energy = 50;
 
-    function buyEnergy() {
-        if (pvlt >= 100) {
-            pvlt -= 100;
-            energy += 10000;
-            document.getElementById('pvlt').innerText = pvlt;
-            document.getElementById('energy').innerText = energy;
-            alert("Energy purchased!");
-        } else {
-            alert("Not enough PVLT!");
-        }
+let points = 0;
+let pvlt = 0;
+
+// CONNECT WALLET
+
+const connectBtn = document.getElementById("connectBtn");
+const tapButton = document.getElementById("tapButton");
+
+connectBtn.onclick = async () => {
+
+    // Replace with WalletConnect/Web3Modal later
+
+    connected = true;
+
+    connectBtn.innerText = "Wallet Connected";
+    connectBtn.style.background = "#16a34a";
+
+    tapButton.classList.remove("disabled");
+};
+
+// UI UPDATE
+
+function updateUI(){
+
+    document.getElementById("energy").innerText = energy;
+    document.getElementById("maxEnergy").innerText = maxEnergy;
+
+    document.getElementById("points").innerText = points;
+
+    document.getElementById("pvlt").innerText = pvlt;
+}
+
+// ENERGY REGEN
+// +1 every 3 seconds up to maxEnergy
+
+setInterval(() => {
+
+    if(energy < maxEnergy){
+        energy++;
+        updateUI();
     }
 
-    function claimPvlt() {
-        if (pvlt >= 10) {
-            alert("Claiming " + pvlt + " PVLT to your wallet...");
-            // Integrate Web3.js here to trigger smart contract transaction
-        } else {
-            alert("Minimum 10 PVLT required to claim.");
-        }
+}, 3000);
+
+// TAP LOGIC
+
+tapButton.addEventListener("click",(e)=>{
+
+    if(!connected) return;
+
+    if(energy <= 0){
+        alert("No energy left!");
+        return;
     }
+
+    energy--;
+    points++;
+
+    // 100 points = 1 PVLT
+
+    if(points >= 100){
+        points -= 100;
+        pvlt++;
+    }
+
+    updateUI();
+
+    // FLOATING +1 EFFECT
+
+    const plus = document.createElement("div");
+
+    plus.className = "float";
+    plus.innerText = "+1";
+
+    plus.style.left = e.pageX + "px";
+    plus.style.top = e.pageY + "px";
+
+    document.body.appendChild(plus);
+
+    setTimeout(()=>{
+        plus.remove();
+    },800);
+
+});
+
+// BUY ENERGY
+
+function buyEnergy(){
+
+    if(!connected){
+        alert("Connect wallet first!");
+        return;
+    }
+
+    if(pvlt < 100){
+        alert("Not enough PVLT!");
+        return;
+    }
+
+    pvlt -= 100;
+
+    // increase max energy pool
+
+    maxEnergy += 10000;
+    energy += 10000;
+
+    updateUI();
+
+    alert("10,000 Energy Purchased!");
+}
+
+// CLAIM PVLT
+
+function claimPvlt(){
+
+    if(!connected){
+        alert("Connect wallet first!");
+        return;
+    }
+
+    if(pvlt < 10){
+        alert("Minimum 10 PVLT required!");
+        return;
+    }
+
+    alert("Claiming " + pvlt + " PVLT...");
+
+    // SMART CONTRACT CLAIM HERE
+
+    pvlt = 0;
+
+    updateUI();
+}
+
+updateUI();
+
 </script>
+
 </body>
 </html>
