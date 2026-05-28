@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+
 <title>PepeVolt</title>
 
 <style>
+
 *{
     margin:0;
     padding:0;
@@ -13,119 +15,127 @@
     -webkit-tap-highlight-color:transparent;
 }
 
-body{
-    background:#0f172a;
+html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    font-family:Arial,sans-serif;
+    background:#081120;
     color:white;
-    font-family:Arial, sans-serif;
+}
+
+/* MAIN APP */
+
+.app{
+    width:100%;
+    height:100vh;
     display:flex;
     flex-direction:column;
     align-items:center;
-    min-height:100vh;
-    overflow:hidden;
+    justify-content:space-between;
+    padding:14px;
 }
 
 /* TOP NAV */
 
-.nav{
+.top-nav{
     width:100%;
     display:flex;
     justify-content:space-between;
     align-items:center;
-    padding:15px;
-    background:#111827;
-    box-shadow:0 2px 10px rgba(0,0,0,.4);
-    flex-wrap:wrap;
     gap:10px;
 }
 
 .stats{
     display:flex;
-    gap:15px;
-    flex-wrap:wrap;
+    gap:8px;
+    flex:1;
 }
 
-.stat{
-    background:#1e293b;
-    padding:10px 14px;
-    border-radius:12px;
-    font-size:14px;
+.card{
+    flex:1;
+    background:#111b2e;
+    border-radius:16px;
+    padding:12px 8px;
+    text-align:center;
+    border:1px solid rgba(255,255,255,0.06);
+}
+
+.label{
+    font-size:11px;
+    opacity:.7;
+    margin-bottom:5px;
+}
+
+.value{
+    font-size:18px;
+    font-weight:bold;
 }
 
 #connectBtn{
     border:none;
-    background:#22c55e;
+    background:linear-gradient(135deg,#22c55e,#16a34a);
     color:white;
-    padding:12px 18px;
-    border-radius:12px;
+    padding:14px 16px;
+    border-radius:16px;
     font-weight:bold;
+    font-size:13px;
     cursor:pointer;
+    white-space:nowrap;
 }
 
-/* TAP AREA */
+/* CENTER AREA */
 
-.tap-wrapper{
+.center{
     flex:1;
+    width:100%;
     display:flex;
     justify-content:center;
     align-items:center;
-    width:100%;
+    position:relative;
 }
+
+/* TAP BUTTON */
 
 .tap-area{
     width:260px;
     height:260px;
     border-radius:50%;
-    background:radial-gradient(circle at top,#facc15,#f97316);
+    background:
+    radial-gradient(circle at top,#fde047,#f97316);
     display:flex;
     justify-content:center;
     align-items:center;
-    font-size:40px;
-    font-weight:bold;
+    font-size:38px;
+    font-weight:900;
+    color:white;
     cursor:pointer;
     user-select:none;
+
     box-shadow:
-        0 0 40px rgba(249,115,22,.7),
-        inset 0 0 30px rgba(255,255,255,.3);
+    0 0 25px rgba(249,115,22,.5),
+    0 0 70px rgba(249,115,22,.25),
+    inset 0 8px 20px rgba(255,255,255,.35);
 
     transition:transform .08s ease;
 }
 
 .tap-area:active{
-    transform:scale(.95);
+    transform:scale(.94);
 }
 
-.disabled{
-    opacity:.5;
+.tap-disabled{
+    opacity:.45;
     pointer-events:none;
 }
 
-/* CONTROLS */
-
-.controls{
-    width:100%;
-    padding:20px;
-    display:flex;
-    gap:12px;
-    justify-content:center;
-    flex-wrap:wrap;
-}
-
-.controls button{
-    border:none;
-    padding:14px 18px;
-    border-radius:14px;
-    font-weight:bold;
-    cursor:pointer;
-    background:#2563eb;
-    color:white;
-}
-
-/* FLOATING TEXT */
+/* FLOAT TEXT */
 
 .float{
     position:absolute;
-    color:#22c55e;
+    font-size:26px;
     font-weight:bold;
+    color:#22c55e;
     pointer-events:none;
     animation:floatUp .8s linear forwards;
 }
@@ -135,57 +145,172 @@ body{
         opacity:1;
         transform:translateY(0);
     }
+
     100%{
         opacity:0;
-        transform:translateY(-60px);
+        transform:translateY(-80px);
     }
+}
+
+/* BOTTOM PANEL */
+
+.bottom-panel{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    padding-bottom:10px;
+}
+
+.energy-bar{
+    width:100%;
+    height:18px;
+    background:#152238;
+    border-radius:50px;
+    overflow:hidden;
+}
+
+.energy-fill{
+    height:100%;
+    width:100%;
+    background:linear-gradient(90deg,#22c55e,#4ade80);
+    border-radius:50px;
+    transition:.3s;
+}
+
+.energy-text{
+    text-align:center;
+    font-size:13px;
+    margin-top:6px;
+    opacity:.8;
+}
+
+/* BUTTONS */
+
+.action-buttons{
+    display:flex;
+    gap:10px;
+}
+
+.action-buttons button{
+    flex:1;
+    border:none;
+    padding:16px;
+    border-radius:16px;
+    font-size:14px;
+    font-weight:bold;
+    color:white;
+    cursor:pointer;
+}
+
+.buy-btn{
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);
+}
+
+.claim-btn{
+    background:linear-gradient(135deg,#9333ea,#7e22ce);
+}
+
+/* MOBILE */
+
+@media(max-width:480px){
+
+    .tap-area{
+        width:220px;
+        height:220px;
+        font-size:34px;
+    }
+
+    .value{
+        font-size:16px;
+    }
+
+    #connectBtn{
+        padding:12px;
+        font-size:12px;
+    }
+
 }
 
 </style>
 </head>
+
 <body>
 
-<div class="nav">
+<div class="app">
 
-    <div class="stats">
-        <div class="stat">
-            ⚡ Energy:
-            <span id="energy">50</span>
-            /
-            <span id="maxEnergy">50</span>
+    <!-- TOP -->
+    <div class="top-nav">
+
+        <div class="stats">
+
+            <div class="card">
+                <div class="label">ENERGY</div>
+                <div class="value">
+                    <span id="energy">50</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">POINTS</div>
+                <div class="value">
+                    <span id="points">0</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="label">PVLT</div>
+                <div class="value">
+                    <span id="pvlt">0</span>
+                </div>
+            </div>
+
         </div>
 
-        <div class="stat">
-            🟡 Points:
-            <span id="points">0</span>
-        </div>
+        <button id="connectBtn">
+            CONNECT
+        </button>
 
-        <div class="stat">
-            💰 PVLT:
-            <span id="pvlt">0</span>
-        </div>
     </div>
 
-    <button id="connectBtn">
-        Connect Wallet
-    </button>
+    <!-- CENTER -->
+    <div class="center">
 
-</div>
+        <div class="tap-area tap-disabled" id="tapButton">
+            TAP
+        </div>
 
-<div class="tap-wrapper">
-    <div class="tap-area disabled" id="tapButton">
-        TAP
     </div>
-</div>
 
-<div class="controls">
-    <button onclick="buyEnergy()">
-        Buy 10k Energy (100 PVLT)
-    </button>
+    <!-- BOTTOM -->
+    <div class="bottom-panel">
 
-    <button onclick="claimPvlt()">
-        Claim PVLT
-    </button>
+        <div>
+
+            <div class="energy-bar">
+                <div class="energy-fill" id="energyFill"></div>
+            </div>
+
+            <div class="energy-text">
+                Energy regenerates +1 every 3 seconds
+            </div>
+
+        </div>
+
+        <div class="action-buttons">
+
+            <button class="buy-btn" onclick="buyEnergy()">
+                Buy 10K Energy
+            </button>
+
+            <button class="claim-btn" onclick="claimPvlt()">
+                Claim PVLT
+            </button>
+
+        </div>
+
+    </div>
+
 </div>
 
 <script>
@@ -198,62 +323,46 @@ let energy = 50;
 let points = 0;
 let pvlt = 0;
 
-// CONNECT WALLET
-
-const connectBtn = document.getElementById("connectBtn");
 const tapButton = document.getElementById("tapButton");
+const connectBtn = document.getElementById("connectBtn");
 
-connectBtn.onclick = async () => {
-
-    // Replace with WalletConnect/Web3Modal later
-
-    connected = true;
-
-    connectBtn.innerText = "Wallet Connected";
-    connectBtn.style.background = "#16a34a";
-
-    tapButton.classList.remove("disabled");
-};
-
-// UI UPDATE
+/* UPDATE UI */
 
 function updateUI(){
 
     document.getElementById("energy").innerText = energy;
-    document.getElementById("maxEnergy").innerText = maxEnergy;
-
     document.getElementById("points").innerText = points;
-
     document.getElementById("pvlt").innerText = pvlt;
+
+    let percent = (energy / maxEnergy) * 100;
+
+    document.getElementById("energyFill").style.width = percent + "%";
 }
 
-// ENERGY REGEN
-// +1 every 3 seconds up to maxEnergy
+/* CONNECT */
 
-setInterval(() => {
+connectBtn.onclick = () => {
 
-    if(energy < maxEnergy){
-        energy++;
-        updateUI();
-    }
+    connected = true;
 
-}, 3000);
+    connectBtn.innerText = "CONNECTED";
 
-// TAP LOGIC
+    tapButton.classList.remove("tap-disabled");
+};
+
+/* TAP */
 
 tapButton.addEventListener("click",(e)=>{
 
     if(!connected) return;
 
     if(energy <= 0){
-        alert("No energy left!");
+        alert("No Energy Left");
         return;
     }
 
     energy--;
     points++;
-
-    // 100 points = 1 PVLT
 
     if(points >= 100){
         points -= 100;
@@ -262,15 +371,15 @@ tapButton.addEventListener("click",(e)=>{
 
     updateUI();
 
-    // FLOATING +1 EFFECT
+    /* FLOATING +1 */
 
     const plus = document.createElement("div");
 
     plus.className = "float";
     plus.innerText = "+1";
 
-    plus.style.left = e.pageX + "px";
-    plus.style.top = e.pageY + "px";
+    plus.style.left = e.clientX + "px";
+    plus.style.top = e.clientY + "px";
 
     document.body.appendChild(plus);
 
@@ -280,49 +389,60 @@ tapButton.addEventListener("click",(e)=>{
 
 });
 
-// BUY ENERGY
+/* ENERGY REGEN */
+
+setInterval(()=>{
+
+    if(energy < maxEnergy){
+
+        energy++;
+
+        updateUI();
+    }
+
+},3000);
+
+/* BUY ENERGY */
 
 function buyEnergy(){
 
     if(!connected){
-        alert("Connect wallet first!");
+        alert("Connect Wallet First");
         return;
     }
 
     if(pvlt < 100){
-        alert("Not enough PVLT!");
+        alert("Need 100 PVLT");
         return;
     }
 
     pvlt -= 100;
 
-    // increase max energy pool
-
-    maxEnergy += 10000;
     energy += 10000;
+    maxEnergy += 10000;
 
     updateUI();
 
-    alert("10,000 Energy Purchased!");
+    alert("10,000 Energy Added");
 }
 
-// CLAIM PVLT
+/* CLAIM */
 
 function claimPvlt(){
 
     if(!connected){
-        alert("Connect wallet first!");
+        alert("Connect Wallet First");
         return;
     }
 
     if(pvlt < 10){
-        alert("Minimum 10 PVLT required!");
+        alert("Minimum 10 PVLT Required");
         return;
     }
 
-    alert("Claiming " + pvlt + " PVLT...");
+    alert("Claiming " + pvlt + " PVLT");
 
-    // SMART CONTRACT CLAIM HERE
+    /* Smart Contract Claim Here */
 
     pvlt = 0;
 
