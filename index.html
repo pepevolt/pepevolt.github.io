@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Web3 Demo | Connect Wallet Button</title>
-  <!-- Google Fonts & simple reset for a clean look -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <title>Connect Wallet | Simple Button</title>
   <style>
     * {
       margin: 0;
@@ -13,605 +11,337 @@
       box-sizing: border-box;
     }
 
+    /* pure black background - full screen, no distractions */
     body {
-      background: linear-gradient(145deg, #f6f9fc 0%, #eef2f5 100%);
-      font-family: 'Inter', sans-serif;
+      background: #000000;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.5rem;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
     }
 
-    /* card container */
-    .card {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(2px);
-      border-radius: 2.5rem;
-      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.02);
-      padding: 2rem 2rem 2.2rem 2rem;
-      max-width: 500px;
-      width: 100%;
-      transition: all 0.2s ease;
-      text-align: center;
-      border: 1px solid rgba(255,255,255,0.6);
+    /* absolute minimal container: just the button, no extra text or cards */
+    .button-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    h1 {
-      font-size: 1.9rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #1E2A3E, #0F2027);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      letter-spacing: -0.3px;
-      margin-bottom: 0.5rem;
-    }
-
-    .sub {
-      color: #4b5b6c;
-      font-size: 0.95rem;
-      margin-bottom: 2rem;
-      font-weight: 500;
-      border-bottom: 1px solid #e2e8f0;
-      display: inline-block;
-      padding-bottom: 0.3rem;
-    }
-
-    /* connect wallet button */
-    .connect-btn {
-      background: #0b1120;
+    /* 
+      clean connect wallet button
+      - white text on subtle dark-gray background (but still readable)
+      - rounded, modern, no extra decorations
+      - hover effect for feedback
+    */
+    .connect-wallet-btn {
+      background: #1a1a1a;
       border: none;
-      padding: 1rem 1.8rem;
-      border-radius: 60px;
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
+      padding: 0.9rem 2rem;
+      border-radius: 48px;
       font-size: 1.1rem;
-      color: white;
+      font-weight: 500;
+      font-family: inherit;
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.3px;
+      box-shadow: 0 1px 2px rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(0px);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-      width: 100%;
-      max-width: 260px;
-      letter-spacing: 0.2px;
+      gap: 8px;
+      white-space: nowrap;
     }
 
-    .connect-btn:hover {
-      background: #1f2a46;
+    /* subtle hover: lighter background, slight scale */
+    .connect-wallet-btn:hover {
+      background: #2c2c2c;
       transform: scale(1.02);
-      box-shadow: 0 12px 20px -12px rgba(0, 0, 0, 0.25);
     }
 
-    .connect-btn:active {
+    /* active / click feedback */
+    .connect-wallet-btn:active {
       transform: scale(0.98);
     }
 
-    /* wallet icon inside button */
-    .wallet-icon {
-      width: 22px;
-      height: 22px;
+    /* optional wallet icon (simple minimal svg) - keeps it clean but adds context */
+    .btn-icon {
+      width: 18px;
+      height: 18px;
       display: inline-block;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5M16 12h3M3 10h18' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='5' width='20' height='14' rx='2'%3E%3C/rect%3E%3Cline x1='16' y1='12' x2='18' y2='12'%3E%3C/line%3E%3C/svg%3E");
       background-size: contain;
       background-repeat: no-repeat;
-      filter: brightness(0) invert(1);
     }
 
-    /* account & status area */
-    .wallet-status {
-      margin-top: 2rem;
-      background: #ffffffcc;
-      backdrop-filter: blur(4px);
-      border-radius: 1.8rem;
-      padding: 1.2rem 1rem;
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      transition: all 0.2s;
-    }
-
-    .address-chip {
-      background: #eef2ff;
-      padding: 0.5rem 1rem;
-      border-radius: 40px;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-family: monospace;
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: #0f172a;
-      word-break: break-all;
-      max-width: 100%;
-      margin-bottom: 0.8rem;
-    }
-
-    .indicator {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-
-    .network-badge {
-      background: #e6f7ec;
-      color: #1e7b3c;
-      padding: 0.3rem 1rem;
-      border-radius: 40px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .error-msg {
-      background: #fee2e2;
-      color: #b91c1c;
-      border-radius: 60px;
-      padding: 0.6rem 1rem;
-      font-size: 0.8rem;
-      font-weight: 500;
-      margin-top: 0.8rem;
-      display: inline-block;
-    }
-
-    .balance-row {
-      margin-top: 0.7rem;
-      font-size: 0.9rem;
-      background: #f8fafc;
-      border-radius: 32px;
-      padding: 0.5rem 1rem;
-      display: inline-flex;
-      align-items: baseline;
-      gap: 6px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .balance-label {
-      font-weight: 600;
-      color: #2c3e66;
-    }
-
-    .balance-value {
-      font-family: monospace;
-      font-weight: 700;
-      color: #0b1120;
-    }
-
-    button {
-      background: none;
-      border: none;
-    }
-
-    .disconnect-btn {
-      background: transparent;
-      border: 1px solid #cbd5e1;
-      color: #334155;
-      padding: 0.4rem 1rem;
-      border-radius: 40px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      margin-left: 8px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .disconnect-btn:hover {
-      background: #f1f5f9;
-      border-color: #94a3b8;
-    }
-
-    .flex-btns {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      align-items: center;
-    }
-
-    hr {
-      margin: 1rem 0;
-      border: none;
-      border-top: 1px solid #e2edf2;
-    }
-
-    footer {
-      margin-top: 1.5rem;
-      font-size: 0.7rem;
-      color: #6c7a8e;
-    }
+    /* no extra text, no status panel, no footer — just the button.
+       however we need a tiny area to show connection feedback? 
+       requirement says "simple only button no text in black background"
+       -> NO extra text, nothing. Only button. But wallet connection 
+       may show a console log, but we preserve minimalism.
+       Absolutely no additional visible text elements.
+    */
   </style>
 </head>
 <body>
-
-<div class="card">
-  <h1>⚡ Web3 Portal</h1>
-  <div class="sub">Connect your wallet</div>
-
-  <!-- main dynamic connect button -->
-  <div id="walletButtonContainer">
-    <button id="connectWalletBtn" class="connect-btn">
-      <span class="wallet-icon"></span>
-      <span id="btnText">Connect Wallet</span>
+  <div class="button-wrapper">
+    <button id="connectWalletBtn" class="connect-wallet-btn">
+      <span class="btn-icon"></span>
+      <span>Connect Wallet</span>
     </button>
   </div>
 
-  <!-- status panel: shows account, network, balance after connection -->
-  <div id="walletStatusPanel" class="wallet-status" style="display: none;">
-    <div class="address-chip">
-      <span>🆔</span>
-      <span id="accountAddress">0x0000...0000</span>
-      <button id="disconnectBtn" class="disconnect-btn" style="margin-left: 6px;">Disconnect</button>
-    </div>
-    <div class="indicator">
-      <span class="network-badge" id="networkName">⚡ Network: --</span>
-      <div class="balance-row">
-        <span class="balance-label">💰 Balance</span>
-        <span class="balance-value" id="walletBalance">—</span>
-        <span style="font-size:0.7rem;">ETH</span>
-      </div>
-    </div>
-    <div id="errorMessage" class="error-msg" style="display: none;"></div>
-    <footer>✓ Connected via MetaMask or any EIP-1193 provider</footer>
-  </div>
-  <footer style="margin-top: 1.2rem;">
-    Supports MetaMask, Trust Wallet, Coinbase Wallet, Brave, etc.
-  </footer>
-</div>
-
-<script>
-  // ---------- DOM Elements ----------
-  const connectBtn = document.getElementById('connectWalletBtn');
-  const btnTextSpan = document.getElementById('btnText');
-  const walletStatusPanel = document.getElementById('walletStatusPanel');
-  const accountAddressSpan = document.getElementById('accountAddress');
-  const networkNameSpan = document.getElementById('networkName');
-  const walletBalanceSpan = document.getElementById('walletBalance');
-  const errorMsgDiv = document.getElementById('errorMessage');
-  const disconnectButton = document.getElementById('disconnectBtn');
-
-  // state variables
-  let currentAccount = null;          // connected account address
-  let currentChainId = null;          // current chain id (hex)
-  let currentProvider = null;          // ethereum provider reference
-
-  // Helper: show / hide error with auto-clear after 5 sec
-  function showError(message, isWarning = false) {
-    if (!errorMsgDiv) return;
-    errorMsgDiv.textContent = message;
-    errorMsgDiv.style.display = 'block';
-    if (!isWarning) {
-      // auto hide after 5 seconds for non-critical but keep visible for connection errors?
-      setTimeout(() => {
-        if (errorMsgDiv && errorMsgDiv.style.display === 'block') {
-          // Only hide if no new error triggered?
-          if (errorMsgDiv.textContent === message) {
-            errorMsgDiv.style.display = 'none';
+  <script>
+    // ULTRA SIMPLE: Connect Wallet functionality with minimal feedback.
+    // No extra UI text appears. The button just handles wallet connection.
+    // If user connects: we keep connected state, but we do NOT display any extra text or account info (as per "no text").
+    // The only interaction is the button click and potential wallet popup.
+    // We do not add any status divs, no balance, no address text — strictly minimal.
+    
+    (function() {
+      const connectBtn = document.getElementById('connectWalletBtn');
+      
+      // track connection state internally (optional for toggling but no text shown)
+      let isConnected = false;
+      let currentAccount = null;
+      
+      // Helper to update button style/text when connected? 
+      // we want to keep button text as "Connect Wallet" OR optionally change to "Connected"?
+      // But "no text" likely means no additional paragraphs, but button text itself is allowed.
+      // To respect ultra-simple but useful, we can change button text to "Connected ✓" after success?
+      // That would still be button-text, not extra text. But strict "only button no text" could imply
+      // no other text elements. Changing button text is fine and expected UX.
+      // however to be fully minimal but functional: if connected we can change to "Connected".
+      // But some users might want to see if they're connected. However spec says no extra text.
+      // we'll do a simple change: after connection, button shows "Connected" and wallet icon, 
+      // and also handles disconnect? But a disconnect would need extra click maybe? Simpler: 
+      // If you click again while connected: it switches account or does nothing, but we add behavior:
+      // second click could show wallet switcher.
+      // We must avoid any alert or extra DOM text. So we keep it silent but functional.
+      
+      async function connectWallet() {
+        // check for ethereum provider (MetaMask, Trust, Coinbase, etc)
+        if (!window.ethereum) {
+          // since we cannot show text (no error messages), we rely on browser console
+          console.warn('No Web3 wallet detected. Please install MetaMask or another wallet.');
+          // but to give subtle feedback without text on screen? we can't. so just log.
+          return;
+        }
+        
+        try {
+          // request accounts
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          if (accounts && accounts.length > 0) {
+            currentAccount = accounts[0];
+            isConnected = true;
+            
+            // change button text to indicate connected state (still button text, no extra UI)
+            if (connectBtn) {
+              // we keep the icon, change text to "Connected"
+              const iconSpan = connectBtn.querySelector('.btn-icon');
+              connectBtn.innerHTML = '';
+              if (iconSpan) {
+                connectBtn.appendChild(iconSpan);
+              } else {
+                const newIcon = document.createElement('span');
+                newIcon.className = 'btn-icon';
+                connectBtn.appendChild(newIcon);
+              }
+              const textSpan = document.createElement('span');
+              textSpan.innerText = 'Connected';
+              connectBtn.appendChild(textSpan);
+            }
+            
+            // optional: listen for account changes
+            setupEventListeners();
+          } else {
+            // no accounts, stay as is
+            isConnected = false;
+          }
+        } catch (error) {
+          // user rejected or error, we just log silently (no text on screen)
+          console.error('Wallet connection error:', error);
+          // if there was an error, we revert button text if needed
+          if (!isConnected && connectBtn && connectBtn.innerText !== 'Connect Wallet') {
+            resetButtonToDefault();
           }
         }
-      }, 5000);
-    }
-  }
-
-  function hideError() {
-    if (errorMsgDiv) errorMsgDiv.style.display = 'none';
-  }
-
-  // Format address: first6...last4
-  function formatAddress(address) {
-    if (!address) return '';
-    if (address.length < 12) return address;
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-  }
-
-  // Get network name from chainId (hex string like "0x1", "0x5", etc.)
-  function getNetworkName(chainIdHex) {
-    if (!chainIdHex) return 'Unknown';
-    const chainId = parseInt(chainIdHex, 16);
-    const networks = {
-      1: 'Ethereum Mainnet',
-      5: 'Goerli Testnet',
-      11155111: 'Sepolia Testnet',
-      137: 'Polygon Mainnet',
-      80001: 'Mumbai Testnet',
-      56: 'BSC Mainnet',
-      97: 'BSC Testnet',
-      42161: 'Arbitrum One',
-      10: 'Optimism',
-      43114: 'Avalanche C-Chain',
-    };
-    return networks[chainId] || `Chain ID: ${chainId}`;
-  }
-
-  // Get ETH balance for given account
-  async function fetchBalance(provider, address) {
-    if (!provider || !address) return null;
-    try {
-      // Using provider.request with eth_getBalance
-      const balanceHex = await provider.request({
-        method: 'eth_getBalance',
-        params: [address, 'latest'],
-      });
-      const balanceWei = parseInt(balanceHex, 16);
-      const balanceEth = balanceWei / 1e18;
-      return balanceEth.toFixed(5);
-    } catch (err) {
-      console.warn('Balance fetch error:', err);
-      return null;
-    }
-  }
-
-  // Update UI after successful connection / account or network change
-  async function updateWalletUI(account, chainIdHex, provider) {
-    if (!account) {
-      // disconnected state: reset UI
-      walletStatusPanel.style.display = 'none';
-      connectBtn.style.display = 'inline-flex';
-      btnTextSpan.innerText = 'Connect Wallet';
-      currentAccount = null;
-      currentChainId = null;
-      return;
-    }
-
-    // show status panel and hide main connect button? we keep connect button but also show status; but we'll manage visibility: we can keep both, but connect button becomes less relevant, but we can also change text.
-    // Better: show status panel, but connect button remains but we'll change to "Switch Wallet?" maybe less confusing: we can keep connect button as "Change Account"?
-    // For UX we will keep connect button visible but change text to "Change Wallet" and let it trigger connection again.
-    // However user expectations: after connection they may want to disconnect or switch. We'll keep connect button but text becomes "Connect another" but we also have dedicated disconnect button.
-    // Let's modify connect button behavior: after connection, connect button becomes "Switch Account" (calls same requestAccounts). Good.
-    if (walletStatusPanel) walletStatusPanel.style.display = 'block';
-    if (connectBtn) {
-      // Change button text after connection to "Switch Wallet"
-      btnTextSpan.innerText = 'Switch Wallet';
-    }
-
-    // Display account
-    accountAddressSpan.innerText = formatAddress(account);
-    
-    // Display network
-    const networkLabel = getNetworkName(chainIdHex);
-    networkNameSpan.innerHTML = `🌐 ${networkLabel}`;
-    
-    // Fetch and display balance
-    const balance = await fetchBalance(provider, account);
-    if (balance !== null) {
-      walletBalanceSpan.innerText = balance;
-    } else {
-      walletBalanceSpan.innerText = 'unavailable';
-    }
-
-    // store current state
-    currentAccount = account;
-    currentChainId = chainIdHex;
-    currentProvider = provider;
-    hideError();
-  }
-
-  // Reset UI to "disconnected" state
-  function resetUI() {
-    walletStatusPanel.style.display = 'none';
-    if (connectBtn) {
-      btnTextSpan.innerText = 'Connect Wallet';
-    }
-    currentAccount = null;
-    currentChainId = null;
-    currentProvider = null;
-    hideError();
-    // also clear any displayed values
-    accountAddressSpan.innerText = '0x0000...0000';
-    networkNameSpan.innerHTML = '⚡ Network: --';
-    walletBalanceSpan.innerText = '—';
-  }
-
-  // Main connect handler: request account access and setup listeners
-  async function connectWallet() {
-    // Check if window.ethereum is available (MetaMask or other EIP-1193 provider)
-    if (!window.ethereum) {
-      showError('⚠️ No Ethereum wallet detected! Please install MetaMask or use a Web3 browser.');
-      return;
-    }
-
-    const provider = window.ethereum;
-    
-    try {
-      // Request account access
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
-      if (!accounts || accounts.length === 0) {
-        showError('No accounts returned. Please unlock your wallet.');
-        return;
       }
-      const account = accounts[0];
-      // get current chainId
-      const chainIdHex = await provider.request({ method: 'eth_chainId' });
       
-      // success
-      await updateWalletUI(account, chainIdHex, provider);
-      
-      // set up event listeners (accountsChanged, chainChanged, disconnect)
-      setupEventListeners(provider);
-      
-    } catch (err) {
-      console.error('Connection error:', err);
-      if (err.code === 4001) {
-        showError('🛑 Connection rejected by user. Please approve to connect wallet.');
-      } else {
-        showError(`Connection failed: ${err.message || 'Unknown error'}`);
-      }
-      resetUI();
-    }
-  }
-
-  // disconnect handler: resets app state (no built-in disconnect method in provider, we just forget locally)
-  function disconnectWallet() {
-    // reset UI and state, but DO NOT revoke permissions (just local clean)
-    resetUI();
-    // optional: remove listeners to avoid dangling but we can keep them, but they will trigger anyway if user switches account.
-    // To improve UX we keep listeners but they will call update when account changes again.
-    // Also we set currentAccount = null
-    currentAccount = null;
-    currentProvider = null;
-    // Also clear any error
-    hideError();
-    // If we want to re-show the connect button fresh: it's already reset.
-    // For extra safety remove event listeners? Not necessary but we can detach.
-    // However we can re-attach on next connect. Better to remove and re-add.
-    if (window.ethereum && window._listenersAttached) {
-      // Prevent duplicate listeners: remove existing before next connect.
-      removeEventListeners(window.ethereum);
-      window._listenersAttached = false;
-    }
-  }
-
-  let currentListeners = {
-    accountsChanged: null,
-    chainChanged: null,
-    disconnect: null
-  };
-
-  function setupEventListeners(provider) {
-    // Avoid duplicate listeners: remove existing first
-    if (window._listenersAttached) {
-      removeEventListeners(provider);
-    }
-    
-    const accountsChangedHandler = (accounts) => {
-      console.log('accountsChanged event', accounts);
-      if (!accounts || accounts.length === 0) {
-        // User disconnected wallet or locked
-        resetUI();
-        showError('Wallet disconnected or locked.', true);
-        currentAccount = null;
-      } else {
-        const newAccount = accounts[0];
-        // When accounts change, also fetch chainId again
-        provider.request({ method: 'eth_chainId' }).then(chainIdHex => {
-          updateWalletUI(newAccount, chainIdHex, provider).catch(err => {
-            console.warn('update after account change error', err);
-          });
-        }).catch(err => {
-          console.warn('chainId fetch error', err);
-          updateWalletUI(newAccount, currentChainId || '0x1', provider);
-        });
-      }
-    };
-    
-    const chainChangedHandler = (chainIdHex) => {
-      console.log('chainChanged event', chainIdHex);
-      if (currentAccount) {
-        // chain changed while connected: refresh UI with new chainId and re-fetch balance
-        updateWalletUI(currentAccount, chainIdHex, provider).catch(err => {
-          console.warn('update after chain change error', err);
-          showError('Network changed, but balance refresh error', true);
-        });
-      } else {
-        // not connected, just ignore
-      }
-    };
-    
-    // Some providers emit 'disconnect' event
-    const disconnectHandler = (error) => {
-      console.log('provider disconnect', error);
-      resetUI();
-      showError('Wallet provider disconnected. Please reconnect.', true);
-      currentAccount = null;
-    };
-    
-    provider.on('accountsChanged', accountsChangedHandler);
-    provider.on('chainChanged', chainChangedHandler);
-    if (provider.on && typeof provider.on === 'function') {
-      // handle disconnect if supported
-      if (provider.removeListener) {
-        provider.on('disconnect', disconnectHandler);
-      }
-    }
-    
-    // store handlers for potential removal
-    currentListeners.accountsChanged = accountsChangedHandler;
-    currentListeners.chainChanged = chainChangedHandler;
-    currentListeners.disconnect = disconnectHandler;
-    window._listenersAttached = true;
-    window._ethereumProvider = provider;
-  }
-  
-  function removeEventListeners(provider) {
-    if (!provider || !window._listenersAttached) return;
-    if (currentListeners.accountsChanged) {
-      provider.removeListener('accountsChanged', currentListeners.accountsChanged);
-    }
-    if (currentListeners.chainChanged) {
-      provider.removeListener('chainChanged', currentListeners.chainChanged);
-    }
-    if (currentListeners.disconnect && provider.removeListener) {
-      provider.removeListener('disconnect', currentListeners.disconnect);
-    }
-    currentListeners = { accountsChanged: null, chainChanged: null, disconnect: null };
-    window._listenersAttached = false;
-  }
-  
-  // Handle "Switch Wallet" or reconnect when button clicked after connection
-  function onMainButtonClick() {
-    if (currentAccount) {
-      // Already connected: we treat as "Switch Account" - triggers eth_requestAccounts again, which opens wallet selection or account switcher
-      if (!window.ethereum) {
-        showError('No wallet provider found');
-        return;
-      }
-      // call connectWallet again: it will request accounts and update accordingly
-      connectWallet().catch(e => console.warn(e));
-    } else {
-      connectWallet().catch(e => console.warn(e));
-    }
-  }
-  
-  // disconnect button handler
-  if (disconnectButton) {
-    disconnectButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      disconnectWallet();
-    });
-  }
-  
-  // Attach main connect / switch button
-  if (connectBtn) {
-    connectBtn.addEventListener('click', onMainButtonClick);
-  }
-  
-  // Auto-check if already connected on page load (for page refresh scenario)
-  async function checkInitialConnection() {
-    if (window.ethereum) {
-      try {
-        const provider = window.ethereum;
-        const accounts = await provider.request({ method: 'eth_accounts' });
-        if (accounts && accounts.length > 0) {
-          const chainIdHex = await provider.request({ method: 'eth_chainId' });
-          await updateWalletUI(accounts[0], chainIdHex, provider);
-          setupEventListeners(provider);
+      // reset button to default "Connect Wallet"
+      function resetButtonToDefault() {
+        if (!connectBtn) return;
+        const existingIcon = connectBtn.querySelector('.btn-icon');
+        connectBtn.innerHTML = '';
+        if (existingIcon) {
+          connectBtn.appendChild(existingIcon);
         } else {
-          // No active session, we remain disconnected but show connect button
-          resetUI();
+          const iconSpan = document.createElement('span');
+          iconSpan.className = 'btn-icon';
+          connectBtn.appendChild(iconSpan);
         }
-      } catch (err) {
-        console.warn('Initial connection check error', err);
-        resetUI();
+        const textSpan = document.createElement('span');
+        textSpan.innerText = 'Connect Wallet';
+        connectBtn.appendChild(textSpan);
+        isConnected = false;
+        currentAccount = null;
       }
-    } else {
-      // provider missing: show a silent hint? We can show but not intrusive.
-      // show subtle hint after a second.
-      setTimeout(() => {
-        if (!window.ethereum && !currentAccount) {
-          const msgDiv = document.createElement('div');
-          // but we don't want to disturb too much. Use existing error system briefly.
-          showError('💡 No Web3 wallet found. Install MetaMask to connect.', true);
-          setTimeout(() => hideError(), 8000);
+      
+      // if user switches account in wallet, update our internal state but button remains "Connected"
+      function setupEventListeners() {
+        if (!window.ethereum) return;
+        
+        // remove previous listener to avoid duplicates
+        if (window._accountsChangedHandler) {
+          window.ethereum.removeListener('accountsChanged', window._accountsChangedHandler);
         }
-      }, 800);
-    }
-  }
-  
-  // start
-  checkInitialConnection();
-</script>
+        
+        const accountsChangedHandler = (accounts) => {
+          if (accounts && accounts.length > 0) {
+            currentAccount = accounts[0];
+            isConnected = true;
+            // ensure button shows connected if not already
+            if (connectBtn && connectBtn.innerText !== 'Connected') {
+              const iconSpan = connectBtn.querySelector('.btn-icon') || (() => {
+                const newIcon = document.createElement('span');
+                newIcon.className = 'btn-icon';
+                return newIcon;
+              })();
+              connectBtn.innerHTML = '';
+              if (iconSpan) connectBtn.appendChild(iconSpan);
+              const textSpan = document.createElement('span');
+              textSpan.innerText = 'Connected';
+              connectBtn.appendChild(textSpan);
+            }
+          } else {
+            // accounts empty -> disconnected
+            isConnected = false;
+            currentAccount = null;
+            resetButtonToDefault();
+          }
+        };
+        
+        window.ethereum.on('accountsChanged', accountsChangedHandler);
+        window._accountsChangedHandler = accountsChangedHandler;
+        
+        // chain change: we don't show any text, just keep connected state
+        const chainChangedHandler = () => {
+          // no UI change, just reload if needed for dapp, but we keep button as is
+          if (isConnected && connectBtn && connectBtn.innerText !== 'Connected') {
+            // sync button
+            const iconSpan = connectBtn.querySelector('.btn-icon');
+            connectBtn.innerHTML = '';
+            if (iconSpan) connectBtn.appendChild(iconSpan);
+            const textSpan = document.createElement('span');
+            textSpan.innerText = 'Connected';
+            connectBtn.appendChild(textSpan);
+          }
+        };
+        
+        if (window._chainChangedHandler) {
+          window.ethereum.removeListener('chainChanged', window._chainChangedHandler);
+        }
+        window.ethereum.on('chainChanged', chainChangedHandler);
+        window._chainChangedHandler = chainChangedHandler;
+      }
+      
+      // handle button click: if already connected, we could either do nothing or prompt switch account.
+      // Best UX: when already connected, clicking again will open account selector (eth_requestAccounts)
+      // which lets user switch accounts without needing extra disconnect. That's clean.
+      async function onButtonClick() {
+        if (!window.ethereum) {
+          console.warn('No wallet found');
+          return;
+        }
+        
+        // if already connected (button shows Connected) we still call connectWallet again to allow account switching
+        // but we must handle the case where the user cancels: we don't want to break UI.
+        // Try to re-request accounts
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          if (accounts && accounts.length > 0) {
+            currentAccount = accounts[0];
+            isConnected = true;
+            // ensure button text is 'Connected'
+            if (connectBtn && connectBtn.innerText !== 'Connected') {
+              const iconSpan = connectBtn.querySelector('.btn-icon') || (() => {
+                const newIcon = document.createElement('span');
+                newIcon.className = 'btn-icon';
+                return newIcon;
+              })();
+              connectBtn.innerHTML = '';
+              if (iconSpan) connectBtn.appendChild(iconSpan);
+              const textSpan = document.createElement('span');
+              textSpan.innerText = 'Connected';
+              connectBtn.appendChild(textSpan);
+            }
+            // ensure listeners are active
+            setupEventListeners();
+          } else {
+            // if no accounts, reset to default connect
+            if (connectBtn && connectBtn.innerText !== 'Connect Wallet') {
+              resetButtonToDefault();
+            }
+            isConnected = false;
+            currentAccount = null;
+          }
+        } catch (err) {
+          console.error('Wallet interaction error', err);
+          // if previously connected but error, don't change button drastically
+          // but if currently showing connected and error might be rejection, we keep connected state
+          // because wallet might still be connected. no visual text change.
+        }
+      }
+      
+      // initialize: Check if already connected on page load (refresh scenario)
+      async function checkInitialConnection() {
+        if (window.ethereum) {
+          try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts && accounts.length > 0) {
+              currentAccount = accounts[0];
+              isConnected = true;
+              // update button to "Connected" without extra text elsewhere
+              if (connectBtn) {
+                const existingIcon = connectBtn.querySelector('.btn-icon');
+                connectBtn.innerHTML = '';
+                if (existingIcon) {
+                  connectBtn.appendChild(existingIcon);
+                } else {
+                  const newIcon = document.createElement('span');
+                  newIcon.className = 'btn-icon';
+                  connectBtn.appendChild(newIcon);
+                }
+                const textSpan = document.createElement('span');
+                textSpan.innerText = 'Connected';
+                connectBtn.appendChild(textSpan);
+              }
+              setupEventListeners();
+            } else {
+              // no account, ensure button is default
+              resetButtonToDefault();
+            }
+          } catch (err) {
+            console.error('Initial account check failed', err);
+            resetButtonToDefault();
+          }
+        } else {
+          // no provider, button stays as Connect Wallet, but no extra text appears
+          // also we could set a very subtle console hint only
+          console.log('No ethereum provider found. Install MetaMask to connect.');
+        }
+      }
+      
+      // attach event listener to button
+      if (connectBtn) {
+        connectBtn.addEventListener('click', onButtonClick);
+      }
+      
+      // run initial connection check (does not create any extra visible text)
+      checkInitialConnection();
+    })();
+  </script>
 </body>
 </html>
