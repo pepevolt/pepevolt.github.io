@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>PepeVolt ⚡ | No TX Tapping</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>PepeVolt | Tap to Earn PVLT</title>
 <!-- Ethers.js -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <style>
@@ -14,63 +14,46 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+body {
+    background: linear-gradient(145deg, #0a0c15 0%, #0f172a 100%);
+    min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    background: #0a0c15;
     color: white;
+    padding: 16px;
 }
 
-.app {
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    position: relative;
+.game-container {
+    max-width: 500px;
+    margin: 0 auto;
 }
 
-/* TOP NAV */
-.top-nav {
-    width: 100%;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
+/* Stats Cards */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
-    background: rgba(8, 18, 32, 0.85);
-    backdrop-filter: blur(12px);
-    z-index: 10;
-    border-bottom: 1px solid rgba(250, 204, 21, 0.2);
+    margin-bottom: 24px;
 }
 
-.stats {
-    flex: 1;
-    display: flex;
-    gap: 10px;
-}
-
-.card {
-    flex: 1;
-    background: #111b2ecc;
-    backdrop-filter: blur(4px);
-    border-radius: 24px;
-    padding: 12px 8px;
+.stat-card {
+    background: rgba(17, 27, 46, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 28px;
+    padding: 16px 8px;
     text-align: center;
-    border: 1px solid rgba(255, 215, 0, 0.2);
-    transition: 0.2s;
+    border: 1px solid rgba(250, 204, 21, 0.2);
 }
 
-.label {
-    font-size: 10px;
-    opacity: 0.7;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
+.stat-label {
+    font-size: 11px;
     text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
+    margin-bottom: 8px;
 }
 
-.value {
-    font-size: 20px;
+.stat-value {
+    font-size: 26px;
     font-weight: 800;
     background: linear-gradient(135deg, #fff, #facc15);
     -webkit-background-clip: text;
@@ -78,144 +61,110 @@ html, body {
     color: transparent;
 }
 
-#connectBtn {
-    border: none;
-    background: linear-gradient(135deg, #2563eb, #1e40af);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 44px;
-    font-weight: bold;
-    font-size: 13px;
-    cursor: pointer;
-    transition: 0.2s;
-    border: 1px solid rgba(250, 204, 21, 0.4);
-    white-space: nowrap;
-}
-
-#connectBtn:active { transform: scale(0.96); }
-.wallet-connected { background: #22c55e30 !important; border-color: #22c55e; }
-
-/* CENTER TAP */
-.center {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    padding-bottom: 150px;
-}
-
+/* Tap Button */
 .tap-area {
     width: 260px;
     height: 260px;
+    margin: 40px auto;
     border-radius: 50%;
     background: radial-gradient(circle at 35% 30%, #facc15, #ea580c, #b91c1c);
     display: flex;
-    justify-content: center;
     align-items: center;
-    font-size: 40px;
+    justify-content: center;
+    font-size: 44px;
     font-weight: 900;
     cursor: pointer;
     user-select: none;
-    box-shadow: 0 0 30px rgba(249, 115, 22, 0.6), inset 0 6px 15px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 40px rgba(249, 115, 22, 0.6), inset 0 8px 20px rgba(255,255,255,0.3);
     transition: transform 0.06s linear;
     text-shadow: 0 2px 8px black;
 }
 
-.tap-area:active { transform: scale(0.93); }
-.tap-disabled { opacity: 0.5; pointer-events: none; filter: grayscale(0.2); }
+.tap-area:active { transform: scale(0.94); }
+.tap-area.disabled { opacity: 0.5; pointer-events: none; }
 
-/* FLOATING ANIMATION */
-.float {
-    position: absolute;
-    color: #facc15;
-    font-size: 32px;
-    font-weight: bold;
-    pointer-events: none;
-    z-index: 200;
-    animation: floatUp 0.85s forwards;
-}
-.float-pvlt { color: #c084fc; text-shadow: 0 0 6px #a855f7; }
-@keyframes floatUp {
-    0% { opacity: 1; transform: translateY(0px) scale(0.7); }
-    100% { opacity: 0; transform: translateY(-100px) scale(0.5); }
-}
-
-/* BOTTOM PANEL */
-.bottom-fixed {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: #0d1728dd;
-    backdrop-filter: blur(20px);
-    padding: 16px 20px 28px;
-    border-top: 1px solid rgba(250, 204, 21, 0.25);
-    border-radius: 28px 28px 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+/* Energy Bar */
+.energy-section {
+    background: rgba(13, 23, 40, 0.8);
+    border-radius: 32px;
+    padding: 16px;
+    margin-bottom: 16px;
 }
 
 .energy-bar {
-    width: 100%;
     height: 20px;
-    background: #1a2940;
-    border-radius: 40px;
+    background: #1e2a3e;
+    border-radius: 30px;
     overflow: hidden;
 }
+
 .energy-fill {
-    width: 100%;
     height: 100%;
     background: linear-gradient(90deg, #facc15, #f97316, #ef4444);
-    border-radius: 40px;
-    transition: 0.25s;
+    width: 100%;
+    border-radius: 30px;
+    transition: width 0.2s;
 }
-.energy-text {
-    margin-top: 6px;
-    font-size: 11px;
-    text-align: center;
-    opacity: 0.8;
+
+.energy-stats {
     display: flex;
-    justify-content: center;
-    gap: 14px;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 12px;
+    opacity: 0.8;
 }
-.action-buttons {
+
+/* Buttons */
+.btn-group {
     display: flex;
     gap: 12px;
+    margin-bottom: 16px;
 }
-.action-buttons button {
+
+.btn {
     flex: 1;
-    height: 52px;
+    padding: 14px;
     border: none;
     border-radius: 44px;
-    font-weight: bold;
+    font-weight: 700;
+    font-size: 14px;
     cursor: pointer;
-    transition: 0.1s;
+    transition: all 0.1s;
     color: white;
 }
-.action-buttons button:active { transform: scale(0.96); }
-.buy-btn { background: linear-gradient(135deg, #1e3a8a, #2563eb); }
-.claim-btn { background: linear-gradient(135deg, #6b21a5, #9333ea); }
-.sync-btn { background: linear-gradient(135deg, #2d3748, #4a5568); }
 
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: linear-gradient(135deg, #2563eb, #1e40af); }
+.btn-success { background: linear-gradient(135deg, #22c55e, #16a34a); }
+.btn-warning { background: linear-gradient(135deg, #eab308, #ca8a04); }
+.btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.btn-secondary { background: linear-gradient(135deg, #4b5563, #374151); }
+
+.connect-btn {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+/* Toast */
 .toast {
     position: fixed;
     bottom: 30%;
     left: 50%;
     transform: translateX(-50%);
-    background: #0f172fe6;
+    background: #1e293b;
     backdrop-filter: blur(12px);
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 60px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     z-index: 1000;
     border: 1px solid #facc15;
-    animation: fadeOut 1.8s forwards;
+    animation: fadeOut 2s forwards;
     pointer-events: none;
     white-space: nowrap;
 }
+
 @keyframes fadeOut {
     0% { opacity: 0; transform: translateX(-50%) translateY(15px); }
     15% { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -223,373 +172,332 @@ html, body {
     100% { opacity: 0; transform: translateX(-50%) translateY(-15px); }
 }
 
-/* Loading spinner */
-.loading-spinner {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 0.6s linear infinite;
-    margin-left: 8px;
+/* Floating +1 */
+.float {
+    position: fixed;
+    font-size: 28px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 200;
+    animation: floatAnim 0.8s forwards;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes floatAnim {
+    0% { opacity: 1; transform: translateY(0) scale(0.7); }
+    100% { opacity: 0; transform: translateY(-80px) scale(1.2); }
+}
 
-@media (max-width: 560px) {
-    .tap-area { width: 210px; height: 210px; font-size: 32px; }
-    .top-nav { flex-direction: column; align-items: stretch; }
-    .stats { width: 100%; }
-    #connectBtn { width: 100%; justify-content: center; }
-    .value { font-size: 18px; }
+.wallet-badge {
+    font-size: 12px;
+    background: rgba(34,197,94,0.2);
+    padding: 6px 12px;
+    border-radius: 40px;
+    text-align: center;
+    margin-bottom: 12px;
+    word-break: break-all;
+}
+
+@media (max-width: 500px) {
+    .tap-area { width: 200px; height: 200px; font-size: 34px; }
+    .stat-value { font-size: 20px; }
 }
 </style>
 </head>
 <body>
-<div class="app">
-    <div class="top-nav">
-        <div class="stats">
-            <div class="card"><div class="label">⚡ ENERGY</div><div class="value"><span id="energy">0</span> / <span id="maxEnergy">0</span></div></div>
-            <div class="card"><div class="label">💎 POINTS</div><div class="value"><span id="points">0</span></div></div>
-            <div class="card"><div class="label">🐸 PVLT</div><div class="value"><span id="pvltBalance">0</span></div></div>
-        </div>
-        <button id="connectBtn">🔌 CONNECT WALLET</button>
+<div class="game-container">
+    <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">⚡ ENERGY</div><div class="stat-value"><span id="energy">0</span>/<span id="maxEnergy">50</span></div></div>
+        <div class="stat-card"><div class="stat-label">💎 POINTS</div><div class="stat-value" id="points">0</div></div>
+        <div class="stat-card"><div class="stat-label">🐸 gPVLT</div><div class="stat-value" id="gpvlt">0</div></div>
     </div>
-    <div class="center">
-        <div class="tap-area tap-disabled" id="tapButton">⚡ TAP ⚡</div>
+    
+    <div class="stat-card" style="margin-bottom:16px"><div class="stat-label">💰 PVLT (Real)</div><div class="stat-value" id="pvltReal">0</div></div>
+    
+    <div class="tap-area" id="tapBtn">⚡ TAP ⚡</div>
+    
+    <div class="energy-section">
+        <div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div>
+        <div class="energy-stats"><span>🔋 Regen +1 / 5s</span><span>Free max: 50</span></div>
     </div>
-</div>
-<div class="bottom-fixed">
-    <div><div class="energy-bar"><div class="energy-fill" id="energyFill"></div></div><div class="energy-text"><span>🔋 Regen +1 / 3s</span><span>⚡ Max: <span id="maxLabel">0</span></span></div></div>
-    <div class="action-buttons">
-        <button class="buy-btn" id="buyEnergyBtn">💰 Buy 10K Energy (100 PVLT)</button>
-        <button class="claim-btn" id="claimPvltBtn">🎁 Claim PVLT from Points</button>
-        <button class="sync-btn" id="syncBtn">🔄 Sync</button>
+    
+    <div class="btn-group">
+        <button class="btn btn-primary" id="buyEnergyBtn">💰 Buy 10k Energy<br><small>100 PVLT</small></button>
+        <button class="btn btn-success" id="claimPvltBtn">🎁 Claim PVLT<br><small>10-500 daily</small></button>
     </div>
+    
+    <button class="btn connect-btn" id="connectBtn">🔌 Connect Wallet</button>
+    <div id="walletStatus" class="wallet-badge" style="display:none"></div>
 </div>
 
 <script>
-    // -------------------- CONTRACT ADDRESSES (POLYGON) --------------------
-    const PVLT_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
-    const GAME_ADDRESS = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
-
-    // ERC20 ABI (minimal for balance & approve)
-    const ERC20_ABI = [
-        "function balanceOf(address owner) view returns (uint256)",
-        "function approve(address spender, uint256 amount) returns (bool)",
-        "function allowance(address owner, address spender) view returns (uint256)",
-        "function decimals() view returns (uint8)",
-        "function symbol() view returns (string)"
-    ];
-
-    // GAME CONTRACT ABI (view functions + buyEnergy & claimPVLT - NO tap transaction)
-    // tap() is NOT called on-chain to avoid tx costs. We handle tapping locally.
-    const GAME_ABI = [
-        "function buyEnergy(uint256 amount) external",
-        "function claimPVLT() external",
-        "function getEnergy(address player) view returns (uint256)",
-        "function getPoints(address player) view returns (uint256)",
-        "function getMaxEnergy(address player) view returns (uint256)",
-        "function pointsToPVLTRate() view returns (uint256)"
-    ];
-
-    // -------------------- GLOBAL STATE --------------------
-    let signer = null;
-    let provider = null;
-    let userAddress = null;
+    // -------------------- CONTRACT ADDRESSES (to be deployed) --------------------
+    // These will be replaced after deployment
+    const PVLT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000";
+    const GAME_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+    
+    // -------------------- GAME STATE (Local) --------------------
     let connected = false;
-
-    // LOCAL game state (no transaction on tap)
-    let energy = 0;
-    let maxEnergy = 0;
-    let points = 0;
-    let pvltBalance = 0;
-
-    // Contract instances
+    let userAddress = null;
+    let signer = null;
     let pvltContract = null;
     let gameContract = null;
-
-    // DOM elements
+    
+    let energy = 50;
+    let maxEnergy = 50;
+    let points = 0;
+    let gpvlt = 0;      // gPVLT (1 point = 0.01 gPVLT, 100 gPVLT = 1 PVLT)
+    let pvltReal = 0;   // Real PVLT balance from contract
+    
+    let lastClaimDate = null;
+    let dailyClaimed = 0;
+    
+    // DOM Elements
     const energySpan = document.getElementById("energy");
     const maxEnergySpan = document.getElementById("maxEnergy");
     const pointsSpan = document.getElementById("points");
-    const pvltBalanceSpan = document.getElementById("pvltBalance");
-    const energyFillDiv = document.getElementById("energyFill");
-    const maxLabelSpan = document.getElementById("maxLabel");
-    const tapButton = document.getElementById("tapButton");
+    const gpvltSpan = document.getElementById("gpvlt");
+    const pvltRealSpan = document.getElementById("pvltReal");
+    const energyFill = document.getElementById("energyFill");
+    const tapBtn = document.getElementById("tapBtn");
     const connectBtn = document.getElementById("connectBtn");
-    const buyBtn = document.getElementById("buyEnergyBtn");
-    const claimBtn = document.getElementById("claimPvltBtn");
-    const syncBtn = document.getElementById("syncBtn");
-
+    const buyEnergyBtn = document.getElementById("buyEnergyBtn");
+    const claimPvltBtn = document.getElementById("claimPvltBtn");
+    const walletStatusDiv = document.getElementById("walletStatus");
+    
     // Helper: Toast
     function showToast(msg, isError = false) {
         const toast = document.createElement("div");
         toast.className = "toast";
         toast.innerText = msg;
-        if (isError) toast.style.borderColor = "#f97316";
+        if (isError) toast.style.borderColor = "#ef4444";
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2000);
     }
-
-    // Update UI from local state
+    
+    // Floating effect
+    function showFloating(text, x, y, color = "#facc15") {
+        const el = document.createElement("div");
+        el.className = "float";
+        el.innerText = text;
+        el.style.left = x + "px";
+        el.style.top = y + "px";
+        el.style.color = color;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 800);
+    }
+    
+    function getCoords(e) {
+        let clientX, clientY;
+        if (e.touches) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        return { x: clientX, y: clientY };
+    }
+    
+    // Update UI
     function updateUI() {
         energySpan.innerText = Math.floor(energy);
-        maxEnergySpan.innerText = Math.floor(maxEnergy);
+        maxEnergySpan.innerText = maxEnergy;
         pointsSpan.innerText = Math.floor(points);
-        pvltBalanceSpan.innerText = pvltBalance.toFixed(2);
-        maxLabelSpan.innerText = Math.floor(maxEnergy);
-        let percent = (energy / maxEnergy) * 100;
-        if (isNaN(percent)) percent = 0;
-        energyFillDiv.style.width = Math.min(100, Math.max(0, percent)) + "%";
+        gpvltSpan.innerText = gpvlt.toFixed(2);
+        pvltRealSpan.innerText = pvltReal.toFixed(4);
+        const percent = (energy / maxEnergy) * 100;
+        energyFill.style.width = Math.min(100, Math.max(0, percent)) + "%";
+        
+        // Save to localStorage
+        if (userAddress) {
+            const saveData = { energy, maxEnergy, points, gpvlt, lastClaimDate, dailyClaimed };
+            localStorage.setItem(`pepevolt_${userAddress}`, JSON.stringify(saveData));
+        }
     }
-
-    // Save local game state to localStorage (persistence)
-    function saveLocalState() {
-        if (!userAddress) return;
-        const key = `pepevolt_${userAddress.toLowerCase()}`;
-        const state = { energy, maxEnergy, points, pvltBalance, timestamp: Date.now() };
-        localStorage.setItem(key, JSON.stringify(state));
-    }
-
+    
+    // Load local state
     function loadLocalState() {
-        if (!userAddress) return false;
-        const key = `pepevolt_${userAddress.toLowerCase()}`;
-        const saved = localStorage.getItem(key);
+        if (!userAddress) return;
+        const saved = localStorage.getItem(`pepevolt_${userAddress}`);
         if (saved) {
             try {
-                const state = JSON.parse(saved);
-                energy = state.energy || 50;
-                maxEnergy = state.maxEnergy || 50;
-                points = state.points || 0;
-                pvltBalance = state.pvltBalance || 0;
+                const data = JSON.parse(saved);
+                energy = data.energy ?? 50;
+                maxEnergy = data.maxEnergy ?? 50;
+                points = data.points ?? 0;
+                gpvlt = data.gpvlt ?? 0;
+                lastClaimDate = data.lastClaimDate;
+                dailyClaimed = data.dailyClaimed ?? 0;
+                if (energy > maxEnergy) energy = maxEnergy;
                 updateUI();
-                return true;
             } catch(e) {}
         }
-        return false;
     }
-
-    // Fetch on-chain data (PVLT balance only, plus game stats if available)
-    async function fetchOnChainData() {
-        if (!connected || !gameContract || !pvltContract) return;
-        try {
-            // Fetch PVLT balance
-            const pvltWei = await pvltContract.balanceOf(userAddress);
-            pvltBalance = Number(ethers.utils.formatEther(pvltWei));
-            
-            // Try to get game stats from contract (if they exist, otherwise keep local)
-            try {
-                const energyVal = await gameContract.getEnergy(userAddress);
-                const pointsVal = await gameContract.getPoints(userAddress);
-                const maxEnergyVal = await gameContract.getMaxEnergy(userAddress);
-                // Only override if contract returns non-zero (some contracts may not have these)
-                if (maxEnergyVal > 0) {
-                    energy = Number(energyVal);
-                    points = Number(pointsVal);
-                    maxEnergy = Number(maxEnergyVal);
-                }
-            } catch (err) {
-                console.log("Contract view functions not available, keeping local state");
-            }
+    
+    // Energy regen (every 5 seconds, up to free max 50)
+    setInterval(() => {
+        if (connected && energy < 50) {
+            energy = Math.min(energy + 1, 50);
             updateUI();
-            saveLocalState();
-        } catch (err) {
-            console.warn("fetchOnChainData error:", err);
         }
-    }
-
-    // ---------- TAP LOGIC (NO TRANSACTION - pure local) ----------
-    function performTap(e) {
+    }, 5000);
+    
+    // -------------------- TAP LOGIC (NO TRANSACTION) --------------------
+    // 1 tap = 1 point, 100 points = 1 gPVLT, 100 gPVLT = 1 real PVLT
+    function onTap(e) {
         if (!connected) {
             showToast("🔌 Connect wallet first", true);
             return;
         }
         if (energy <= 0) {
-            showToast("💔 No energy! Wait or buy more", true);
+            showToast("💔 No energy! Wait to refill or buy more", true);
             return;
         }
         
-        // Consume energy, gain points
         energy--;
         points++;
         
-        // Auto-convert points to PVLT (100 points = 1 PVLT) - locally
-        let pvltGained = 0;
+        // Convert 100 points -> 1 gPVLT
+        let gpvltEarned = 0;
         if (points >= 100) {
-            pvltGained = Math.floor(points / 100);
-            pvltBalance += pvltGained;
+            gpvltEarned = Math.floor(points / 100);
+            gpvlt += gpvltEarned;
             points = points % 100;
         }
         
-        updateUI();
-        saveLocalState();
-        
-        // Floating effect
-        const coords = getTapCoords(e);
-        showFloating("+1 ⚡", coords.x, coords.y);
-        if (pvltGained > 0) {
-            showFloating(`+${pvltGained} 🐸 PVLT`, coords.x - 15, coords.y - 35, true);
+        // Convert 100 gPVLT -> 1 real PVLT (auto-burn gPVLT)
+        let pvltEarned = 0;
+        if (gpvlt >= 100) {
+            pvltEarned = Math.floor(gpvlt / 100);
+            pvltReal += pvltEarned;
+            gpvlt = gpvlt % 100;
         }
         
-        // Visual feedback
-        tapButton.style.transform = "scale(0.93)";
-        setTimeout(() => { if (tapButton) tapButton.style.transform = ""; }, 90);
-    }
-
-    function getTapCoords(e) {
-        let clientX, clientY;
-        if (e.touches) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
-        else { clientX = e.clientX; clientY = e.clientY; }
-        return { x: clientX, y: clientY };
+        updateUI();
+        
+        const { x, y } = getCoords(e);
+        showFloating("+1 ⚡", x, y);
+        if (gpvltEarned > 0) showFloating(`+${gpvltEarned} gPVLT`, x-20, y-30, "#a855f7");
+        if (pvltEarned > 0) showFloating(`+${pvltEarned} PVLT!`, x-10, y-55, "#22c55e");
+        
+        tapBtn.style.transform = "scale(0.94)";
+        setTimeout(() => tapBtn.style.transform = "", 90);
     }
     
-    function showFloating(text, x, y, isPvlt = false) {
-        const floatDiv = document.createElement("div");
-        floatDiv.className = "float";
-        if (isPvlt) floatDiv.classList.add("float-pvlt");
-        floatDiv.innerText = text;
-        floatDiv.style.left = x + "px";
-        floatDiv.style.top = y + "px";
-        document.body.appendChild(floatDiv);
-        setTimeout(() => floatDiv.remove(), 800);
-    }
-
-    // ---------- BUY ENERGY (contract transaction: spends PVLT) ----------
+    tapBtn.addEventListener("click", onTap);
+    tapBtn.addEventListener("touchstart", (e) => { e.preventDefault(); onTap(e); });
+    
+    // -------------------- BUY ENERGY (contract: spend 100 PVLT, get +10000 energy, +10000 max) --------------------
     async function buyEnergy() {
         if (!connected) { showToast("Connect wallet first", true); return; }
-        const costPVLT = 100;
-        if (pvltBalance < costPVLT) {
-            showToast(`❌ Need ${costPVLT} PVLT (you have ${pvltBalance.toFixed(2)})`, true);
+        if (pvltReal < 100) {
+            showToast(`Need 100 PVLT (you have ${pvltReal.toFixed(4)})`, true);
             return;
         }
         
-        // Add loading state
-        const originalText = buyBtn.innerText;
-        buyBtn.innerHTML = "Processing... <span class='loading-spinner'></span>";
-        buyBtn.disabled = true;
+        buyEnergyBtn.disabled = true;
+        buyEnergyBtn.innerHTML = "Processing...";
         
         try {
-            // Check allowance
-            const costWei = ethers.utils.parseEther(costPVLT.toString());
-            const allowance = await pvltContract.allowance(userAddress, GAME_ADDRESS);
-            
-            if (allowance.lt(costWei)) {
-                showToast("Approving PVLT spend...", false);
-                const approveTx = await pvltContract.approve(GAME_ADDRESS, ethers.utils.parseEther("10000"));
-                await approveTx.wait(1);
-                showToast("Approval confirmed!", false);
+            // If real contracts are deployed, call them
+            if (gameContract && pvltContract && GAME_CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000") {
+                const allowance = await pvltContract.allowance(userAddress, GAME_CONTRACT_ADDRESS);
+                const costWei = ethers.utils.parseEther("100");
+                if (allowance.lt(costWei)) {
+                    const approveTx = await pvltContract.approve(GAME_CONTRACT_ADDRESS, ethers.utils.parseEther("10000"));
+                    await approveTx.wait(1);
+                }
+                const tx = await gameContract.buyEnergy(costWei);
+                await tx.wait(1);
+                // Reload PVLT balance
+                const balance = await pvltContract.balanceOf(userAddress);
+                pvltReal = parseFloat(ethers.utils.formatEther(balance));
+                // Contract also adds energy, but we'll also update local
+                energy += 10000;
+                maxEnergy += 10000;
+            } else {
+                // Demo mode: simulate purchase
+                pvltReal -= 100;
+                energy += 10000;
+                maxEnergy += 10000;
+                showToast("✅ Demo: +10,000 Energy (contract not deployed)", false);
             }
-            
-            showToast("Purchasing 10,000 energy...", false);
-            const buyTx = await gameContract.buyEnergy(costWei);
-            await buyTx.wait(1);
-            
-            // On success: increase local energy & max energy
-            energy += 10000;
-            maxEnergy += 10000;
-            pvltBalance -= costPVLT;
             updateUI();
-            saveLocalState();
-            showToast("✅ +10,000 Energy added! Max energy increased", false);
-            
-            // Refresh on-chain data
-            await fetchOnChainData();
+            showToast("✅ +10,000 Energy! Max energy increased", false);
         } catch (err) {
             console.error(err);
-            showToast("Buy failed: " + (err.message?.slice(0, 70) || "tx error"), true);
+            showToast("Buy failed: " + (err.message?.slice(0, 60) || "error"), true);
         } finally {
-            buyBtn.innerHTML = originalText;
-            buyBtn.disabled = false;
+            buyEnergyBtn.disabled = false;
+            buyEnergyBtn.innerHTML = "💰 Buy 10k Energy<br><small>100 PVLT</small>";
         }
     }
-
-    // ---------- CLAIM PVLT (convert on-chain points to PVLT) ----------
+    
+    // -------------------- CLAIM PVLT (10-500 per day based on gPVLT) --------------------
     async function claimPVLT() {
-        if (!connected) { showToast("Connect wallet", true); return; }
+        if (!connected) { showToast("Connect wallet first", true); return; }
         
-        // Check if we have enough points locally
-        if (points < 10) {
-            showToast(`Need at least 10 points to claim, current: ${points}`, true);
+        // Daily limit check
+        const today = new Date().toDateString();
+        if (lastClaimDate === today) {
+            showToast(`Already claimed today! Max 10-500 PVLT per day`, true);
             return;
         }
         
-        const originalText = claimBtn.innerText;
-        claimBtn.innerHTML = "Claiming... <span class='loading-spinner'></span>";
-        claimBtn.disabled = true;
+        // Calculate claimable amount: floor(gpvlt / 100) but limited 10-500
+        let claimAmount = Math.floor(gpvlt / 100);
+        if (claimAmount < 10) {
+            showToast(`Need at least 1000 gPVLT (${gpvlt} gPVLT) to claim minimum 10 PVLT`, true);
+            return;
+        }
+        claimAmount = Math.min(claimAmount, 500);
         
         try {
-            showToast("Claiming PVLT on-chain...", false);
-            const claimTx = await gameContract.claimPVLT();
-            await claimTx.wait(1);
+            if (gameContract && pvltContract && GAME_CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000") {
+                // Call contract to mint/transfer PVLT
+                const claimWei = ethers.utils.parseEther(claimAmount.toString());
+                const tx = await gameContract.claimReward(claimWei);
+                await tx.wait(1);
+                // Burn gPVLT from contract (contract handles this)
+                gpvlt = gpvlt - (claimAmount * 100);
+                const balance = await pvltContract.balanceOf(userAddress);
+                pvltReal = parseFloat(ethers.utils.formatEther(balance));
+            } else {
+                // Demo mode
+                pvltReal += claimAmount;
+                gpvlt = gpvlt - (claimAmount * 100);
+                showToast(`🎉 Demo: Claimed ${claimAmount} PVLT!`, false);
+            }
             
-            // After successful claim, reset points locally (contract deducts points)
-            points = 0;
+            lastClaimDate = today;
+            dailyClaimed = claimAmount;
             updateUI();
-            saveLocalState();
-            
-            // Refresh balances
-            await fetchOnChainData();
-            showToast("🎉 PVLT claimed to your wallet!", false);
+            showToast(`🎉 Claimed ${claimAmount} PVLT! Come back tomorrow`, false);
         } catch (err) {
             console.error(err);
-            showToast("Claim failed: " + (err.message?.slice(0, 70) || "contract error"), true);
-        } finally {
-            claimBtn.innerHTML = originalText;
-            claimBtn.disabled = false;
+            showToast("Claim failed: " + (err.message?.slice(0, 60) || "error"), true);
         }
     }
-
-    // ---------- Sync with blockchain (manual) ----------
-    async function syncWithBlockchain() {
-        if (!connected) { showToast("Connect wallet first", true); return; }
-        syncBtn.innerHTML = "Syncing... <span class='loading-spinner'></span>";
-        syncBtn.disabled = true;
-        try {
-            await fetchOnChainData();
-            showToast("Data synced with blockchain", false);
-        } catch (err) {
-            showToast("Sync error", true);
-        } finally {
-            syncBtn.innerHTML = "🔄 Sync";
-            syncBtn.disabled = false;
-        }
-    }
-
-    // ---------- ENERGY REGENERATION (local only, no tx) ----------
-    let regenInterval = null;
-    function startRegenSimulation() {
-        if (regenInterval) clearInterval(regenInterval);
-        regenInterval = setInterval(() => {
-            if (connected && energy < maxEnergy) {
-                energy = Math.min(energy + 1, maxEnergy);
-                updateUI();
-                saveLocalState();
-            }
-        }, 3000);
-    }
-
-    // ---------- WALLET CONNECTION ----------
+    
+    // -------------------- WALLET CONNECTION (Polygon) --------------------
     async function connectWallet() {
         if (!window.ethereum) {
-            showToast("❌ Please install MetaMask or any Web3 wallet", true);
+            showToast("Please install MetaMask", true);
             return;
         }
         try {
-            const providerWeb3 = new ethers.providers.Web3Provider(window.ethereum);
-            const accounts = await providerWeb3.send("eth_requestAccounts", []);
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const accounts = await provider.send("eth_requestAccounts", []);
             userAddress = accounts[0];
-            signer = providerWeb3.getSigner();
-            provider = providerWeb3;
+            signer = provider.getSigner();
             
-            // Switch to Polygon network (chainId 137)
+            // Switch to Polygon
             try {
                 await window.ethereum.request({
                     method: "wallet_switchEthereumChain",
                     params: [{ chainId: "0x89" }]
                 });
-            } catch (switchError) {
-                if (switchError.code === 4902) {
+            } catch(e) {
+                if (e.code === 4902) {
                     await window.ethereum.request({
                         method: "wallet_addEthereumChain",
                         params: [{
@@ -600,78 +508,172 @@ html, body {
                             blockExplorerUrls: ["https://polygonscan.com"]
                         }]
                     });
-                } else { throw switchError; }
+                }
             }
             
-            // Init contracts
-            pvltContract = new ethers.Contract(PVLT_ADDRESS, ERC20_ABI, signer);
-            gameContract = new ethers.Contract(GAME_ADDRESS, GAME_ABI, signer);
+            // Initialize contracts if deployed
+            if (PVLT_TOKEN_ADDRESS !== "0x0000000000000000000000000000000000000000") {
+                const ERC20_ABI = ["function balanceOf(address) view returns (uint256)", "function approve(address,uint256) returns (bool)", "function allowance(address,address) view returns (uint256)"];
+                const GAME_ABI = ["function buyEnergy(uint256) external", "function claimReward(uint256) external", "function getEnergy(address) view returns (uint256)"];
+                pvltContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ERC20_ABI, signer);
+                gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+                const balance = await pvltContract.balanceOf(userAddress);
+                pvltReal = parseFloat(ethers.utils.formatEther(balance));
+            } else {
+                // Demo mode - no contracts
+                pvltReal = 0;
+            }
             
             connected = true;
             connectBtn.innerHTML = `🟢 ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-            connectBtn.classList.add("wallet-connected");
-            tapButton.classList.remove("tap-disabled");
+            walletStatusDiv.style.display = "block";
+            walletStatusDiv.innerHTML = `✅ Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+            tapBtn.classList.remove("disabled");
             
-            // Load local saved state or initialize defaults
-            const loaded = loadLocalState();
-            if (!loaded) {
-                energy = 50;
-                maxEnergy = 50;
-                points = 0;
-                updateUI();
-            }
+            loadLocalState();
+            updateUI();
+            showToast("Wallet connected! Start tapping!", false);
             
-            // Fetch on-chain PVLT balance
-            await fetchOnChainData();
-            startRegenSimulation();
-            
-            // Setup event listeners
+            // Listen for account changes
             window.ethereum.on("accountsChanged", (newAccounts) => {
-                if (newAccounts.length === 0) { disconnectWallet(); }
-                else { 
-                    userAddress = newAccounts[0]; 
+                if (newAccounts.length === 0) {
+                    connected = false;
+                    connectBtn.innerHTML = "🔌 Connect Wallet";
+                    tapBtn.classList.add("disabled");
+                } else {
+                    userAddress = newAccounts[0];
                     connectBtn.innerHTML = `🟢 ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
                     loadLocalState();
-                    fetchOnChainData();
+                    updateUI();
                 }
             });
-            window.ethereum.on("chainChanged", () => window.location.reload());
-            
-            showToast(`Connected to Polygon: ${userAddress.slice(0,6)}...`, false);
-        } catch (err) {
-            console.error(err);
-            showToast("Connection failed: " + err.message, true);
+        } catch(err) {
+            showToast("Connection failed", true);
         }
     }
     
-    function disconnectWallet() {
-        connected = false;
-        userAddress = null;
-        connectBtn.innerHTML = "🔌 CONNECT WALLET";
-        connectBtn.classList.remove("wallet-connected");
-        tapButton.classList.add("tap-disabled");
-        if (regenInterval) clearInterval(regenInterval);
-        energy = 0; maxEnergy = 0; points = 0; pvltBalance = 0;
-        updateUI();
-    }
-
-    // Button handlers
     connectBtn.onclick = () => {
-        if (connected) { showToast(`Connected: ${userAddress?.slice(0,6)}...`, false); }
-        else { connectWallet(); }
+        if (connected) showToast(`Already connected: ${userAddress?.slice(0,6)}...`, false);
+        else connectWallet();
     };
     
-    tapButton.addEventListener("click", performTap);
-    tapButton.addEventListener("touchstart", (e) => { e.preventDefault(); performTap(e); });
-    buyBtn.addEventListener("click", buyEnergy);
-    claimBtn.addEventListener("click", claimPVLT);
-    syncBtn.addEventListener("click", syncWithBlockchain);
-    
-    tapButton.addEventListener("contextmenu", (e) => e.preventDefault());
+    buyEnergyBtn.onclick = buyEnergy;
+    claimPvltBtn.onclick = claimPVLT;
     
     // Initial UI
     updateUI();
-    tapButton.classList.add("tap-disabled");
+    tapBtn.classList.add("disabled");
 </script>
+
+<!-- ==================== SMART CONTRACTS & DEPLOYMENT GUIDE ==================== -->
+<div style="max-width: 800px; margin: 40px auto; background: #0f172a; border-radius: 32px; padding: 24px; font-size: 14px; border: 1px solid #334155;">
+    <h2 style="color: #facc15; margin-bottom: 20px;">📜 Smart Contracts & Deployment Guide</h2>
+    
+    <h3 style="color: #22c55e; margin-top: 20px;">1. PVLT Token Contract (ERC20)</h3>
+    <pre style="background: #1e293b; padding: 16px; border-radius: 16px; overflow-x: auto; font-size: 12px;">
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract PVLTToken is ERC20, Ownable {
+    constructor() ERC20("PepeVolt", "PVLT") {
+        _mint(msg.sender, 1000000 * 10 ** decimals());
+    }
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
+    }
+}
+    </pre>
+    
+    <h3 style="color: #22c55e; margin-top: 20px;">2. PepeVolt Game Contract</h3>
+    <pre style="background: #1e293b; padding: 16px; border-radius: 16px; overflow-x: auto; font-size: 12px;">
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract PepeVoltGame is Ownable {
+    IERC20 public pvltToken;
+    mapping(address => uint256) public energy;
+    mapping(address => uint256) public maxEnergy;
+    mapping(address => uint256) public gPVLT; // 100 gPVLT = 1 PVLT
+    mapping(address => uint256) public lastClaim;
+
+    event EnergyPurchased(address indexed user, uint256 amount);
+    event RewardClaimed(address indexed user, uint256 amount);
+
+    constructor(address _pvltToken) {
+        pvltToken = IERC20(_pvltToken);
+    }
+
+    function buyEnergy(uint256 costPVLT) external {
+        require(costPVLT == 100 * 1e18, "Cost is 100 PVLT");
+        require(pvltToken.transferFrom(msg.sender, address(this), costPVLT), "Transfer failed");
+        energy[msg.sender] += 10000;
+        maxEnergy[msg.sender] += 10000;
+        emit EnergyPurchased(msg.sender, 10000);
+    }
+
+    function claimReward(uint256 amountPVLT) external {
+        require(amountPVLT >= 10 * 1e18 && amountPVLT <= 500 * 1e18, "Amount 10-500 PVLT");
+        require(block.timestamp - lastClaim[msg.sender] >= 1 days, "Claim once per day");
+        uint256 requiredGPVLT = (amountPVLT / 1e18) * 100;
+        require(gPVLT[msg.sender] >= requiredGPVLT, "Not enough gPVLT");
+        gPVLT[msg.sender] -= requiredGPVLT;
+        require(pvltToken.transfer(msg.sender, amountPVLT), "Transfer failed");
+        lastClaim[msg.sender] = block.timestamp;
+        emit RewardClaimed(msg.sender, amountPVLT);
+    }
+
+    function addPoints(address user, uint256 points) external onlyOwner {
+        gPVLT[user] += points;
+    }
+
+    function getEnergy(address user) external view returns (uint256) { return energy[user]; }
+    function getMaxEnergy(address user) external view returns (uint256) { return maxEnergy[user]; }
+    function getGPVLT(address user) external view returns (uint256) { return gPVLT[user]; }
+}
+    </pre>
+    
+    <h3 style="color: #22c55e; margin-top: 20px;">🚀 Deployment Steps (Polygon)</h3>
+    <ol style="margin-left: 20px; line-height: 1.8;">
+        <li>Install <strong>Node.js, Hardhat or Remix IDE</strong></li>
+        <li>Deploy <strong>PVLTToken.sol</strong> first → copy contract address</li>
+        <li>Deploy <strong>PepeVoltGame.sol</strong> with PVLT token address as constructor param</li>
+        <li>Transfer some PVLT tokens to Game contract (for claiming rewards)</li>
+        <li>Set <strong>GAME_CONTRACT_ADDRESS</strong> and <strong>PVLT_TOKEN_ADDRESS</strong> in the HTML above</li>
+    </ol>
+    
+    <h3 style="color: #22c55e; margin-top: 20px;">📦 Hardhat Deployment Script</h3>
+    <pre style="background: #1e293b; padding: 16px; border-radius: 16px; overflow-x: auto; font-size: 12px;">
+// deploy.js
+const hre = require("hardhat");
+
+async function main() {
+    const PVLT = await hre.ethers.getContractFactory("PVLTToken");
+    const pvlt = await PVLT.deploy();
+    await pvlt.deployed();
+    console.log("PVLT deployed to:", pvlt.address);
+
+    const Game = await hre.ethers.getContractFactory("PepeVoltGame");
+    const game = await Game.deploy(pvlt.address);
+    await game.deployed();
+    console.log("Game deployed to:", game.address);
+}
+main().catch(console.error);
+    </pre>
+    
+    <div style="background: #1e293b; border-radius: 16px; padding: 16px; margin-top: 20px;">
+        <p style="color: #facc15; margin-bottom: 8px;">⚠️ Important Notes:</p>
+        <ul style="margin-left: 20px; line-height: 1.6;">
+            <li>After deployment, call <code>game.addPoints(userAddress, gpvltAmount)</code> to sync user gPVLT</li>
+            <li>Or integrate backend API to submit point accumulations</li>
+            <li>Daily claim limit: 10-500 PVLT per wallet</li>
+            <li>Buy energy costs 100 PVLT → +10,000 energy & +10,000 max energy</li>
+            <li>Free users get 50 energy max, regen 1 per 5 seconds</li>
+        </ul>
+    </div>
+</div>
 </body>
 </html>
