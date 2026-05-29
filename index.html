@@ -186,6 +186,13 @@ body{
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script type="importmap">
+  {
+    "imports": {
+      "@walletconnect/ethereum-provider": "https://esm.sh/@walletconnect/ethereum-provider@2.11.0"
+    }
+  }
+</script>
 </head>
 
 <body>
@@ -226,7 +233,9 @@ body{
 
 </div>
 
-<script>
+<script type="module">
+  import { EthereumProvider } from "@walletconnect/ethereum-provider";
+
   // ========== YOUR CONTRACT ADDRESSES ==========
   const PVLT_TOKEN_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
   const TREASURY_VOLT = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
@@ -262,6 +271,7 @@ body{
   let provider = null;
   let signer = null;
   let tokenContract = null;
+  let wcProvider = null;
 
   // ========== HELPER FUNCTIONS ==========
   function showFloating(x, y, text, color = '#00ffcc') {
@@ -327,27 +337,25 @@ body{
 
   // ========== UPDATE UI ==========
   async function updateUI() {
-    // Update game stats
     energySpan.innerText = Math.floor(energy);
     pointsSpan.innerText = Math.floor(points);
     pvltSpan.innerText = Math.floor(inGamePvlt);
 
-    // Fetch real balance if wallet connected
     if (userAccount && tokenContract) {
       await fetchRealWalletBalance();
     }
 
-    // Update button states (always enabled if wallet connected, but show visual feedback)
+    // Update button states
     if (buyEnergyBtn) {
-      buyEnergyBtn.style.opacity = userAccount ? '1' : '0.5';
       buyEnergyBtn.disabled = !userAccount;
+      buyEnergyBtn.style.opacity = userAccount ? '1' : '0.5';
     }
     if (claimPvltBtn) {
-      claimPvltBtn.style.opacity = (userAccount && inGamePvlt >= 1) ? '1' : '0.5';
-      claimPvltBtn.disabled = !userAccount || inGamePvlt < 1;
+      const canClaim = userAccount && inGamePvlt >= 1;
+      claimPvltBtn.disabled = !canClaim;
+      claimPvltBtn.style.opacity = canClaim ? '1' : '0.5';
     }
 
-    // Update wallet status display
     if (userAccount) {
       walletStatusDiv.innerHTML = `
         <div>✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)}</div>
@@ -384,7 +392,6 @@ body{
             <div class="balance-amount">${Math.floor(energy)}/10000</div>
           </div>
         </div>
-        <div style="font-size:10px; margin-top:4px;">🔗 Click "Connect Wallet" to claim PVLT</div>
       `;
     }
     
@@ -491,39 +498,31 @@ body{
     }
   }, 15000);
 
-  // ========== CONNECT WALLET (MetaMask/Web3) ==========
+  // ========== CONNECT WALLET (WalletConnect - Working Version) ==========
   async function connectWallet() {
-    // Check if MetaMask is installed
-    if (!window.ethereum) {
-      alert('❌ Please install MetaMask or a Web3 wallet to connect!');
-      window.open('https://metamask.io/download/', '_blank');
-      return;
-    }
-
     try {
-      // Request account access
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      wcProvider = await EthereumProvider.init({
+        projectId: "1731f99148b9cf6107dee70b6efb14b7",
+        chains: [137],
+        showQrModal: true,
+        methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData"],
+        optionalMethods: ["eth_accounts", "eth_requestAccounts", "eth_chainId"],
+        rpcMap: { 137: "https://polygon-rpc.com" },
+        metadata: {
+          name: "PepeVolt",
+          description: "Tap to Earn PVLT on Polygon",
+          url: window.location.origin,
+          icons: ["https://cdn-icons-png.flaticon.com/512/825/825508.png"]
+        }
+      });
+
+      await wcProvider.connect();
+      const accounts = await wcProvider.request({ method: "eth_accounts" });
       userAccount = accounts[0];
       
-      // Setup provider
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner();
+      provider = wcProvider;
+      signer = new ethers.providers.Web3Provider(wcProvider).getSigner();
       
-      // Check network - should be Polygon Mainnet (chainId 137)
-      const network = await provider.getNetwork();
-      if (network.chainId !== 137) {
-        alert('⚠️ Please switch to Polygon Mainnet in your wallet!');
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x89' }], // Polygon Mainnet
-          });
-        } catch(e) {
-          console.warn('Network switch failed', e);
-        }
-      }
-      
-      // Initialize token contract
       tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       await fetchTokenInfo();
       await fetchRealWalletBalance();
@@ -532,18 +531,17 @@ body{
       updateUI();
       
       console.log(`✅ Connected to: ${userAccount}`);
-      console.log(`✅ PVLT Token: ${PVLT_TOKEN_ADDRESS}`);
       
       // Listen for account changes
-      window.ethereum.on('accountsChanged', async (accounts) => {
-        if (accounts.length === 0) {
+      wcProvider.on("accountsChanged", async (accs) => {
+        if (accs.length === 0) {
           userAccount = null;
           tokenContract = null;
           realWalletPvltBalance = 0;
-          connectBtn.innerText = '🔗 Connect Wallet (Polygon)';
+          connectBtn.innerText = "🔗 Connect Wallet (Polygon)";
           updateUI();
         } else {
-          userAccount = accounts[0];
+          userAccount = accs[0];
           tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
           connectBtn.innerText = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
           await fetchRealWalletBalance();
@@ -551,9 +549,10 @@ body{
         }
       });
       
-      // Listen for chain changes
-      window.ethereum.on('chainChanged', () => {
-        window.location.reload();
+      wcProvider.on("chainChanged", (chainId) => {
+        if (chainId !== "0x89") {
+          alert("Please switch to Polygon Mainnet");
+        }
       });
       
     } catch (err) {
@@ -598,7 +597,7 @@ body{
   loadGame();
   updateUI();
   
-  console.log("✅ PepeVolt is ready!");
+  console.log("✅ PepeVolt is ready! Use WalletConnect to connect your wallet.");
   console.log(`📋 PVLT Token: ${PVLT_TOKEN_ADDRESS}`);
   console.log(`🏦 TreasuryVolt: ${TREASURY_VOLT}`);
   console.log(`🎮 PepeVoltGame: ${PEPEVOLT_GAME}`);
