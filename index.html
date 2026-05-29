@@ -276,17 +276,17 @@ body {
   to { transform: rotate(360deg); }
 }
 
-.countdown {
-  font-size: 10px;
-  color: #ffaa44;
-  margin-left: 4px;
-}
-
-.error-message {
-  color: #ff6b6b;
-  font-size: 11px;
-  margin-top: 5px;
-  text-align: center;
+.debug-panel {
+  background: rgba(0,0,0,0.8);
+  border-radius: 12px;
+  padding: 8px;
+  margin-top: 10px;
+  font-size: 9px;
+  font-family: monospace;
+  color: #0f0;
+  text-align: left;
+  max-height: 80px;
+  overflow-y: auto;
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
@@ -297,16 +297,16 @@ body {
   <div class="top-stats">
     <div class="stat-card">
       <div class="stat-label">⚡ ENERGY</div>
-      <div class="stat-value" id="energyDisplay">50</div>
+      <div class="stat-value" id="energyDisplay">0</div>
       <div class="energy-text" id="energyTimer"></div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">🔄 TAPS</div>
-      <div class="stat-value small" id="tapsDisplay">0/100</div>
+      <div class="stat-label">🎯 POINTS</div>
+      <div class="stat-value small" id="pointsDisplay">0/0</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">💎 GAME PVLT</div>
-      <div class="stat-value" id="gamePvltDisplay">0</div>
+      <div class="stat-label">💎 UNCLAIMED</div>
+      <div class="stat-value" id="unclaimedPvltDisplay">0</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">💼 WALLET</div>
@@ -323,7 +323,7 @@ body {
     <div class="progress-bar">
       <div class="progress-fill" id="tapProgressFill"></div>
     </div>
-    <div class="tap-count" id="tapCountText">0/100 taps = 1 PVLT</div>
+    <div class="tap-count" id="tapCountText">0 points = 0 PVLT</div>
   </div>
 
   <button class="action-btn" id="connectWalletBtn">🦊 CONNECT METAMASK (POLYGON)</button>
@@ -340,23 +340,38 @@ body {
 
   <div class="action-stack">
     <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 100 ENERGY (1 PVLT)</button>
-    <button class="action-btn" id="claimPvltAction" disabled>💎 CLAIM GAME PVLT → WALLET</button>
+    <button class="action-btn" id="claimPvltAction" disabled>💎 CONVERT POINTS → PVLT</button>
   </div>
   <div class="treasury-note" id="treasuryNote">
-    🏆 100 taps = 1 PVLT | Energy regens every 15s
+    🏆 1 tap = 1 point | Free: 100 points = 1 PVLT | Paid: 1000 points = 1 PVLT | Energy regens every 15s
+  </div>
+  <div class="debug-panel" id="debugPanel">
+    🔧 Ready. Connect wallet to start.
   </div>
 </div>
 
 <script>
-  // ============ CONTRACT ADDRESSES (UPDATE THESE AFTER DEPLOYMENT) ============
-  const PVLT_TOKEN_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";  // Your PVLT.sol address
-  const TREASURY_VOLT = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
+  // ============ CONTRACT ADDRESSES (UPDATE AFTER DEPLOYMENT) ============
+  const PVLT_TOKEN_ADDRESS = "YOUR_PVLT_ADDRESS_HERE";  // Update after deployment
+  const GAME_CONTRACT_ADDRESS = "YOUR_GAME_ADDRESS_HERE";  // Update after deployment
   
-  // ============ CONTRACT ABI ============
+  // ============ CONTRACT ABIs ============
   const PVLT_ABI = [
     "function balanceOf(address) view returns (uint256)",
-    "function transfer(address, uint256) returns (bool)",
+    "function approve(address spender, uint256 amount) returns (bool)",
+    "function allowance(address owner, address spender) view returns (uint256)",
     "function decimals() view returns (uint8)"
+  ];
+  
+  const GAME_ABI = [
+    "function players(address) view returns (uint256 energy, uint256 points, uint256 burnedGPVLT, bool paidUser, uint256 lastClaimDay)",
+    "function tap() external",
+    "function refillEnergy() external",
+    "function convertPoints() external",
+    "function FREE_CAP() view returns (uint256)",
+    "function PAID_CAP() view returns (uint256)",
+    "function MAX_ENERGY() view returns (uint256)",
+    "function ENERGY_PRICE() view returns (uint256)"
   ];
 
   // DOM Elements
@@ -364,29 +379,48 @@ body {
   const energySpan = document.getElementById("energyDisplay");
   const energyBarFill = document.getElementById("energyBarFill");
   const energyTimer = document.getElementById("energyTimer");
-  const tapsDisplay = document.getElementById("tapsDisplay");
+  const pointsDisplay = document.getElementById("pointsDisplay");
   const tapCountText = document.getElementById("tapCountText");
-  const gamePvltSpan = document.getElementById("gamePvltDisplay");
+  const unclaimedPvltSpan = document.getElementById("unclaimedPvltDisplay");
   const walletPvltSpan = document.getElementById("walletPvltDisplay");
   const tapCircle = document.getElementById("tapButton");
   const buyBtn = document.getElementById("buyEnergyAction");
   const claimBtn = document.getElementById("claimPvltAction");
   const statusBar = document.getElementById("statusBar");
   const tapProgressFill = document.getElementById("tapProgressFill");
+  const debugPanel = document.getElementById("debugPanel");
+
+  function debugLog(msg) {
+    console.log(msg);
+    debugPanel.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${msg}</div>`;
+    debugPanel.scrollTop = debugPanel.scrollHeight;
+    while(debugPanel.children.length > 10) {
+      debugPanel.removeChild(debugPanel.firstChild);
+    }
+  }
 
   // Game State
-  let maxEnergy = 50;
-  let energy = 50;
-  let currentTaps = 0;
-  let tapsRequired = 100;
-  let gamePvltBalance = 0;
-  let walletBalance = 0;
-  let decimals = 18;
   let userAccount = null;
-  let tokenContract = null;
   let provider = null;
   let signer = null;
-  let lastRegenTime = Date.now();
+  let tokenContract = null;
+  let gameContract = null;
+  let decimals = 18;
+  
+  let playerData = {
+    energy: 0,
+    points: 0,
+    burnedGPVLT: 0,
+    paidUser: false,
+    lastClaimDay: 0
+  };
+  
+  let walletBalance = 0;
+  let freeCap = 100;
+  let paidCap = 1000;
+  let maxEnergy = 50;
+  let energyPrice = 1;
+  let refreshInterval = null;
 
   function showFloat(x, y, text, color = "#e6ff73") {
     const el = document.createElement("div");
@@ -399,123 +433,110 @@ body {
     setTimeout(() => el.remove(), 750);
   }
 
-  function saveData() {
-    if (userAccount) {
-      localStorage.setItem(`pvlt_game_${userAccount}`, JSON.stringify({ 
-        energy, 
-        currentTaps,
-        gamePvltBalance,
-        lastRegenTime
-      }));
+  async function loadGameParams() {
+    if (!gameContract) return;
+    try {
+      freeCap = (await gameContract.FREE_CAP()).toNumber();
+      paidCap = (await gameContract.PAID_CAP()).toNumber();
+      maxEnergy = (await gameContract.MAX_ENERGY()).toNumber();
+      energyPrice = (await gameContract.ENERGY_PRICE()).toNumber();
+      debugLog(`Game params: FreeCap=${freeCap}, PaidCap=${paidCap}, MaxEnergy=${maxEnergy}, EnergyPrice=${energyPrice} PVLT`);
+    } catch(e) {
+      debugLog(`Error loading game params: ${e.message}`);
     }
   }
 
-  function loadData() {
-    if (userAccount) {
-      const saved = localStorage.getItem(`pvlt_game_${userAccount}`);
-      if (saved) {
-        const d = JSON.parse(saved);
-        energy = d.energy ?? 50;
-        currentTaps = d.currentTaps ?? 0;
-        gamePvltBalance = d.gamePvltBalance ?? 0;
-        lastRegenTime = d.lastRegenTime ?? Date.now();
-      } else {
-        energy = 50;
-        currentTaps = 0;
-        gamePvltBalance = 0;
-        lastRegenTime = Date.now();
-      }
-      // Cap energy at max
-      if (energy > maxEnergy) energy = maxEnergy;
+  async function loadPlayerData() {
+    if (!userAccount || !gameContract) {
+      return;
     }
-    updateTapProgress();
-  }
-
-  function updateEnergyBar() {
-    const percent = (energy / maxEnergy) * 100;
-    energyBarFill.style.width = `${percent}%`;
-    energySpan.innerText = Math.floor(energy);
-  }
-
-  function updateTapProgress() {
-    const percent = (currentTaps / tapsRequired) * 100;
-    tapProgressFill.style.width = `${percent}%`;
-    tapsDisplay.innerText = `${currentTaps}/${tapsRequired}`;
-    const earnedPvlt = (currentTaps / tapsRequired).toFixed(2);
-    tapCountText.innerHTML = `${currentTaps}/${tapsRequired} taps = ${earnedPvlt} PVLT`;
+    
+    try {
+      const data = await gameContract.players(userAccount);
+      playerData = {
+        energy: data.energy.toNumber(),
+        points: data.points.toNumber(),
+        burnedGPVLT: data.burnedGPVLT.toNumber(),
+        paidUser: data.paidUser,
+        lastClaimDay: data.lastClaimDay.toNumber()
+      };
+      debugLog(`Player: Energy=${playerData.energy}, Points=${playerData.points}, Paid=${playerData.paidUser}`);
+    } catch(e) {
+      debugLog(`Error loading player: ${e.message}`);
+    }
   }
 
   async function updateWalletBalance() {
-    if (!userAccount || !tokenContract) { 
-      walletBalance = 0; 
-      return; 
+    if (!userAccount || !tokenContract) {
+      walletBalance = 0;
+      return;
     }
     try {
-      const bal = await tokenContract.balanceOf(userAccount);
-      walletBalance = parseFloat(ethers.utils.formatUnits(bal, decimals));
-    } catch(e) { 
-      console.log("Balance error:", e);
-      walletBalance = 0; 
+      const balance = await tokenContract.balanceOf(userAccount);
+      walletBalance = parseFloat(ethers.utils.formatUnits(balance, decimals));
+    } catch(e) {
+      debugLog(`Balance error: ${e.message}`);
+      walletBalance = 0;
     }
   }
 
-  async function refreshUI() {
-    updateEnergyBar();
-    gamePvltSpan.innerText = gamePvltBalance.toFixed(4);
-    
-    if (userAccount) {
-      await updateWalletBalance();
-      walletPvltSpan.innerText = walletBalance.toFixed(4);
-      
-      energySpan.classList.remove("blurred");
-      tapsDisplay.classList.remove("blurred");
-      gamePvltSpan.classList.remove("blurred");
-      walletPvltSpan.classList.remove("blurred");
-      tapCircle.classList.remove("disabled");
-      buyBtn.disabled = false;
-      claimBtn.disabled = gamePvltBalance < 0.001;
-      
-      connectBtn.classList.add("connected");
-      connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-      statusBar.innerHTML = `✅ Connected | 💼 ${walletBalance.toFixed(4)} PVLT | ⚡ ${Math.floor(energy)}/${maxEnergy} energy`;
-    } else {
+  function updateUI() {
+    if (!userAccount) {
       energySpan.classList.add("blurred");
-      tapsDisplay.classList.add("blurred");
-      gamePvltSpan.classList.add("blurred");
+      pointsDisplay.classList.add("blurred");
+      unclaimedPvltSpan.classList.add("blurred");
       walletPvltSpan.classList.add("blurred");
-      tapCircle.classList.add("disabled");
-      buyBtn.disabled = true;
-      claimBtn.disabled = true;
-      connectBtn.classList.remove("connected");
-      connectBtn.innerHTML = "🦊 CONNECT METAMASK (POLYGON)";
-      statusBar.innerHTML = "🔒 Connect wallet to start earning PVLT";
-    }
-  }
-
-  function regenEnergy() {
-    if (!userAccount) return;
-    
-    const now = Date.now();
-    const secondsSinceLastRegen = Math.floor((now - lastRegenTime) / 1000);
-    
-    if (secondsSinceLastRegen >= 15 && energy < maxEnergy) {
-      const regenAmount = Math.min(Math.floor(secondsSinceLastRegen / 15), maxEnergy - energy);
-      if (regenAmount > 0) {
-        energy = Math.min(energy + regenAmount, maxEnergy);
-        lastRegenTime = now;
-        refreshUI();
-        saveData();
-      }
+      return;
     }
     
-    // Update timer display
-    if (energy < maxEnergy) {
-      const secondsSinceLast = Math.floor((Date.now() - lastRegenTime) / 1000);
-      const secondsLeft = 15 - (secondsSinceLast % 15);
+    energySpan.classList.remove("blurred");
+    pointsDisplay.classList.remove("blurred");
+    unclaimedPvltSpan.classList.remove("blurred");
+    walletPvltSpan.classList.remove("blurred");
+    
+    // Energy display
+    energySpan.innerText = playerData.energy;
+    const energyPercent = (playerData.energy / maxEnergy) * 100;
+    energyBarFill.style.width = `${Math.max(0, Math.min(100, energyPercent))}%`;
+    
+    // Points display
+    const maxPoints = playerData.paidUser ? paidCap : freeCap;
+    pointsDisplay.innerText = `${playerData.points}/${maxPoints}`;
+    const pointsPercent = (playerData.points / maxPoints) * 100;
+    tapProgressFill.style.width = `${Math.max(0, Math.min(100, pointsPercent))}%`;
+    
+    // Unclaimed PVLT
+    const unclaimedPvlt = playerData.points / maxPoints;
+    unclaimedPvltSpan.innerText = unclaimedPvlt.toFixed(6);
+    tapCountText.innerHTML = `${playerData.points}/${maxPoints} points = ${unclaimedPvlt.toFixed(6)} PVLT`;
+    
+    // Wallet balance
+    walletPvltSpan.innerText = walletBalance.toFixed(4);
+    
+    // Button states
+    buyBtn.disabled = (walletBalance < energyPrice);
+    claimBtn.disabled = (playerData.points === 0);
+    
+    // Status bar
+    const userType = playerData.paidUser ? "💎 PAID" : "✨ FREE";
+    statusBar.innerHTML = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | ${userType} | ⚡ ${playerData.energy} energy | 🎯 ${playerData.points} points`;
+    
+    // Energy timer
+    if (playerData.energy < maxEnergy && playerData.lastClaimDay > 0) {
+      const now = Math.floor(Date.now() / 1000);
+      const timeSinceLast = now - playerData.lastClaimDay;
+      const secondsLeft = 15 - (timeSinceLast % 15);
       energyTimer.innerText = `next +1 in ${secondsLeft}s`;
     } else {
-      energyTimer.innerText = '⚡ full';
+      energyTimer.innerText = "⚡ full";
     }
+  }
+
+  async function refreshAllData() {
+    if (!userAccount) return;
+    await loadPlayerData();
+    await updateWalletBalance();
+    updateUI();
   }
 
   async function handleTap(x, y) {
@@ -523,169 +544,176 @@ body {
       showFloat(x, y, "🔒 Connect first!", "#ff8888");
       return;
     }
-    if (energy <= 0) {
-      showFloat(x, y, "❌ Out of energy! Wait or buy more!", "#ff8888");
+    
+    if (playerData.energy <= 0) {
+      showFloat(x, y, "❌ No energy! Wait or buy more!", "#ff8888");
       return;
     }
     
-    energy = Math.max(0, energy - 1);
-    currentTaps++;
-    
-    let earnedPvlt = 0;
-    if (currentTaps >= tapsRequired) {
-      earnedPvlt = Math.floor(currentTaps / tapsRequired);
-      gamePvltBalance += earnedPvlt;
-      currentTaps = currentTaps % tapsRequired;
-      showFloat(x, y - 30, `🎉 +${earnedPvlt} PVLT! 🎉`, "#ffea80");
+    try {
+      statusBar.innerHTML = "⏳ Tapping...";
+      debugLog("Calling tap()...");
+      
+      const tx = await gameContract.tap();
+      debugLog(`TX sent: ${tx.hash}`);
+      
+      statusBar.innerHTML = "⏳ Waiting for confirmation...";
+      await tx.wait();
+      debugLog("Tap confirmed!");
+      
+      await refreshAllData();
+      
+      showFloat(x, y, "+1 POINT!", "#aaffdd");
+      if (navigator.vibrate) navigator.vibrate(20);
+      statusBar.innerHTML = "✅ Tap registered!";
+      
+    } catch(e) {
+      debugLog(`Tap error: ${e.message}`);
+      showFloat(x, y, "❌ Tap failed", "#ff8888");
+      statusBar.innerHTML = `❌ ${e.message.slice(0,50)}`;
     }
-    
-    updateTapProgress();
-    showFloat(x, y, earnedPvlt > 0 ? `+1 TAP +${earnedPvlt} PVLT` : "+1 TAP", "#aaffdd");
-    
-    if (navigator.vibrate) navigator.vibrate(20);
-    refreshUI();
-    saveData();
   }
 
   async function buyEnergy() {
-    if (!userAccount) { alert("Connect wallet first"); return; }
-    await updateWalletBalance();
-    if (walletBalance < 1) {
-      alert(`❌ Need 1 PVLT. You have ${walletBalance.toFixed(4)} PVLT`);
+    if (!userAccount) {
+      alert("Connect wallet first");
       return;
     }
     
-    const amount = ethers.utils.parseUnits("1", decimals);
+    if (walletBalance < energyPrice) {
+      alert(`❌ Need ${energyPrice} PVLT. You have ${walletBalance.toFixed(4)} PVLT`);
+      return;
+    }
+    
     try {
-      statusBar.innerHTML = "⏳ Processing energy purchase...";
-      const tx = await tokenContract.transfer(TREASURY_VOLT, amount);
-      statusBar.innerHTML = "⏳ Waiting for confirmation...";
+      statusBar.innerHTML = "⏳ Checking allowance...";
+      const amount = ethers.utils.parseUnits(energyPrice.toString(), decimals);
+      
+      const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
+      debugLog(`Allowance: ${allowance.toString()}`);
+      
+      if (allowance.lt(amount)) {
+        debugLog("Approving PVLT...");
+        statusBar.innerHTML = "⏳ Approving PVLT spending...";
+        const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amount);
+        await approveTx.wait();
+        debugLog("Approved!");
+      }
+      
+      debugLog("Calling refillEnergy()...");
+      statusBar.innerHTML = "⏳ Buying energy...";
+      const tx = await gameContract.refillEnergy();
       await tx.wait();
-      await updateWalletBalance();
-      energy = Math.min(energy + 100, maxEnergy);
-      refreshUI();
-      saveData();
-      statusBar.innerHTML = "✅ +100 Energy! Keep tapping!";
+      debugLog("Energy purchased!");
+      
+      await refreshAllData();
+      
+      statusBar.innerHTML = "✅ +100 Energy!";
       showFloat(window.innerWidth/2, window.innerHeight/2, "⚡ +100 ENERGY ⚡", "#ffd966");
-    } catch(e) { 
-      console.error(e);
-      alert("❌ Failed: " + (e.message || "Transaction failed"));
+      
+    } catch(e) {
+      debugLog(`Buy error: ${e.message}`);
+      alert(`❌ Failed: ${e.message.slice(0,100)}`);
       statusBar.innerHTML = "❌ Purchase failed";
     }
   }
 
-  async function claimToWallet() {
-    if (!userAccount) { alert("Connect wallet"); return; }
-    if (gamePvltBalance < 0.001) { 
-      alert("❌ No game PVLT to claim. Keep tapping! Need 100 taps for 1 PVLT"); 
+  async function claimRewards() {
+    if (!userAccount) {
+      alert("Connect wallet");
       return;
     }
     
-    const amountToClaim = gamePvltBalance;
-    const amountWei = ethers.utils.parseUnits(amountToClaim.toFixed(decimals), decimals);
+    if (playerData.points === 0) {
+      alert("❌ No points to convert!");
+      return;
+    }
     
     try {
-      statusBar.innerHTML = "⏳ Claiming PVLT to your wallet...";
-      const tx = await tokenContract.transfer(userAccount, amountWei);
-      statusBar.innerHTML = "⏳ Waiting for confirmation...";
+      debugLog(`Converting ${playerData.points} points...`);
+      statusBar.innerHTML = "⏳ Converting points...";
+      const tx = await gameContract.convertPoints();
       await tx.wait();
-      gamePvltBalance = 0;
-      refreshUI();
-      saveData();
-      statusBar.innerHTML = `✅ Claimed ${amountToClaim.toFixed(4)} PVLT to wallet!`;
-      showFloat(window.innerWidth/2, window.innerHeight/2, `💎 +${amountToClaim.toFixed(2)} PVLT 💎`, "#46c9b0");
-    } catch(e) { 
-      console.error(e);
-      alert("❌ Claim failed: " + (e.message || "Transaction failed"));
+      debugLog("Points converted!");
+      
+      await refreshAllData();
+      
+      statusBar.innerHTML = "✅ Points converted to PVLT!";
+      showFloat(window.innerWidth/2, window.innerHeight/2, "💎 PVLT CLAIMED! 💎", "#46c9b0");
+      
+    } catch(e) {
+      debugLog(`Claim error: ${e.message}`);
+      alert(`❌ Failed: ${e.message.slice(0,100)}`);
       statusBar.innerHTML = "❌ Claim failed";
     }
   }
 
-  // ============ SIMPLIFIED CONNECT FUNCTION ============
   async function connectWallet() {
-    // Check if MetaMask is installed
     if (typeof window.ethereum === 'undefined') {
-      alert("❌ MetaMask not detected!\n\nPlease install MetaMask:\nhttps://metamask.io/download/\n\nOr use a browser with Web3 support.");
-      statusBar.innerHTML = "❌ Please install MetaMask extension first";
+      alert("❌ MetaMask not detected!\n\nPlease install MetaMask");
       return;
     }
-
+    
     try {
       connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
       connectBtn.disabled = true;
+      debugLog("Requesting accounts...");
       
-      // Request account access
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No accounts found");
-      }
-      
       userAccount = accounts[0];
+      debugLog(`Account: ${userAccount}`);
       
-      // Create provider
       provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
       
-      // Check if we're on Polygon Mainnet (chainId: 137)
       const network = await provider.getNetwork();
+      debugLog(`Network: ${network.chainId}`);
+      
       if (network.chainId !== 137) {
-        statusBar.innerHTML = "⚠️ Please switch to Polygon Mainnet in MetaMask";
-        // Try to switch network
+        statusBar.innerHTML = "⚠️ Please switch to Polygon Mainnet";
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x89' }], // 137 in hex
+            params: [{ chainId: '0x89' }],
           });
+          await new Promise(resolve => setTimeout(resolve, 1000));
         } catch(e) {
-          alert("Please switch to Polygon Mainnet in MetaMask manually");
+          alert("Please switch to Polygon Mainnet manually");
+          throw new Error("Wrong network");
         }
       }
       
-      // Create token contract
       tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+      gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
       
-      // Get decimals
-      try {
-        decimals = await tokenContract.decimals();
-      } catch(e) {
-        console.log("Using default decimals");
-      }
+      decimals = await tokenContract.decimals();
+      debugLog(`Decimals: ${decimals}`);
       
-      // Load saved game data
-      loadData();
-      await refreshUI();
+      await loadGameParams();
+      await refreshAllData();
       
-      statusBar.innerHTML = "✅ Connected successfully! Start tapping!";
+      connectBtn.classList.add("connected");
+      connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
+      tapCircle.classList.remove("disabled");
+      statusBar.innerHTML = "✅ Connected! Start tapping!";
+      debugLog("Connected successfully!");
       
-      // Setup event listeners for account/network changes
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(() => {
+        if (userAccount) refreshAllData();
+      }, 5000);
+      
       window.ethereum.on('accountsChanged', (accounts) => {
-        if (accounts.length === 0) {
-          disconnect();
-        } else if (accounts[0] !== userAccount) {
-          saveData();
-          userAccount = accounts[0];
-          loadData();
-          refreshUI();
-        }
+        if (accounts.length === 0) disconnect();
+        else if (accounts[0] !== userAccount) window.location.reload();
       });
       
-      window.ethereum.on('chainChanged', () => {
-        window.location.reload();
-      });
+      window.ethereum.on('chainChanged', () => window.location.reload());
       
     } catch(error) {
-      console.error("Connection error:", error);
-      let errorMsg = "Connection failed";
-      if (error.code === 4001) {
-        errorMsg = "You rejected the connection request";
-      } else if (error.message) {
-        errorMsg = error.message;
-      }
-      alert("❌ " + errorMsg);
-      statusBar.innerHTML = "❌ Connection failed. Try again.";
+      debugLog(`Connection error: ${error.message}`);
+      alert("❌ " + error.message.slice(0,100));
       userAccount = null;
-      await refreshUI();
     } finally {
       connectBtn.disabled = false;
       if (!userAccount) {
@@ -693,65 +721,51 @@ body {
       }
     }
   }
-
+  
   async function disconnect() {
-    saveData();
+    if (refreshInterval) clearInterval(refreshInterval);
     userAccount = null;
     tokenContract = null;
-    provider = null;
-    signer = null;
-    energy = 50;
-    currentTaps = 0;
-    gamePvltBalance = 0;
-    lastRegenTime = Date.now();
-    await refreshUI();
-    statusBar.innerHTML = "🔒 Disconnected. Connect to play again!";
+    gameContract = null;
+    connectBtn.classList.remove("connected");
+    connectBtn.innerHTML = "🦊 CONNECT METAMASK (POLYGON)";
+    tapCircle.classList.add("disabled");
+    playerData = { energy: 0, points: 0, burnedGPVLT: 0, paidUser: false, lastClaimDay: 0 };
+    updateUI();
+    statusBar.innerHTML = "🔒 Disconnected";
+    debugLog("Disconnected");
   }
-
+  
   // Event Listeners
-  connectBtn.onclick = async () => {
-    if (userAccount) {
-      await disconnect();
-    } else {
-      await connectWallet();
-    }
-  };
-
+  connectBtn.onclick = () => userAccount ? disconnect() : connectWallet();
+  
   tapCircle.onclick = (e) => {
-    let x = e.clientX, y = e.clientY;
-    if (!x || !y) {
-      const rect = tapCircle.getBoundingClientRect();
-      x = rect.left + rect.width/2;
-      y = rect.top + rect.height/2;
-    }
+    if (!userAccount) { connectWallet(); return; }
+    const rect = tapCircle.getBoundingClientRect();
+    const x = rect.left + rect.width/2;
+    const y = rect.top + rect.height/2;
     handleTap(x, y);
   };
   
   tapCircle.ontouchstart = (e) => {
     e.preventDefault();
+    if (!userAccount) { connectWallet(); return; }
     const touch = e.touches[0];
-    if (touch) handleTap(touch.clientX, touch.clientY);
+    handleTap(touch.clientX, touch.clientY);
   };
   
   buyBtn.onclick = () => buyEnergy();
-  claimBtn.onclick = () => claimToWallet();
+  claimBtn.onclick = () => claimRewards();
   
   document.getElementById("treasuryNote").onclick = () => {
-    navigator.clipboard.writeText(PVLT_TOKEN_ADDRESS);
-    statusBar.innerHTML = "📋 Contract address copied!";
-    setTimeout(() => refreshUI(), 2000);
+    navigator.clipboard.writeText(GAME_CONTRACT_ADDRESS);
+    statusBar.innerHTML = "📋 Game address copied!";
   };
   
-  // Energy regeneration every second
-  setInterval(() => {
-    if (userAccount) {
-      regenEnergy();
-      refreshUI();
-    }
-  }, 1000);
-  
-  refreshUI();
-  console.log("🎮 PepeVolt Ready! Make sure you have MetaMask installed and on Polygon Mainnet");
+  updateUI();
+  debugLog("UI Ready! Update contract addresses before using!");
+  debugLog(`Expected PVLT: ${PVLT_TOKEN_ADDRESS}`);
+  debugLog(`Expected Game: ${GAME_CONTRACT_ADDRESS}`);
 </script>
 </body>
 </html>
