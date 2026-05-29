@@ -339,7 +339,7 @@ body {
   </div>
 
   <div class="action-stack">
-    <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 100 ENERGY (1 PVLT)</button>
+    <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 1000 ENERGY (100 PVLT)</button>
     <button class="action-btn" id="claimPvltAction" disabled>💎 CLAIM GAME PVLT → WALLET</button>
   </div>
   <div class="treasury-note" id="treasuryNote">
@@ -566,33 +566,34 @@ body {
     if (!userAccount) { alert("Connect wallet first"); return; }
     
     if (isTestMode) {
-      // TEST MODE: Free energy
-      energy = Math.min(energy + 100, maxEnergy);
+      // TEST MODE: Free energy (1000 energy for free in test mode)
+      energy = Math.min(energy + 1000, maxEnergy);
       refreshUI();
       saveData();
-      statusBar.innerHTML = "✅ +100 Energy (TEST MODE)! Keep tapping!";
-      showFloat(window.innerWidth/2, window.innerHeight/2, "⚡ +100 ENERGY ⚡", "#ffd966");
+      statusBar.innerHTML = "✅ +1000 Energy (TEST MODE)! Keep tapping!";
+      showFloat(window.innerWidth/2, window.innerHeight/2, "⚡ +1000 ENERGY ⚡", "#ffd966");
       return;
     }
     
+    // REAL MODE: Costs 100 PVLT for 1000 energy
     await updateWalletBalance();
-    if (walletBalance < 1) {
-      alert(`❌ Need 1 PVLT. You have ${walletBalance.toFixed(4)} PVLT`);
+    if (walletBalance < 100) {
+      alert(`❌ Need 100 PVLT. You have ${walletBalance.toFixed(4)} PVLT`);
       return;
     }
     
-    const amount = ethers.utils.parseUnits("1", decimals);
+    const amount = ethers.utils.parseUnits("100", decimals);
     try {
-      statusBar.innerHTML = "⏳ Processing energy purchase...";
+      statusBar.innerHTML = "⏳ Processing energy purchase (100 PVLT for 1000 energy)...";
       const tx = await tokenContract.transfer(TREASURY_VOLT, amount);
       statusBar.innerHTML = "⏳ Waiting for confirmation...";
       await tx.wait();
       await updateWalletBalance();
-      energy = Math.min(energy + 100, maxEnergy);
+      energy = Math.min(energy + 1000, maxEnergy);
       refreshUI();
       saveData();
-      statusBar.innerHTML = "✅ +100 Energy! Keep tapping!";
-      showFloat(window.innerWidth/2, window.innerHeight/2, "⚡ +100 ENERGY ⚡", "#ffd966");
+      statusBar.innerHTML = "✅ +1000 Energy! Keep tapping!";
+      showFloat(window.innerWidth/2, window.innerHeight/2, "⚡ +1000 ENERGY ⚡", "#ffd966");
     } catch(e) { 
       console.error(e);
       alert("❌ Failed: " + (e.message || "Transaction failed"));
@@ -612,11 +613,6 @@ body {
       alert(`✨ TEST MODE: You would claim ${gamePvltBalance.toFixed(4)} REAL PVLT to your wallet!\n\nAfter deploying contracts, this will work on-chain.`);
       statusBar.innerHTML = `✨ Test claim: ${gamePvltBalance.toFixed(4)} PVLT (simulated)`;
       showFloat(window.innerWidth/2, window.innerHeight/2, `💎 TEST: +${gamePvltBalance.toFixed(2)} PVLT 💎`, "#46c9b0");
-      
-      // In test mode, reset after showing
-      // gamePvltBalance = 0; // Uncomment if you want to reset
-      // refreshUI();
-      // saveData();
       return;
     }
     
