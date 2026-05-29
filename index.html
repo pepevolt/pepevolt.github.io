@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>PepeVolt | Tap & Earn PVLT on Polygon</title>
+<title>PepeVolt | In-Game & Real Wallet PVLT</title>
 
 <style>
 *{
@@ -156,6 +156,32 @@ body{
   font-size:11px;
   margin-top:10px;
   color:#7e8cac;
+  background:rgba(0,0,0,0.3);
+  border-radius:16px;
+  padding:8px;
+}
+
+.balance-row{
+  display:flex;
+  justify-content:space-between;
+  margin-top:4px;
+  gap:12px;
+}
+
+.balance-item{
+  flex:1;
+  text-align:center;
+  font-size:11px;
+}
+
+.balance-label{
+  opacity:0.7;
+}
+
+.balance-amount{
+  font-weight:bold;
+  color:#00ffcc;
+  font-size:13px;
 }
 </style>
 
@@ -189,7 +215,21 @@ body{
   </div>
 
   <button id="connectBtn">🔗 Connect Wallet (Polygon)</button>
-  <div class="wallet-status" id="walletStatus">⚡ Free mode: 50 Energy</div>
+  
+  <!-- Wallet Balance Display -->
+  <div class="wallet-status" id="walletStatus">
+    <div>⚡ Free mode: 50 Energy</div>
+    <div class="balance-row" id="balanceRow" style="display: none;">
+      <div class="balance-item">
+        <div class="balance-label">🎮 In-Game PVLT</div>
+        <div class="balance-amount" id="inGameBalanceDisplay">0</div>
+      </div>
+      <div class="balance-item">
+        <div class="balance-label">💎 Real Wallet PVLT</div>
+        <div class="balance-amount" id="realWalletBalanceDisplay">0</div>
+      </div>
+    </div>
+  </div>
 
   <div class="center">
     <div class="tap-circle" id="tapBtn">
@@ -210,6 +250,9 @@ body{
   // ========== DOM ELEMENTS ==========
   const connectBtn = document.getElementById('connectBtn');
   const walletStatusDiv = document.getElementById('walletStatus');
+  const balanceRow = document.getElementById('balanceRow');
+  const inGameBalanceDisplay = document.getElementById('inGameBalanceDisplay');
+  const realWalletBalanceDisplay = document.getElementById('realWalletBalanceDisplay');
   const energySpan = document.getElementById('energy');
   const pointsSpan = document.getElementById('points');
   const pvltSpan = document.getElementById('pvlt');
@@ -229,8 +272,7 @@ body{
   let realWalletPvltBalance = 0;  // User's actual PVLT balance from blockchain
 
   // ========== TOKEN CONTRACT (Replace with your actual PVLT token on Polygon) ==========
-  // You need to deploy an ERC20 token on Polygon and replace this address
-  const PVLT_TOKEN_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b"; // ⚠️ REPLACE WITH REAL TOKEN ADDRESS
+  const PVLT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"; // ⚠️ REPLACE WITH REAL TOKEN ADDRESS
   const PVLT_ABI = [
     "function balanceOf(address owner) view returns (uint256)",
     "function transfer(address to, uint256 amount) returns (bool)",
@@ -239,8 +281,7 @@ body{
   let tokenContract = null;
 
   // Game contract address (where PVLT is sent when buying energy)
-  // You can set this to a burn address or your game wallet
-  const GAME_WALLET = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff"; // Burn address
+  const GAME_WALLET = "0x000000000000000000000000000000000000dEaD"; // Burn address
 
   // ========== FETCH REAL WALLET PVLT BALANCE ==========
   async function fetchRealWalletBalance() {
@@ -255,16 +296,26 @@ body{
     }
   }
 
+  // ========== UPDATE BALANCE DISPLAY ==========
+  async function updateBalanceDisplay() {
+    if (userAccount) {
+      balanceRow.style.display = 'flex';
+      inGameBalanceDisplay.innerText = Math.floor(inGamePvlt);
+      await fetchRealWalletBalance();
+      realWalletBalanceDisplay.innerText = Math.floor(realWalletPvltBalance);
+    } else {
+      balanceRow.style.display = 'none';
+    }
+  }
+
   // ========== HELPER FUNCTIONS ==========
   async function updateUI() {
     energySpan.innerText = Math.floor(energy);
     pointsSpan.innerText = Math.floor(points);
     pvltSpan.innerText = Math.floor(inGamePvlt);
 
-    // Fetch real wallet balance for buy button check
-    if (userAccount && tokenContract) {
-      await fetchRealWalletBalance();
-    }
+    // Update balance display
+    await updateBalanceDisplay();
 
     // Buy button: needs 100 REAL PVLT in wallet
     if (buyEnergyBtn) {
@@ -278,9 +329,27 @@ body{
     }
 
     if (userAccount) {
-      walletStatusDiv.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | 💎 Wallet PVLT: ${Math.floor(realWalletPvltBalance)} | 🎮 In-Game: ${Math.floor(inGamePvlt)} | ⚡ Energy: ${Math.floor(energy)}/10000`;
+      walletStatusDiv.innerHTML = `
+        <div>✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)}</div>
+        <div class="balance-row">
+          <div class="balance-item">
+            <div class="balance-label">🎮 In-Game PVLT</div>
+            <div class="balance-amount">${Math.floor(inGamePvlt)}</div>
+          </div>
+          <div class="balance-item">
+            <div class="balance-label">💎 Real Wallet PVLT</div>
+            <div class="balance-amount">${Math.floor(realWalletPvltBalance)}</div>
+          </div>
+          <div class="balance-item">
+            <div class="balance-label">⚡ Energy</div>
+            <div class="balance-amount">${Math.floor(energy)}/10000</div>
+          </div>
+        </div>
+      `;
+      balanceRow.style.display = 'none'; // Hide the separate row since it's inside walletStatus
     } else {
       walletStatusDiv.innerHTML = `⚡ Free mode: ${Math.floor(energy)}/10000 Energy (connect wallet to earn & claim PVLT)`;
+      balanceRow.style.display = 'none';
     }
     
     saveGame();
@@ -410,9 +479,8 @@ body{
     try {
       showFloating(window.innerWidth/2, window.innerHeight/2, '⏳ Claiming PVLT to wallet...', '#c084fc');
       
-      // Transfer tokens from game contract to user (requires game wallet to have approved or mint function)
-      // For simplicity, we'll simulate a transfer from the game's wallet
-      // In a real implementation, you would call a mint() function or have a separate claim contract
+      // Transfer tokens from game contract to user
+      // Note: This requires the game wallet to have sufficient PVLT balance or a mint function
       const tx = await tokenContract.transfer(userAccount, amountWei);
       
       alert(`⏳ Claim transaction submitted!\nHash: ${tx.hash}\nWaiting for confirmation...`);
@@ -472,7 +540,7 @@ body{
         await fetchRealWalletBalance();
       } else {
         console.warn("⚠️ PVLT_TOKEN_ADDRESS not set. Claims and purchases will not work.");
-        alert("⚠️ Token address not configured. Please set PVLT_TOKEN_ADDRESS.");
+        // For demo, we'll still show the UI but with warning
       }
       
       connectBtn.innerText = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
@@ -488,7 +556,7 @@ body{
         } else {
           userAccount = accs[0];
           connectBtn.innerText = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-          await fetchRealWalletBalance();
+          if (tokenContract) await fetchRealWalletBalance();
           updateUI();
         }
       });
@@ -541,9 +609,8 @@ body{
   // ========== INIT ==========
   loadGame();
   
-  console.log("✅ CORRECTED: Buy Energy deducts 100 PVLT from user's REAL Web3 wallet");
+  console.log("✅ Both In-Game PVLT and Real Wallet PVLT balances are displayed when wallet is connected");
   console.log("⚠️ IMPORTANT: Set PVLT_TOKEN_ADDRESS to your actual ERC20 token address on Polygon Mainnet");
-  console.log("⚠️ Set GAME_WALLET to where PVLT should be sent (burn address or game wallet)");
 </script>
 </body>
 </html>
