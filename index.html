@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Tap to Earn | Energy → Points → Token (Loop)</title>
+  <title>Tap to Earn | Energy · Points · Token</title>
   <style>
     * {
       margin: 0;
@@ -92,7 +92,7 @@
       width: 80px;
     }
 
-    /* main content: tapping circle + connect button */
+    /* main content: tapping circle + connect button + resource buttons */
     .hero-section {
       flex: 1;
       display: flex;
@@ -102,7 +102,7 @@
       min-height: 100vh;
       padding: 6rem 1.5rem 2rem 1.5rem;
       text-align: center;
-      gap: 2.5rem;
+      gap: 2rem;
     }
 
     /* ========= TAPPING CIRCLE ========= */
@@ -110,7 +110,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.25rem;
     }
 
     .tap-circle {
@@ -127,7 +127,6 @@
       border: 1px solid rgba(255,255,255,0.1);
       backdrop-filter: blur(2px);
       will-change: transform;
-      position: relative;
     }
 
     .tap-circle:active {
@@ -174,20 +173,31 @@
     }
 
     .hint-text {
-      margin-top: 0.75rem;
+      margin-top: 0.5rem;
       font-size: 0.75rem;
       opacity: 0.45;
       letter-spacing: 0.3px;
       font-weight: 400;
     }
 
-    /* connect wallet button */
+    /* ========= BUTTON GROUP ========= */
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      width: 100%;
+      max-width: 280px;
+      margin-top: 0.5rem;
+    }
+
+    /* main connect wallet button */
     .main-connect-btn {
       background: #1a1a1a;
       border: none;
-      padding: 1rem 2.2rem;
+      padding: 0.9rem 2rem;
       border-radius: 60px;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 600;
       font-family: inherit;
       color: #ffffff;
@@ -195,7 +205,9 @@
       transition: all 0.25s ease;
       display: inline-flex;
       align-items: center;
-      gap: 12px;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
       border: 0.5px solid rgba(255,255,255,0.1);
       backdrop-filter: blur(4px);
@@ -213,11 +225,58 @@
     }
 
     .main-icon {
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='5' width='20' height='14' rx='2'%3E%3C/rect%3E%3Cline x1='16' y1='12' x2='18' y2='12'%3E%3C/line%3E%3C/svg%3E");
       background-size: contain;
       background-repeat: no-repeat;
+    }
+
+    /* energy and token action buttons row */
+    .resource-buttons {
+      display: flex;
+      gap: 1rem;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .action-btn {
+      background: rgba(20, 20, 30, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 0.7rem 1rem;
+      border-radius: 48px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      font-family: inherit;
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex: 1;
+      backdrop-filter: blur(4px);
+    }
+
+    .action-btn:hover {
+      background: rgba(40, 40, 55, 0.9);
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .action-btn:active {
+      transform: translateY(1px);
+    }
+
+    .action-btn.disabled-action {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-emoji {
+      font-size: 1.1rem;
     }
 
     /* floating feedback */
@@ -235,7 +294,7 @@
     .tap-feedback {
       position: fixed;
       pointer-events: none;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: bold;
       color: #FFD966;
       text-shadow: 0 0 5px #000;
@@ -253,6 +312,10 @@
     .milestone-feedback {
       color: #4ade80;
       text-shadow: 0 0 4px #14532d;
+    }
+
+    .energy-feedback {
+      color: #60a5fa;
     }
 
     /* glow background */
@@ -289,9 +352,12 @@
       .tap-emoji {
         font-size: 3rem;
       }
-      .main-connect-btn {
-        padding: 0.8rem 1.8rem;
-        font-size: 1rem;
+      .resource-buttons {
+        gap: 0.8rem;
+      }
+      .action-btn {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.8rem;
       }
       .nav-spacer {
         display: none;
@@ -324,37 +390,58 @@
   <div class="nav-spacer"></div>
 </div>
 
-<!-- main content: TAPPING CIRCLE + Connect Wallet button -->
+<!-- main content -->
 <div class="hero-section">
+  <!-- Tapping Circle -->
   <div class="tap-circle-container">
     <div id="tapCircle" class="tap-circle">
       <div class="tap-emoji">👆</div>
     </div>
   </div>
-  <div class="hint-text">tap → -1 energy → +1 point | 100 points → +1 token & points reset to 0</div>
+  <div class="hint-text">tap → -1 energy → +1 point | 100 points → +1 token & points reset</div>
   
-  <!-- single connect wallet button -->
-  <button id="mainConnectBtn" class="main-connect-btn">
-    <span class="main-icon"></span>
-    <span id="mainBtnText">Connect Wallet</span>
-  </button>
+  <!-- Button Group: Connect Wallet + Energy/Token Buttons -->
+  <div class="button-group">
+    <!-- Connect Wallet Button -->
+    <button id="mainConnectBtn" class="main-connect-btn">
+      <span class="main-icon"></span>
+      <span id="mainBtnText">Connect Wallet</span>
+    </button>
+    
+    <!-- Energy and Token Action Buttons -->
+    <div class="resource-buttons">
+      <button id="buyEnergyBtn" class="action-btn">
+        <span class="btn-emoji">⚡</span>
+        <span>+ Energy</span>
+      </button>
+      <button id="buyTokenBtn" class="action-btn">
+        <span class="btn-emoji">💎</span>
+        <span>+ Token</span>
+      </button>
+    </div>
+    <div class="hint-text" style="margin-top: -0.25rem; font-size: 0.7rem;">spend points to boost resources</div>
+  </div>
 </div>
 
 <div class="glow-orb"></div>
 
 <script>
-  // =========  ENERGY, POINTS & TOKEN SYSTEM WITH LOOP =========
+  // =========  ENERGY, POINTS & TOKEN SYSTEM WITH LOOP & RESOURCE BUTTONS =========
   // Total Energy: 10,000 (starting)
   // Each tap: Energy -1, Points +1
   // When Points reaches 100: Award +1 Token, then Points reset to 0 (loop)
   // Energy regen: +1 every 15 seconds (max 10000)
-  // Important: Points loops to 0 after each 100-point milestone.
+  // NEW: Energy Button: Spend 50 Points to gain +20 Energy
+  //      Token Button: Spend 200 Points to gain +1 Token
+  // Points cannot go negative, buttons disable when insufficient points.
   
   (function() {
     // DOM elements
     const tapCircle = document.getElementById('tapCircle');
     const mainConnectBtn = document.getElementById('mainConnectBtn');
     const mainBtnText = document.getElementById('mainBtnText');
+    const buyEnergyBtn = document.getElementById('buyEnergyBtn');
+    const buyTokenBtn = document.getElementById('buyTokenBtn');
     
     // stats spans
     const energySpan = document.getElementById('energyValue');
@@ -373,7 +460,7 @@
     // Store last tap coordinates for visual feedback
     let lastTapPosition = { x: 0, y: 0 };
     
-    // Helper: update all UI elements
+    // Helper: update all UI elements and button states
     function updateStatsUI() {
       if (energySpan) energySpan.innerText = Math.floor(energy);
       if (pointsSpan) pointsSpan.innerText = Math.floor(points);
@@ -385,77 +472,30 @@
       } else {
         tapCircle.classList.remove('disabled');
       }
-    }
-    
-    // Show floating token notification when milestone reached
-    function showTokenFeedback(x, y, tokenGain) {
-      const feedback = document.createElement('div');
-      feedback.className = 'tap-feedback token-feedback';
-      feedback.innerHTML = `+${tokenGain} 💎 TOKEN!`;
-      feedback.style.left = `${x - 45}px`;
-      feedback.style.top = `${y - 55}px`;
-      document.body.appendChild(feedback);
-      setTimeout(() => {
-        if (feedback && feedback.remove) feedback.remove();
-      }, 700);
-    }
-    
-    // Show milestone completed feedback
-    function showMilestoneFeedback(x, y) {
-      const feedback = document.createElement('div');
-      feedback.className = 'tap-feedback milestone-feedback';
-      feedback.innerHTML = `✨ 100 POINTS! +1 TOKEN ✨`;
-      feedback.style.left = `${x - 70}px`;
-      feedback.style.top = `${y - 70}px`;
-      document.body.appendChild(feedback);
-      setTimeout(() => {
-        if (feedback && feedback.remove) feedback.remove();
-      }, 800);
-    }
-    
-    // Process tap: -1 energy, +1 point, check milestone (points == 100 -> token +1, points = 0)
-    // Returns: { success: bool, milestone: bool }
-    function processTap() {
-      if (energy <= 0) {
-        return { success: false, milestone: false };
-      }
       
-      // Consume 1 energy
-      energy -= 1;
-      
-      // Add 1 point
-      points += 1;
-      
-      let milestoneReached = false;
-      
-      // Check if points reached exactly 100 (milestone)
-      if (points >= 100) {
-        // Award token for each 100 points completed
-        // Since points can't exceed 100 in normal flow (we reset), but safe guard: award token for each full 100
-        const tokensEarned = Math.floor(points / 100);
-        tokens += tokensEarned;
-        // Reset points to remainder after removing full hundreds
-        points = points % 100;
-        milestoneReached = true;
-        
-        // Show milestone + token feedback if we have coordinates
-        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showMilestoneFeedback(lastTapPosition.x, lastTapPosition.y);
-          showTokenFeedback(lastTapPosition.x, lastTapPosition.y, tokensEarned);
+      // Update action buttons state based on points
+      if (buyEnergyBtn) {
+        if (points >= 50) {
+          buyEnergyBtn.classList.remove('disabled-action');
+        } else {
+          buyEnergyBtn.classList.add('disabled-action');
         }
       }
-      
-      // Update UI
-      updateStatsUI();
-      return { success: true, milestone: milestoneReached };
+      if (buyTokenBtn) {
+        if (points >= 200) {
+          buyTokenBtn.classList.remove('disabled-action');
+        } else {
+          buyTokenBtn.classList.add('disabled-action');
+        }
+      }
     }
     
-    // Create floating feedback for tap (+1 point, -1 energy)
-    function createFloatingFeedback(x, y) {
+    // Show floating feedback
+    function showFloatingFeedback(x, y, text, colorClass = '') {
       const feedback = document.createElement('div');
-      feedback.className = 'tap-feedback';
-      feedback.innerHTML = `+1 ⭐ &nbsp; -1 ⚡`;
-      feedback.style.left = `${x - 40}px`;
+      feedback.className = `tap-feedback ${colorClass}`;
+      feedback.innerHTML = text;
+      feedback.style.left = `${x - 50}px`;
       feedback.style.top = `${y - 40}px`;
       document.body.appendChild(feedback);
       setTimeout(() => {
@@ -463,23 +503,98 @@
       }, 600);
     }
     
+    // Show milestone feedback
+    function showMilestoneFeedback(x, y) {
+      const feedback = document.createElement('div');
+      feedback.className = 'tap-feedback milestone-feedback';
+      feedback.innerHTML = `✨ 100 POINTS! +1 TOKEN ✨`;
+      feedback.style.left = `${x - 80}px`;
+      feedback.style.top = `${y - 70}px`;
+      document.body.appendChild(feedback);
+      setTimeout(() => {
+        if (feedback && feedback.remove) feedback.remove();
+      }, 800);
+    }
+    
+    // Process tap: -1 energy, +1 point, check milestone
+    function processTap() {
+      if (energy <= 0) {
+        return false;
+      }
+      
+      // Consume 1 energy
+      energy -= 1;
+      // Add 1 point
+      points += 1;
+      
+      let milestoneReached = false;
+      
+      // Check milestone (every 100 points)
+      if (points >= 100) {
+        const tokensEarned = Math.floor(points / 100);
+        tokens += tokensEarned;
+        points = points % 100;
+        milestoneReached = true;
+        
+        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
+          showMilestoneFeedback(lastTapPosition.x, lastTapPosition.y);
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+${tokensEarned} 💎 TOKEN!`, 'token-feedback');
+        }
+      }
+      
+      updateStatsUI();
+      return true;
+    }
+    
+    // Buy Energy: Spend 50 points to gain 20 energy
+    function buyEnergy() {
+      if (points >= 50) {
+        points -= 50;
+        energy += 20;
+        if (energy > 10000) energy = 10000;
+        updateStatsUI();
+        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+20 ⚡ ENERGY`, 'energy-feedback');
+        }
+        console.log(`Bought Energy: +20 | Points left: ${points} | Energy: ${energy}`);
+        return true;
+      } else {
+        // show insufficient points feedback
+        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 50 points`, '');
+        }
+        return false;
+      }
+    }
+    
+    // Buy Token: Spend 200 points to gain 1 token
+    function buyToken() {
+      if (points >= 200) {
+        points -= 200;
+        tokens += 1;
+        updateStatsUI();
+        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 💎 TOKEN`, 'token-feedback');
+        }
+        console.log(`Bought Token: +1 | Points left: ${points} | Tokens: ${tokens}`);
+        return true;
+      } else {
+        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 200 points`, '');
+        }
+        return false;
+      }
+    }
+    
     // Handle tap on circle
     function onTapCircle(e) {
       e.stopPropagation();
       
-      // Check energy first
       if (energy <= 0) {
         const rect = tapCircle.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        const warning = document.createElement('div');
-        warning.className = 'tap-feedback';
-        warning.innerText = '❌ No Energy';
-        warning.style.color = '#ff8888';
-        warning.style.left = `${centerX - 45}px`;
-        warning.style.top = `${centerY - 20}px`;
-        document.body.appendChild(warning);
-        setTimeout(() => warning.remove(), 500);
+        showFloatingFeedback(centerX, centerY, `❌ No Energy`, '');
         return;
       }
       
@@ -489,7 +604,7 @@
         tapCircle.classList.remove('ripple-effect');
       }, 200);
       
-      // Get tap coordinates (for feedback)
+      // Get tap coordinates
       let clientX, clientY;
       if (e.touches) {
         clientX = e.touches[0].clientX;
@@ -507,28 +622,18 @@
         lastTapPosition = { x: centerX, y: centerY };
       }
       
-      // Process the tap (energy -1, points +1, possible milestone)
-      const result = processTap();
-      
-      if (result.success) {
-        // Haptic feedback
+      const success = processTap();
+      if (success) {
         if (navigator.vibrate) navigator.vibrate(15);
-        
-        // Show floating tap feedback (only if not a milestone? we already show milestone feedback separately)
-        // But we still show the basic +1/-1 feedback for clarity, but position it slightly above
-        createFloatingFeedback(lastTapPosition.x, lastTapPosition.y);
-        
+        showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 ⭐ &nbsp; -1 ⚡`, '');
         console.log(`Tap! Energy: ${energy} | Points: ${points} | Tokens: ${tokens}`);
-        if (result.milestone) {
-          console.log(`🎉 MILESTONE! Points reset to ${points}, Token +1 (total: ${tokens})`);
-        }
       }
     }
     
-    // ---------- Wallet Integration (optional, no effect on game stats) ----------
+    // ---------- Wallet Integration (optional) ----------
     async function connectWallet() {
       if (!window.ethereum) {
-        console.warn('No Web3 wallet detected. Install MetaMask.');
+        console.warn('No Web3 wallet detected.');
         return;
       }
       try {
@@ -553,7 +658,6 @@
       isConnected = false;
       currentAccount = null;
       setButtonConnectedState(false);
-      console.log('Wallet disconnected');
     }
     
     function setButtonConnectedState(connected) {
@@ -629,7 +733,7 @@
       }
     }
     
-    // Attach tap events
+    // Attach event listeners
     if (tapCircle) {
       tapCircle.addEventListener('click', onTapCircle);
       tapCircle.addEventListener('touchstart', (e) => {
@@ -638,12 +742,25 @@
       }, { passive: false });
     }
     
-    // Attach wallet button
     if (mainConnectBtn) {
       mainConnectBtn.addEventListener('click', handleConnectClick);
     }
     
-    // Energy regeneration: +1 energy every 15 seconds, max 10000
+    if (buyEnergyBtn) {
+      buyEnergyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        buyEnergy();
+      });
+    }
+    
+    if (buyTokenBtn) {
+      buyTokenBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        buyToken();
+      });
+    }
+    
+    // Energy regeneration: +1 energy every 15 seconds
     let regenInterval = setInterval(() => {
       if (energy < 10000) {
         energy = Math.min(energy + 1, 10000);
@@ -651,22 +768,21 @@
       }
     }, 15000);
     
-    // Cleanup interval on page unload
     window.addEventListener('beforeunload', () => {
       if (regenInterval) clearInterval(regenInterval);
     });
     
     // Initialize game
-    function resetGame() {
+    function initGame() {
       energy = 10000;
       points = 0;
       tokens = 0;
       updateStatsUI();
     }
-    resetGame();
+    initGame();
     checkInitialConnection();
     
-    console.log("Ready: Energy 10000 | Tap: -1 energy, +1 point | Every 100 points → +1 token & points reset to 0");
+    console.log("Ready: Tap to earn | Energy/Token buttons below connect wallet");
   })();
 </script>
 </body>
