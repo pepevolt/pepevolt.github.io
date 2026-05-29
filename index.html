@@ -128,12 +128,11 @@ body {
   color: #0a1a22;
 }
 
-.connect-btn {
-  background: linear-gradient(95deg, #3b82f6, #1d4ed8);
+#connectWalletBtn {
   margin-bottom: 12px;
 }
 
-.connect-btn.connected {
+#connectWalletBtn.connected {
   background: linear-gradient(95deg, #ef4444, #dc2626);
 }
 
@@ -276,6 +275,19 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.countdown {
+  font-size: 10px;
+  color: #ffaa44;
+  margin-left: 4px;
+}
+
+.error-message {
+  color: #ff6b6b;
+  font-size: 11px;
+  margin-top: 5px;
+  text-align: center;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 </head>
@@ -314,9 +326,7 @@ body {
     <div class="tap-count" id="tapCountText">0/100 taps = 1 PVLT</div>
   </div>
 
-  <button class="action-btn connect-btn" id="connectWalletBtn">
-    🔌 CONNECT WALLET (POLYGON)
-  </button>
+  <button class="action-btn" id="connectWalletBtn">🦊 CONNECT METAMASK (POLYGON)</button>
 
   <div class="status-bar" id="statusBar">
     🔒 Connect wallet to start earning PVLT
@@ -324,12 +334,12 @@ body {
 
   <div class="tap-arena">
     <div class="pepe-core disabled" id="tapButton">
-      <img src="images/IMG_1850.png" alt="PEPE">
+      <img src="https://i.imgur.com/8Km9tLL.png" alt="PEPE">
     </div>
   </div>
 
   <div class="action-stack">
-    <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 50 ENERGY (1 PVLT)</button>
+    <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 100 ENERGY (1 PVLT)</button>
     <button class="action-btn" id="claimPvltAction" disabled>💎 CLAIM GAME PVLT → WALLET</button>
   </div>
   <div class="treasury-note" id="treasuryNote">
@@ -338,8 +348,8 @@ body {
 </div>
 
 <script>
-  // ============ CONTRACT ADDRESSES (UPDATE THESE) ============
-  const PVLT_TOKEN_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
+  // ============ CONTRACT ADDRESSES (UPDATE THESE AFTER DEPLOYMENT) ============
+  const PVLT_TOKEN_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";  // Your PVLT.sol address
   const TREASURY_VOLT = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
   
   // ============ CONTRACT ABI ============
@@ -415,6 +425,7 @@ body {
         gamePvltBalance = 0;
         lastRegenTime = Date.now();
       }
+      // Cap energy at max
       if (energy > maxEnergy) energy = maxEnergy;
     }
     updateTapProgress();
@@ -443,6 +454,7 @@ body {
       const bal = await tokenContract.balanceOf(userAccount);
       walletBalance = parseFloat(ethers.utils.formatUnits(bal, decimals));
     } catch(e) { 
+      console.log("Balance error:", e);
       walletBalance = 0; 
     }
   }
@@ -464,7 +476,7 @@ body {
       claimBtn.disabled = gamePvltBalance < 0.001;
       
       connectBtn.classList.add("connected");
-      connectBtn.innerHTML = `🔴 ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
+      connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
       statusBar.innerHTML = `✅ Connected | 💼 ${walletBalance.toFixed(4)} PVLT | ⚡ ${Math.floor(energy)}/${maxEnergy} energy`;
     } else {
       energySpan.classList.add("blurred");
@@ -475,7 +487,7 @@ body {
       buyBtn.disabled = true;
       claimBtn.disabled = true;
       connectBtn.classList.remove("connected");
-      connectBtn.innerHTML = "🔌 CONNECT WALLET (POLYGON)";
+      connectBtn.innerHTML = "🦊 CONNECT METAMASK (POLYGON)";
       statusBar.innerHTML = "🔒 Connect wallet to start earning PVLT";
     }
   }
@@ -496,6 +508,7 @@ body {
       }
     }
     
+    // Update timer display
     if (energy < maxEnergy) {
       const secondsSinceLast = Math.floor((Date.now() - lastRegenTime) / 1000);
       const secondsLeft = 15 - (secondsSinceLast % 15);
@@ -588,12 +601,12 @@ body {
     }
   }
 
-  // ============ SIMPLE META-MASK CONNECT (MOST RELIABLE) ============
-  async function connectMetaMask() {
+  // ============ SIMPLIFIED CONNECT FUNCTION ============
+  async function connectWallet() {
     // Check if MetaMask is installed
     if (typeof window.ethereum === 'undefined') {
-      alert("❌ No wallet detected!\n\nPlease install one:\n• MetaMask: https://metamask.io/download/\n• Or use Trust Wallet / WalletConnect in Telegram");
-      statusBar.innerHTML = "❌ Please install MetaMask or use a Web3 wallet";
+      alert("❌ MetaMask not detected!\n\nPlease install MetaMask:\nhttps://metamask.io/download/\n\nOr use a browser with Web3 support.");
+      statusBar.innerHTML = "❌ Please install MetaMask extension first";
       return;
     }
 
@@ -617,7 +630,7 @@ body {
       // Check if we're on Polygon Mainnet (chainId: 137)
       const network = await provider.getNetwork();
       if (network.chainId !== 137) {
-        statusBar.innerHTML = "⚠️ Please switch to Polygon Mainnet in your wallet";
+        statusBar.innerHTML = "⚠️ Please switch to Polygon Mainnet in MetaMask";
         // Try to switch network
         try {
           await window.ethereum.request({
@@ -625,21 +638,7 @@ body {
             params: [{ chainId: '0x89' }], // 137 in hex
           });
         } catch(e) {
-          if (e.code === 4902) {
-            // Add Polygon network if it doesn't exist
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: '0x89',
-                chainName: 'Polygon Mainnet',
-                nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-                rpcUrls: ['https://polygon-rpc.com'],
-                blockExplorerUrls: ['https://polygonscan.com/']
-              }]
-            });
-          } else {
-            alert("Please switch to Polygon Mainnet in your wallet manually");
-          }
+          alert("Please switch to Polygon Mainnet in MetaMask manually");
         }
       }
       
@@ -690,7 +689,7 @@ body {
     } finally {
       connectBtn.disabled = false;
       if (!userAccount) {
-        connectBtn.innerHTML = "🔌 CONNECT WALLET (POLYGON)";
+        connectBtn.innerHTML = "🦊 CONNECT METAMASK (POLYGON)";
       }
     }
   }
@@ -709,12 +708,12 @@ body {
     statusBar.innerHTML = "🔒 Disconnected. Connect to play again!";
   }
 
-  // Connect button handler
+  // Event Listeners
   connectBtn.onclick = async () => {
     if (userAccount) {
       await disconnect();
     } else {
-      await connectMetaMask();
+      await connectWallet();
     }
   };
 
@@ -743,7 +742,7 @@ body {
     setTimeout(() => refreshUI(), 2000);
   };
   
-  // Energy regeneration
+  // Energy regeneration every second
   setInterval(() => {
     if (userAccount) {
       regenEnergy();
@@ -752,12 +751,7 @@ body {
   }, 1000);
   
   refreshUI();
-  console.log("🎮 PepeVolt Ready! Click Connect to start earning PVLT");
-  
-  // Add note about Telegram wallets
-  if (navigator.userAgent.includes('Telegram')) {
-    statusBar.innerHTML = "📱 Telegram detected! Use MetaMask or Trust Wallet's browser to play";
-  }
+  console.log("🎮 PepeVolt Ready! Make sure you have MetaMask installed and on Polygon Mainnet");
 </script>
 </body>
 </html>
