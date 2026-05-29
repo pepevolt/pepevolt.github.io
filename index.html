@@ -412,7 +412,7 @@
         <span>Claim Token</span>
       </button>
     </div>
-    <div class="hint-text" style="margin-top: -0.25rem; font-size: 0.7rem;">Buy Energy: 100 Tokens → +500 Energy | Claim Token: 200 Points → +1 Token</div>
+    <div class="hint-text" style="margin-top: -0.25rem; font-size: 0.7rem;">Buy Energy: 100 Tokens → +10,000 Energy | Claim Token: 100 Points → +1 Token</div>
   </div>
 </div>
 
@@ -423,8 +423,8 @@
   // Tap: -1 Energy, +1 Point
   // 100 Points → +1 Token, Points reset to 0
   // Energy regen: +1 every 15 sec (max 10000)
-  // BUY ENERGY: Spend 100 Tokens → gain +500 Energy
-  // CLAIM TOKEN: Spend 200 Points → gain +1 Token
+  // BUY ENERGY: Spend 100 Tokens → gain +10000 Energy (caps at 10000)
+  // CLAIM TOKEN: Spend 100 Points → gain +1 Token
   
   (function() {
     // DOM elements
@@ -468,9 +468,9 @@
           buyEnergyBtn.classList.add('disabled-action');
         }
       }
-      // Update Claim Token button: needs 200 points
+      // Update Claim Token button: needs 100 points
       if (claimTokenBtn) {
-        if (points >= 200) {
+        if (points >= 100) {
           claimTokenBtn.classList.remove('disabled-action');
         } else {
           claimTokenBtn.classList.add('disabled-action');
@@ -524,17 +524,16 @@
       return true;
     }
     
-    // BUY ENERGY: Spend 100 Tokens → Gain +500 Energy
+    // BUY ENERGY: Spend 100 Tokens → Gain +10000 Energy (caps at 10000)
     function buyEnergy() {
       if (tokens >= 100) {
         tokens -= 100;
-        energy += 500;
-        if (energy > 10000) energy = 10000;
+        energy = Math.min(energy + 10000, 10000);
         updateStatsUI();
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+500 ⚡ ENERGY`, 'energy-feedback');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+10,000 ⚡ ENERGY (Max 10k)`, 'energy-feedback');
         }
-        console.log(`Bought Energy: +500 | Tokens left: ${tokens} | Energy: ${energy}`);
+        console.log(`Bought Energy: +10000 | Tokens left: ${tokens} | Energy: ${energy}`);
         return true;
       } else {
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
@@ -544,10 +543,10 @@
       }
     }
     
-    // CLAIM TOKEN: Spend 200 Points → Gain +1 Token
+    // CLAIM TOKEN: Spend 100 Points → Gain +1 Token
     function claimToken() {
-      if (points >= 200) {
-        points -= 200;
+      if (points >= 100) {
+        points -= 100;
         tokens += 1;
         updateStatsUI();
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
@@ -557,7 +556,7 @@
         return true;
       } else {
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 200 Points`, '');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 100 Points`, '');
         }
         return false;
       }
@@ -735,7 +734,7 @@
       });
     }
     
-    // Energy regeneration
+    // Energy regeneration: +1 energy every 15 seconds (max 10000)
     let regenInterval = setInterval(() => {
       if (energy < 10000) {
         energy = Math.min(energy + 1, 10000);
@@ -757,7 +756,7 @@
     initGame();
     checkInitialConnection();
     
-    console.log("Ready: Buy Energy (100 Tokens → +500 Energy) | Claim Token (200 Points → +1 Token)");
+    console.log("Ready: Buy Energy (100 Tokens → +10,000 Energy, max 10k) | Claim Token (100 Points → +1 Token)");
   })();
 </script>
 </body>
