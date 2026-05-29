@@ -159,7 +159,6 @@ body{
 }
 </style>
 
-<!-- Ethers + WalletConnect -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script type="importmap">
   {
@@ -190,7 +189,7 @@ body{
   </div>
 
   <button id="connectBtn">🔗 Connect Wallet (Polygon)</button>
-  <div class="wallet-status" id="walletStatus">⚡ Free mode: 50 Energy max</div>
+  <div class="wallet-status" id="walletStatus">⚡ Free mode: 50 Energy</div>
 
   <div class="center">
     <div class="tap-circle" id="tapBtn">
@@ -200,7 +199,7 @@ body{
 
   <div class="actions">
     <button class="action-btn buy" id="buyEnergyBtn">⚡ Buy 10,000 Energy (100 PVLT)</button>
-    <button class="action-btn claim" id="claimPvltBtn">💎 Claim PVLT → Wallet (Polygon)</button>
+    <button class="action-btn claim" id="claimPvltBtn">💎 Claim PVLT → Wallet</button>
   </div>
 
 </div>
@@ -218,53 +217,45 @@ body{
   const buyEnergyBtn = document.getElementById('buyEnergyBtn');
   const claimPvltBtn = document.getElementById('claimPvltBtn');
 
-  // ========== GAME STATE ==========
-  let energy = 50;           // Starts at 50 for ALL users (free & connected)
-  let points = 0;
-  let pvltBalance = 0;
+  // ========== GAME STATE (In-Game Currency) ==========
+  let energy = 50;           // Free user starts with 50
+  let points = 0;            // Tap points
+  let inGamePvlt = 0;        // PVLT earned in-game (shown in top nav)
 
   // ========== WALLET STATE ==========
   let provider = null;
   let signer = null;
   let userAccount = null;
-  let isWalletConnected = false;
 
-  // ========== HELPERS ==========
-  // Max energy is always 10000 for everyone (can be bought), but starting is 50
-  // However free users can also regen up to 10000? Actually requirement: "10000 energy is only for those who buy it"
-  // So max energy cap is 10000, but you start at 50. You can regen slowly OR buy 10000 energy.
-  // We'll set max cap to 10000, but regen only up to 50 for non-buyers? Actually better: anyone can regen up to 10000 slowly,
-  // but buy button gives instant 10000. Let's keep it simple: max energy = 10000 for everyone, regen works up to 10000.
-  // But starting energy is 50. Buy button adds +10000 (capped at 10000).
-  function getMaxEnergy() {
-    return 10000; // Everyone can have up to 10000 energy
-  }
+  // ========== TOKEN CONTRACT (Replace with your actual PVLT token on Polygon) ==========
+  // You need to deploy an ERC20 token on Polygon and replace this address
+  const PVLT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"; // ⚠️ REPLACE WITH REAL TOKEN ADDRESS
+  const PVLT_ABI = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function transfer(address to, uint256 amount) returns (bool)",
+    "function mint(address to, uint256 amount) external"
+  ];
+  let tokenContract = null;
 
-  function capEnergy() {
-    const maxE = getMaxEnergy();
-    if (energy > maxE) energy = maxE;
-    if (energy < 0) energy = 0;
-    energySpan.innerText = Math.floor(energy);
-  }
-
+  // ========== HELPER FUNCTIONS ==========
   function updateUI() {
     energySpan.innerText = Math.floor(energy);
     pointsSpan.innerText = Math.floor(points);
-    pvltSpan.innerText = Math.floor(pvltBalance);
+    pvltSpan.innerText = Math.floor(inGamePvlt);
 
-    // Style buy button: needs 100 PVLT AND wallet connected
+    // Buy button: needs 100 in-game PVLT
     if (buyEnergyBtn) {
-      if (userAccount && pvltBalance >= 100) buyEnergyBtn.style.opacity = '1';
+      if (userAccount && inGamePvlt >= 100) buyEnergyBtn.style.opacity = '1';
       else buyEnergyBtn.style.opacity = '0.6';
     }
-    // Style claim button: needs wallet connected and at least 1 PVLT
+    // Claim button: needs connected wallet and at least 1 in-game PVLT
     if (claimPvltBtn) {
-      if (userAccount && pvltBalance >= 1) claimPvltBtn.style.opacity = '1';
+      if (userAccount && inGamePvlt >= 1) claimPvltBtn.style.opacity = '1';
       else claimPvltBtn.style.opacity = '0.5';
     }
 
     if (userAccount) {
-      walletStatusDiv.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | 💎 PVLT: ${Math.floor(pvltBalance)} | ⚡ Energy: ${Math.floor(energy)}/10000`;
+      walletStatusDiv.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | 💎 In-Game PVLT: ${Math.floor(inGamePvlt)} | ⚡ Energy: ${Math.floor(energy)}/10000`;
     } else {
       walletStatusDiv.innerHTML = `⚡ Free mode: ${Math.floor(energy)}/10000 Energy (connect wallet to claim PVLT & buy energy)`;
     }
@@ -272,9 +263,8 @@ body{
     saveGame();
   }
 
-  // ========== PERSISTENCE ==========
   function saveGame() {
-    const data = { energy, points, pvltBalance };
+    const data = { energy, points, inGamePvlt };
     localStorage.setItem('pepevolt_data', JSON.stringify(data));
   }
 
@@ -285,16 +275,14 @@ body{
         const data = JSON.parse(saved);
         energy = data.energy ?? 50;
         points = data.points ?? 0;
-        pvltBalance = data.pvltBalance ?? 0;
+        inGamePvlt = data.inGamePvlt ?? 0;
       } catch(e) {}
     }
     if (energy < 0) energy = 0;
     if (energy > 10000) energy = 10000;
-    capEnergy();
     updateUI();
   }
 
-  // ========== FLOATING EFFECT ==========
   function showFloating(x, y, text, color = '#00ffcc') {
     const el = document.createElement('div');
     el.className = 'float';
@@ -317,102 +305,79 @@ body{
     points += 1;
     if (energy < 0) energy = 0;
 
-    // AUTO-CONVERT: 100 Points → 1 PVLT (points loop to remainder)
+    // Every 100 points = +1 in-game PVLT (auto-convert, points loop)
     if (points >= 100) {
       const convertCount = Math.floor(points / 100);
-      pvltBalance += convertCount;
+      inGamePvlt += convertCount;
       points = points % 100;
       showFloating(clientX, clientY - 20, `✨ +${convertCount} PVLT ✨`, '#ffd966');
     }
 
-    capEnergy();
     updateUI();
-
     showFloating(clientX, clientY, '+1⭐ -1⚡', '#7bed9f');
     if (navigator.vibrate) navigator.vibrate(20);
   }
 
-  // ========== BUY ENERGY: Spend 100 PVLT → +10,000 Energy (with blockchain transaction verification) ==========
+  // ========== BUY ENERGY: Spend 100 in-game PVLT → +10,000 Energy ==========
   async function buyEnergy() {
     if (!userAccount) {
-      alert('🔗 Please connect wallet first to buy energy');
+      alert('🔗 Please connect wallet first');
       return;
     }
-    if (pvltBalance < 100) {
-      alert(`❌ Need 100 PVLT to buy 10,000 Energy. You have ${Math.floor(pvltBalance)} PVLT.`);
-      return;
-    }
-    if (!provider || !signer) {
-      alert('Wallet not ready. Please reconnect.');
+    if (inGamePvlt < 100) {
+      alert(`❌ Need 100 in-game PVLT to buy 10,000 Energy.\nYou have: ${Math.floor(inGamePvlt)} PVLT`);
       return;
     }
 
-    // Create a transaction that records the energy purchase on Polygon
-    // This serves as on-chain verification that user spent 100 PVLT (conceptually)
-    const txBody = {
-      from: userAccount,
-      to: userAccount,
-      value: '0x0',
-      data: `0x427579456e657267793130303030`, // "BuyEnergy10000" in hex
-      gasLimit: '0x186a0'
-    };
-
-    try {
-      showFloating(window.innerWidth/2, window.innerHeight/2, '⏳ Processing transaction...', '#ffaa44');
-      const txHash = await signer.sendTransaction(txBody);
-      alert(`⏳ Buy Energy transaction submitted!\nHash: ${txHash.hash}\nWaiting for confirmation...`);
-      await txHash.wait(1);
-      
-      // After successful transaction: add 10000 energy
-      energy = Math.min(energy + 10000, 10000);
-      // Deduct 100 PVLT (the cost)
-      pvltBalance -= 100;
-      capEnergy();
-      updateUI();
-      
-      alert(`✅ Successfully purchased 10,000 Energy!\nTransaction: ${txHash.hash}`);
-      showFloating(window.innerWidth / 2, window.innerHeight - 120, `+10,000 ⚡ ENERGY`, '#60a5fa');
-    } catch (err) {
-      console.error(err);
-      alert(`Purchase failed: ${err.message || 'Transaction rejected'}`);
-    }
+    // Deduct in-game PVLT
+    inGamePvlt -= 100;
+    energy = Math.min(energy + 10000, 10000);
+    updateUI();
+    
+    showFloating(window.innerWidth / 2, window.innerHeight - 120, `+10,000 ⚡ ENERGY`, '#60a5fa');
+    alert(`✅ Purchased 10,000 Energy!`);
   }
 
-  // ========== CLAIM PVLT TO POLYGON WALLET ==========
+  // ========== CLAIM PVLT: Transfer in-game PVLT to real wallet on Polygon ==========
   async function claimToWallet() {
     if (!userAccount) {
       alert('🔗 Connect your wallet first to claim PVLT');
       return;
     }
-    if (pvltBalance < 1) {
-      alert(`No PVLT to claim. Earn PVLT by tapping (100 points = 1 PVLT).`);
+    if (inGamePvlt < 1) {
+      alert(`No PVLT to claim. Keep tapping! (100 points = 1 PVLT)`);
       return;
     }
     if (!provider || !signer) {
       alert('Wallet not ready. Please reconnect.');
       return;
     }
+    if (!tokenContract) {
+      alert('⚠️ Token contract not configured. Please set PVLT_TOKEN_ADDRESS to your actual token on Polygon.');
+      return;
+    }
 
-    const amountToClaim = Math.floor(pvltBalance);
-    if (amountToClaim <= 0) return;
-
-    const txBody = {
-      from: userAccount,
-      to: userAccount,
-      value: '0x0',
-      data: `0x436c61696d656420${amountToClaim}2050564c54`, // "Claimed X PVLT"
-      gasLimit: '0x186a0'
-    };
+    const amountToClaim = Math.floor(inGamePvlt);
+    const amountWei = ethers.utils.parseEther(amountToClaim.toString());
 
     try {
-      showFloating(window.innerWidth/2, window.innerHeight/2, '⏳ Claiming PVLT...', '#c084fc');
-      const txHash = await signer.sendTransaction(txBody);
-      alert(`⏳ Claim submitted! Hash: ${txHash.hash}\nWaiting for confirmation...`);
-      await txHash.wait(1);
+      showFloating(window.innerWidth/2, window.innerHeight/2, '⏳ Claiming PVLT to wallet...', '#c084fc');
       
-      pvltBalance -= amountToClaim;
+      // Transfer in-game PVLT to real wallet via smart contract mint/transfer
+      // Option 1: If you have a mint function (recommended for claiming)
+      // const tx = await tokenContract.mint(userAccount, amountWei);
+      
+      // Option 2: If tokens are already in game contract, transfer them
+      const tx = await tokenContract.transfer(userAccount, amountWei);
+      
+      alert(`⏳ Claim transaction submitted!\nHash: ${tx.hash}\nWaiting for confirmation...`);
+      await tx.wait(1);
+      
+      // Deduct claimed amount from in-game balance
+      inGamePvlt -= amountToClaim;
       updateUI();
-      alert(`✅ Successfully claimed ${amountToClaim} PVLT to your wallet!\nTransaction: ${txHash.hash}`);
+      
+      alert(`✅ Successfully claimed ${amountToClaim} PVLT to your wallet!\nTransaction: ${tx.hash}`);
       showFloating(window.innerWidth / 2, 150, `+${amountToClaim} PVLT claimed!`, '#c084fc');
     } catch (err) {
       console.error(err);
@@ -420,18 +385,15 @@ body{
     }
   }
 
-  // ========== ENERGY REGENERATION (slow regen up to 10000) ==========
+  // ========== ENERGY REGENERATION ==========
   setInterval(() => {
     if (energy < 10000) {
       energy = Math.min(energy + 1, 10000);
-      capEnergy();
       updateUI();
     }
-  }, 15000); // +1 energy every 15 seconds
+  }, 15000);
 
-  // ========== WALLET CONNECTION (WalletConnect - Polygon) ==========
-  // IMPORTANT: When user connects wallet, they get 50 energy (not 10000 automatically)
-  // They must buy 10000 energy using 100 PVLT via the Buy button.
+  // ========== WALLET CONNECTION (WalletConnect - Polygon Mainnet) ==========
   async function connectWallet() {
     try {
       const wcProvider = await EthereumProvider.init({
@@ -458,39 +420,40 @@ body{
       // Setup ethers provider
       provider = wcProvider;
       signer = new ethers.providers.Web3Provider(wcProvider).getSigner();
-      isWalletConnected = true;
       
-      // CRITICAL: When user connects wallet, they get 50 energy (free user amount)
-      // NOT 10000 automatically. Energy remains whatever it was (capped at 50 if free)
-      // But if they already had more from previous buys, keep it.
-      if (energy > 10000) energy = 10000;
-      if (energy < 0) energy = 0;
-      capEnergy();
-      updateUI();
+      // Initialize token contract (REPLACE WITH YOUR ACTUAL TOKEN ADDRESS)
+      if (PVLT_TOKEN_ADDRESS !== "0x0000000000000000000000000000000000000000") {
+        tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+      } else {
+        console.warn("⚠️ PVLT_TOKEN_ADDRESS not set. Claims will not work.");
+        // For demo purposes, we'll still allow the UI but show error on claim
+      }
       
       connectBtn.innerText = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-      walletStatusDiv.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | 💎 PVLT: ${Math.floor(pvltBalance)} | ⚡ Energy: ${Math.floor(energy)}/10000`;
+      
+      // IMPORTANT: Wallet connection does NOT give 10000 energy automatically
+      // User starts with whatever energy they had (capped at 50 if new)
+      if (energy < 50 && energy < 10000) {
+        // Keep existing energy
+      }
+      updateUI();
       
       // Listen for account changes
       wcProvider.on("accountsChanged", (accs) => {
         if (accs.length === 0) {
           userAccount = null;
-          isWalletConnected = false;
           connectBtn.innerText = "🔗 Connect Wallet (Polygon)";
-          walletStatusDiv.innerHTML = `⚡ Free mode: ${Math.floor(energy)}/10000 Energy (connect wallet to claim PVLT & buy energy)`;
           updateUI();
         } else {
           userAccount = accs[0];
-          isWalletConnected = true;
           connectBtn.innerText = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-          walletStatusDiv.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | 💎 PVLT: ${Math.floor(pvltBalance)} | ⚡ Energy: ${Math.floor(energy)}/10000`;
           updateUI();
         }
       });
       
       wcProvider.on("chainChanged", (chainId) => {
         if (chainId !== "0x89") {
-          alert("Please switch to Polygon Mainnet for claiming PVLT and buying energy");
+          alert("Please switch to Polygon Mainnet for claiming PVLT");
         }
       });
       
@@ -515,8 +478,7 @@ body{
   tapCircle.addEventListener('touchstart', (e) => {
     e.preventDefault();
     const touch = e.touches[0];
-    if (!touch) return;
-    handleTap(touch.clientX, touch.clientY);
+    if (touch) handleTap(touch.clientX, touch.clientY);
   }, { passive: false });
 
   buyEnergyBtn.addEventListener('click', async (e) => {
@@ -536,6 +498,9 @@ body{
 
   // ========== INIT ==========
   loadGame();
+  
+  console.log("✅ Option B: Top nav PVLT = in-game currency. Claim button sends to real wallet.");
+  console.log("⚠️ IMPORTANT: Set PVLT_TOKEN_ADDRESS to your actual ERC20 token address on Polygon Mainnet");
 </script>
 </body>
 </html>
