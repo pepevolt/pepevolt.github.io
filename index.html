@@ -111,53 +111,15 @@ body {
   margin-bottom: 12px;
 }
 
-.wallet-panel {
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(12px);
-  border-radius: 28px;
-  padding: 12px 14px;
+/* Simple status bar - removed the large panel */
+.status-bar {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 20px;
+  padding: 8px 12px;
   margin-bottom: 12px;
-  border: 1px solid rgba(78, 255, 220, 0.2);
-}
-
-.wallet-status-text {
+  text-align: center;
   font-size: 11px;
-  color: #b9d0ff;
-  text-align: center;
-}
-
-.balance-grid {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  gap: 12px;
-}
-
-.balance-gem {
-  flex: 1;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 6px 4px;
-  border-radius: 24px;
-}
-
-.balance-label {
-  font-size: 10px;
   color: #7c93bb;
-}
-
-.balance-amount {
-  font-weight: bold;
-  font-size: 15px;
-  color: #c0ffea;
-  font-family: monospace;
-}
-
-.energy-indicator {
-  margin-top: 4px;
-  font-size: 9px;
-  color: #70ffdb;
-  text-align: center;
 }
 
 .tap-arena {
@@ -223,6 +185,16 @@ body {
   margin-top: 10px;
   color: #4f699b;
 }
+
+/* Wallet indicator inline */
+.wallet-badge {
+  display: inline-block;
+  background: rgba(0,255,200,0.15);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  margin-left: 6px;
+}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
@@ -245,13 +217,9 @@ body {
 
   <button class="action-btn" id="connectWalletBtn">🔌 CONNECT WALLET (POLYGON)</button>
 
-  <div class="wallet-panel" id="walletInfoPanel">
-    <div class="wallet-status-text">⚡ Tap to earn PVLT tokens — claim anytime!</div>
-    <div class="balance-grid">
-      <div class="balance-gem"><div class="balance-label">🎮 IN-GAME</div><div class="balance-amount" id="inGamePvltLabel">0</div></div>
-      <div class="balance-gem"><div class="balance-label">💼 WALLET PVLT</div><div class="balance-amount" id="walletPvltLabel">0.0000</div></div>
-    </div>
-    <div class="energy-indicator" id="energyRefillHint">♻️ +1 energy every 15s (max 10,000)</div>
+  <!-- Simple status bar instead of large panel -->
+  <div class="status-bar" id="statusBar">
+    ⚡ Tap to earn PVLT | +1 energy every 15s
   </div>
 
   <div class="tap-arena">
@@ -285,12 +253,10 @@ body {
   const energySpan = document.getElementById("energyDisplay");
   const pointsSpan = document.getElementById("pointsDisplay");
   const pvltSpan = document.getElementById("pvltDisplay");
-  const inGamePvltLabel = document.getElementById("inGamePvltLabel");
-  const walletPvltLabel = document.getElementById("walletPvltLabel");
   const tapCircle = document.getElementById("tapButton");
   const buyEnergyBtn = document.getElementById("buyEnergyAction");
   const claimBtn = document.getElementById("claimPvltAction");
-  const walletInfoDiv = document.getElementById("walletInfoPanel");
+  const statusBar = document.getElementById("statusBar");
 
   // Game state
   let energy = 50;
@@ -303,7 +269,6 @@ body {
   let userAccount = null;
   let tokenContract = null;
   let wcProviderInstance = null;
-  let ethersProvider = null;
 
   function showFloatingText(clientX, clientY, text, color = "#caffb9") {
     const floatDiv = document.createElement("div");
@@ -337,18 +302,15 @@ body {
   async function updateRealWalletBalance() {
     if (!userAccount || !tokenContract) {
       realWalletBalance = 0;
-      walletPvltLabel.innerText = "0.0000";
       return 0;
     }
     try {
       const rawBalance = await tokenContract.balanceOf(userAccount);
       realWalletBalance = parseFloat(ethers.utils.formatUnits(rawBalance, tokenDecimals));
-      walletPvltLabel.innerText = realWalletBalance.toFixed(4);
       return realWalletBalance;
     } catch (err) {
       console.warn("balance fetch err", err);
       realWalletBalance = 0;
-      walletPvltLabel.innerText = "0.0000";
       return 0;
     }
   }
@@ -357,12 +319,9 @@ body {
     energySpan.innerText = Math.floor(energy);
     pointsSpan.innerText = Math.floor(points);
     pvltSpan.innerText = Math.floor(inGamePvlt);
-    inGamePvltLabel.innerText = Math.floor(inGamePvlt);
     
     if (userAccount && tokenContract) {
       await updateRealWalletBalance();
-    } else {
-      walletPvltLabel.innerText = "0.0000";
     }
     
     // Update button states
@@ -372,40 +331,22 @@ body {
       claimBtn.disabled = inGamePvlt < 1;
       claimBtn.style.opacity = inGamePvlt >= 1 ? "1" : "0.55";
       connectBtn.innerText = `🟢 ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
+      statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | 💼 ${realWalletBalance.toFixed(4)} PVLT | ⚡ ${Math.floor(energy)}/10000`;
     } else {
       buyEnergyBtn.disabled = true;
       buyEnergyBtn.style.opacity = "0.55";
       claimBtn.disabled = true;
       claimBtn.style.opacity = "0.55";
       connectBtn.innerText = "🔌 CONNECT WALLET (POLYGON)";
+      statusBar.innerHTML = `⚡ Tap to earn PVLT | In-game: ${Math.floor(inGamePvlt)} PVLT | +1 energy every 15s`;
     }
     
-    // Update wallet panel
-    if (userAccount) {
-      walletInfoDiv.innerHTML = `
-        <div class="wallet-status-text">✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)} on Polygon</div>
-        <div class="balance-grid">
-          <div class="balance-gem"><div class="balance-label">🎮 IN-GAME</div><div class="balance-amount">${Math.floor(inGamePvlt)}</div></div>
-          <div class="balance-gem"><div class="balance-label">💼 WALLET PVLT</div><div class="balance-amount">${realWalletBalance.toFixed(4)}</div></div>
-        </div>
-        <div class="energy-indicator">⚡ Energy: ${Math.floor(energy)} / 10,000</div>
-      `;
-    } else {
-      walletInfoDiv.innerHTML = `
-        <div class="wallet-status-text">🔓 Free mode: Tap, earn PVLT, connect to claim!</div>
-        <div class="balance-grid">
-          <div class="balance-gem"><div class="balance-label">🎮 IN-GAME PVLT</div><div class="balance-amount">${Math.floor(inGamePvlt)}</div></div>
-          <div class="balance-gem"><div class="balance-label">💼 WALLET PVLT</div><div class="balance-amount">-- Not connected --</div></div>
-        </div>
-        <div class="energy-indicator">✨ Connect wallet to buy energy & claim ✨</div>
-      `;
-    }
     persistGameData();
   }
 
   function performTap(clientX, clientY) {
     if (energy <= 0) {
-      showFloatingText(clientX, clientY, "❌ OUT OF ENERGY", "#ffaa99");
+      showFloatingText(clientX, clientY, "❌ NO ENERGY", "#ffaa99");
       return;
     }
     
@@ -446,6 +387,7 @@ body {
       energy = Math.min(energy + 10000, 10000);
       refreshUI();
       alert(`✅ +10,000 Energy!`);
+      showFloatingText(window.innerWidth/2, window.innerHeight-100, "⚡ +10,000 ENERGY ⚡", "#b2ff59");
     } catch (err) {
       alert(`Purchase failed: ${err.message}`);
     }
@@ -457,7 +399,7 @@ body {
       return;
     }
     if (inGamePvlt < 1) {
-      alert(`No PVLT to claim. Keep tapping!`);
+      alert(`No PVLT to claim. Keep tapping! (100 points = 1 PVLT)`);
       return;
     }
     const claimAmount = Math.floor(inGamePvlt);
@@ -470,14 +412,13 @@ body {
       await updateRealWalletBalance();
       refreshUI();
       alert(`✅ Claimed ${claimAmount} PVLT!`);
+      showFloatingText(window.innerWidth/2, 150, `💰 +${claimAmount} PVLT`, "#e2ff70");
     } catch (err) {
       alert(`Claim failed: ${err.message}`);
     }
   }
   
-  // FIXED: Proper wallet connection with UI update
   async function connectWallet() {
-    // Disconnect if already connected
     if (wcProviderInstance && userAccount) {
       try {
         await wcProviderInstance.disconnect();
@@ -485,7 +426,6 @@ body {
       wcProviderInstance = null;
       userAccount = null;
       tokenContract = null;
-      ethersProvider = null;
       refreshUI();
       return;
     }
@@ -505,47 +445,32 @@ body {
         }
       });
       
-      // Connect and get accounts
       await wcProvider.connect();
-      
-      // IMPORTANT: Use eth_requestAccounts to ensure we get the account
       const accounts = await wcProvider.request({ method: "eth_requestAccounts" });
       
       if (!accounts || accounts.length === 0) {
         throw new Error("No accounts found");
       }
       
-      // Set up provider and contract
       userAccount = accounts[0];
-      ethersProvider = new ethers.providers.Web3Provider(wcProvider);
+      const ethersProvider = new ethers.providers.Web3Provider(wcProvider);
       const signer = ethersProvider.getSigner();
       tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       
-      // Get decimals
       try {
         tokenDecimals = await tokenContract.decimals();
       } catch(e) {}
       
-      // Update balance
       await updateRealWalletBalance();
-      
-      // Store provider instance
       wcProviderInstance = wcProvider;
-      
-      // Force UI refresh
       await refreshUI();
       
       console.log("✅ Connected to:", userAccount);
-      console.log("✅ Balance:", realWalletBalance);
       
-      // Set up event listeners
       wcProvider.on("accountsChanged", async (newAccounts) => {
-        console.log("Accounts changed:", newAccounts);
         if (newAccounts && newAccounts.length > 0) {
           userAccount = newAccounts[0];
-          if (tokenContract) {
-            await updateRealWalletBalance();
-          }
+          await updateRealWalletBalance();
         } else {
           userAccount = null;
           tokenContract = null;
@@ -554,14 +479,12 @@ body {
       });
       
       wcProvider.on("chainChanged", (chainId) => {
-        console.log("Chain changed:", chainId);
         if (chainId !== "0x89") {
           alert("Please switch to Polygon Mainnet");
         }
       });
       
       wcProvider.on("disconnect", () => {
-        console.log("Wallet disconnected");
         userAccount = null;
         tokenContract = null;
         wcProviderInstance = null;
@@ -623,7 +546,7 @@ body {
   refreshUI();
   setInterval(() => persistGameData(), 3000);
   
-  console.log("🔥 PepeVolt Ready | Waiting for wallet connection");
+  console.log("🔥 PepeVolt Ready | Clean UI");
 </script>
 </body>
 </html>
