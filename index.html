@@ -1,675 +1,698 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>TAPI! • Energy Console</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>PVLT TAP • crypto energy</title>
+  <!-- Ethers + WalletConnect -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-        body {
-            background: linear-gradient(145deg, #0a0c12 0%, #10141f 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Roboto', 'SF Pro Text', sans-serif;
-            padding: 24px;
-        }
+    body {
+      background: radial-gradient(circle at 20% 30%, #07112a, #020815);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+      color: #f0f4ff;
+      min-height: 100vh;
+      touch-action: pan-y;     /* allow vertical scroll, but no pinch-zoom on main container */
+      overflow-x: hidden;
+    }
 
-        /* main card - glassmorphic dark panel */
-        .terminal-card {
-            max-width: 540px;
-            width: 100%;
-            background: rgba(18, 22, 32, 0.85);
-            backdrop-filter: blur(12px);
-            border-radius: 3rem;
-            border: 1px solid rgba(72, 187, 255, 0.25);
-            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 255, 255, 0.1) inset;
-            padding: 2rem 1.75rem 2.2rem 1.75rem;
-            transition: all 0.2s ease;
-        }
+    /* smooth scrolling for modal + taps */
+    .main {
+      max-width: 550px;
+      margin: 0 auto;
+      padding: 16px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      overflow-x: hidden;
+      height: 100vh;
+      scroll-behavior: smooth;
+    }
 
-        /* header section: pepevolt badge + TAPI! */
-        .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            flex-wrap: wrap;
-            margin-bottom: 2rem;
-            border-bottom: 1px dashed rgba(100, 220, 255, 0.3);
-            padding-bottom: 0.75rem;
-        }
+    /* topbar glass */
+    .topbar {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      max-width: 550px;
+      margin: 0 auto;
+      background: rgba(9, 20, 38, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0, 255, 180, 0.25);
+      padding: 14px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.3px;
+      z-index: 10;
+      border-radius: 0 0 24px 24px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+    }
 
-        .domain {
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            font-size: 0.8rem;
-            font-weight: 500;
-            background: rgba(0, 20, 40, 0.7);
-            padding: 0.3rem 0.9rem;
-            border-radius: 40px;
-            letter-spacing: -0.2px;
-            color: #8fcbff;
-            border: 0.5px solid #2f6f9f;
-            backdrop-filter: blur(4px);
-        }
+    .topbar div {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 6px 14px;
+      border-radius: 60px;
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+    }
 
-        .tapi-badge {
-            display: flex;
-            align-items: baseline;
-            gap: 12px;
-        }
+    /* tap button - better feedback, no zoom, no selection */
+    .tapBtn {
+      width: 260px;
+      height: 260px;
+      border: none;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #00f5a0, #0bc6ff);
+      box-shadow: 0 20px 35px rgba(0, 255, 170, 0.3), 0 0 0 4px rgba(0, 255, 200, 0.2);
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: transform 0.08s linear, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 12px 0 8px;
+    }
 
-        .tapi-title {
-            font-size: 2.3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fff, #8ad0ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
-            text-shadow: 0 2px 5px rgba(0,160,255,0.2);
-        }
+    .tapBtn:active {
+      transform: scale(0.94);
+      box-shadow: 0 8px 20px rgba(0, 255, 170, 0.5);
+      transition: 0.02s;
+    }
 
-        /* stats row : 21 / 63 / 5.00 */
-        .stats-panel {
-            background: #0b0f17cc;
-            border-radius: 2rem;
-            padding: 0.9rem 1.8rem;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-            backdrop-filter: blur(8px);
-            border: 1px solid #2a3a55;
-        }
+    .tapBtn img {
+      width: 72%;
+      height: 72%;
+      object-fit: contain;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    }
 
-        .stat-block {
-            text-align: center;
-            flex: 1;
-        }
+    /* modern card */
+    .card {
+      width: 100%;
+      background: rgba(12, 22, 45, 0.65);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(0, 255, 200, 0.2);
+      border-radius: 36px;
+      padding: 20px;
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 20px 35px -12px black;
+    }
 
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 800;
-            font-family: 'Inter', monospace;
-            letter-spacing: 2px;
-            color: #eef5ff;
-            text-shadow: 0 0 6px #00b7ff66;
-            line-height: 1;
-        }
+    input {
+      width: 100%;
+      padding: 15px 18px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 32px;
+      background: #0a1022;
+      color: #eef5ff;
+      font-size: 15px;
+      font-weight: 500;
+      outline: none;
+      text-align: center;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
 
-        .stat-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            font-weight: 500;
-            letter-spacing: 1px;
-            color: #8b9bbe;
-            margin-top: 6px;
-        }
+    input:focus {
+      border-color: #00ffaa;
+      box-shadow: 0 0 8px rgba(0,255,160,0.3);
+    }
 
-        .separator-dot {
-            width: 6px;
-            height: 6px;
-            background: #2c6c9c;
-            border-radius: 50%;
-            display: inline-block;
-            margin: 0 6px;
-        }
+    .actionBtn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 44px;
+      font-size: 16px;
+      font-weight: 800;
+      background: linear-gradient(95deg, #00f2b5, #01ccff);
+      color: #021020;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+      letter-spacing: 0.5px;
+    }
 
-        /* main energy meter / disconnect row */
-        .energy-status {
-            background: linear-gradient(105deg, #0c1120 0%, #0a0f1c 100%);
-            border-radius: 2rem;
-            padding: 1.2rem 1.8rem;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-            border: 1px solid #2c405e;
-            box-shadow: 0 8px 14px -8px black;
-        }
+    .actionBtn:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 6px black;
+    }
 
-        .energy-badge {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #0a0f1a;
-            padding: 0.4rem 1.3rem 0.4rem 1rem;
-            border-radius: 60px;
-            border-left: 3px solid #3ec1ff;
-        }
+    .status {
+      text-align: center;
+      font-size: 13px;
+      background: rgba(0,255,170,0.15);
+      border-radius: 40px;
+      padding: 8px;
+      display: none;
+      font-weight: 500;
+      color: #b5ffdd;
+    }
 
-        .bolt-icon {
-            font-size: 1.7rem;
-            filter: drop-shadow(0 0 3px cyan);
-        }
+    .info {
+      margin-top: 20px;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(4px);
+      padding: 14px 18px;
+      border-radius: 28px;
+      font-size: 13px;
+      text-align: center;
+      width: 100%;
+      line-height: 1.55;
+      font-weight: 500;
+      color: #ccdeff;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
 
-        .energy-text {
-            font-weight: 700;
-            font-size: 1.3rem;
-            letter-spacing: -0.3px;
-            background: linear-gradient(120deg, #f0fcff, #b3e4ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
+    /* Modal beautiful */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(2, 8, 20, 0.92);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
 
-        .disconnect-btn {
-            background: rgba(30, 40, 60, 0.8);
-            border: 1px solid #ff5e6e55;
-            padding: 0.6rem 1.4rem;
-            border-radius: 3rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #ffa3ae;
-            backdrop-filter: blur(4px);
-            transition: 0.2s;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            letter-spacing: -0.2px;
-        }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
-        .disconnect-btn:hover {
-            background: #ff404055;
-            color: white;
-            border-color: #ff7b89;
-            box-shadow: 0 0 8px #ff5e6e;
-        }
+    .modal-box {
+      width: 86%;
+      max-width: 340px;
+      background: #0f172fb3;
+      border: 1px solid rgba(0, 255, 180, 0.5);
+      border-radius: 44px;
+      padding: 28px 20px;
+      text-align: center;
+      transform: scale(0.92);
+      transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      backdrop-filter: blur(20px);
+      background: linear-gradient(145deg, #0d142e, #070e24);
+    }
 
-        /* action grid — main interaction */
-        .action-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
+    .modal-overlay.active .modal-box {
+      transform: scale(1);
+    }
 
-        .primary-card {
-            background: #0f1422dd;
-            border-radius: 1.8rem;
-            padding: 1rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-            border: 1px solid #2d4b77;
-            transition: all 0.2s;
-        }
+    .modal-box h3 {
+      font-size: 24px;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, #aaffdd, #6effc0);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
 
-        .buy-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
+    .modal-box p {
+      font-size: 15px;
+      margin: 12px 0 20px;
+      background: #03071270;
+      padding: 12px;
+      border-radius: 60px;
+    }
 
-        .buy-title {
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: #c7e2ff;
-        }
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
 
-        .cost-note {
-            font-size: 0.75rem;
-            color: #7d96b5;
-            font-family: monospace;
-        }
+    .modal-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 60px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
 
-        .buy-button {
-            background: linear-gradient(95deg, #1e2c46, #111a2c);
-            border: 1px solid #2e78b3;
-            padding: 0.7rem 1.8rem;
-            border-radius: 3rem;
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: #bbdcff;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            letter-spacing: 0.3px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
+    .btn-confirm {
+      background: #00f7b0;
+      color: #041f1a;
+      font-weight: 800;
+    }
 
-        .buy-button:hover {
-            background: #2d4270;
-            color: white;
-            border-color: #61d0ff;
-            box-shadow: 0 0 10px #00a6ff40;
-            transform: scale(0.97);
-        }
+    .btn-cancel {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
 
-        .convert-claim-row {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
+    /* scroll & energy progress vibe */
+    .energy-badge {
+      background: #1b2b44;
+      border-radius: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
 
-        .convert-btn, .claim-btn {
-            flex: 1;
-            background: #0a1020;
-            border: 1px solid #3e607f;
-            padding: 0.9rem 0.5rem;
-            border-radius: 2rem;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.2s;
-            text-align: center;
-            backdrop-filter: blur(4px);
-            color: #cdedff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
+    button:disabled {
+      opacity: 0.6;
+      transform: none;
+      cursor: not-allowed;
+    }
 
-        .convert-btn:hover, .claim-btn:hover {
-            background: #1f2c46;
-            border-color: #7bcaff;
-            color: white;
-            box-shadow: 0 0 6px #1e90ff60;
-        }
+    /* utility */
+    .flex-gap {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+    }
 
-        /* claim status / toast */
-        .toast-message {
-            margin-top: 1.5rem;
-            background: #050a12aa;
-            border-radius: 2rem;
-            padding: 0.6rem 1.2rem;
-            text-align: center;
-            font-size: 0.75rem;
-            font-family: monospace;
-            color: #8ab3d4;
-            backdrop-filter: blur(8px);
-            border: 0.5px solid #2f6080;
-            transition: 0.2s;
-        }
-
-        .energy-value {
-            font-weight: bold;
-            color: #ffd966;
-        }
-
-        /* micro interactions */
-        button:active {
-            transform: scale(0.96);
-        }
-
-        hr {
-            border-color: #2f4868;
-            margin: 6px 0;
-        }
-
-        @media (max-width: 480px) {
-            .terminal-card {
-                padding: 1.5rem;
-            }
-            .stat-value {
-                font-size: 1.8rem;
-            }
-            .tapi-title {
-                font-size: 1.8rem;
-            }
-            .buy-button, .convert-btn, .claim-btn {
-                padding: 0.6rem 1rem;
-            }
-        }
-
-        .highlight {
-            text-shadow: 0 0 4px cyan;
-        }
-
-        .disconnected-mode {
-            opacity: 0.8;
-            filter: grayscale(0.1);
-        }
-    </style>
+    @media (max-width: 480px) {
+      .tapBtn {
+        width: 210px;
+        height: 210px;
+      }
+      .topbar {
+        padding: 10px 16px;
+      }
+      .card {
+        padding: 16px;
+      }
+      .actionBtn {
+        padding: 12px;
+        font-size: 14px;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<div class="terminal-card" id="appContainer">
-    <!-- header: pepevolt.github.io + TAPI! -->
-    <div class="header-row">
-        <div class="domain">pepevolt.github.io</div>
-        <div class="tapi-badge">
-            <span class="tapi-title">TAPI!</span>
-        </div>
-    </div>
+<div class="topbar">
+  <div>🔋 <span id="energy">50</span> / 100</div>
+  <div>⚡ <span id="points">0</span> pts</div>
+  <div>💎 <span id="pvltg">0.0000</span> PVLTG</div>
+</div>
 
-    <!-- stats: 21 / 63 / 5.00 (dynamic) -->
-    <div class="stats-panel">
-        <div class="stat-block">
-            <div class="stat-value" id="statPower">21</div>
-            <div class="stat-label">PWR</div>
-        </div>
-        <div class="stat-block">
-            <div class="stat-value" id="statEnergy">63</div>
-            <div class="stat-label">ENERGY</div>
-        </div>
-        <div class="stat-block">
-            <div class="stat-value" id="statRate">5.00</div>
-            <div class="stat-label">RATE ⚡</div>
-        </div>
-    </div>
+<div class="main">
+  <button class="tapBtn" id="tapButton">
+    <img src="images/IMG_1850.png" alt="TAP ENERGY" onerror="this.src='https://placehold.co/200x200/00aa77/white?text=PVLT'; this.onerror=null;">
+  </button>
 
-    <!-- Disconnect + Energy block -->
-    <div class="energy-status" id="energyStatusBlock">
-        <div class="energy-badge">
-            <span class="bolt-icon">⚡</span>
-            <span class="energy-text" id="currentEnergyAmount">63</span>
-            <span style="color:#7aa2c4; font-weight:500;">Energy</span>
-        </div>
-        <div class="disconnect-btn" id="disconnectBtn">
-            <span>🔌</span> Disconnect
-        </div>
-    </div>
+  <div class="card">
+    <input id="walletInput" placeholder="🌐 Not Connected" readonly>
+    <button class="actionBtn" id="walletBtn">🔗 CONNECT WALLET</button>
+    <div class="status" id="walletStatus">✅ Wallet Ready</div>
+    <button class="actionBtn" id="buyEnergyBtn">💊 BUY ENERGY (100k)</button>
+    <button class="actionBtn" id="swapPointsBtn">🔄 SWAP POINTS → PVLTG</button>
+    <button class="actionBtn" id="claimPVLTBtn">🏆 CLAIM PVLT</button>
+  </div>
 
-    <!-- Actions: Buy 10,000 Energy (100 PVLT) -->
-    <div class="action-grid">
-        <div class="primary-card">
-            <div class="buy-info">
-                <div class="buy-title">💎 Energy Surge</div>
-                <div class="cost-note">⚡ 10,000 ENERGY · cost 100 PVLT</div>
-            </div>
-            <button class="buy-button" id="buyEnergyBtn">
-                <span>🛒</span> Buy 10,000 Energy
-            </button>
-        </div>
+  <div class="info">
+    ✨ 1 Tap = 1 Point &nbsp;|&nbsp; 🔥 10,000 Points = 1 PVLTG <br>
+    💎 100 PVLTG → 1 PVLT &nbsp;&nbsp;⚡ Energy regen: +1 / 30 sec
+  </div>
+</div>
 
-        <div class="convert-claim-row">
-            <button class="convert-btn" id="convertBtn">
-                <span>🔄</span> Convert
-            </button>
-            <button class="claim-btn" id="claimBtn">
-                <span>🎁</span> Claim
-            </button>
-        </div>
+<!-- MODAL -->
+<div class="modal-overlay" id="buyModal">
+  <div class="modal-box">
+    <h3>💊 ENERGY PACK</h3>
+    <p>💥 <strong>+100,000 ENERGY</strong> <br> 💰 Cost: <strong>100 PVLT</strong> (Polygon)</p>
+    <div class="modal-buttons">
+      <button class="modal-btn btn-cancel" id="cancelBuyBtn">Cancel</button>
+      <button class="modal-btn btn-confirm" id="confirmBuyBtn">Confirm Purchase</button>
     </div>
-
-    <!-- feedback / toast area -->
-    <div class="toast-message" id="toastMsg">
-        ◆ system ready ◆
-    </div>
+  </div>
 </div>
 
 <script>
-    // ---------- UI STATE MATCHING REFERENCE ----------
-    // initial values inspired by image: 21 (some stat), 63 energy, 5.00 rate
-    // plus 10,000 energy purchase logic / convert & claim actions
-    
-    // Core state
-    let powerStat = 21;        // left stat ("21")
-    let energyAmount = 63;     // center stat & main energy
-    let conversionRate = 5.00; // right stat "5.00"
-    
-    // PVLT virtual balance (since "Buy 10,000 Energy (100 PVLT)" we need PVLT balance simulation)
-    let pvltBalance = 420;      // enough for multiple buys, shows as hidden feedback, but we track internally
-    
-    // Disconnect flag: blocks all actions if true (makes UI feel inactive/locked)
-    let isDisconnected = false;
-    
-    // DOM elements
-    const statPowerEl = document.getElementById('statPower');
-    const statEnergyEl = document.getElementById('statEnergy');
-    const statRateEl = document.getElementById('statRate');
-    const currentEnergyAmountSpan = document.getElementById('currentEnergyAmount');
-    const disconnectBtn = document.getElementById('disconnectBtn');
-    const buyEnergyBtn = document.getElementById('buyEnergyBtn');
-    const convertBtn = document.getElementById('convertBtn');
-    const claimBtn = document.getElementById('claimBtn');
-    const toastMsgDiv = document.getElementById('toastMsg');
-    const appContainer = document.getElementById('appContainer');
-    
-    // Helper: update all UI based on current state
-    function updateUI() {
-        statPowerEl.innerText = powerStat;
-        statEnergyEl.innerText = energyAmount;
-        // format rate to 2 decimals always
-        statRateEl.innerText = conversionRate.toFixed(2);
-        currentEnergyAmountSpan.innerText = energyAmount;
-        
-        // apply visual disconnect style
-        if (isDisconnected) {
-            appContainer.style.opacity = '0.75';
-            appContainer.style.filter = 'grayscale(0.08)';
-            appContainer.style.transition = '0.2s';
-        } else {
-            appContainer.style.opacity = '1';
-            appContainer.style.filter = 'none';
-        }
-        
-        // optionally disable buttons visually? but we handle click logic with disconnect guard
-        // better to show pointer-events via css? but we prefer functional block inside handlers.
+  /* ==================  CONFIGURATION ================== */
+  const API = "https://pvlt-server.onrender.com";
+  const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
+  const PVLT_TOKEN_ADDRESS = "0xC096dB70Fa05255b210Be58Ec2508Bed61e8dfD6";
+  const PVLTG_TOKEN_ADDRESS = "0x3094Dc50cB01721eE6c0ECAf18bd0D15c154ba2d";
+  const GAME_TREASURY_ADDRESS = "0xe2bb81bD8e36367F2C85c89F0B03570dFCaf5D57";
+  const TOKEN_DECIMALS = 18;
+
+  let web3Provider = null;
+  let walletAddress = "";
+  let points = 0;
+  let energy = 50;
+  let pvltg = 0;
+
+  // DOM elements
+  const energySpan = document.getElementById("energy");
+  const pointsSpan = document.getElementById("points");
+  const pvltgSpan = document.getElementById("pvltg");
+  const walletInput = document.getElementById("walletInput");
+  const walletBtn = document.getElementById("walletBtn");
+  const walletStatusDiv = document.getElementById("walletStatus");
+  const tapButton = document.getElementById("tapButton");
+  const buyEnergyBtn = document.getElementById("buyEnergyBtn");
+  const swapPointsBtn = document.getElementById("swapPointsBtn");
+  const claimPVLTBtn = document.getElementById("claimPVLTBtn");
+  const modalOverlay = document.getElementById("buyModal");
+  const confirmBuyBtn = document.getElementById("confirmBuyBtn");
+  const cancelBuyBtn = document.getElementById("cancelBuyBtn");
+
+  // Helper: update UI
+  function updateUI() {
+    energySpan.innerText = Math.floor(energy);
+    pointsSpan.innerText = Math.floor(points);
+    pvltgSpan.innerText = Number(pvltg).toFixed(4);
+    // energy visual indicator extra
+    if (energy <= 5) energySpan.style.color = "#ffaa88";
+    else energySpan.style.color = "#e0ffc0";
+  }
+
+  // Regen every 30 sec (max 100)
+  setInterval(() => {
+    if (walletAddress && energy < 100) {
+      energy = Math.min(100, energy + 1);
+      updateUI();
+      // optional silent sync with server? but we keep local consistency after each action, safe.
+    } else if (!walletAddress && energy < 100) {
+      // guest mode? but we require connect for tap, but anyway.
+      if (energy < 100) energy = Math.min(100, energy + 1);
+      updateUI();
     }
-    
-    // show feedback toast with custom message, auto-fade style but keep recent
-    function showToast(message, isError = false) {
-        toastMsgDiv.innerHTML = isError ? `⚠️ ${message}` : `✨ ${message}`;
-        toastMsgDiv.style.background = isError ? '#2a1118dd' : '#0e1a2cdd';
-        toastMsgDiv.style.borderLeft = isError ? '3px solid #ff7060' : '3px solid #5cc8ff';
-        setTimeout(() => {
-            // reset to neutral if not overwritten
-            if (toastMsgDiv.innerHTML.includes(message)) {
-                toastMsgDiv.style.background = '#050a12aa';
-                toastMsgDiv.style.borderLeft = '0.5px solid #2f6080';
-                // but keep last message for 2 sec then reset? We'll set timer for reset after 2.5s
-                setTimeout(() => {
-                    if (toastMsgDiv.innerHTML === `✨ ${message}` || toastMsgDiv.innerHTML === `⚠️ ${message}`) {
-                        toastMsgDiv.innerHTML = `◆ system ready ◆`;
-                        toastMsgDiv.style.background = '#050a12aa';
-                        toastMsgDiv.style.borderLeft = '0.5px solid #2f6080';
-                    }
-                }, 2000);
-            }
-        }, 2500);
+  }, 30000);
+
+  // Modal controls
+  function openBuyModal() {
+    if (!walletAddress) {
+      alert("🔐 Please connect wallet first");
+      return;
     }
-    
-    // disconnect toggle logic (mirroring "Disconnect" button)
-    function toggleDisconnect() {
-        if (!isDisconnected) {
-            isDisconnected = true;
-            showToast("Disconnected. All actions blocked. Reconnect? Click again.");
-            disconnectBtn.innerHTML = "<span>🔌</span> Reconnect";
-            disconnectBtn.style.borderColor = "#ffbc6e";
-            disconnectBtn.style.color = "#ffcf9e";
-        } else {
-            isDisconnected = false;
-            showToast("Reconnected. Terminal online.");
-            disconnectBtn.innerHTML = "<span>🔌</span> Disconnect";
-            disconnectBtn.style.borderColor = "#ff5e6e55";
-            disconnectBtn.style.color = "#ffa3ae";
-        }
-        updateUI();
-    }
-    
-    // ---- CORE ACTIONS WITH DISCONNECT GUARD ----
-    function buyEnergy() {
-        if (isDisconnected) {
-            showToast("Cannot buy: system disconnected. Reconnect first.", true);
-            return;
-        }
-        // cost: 100 PVLT. check pvltBalance
-        if (pvltBalance >= 100) {
-            pvltBalance -= 100;
-            energyAmount += 10000;
-            // also increment power stat maybe? Not defined in design, but we slightly increase power for fun? Reference shows "21" perhaps separate.
-            // For consistency, Power stat remains independent, but we add an effect: +1 power per 10k energy purchase? no need, but users expect rewarding.
-            // improve UX: show additional boost to rate? Not in description, but we can slightly increase conversion rate each buy? No, but making it interactive: 
-            // We'll keep stats authentic: power stays 21 unless convert or claim changes something. But image has 21/63/5.00. So we adhere.
-            // However "Convert" and "Claim" will impact power/energy accordingly.
-            updateUI();
-            showToast(`Bought 10,000 Energy! +10k ⚡ (PVLT -100 | Balance: ${pvltBalance} PVLT left)`);
-        } else {
-            showToast(`Insufficient PVLT! Need 100 PVLT. Current PVLT: ${pvltBalance}`, true);
-        }
-    }
-    
-    // Convert: takes current energy, converts to power? based on rate? typical game mechanics: energy -> power using rate.
-    // Design: Convert button should transfer some energy into Power stat using current rate. we decide: Convert 10 energy per 1 power? but rate shows 5.00 maybe multiplier.
-    // To match interesting mechanics: Conversion uses rate: For each 1 Power you need (1 / rate?) No, make it: Convert energy to Power: spend 5 energy get 1 power because rate=5.00 ?
-    // Actually rate display likely indicates conversion efficiency. Let's design: Convert uses current Rate: consume energy = rate * 10? 
-    // Elegant: "Convert" will convert 20 energy into +1 Power (respecting rate = 5.00 as base multiplier). But to keep it responsive: if rate=5, then converting 5 energy yields 1 power? Clean!
-    // We define: Convert spends energy = conversionRate (rounded up to nearest integer) to increase Power by 1.
-    function convertEnergyToPower() {
-        if (isDisconnected) {
-            showToast("Disconnected. Cannot convert.", true);
-            return;
-        }
-        let requiredEnergy = Math.ceil(conversionRate);   // if rate=5.00 -> need 5 energy for +1 power.
-        if (energyAmount >= requiredEnergy) {
-            energyAmount -= requiredEnergy;
-            powerStat += 1;
-            updateUI();
-            showToast(`Converted ${requiredEnergy} Energy ➜ +1 Power (now ${powerStat} PWR)`);
-            // after conversion, slight rate upgrade? not required, but maybe rate grows slowly? But reference fixed 5.00, we might add tiny increment? no keep exact.
-        } else {
-            showToast(`Not enough Energy to convert! Need ${requiredEnergy} energy.`, true);
-        }
-    }
-    
-    // Claim: reward based on current power/energy (?). give extra energy + small power bump. similar to claiming daily.
-    // Design: Claim gives random-ish or fixed: +15 energy and +1 power? but to make interesting: Claim: claim staking reward: add 30 energy and boost conversion rate slightly.
-    // Since image shows "Claim" plain, we make claim: adds 50 energy, increases conversion rate by +0.10, and power +1 (celebration)
-    function claimReward() {
-        if (isDisconnected) {
-            showToast("Disconnected. Cannot claim rewards.", true);
-            return;
-        }
-        // reward set
-        const energyGain = 45;
-        const powerGain = 1;
-        const rateIncrease = 0.10;
-        energyAmount += energyGain;
-        powerStat += powerGain;
-        conversionRate = parseFloat((conversionRate + rateIncrease).toFixed(2));
-        updateUI();
-        showToast(`Claimed! +${energyGain} Energy, +${powerGain} Power, Rate +${rateIncrease.toFixed(2)} ⚡`);
-        // Bonus: if rate exceeds 9.99 it's fine
-    }
-    
-    // Additional hidden feature: we can simulate PVLT replenishment for demo, but we give extra initial pvlt for multiple buys.
-    // also to match "Buy 10,000 Energy" being enjoyable, we add small easter egg after 3 buys rate increase? optional but nice not needed.
-    // However users can buy many times until PVLT runs out. To keep demo fair we add a hidden pvlt generator? no. but let's add PVLT info in toast.
-    // we also add a small "hidden tip": clicking on energy badge shows PVLT. Additional UX to show PVLT balance somewhere in toast area on click?
-    // but original design didn't show PVLT explicitly, so we show in toast after actions. For transparency: show current PVLT after buy/errors.
-    
-    // EXTRA: Double-click on stats panel shows pvlt balance for debugging
-    function showPVLTBalance() {
-        if(!isDisconnected) 
-            showToast(`💰 PVLT Balance: ${pvltBalance} PVLT | Energy: ${energyAmount}`, false);
-        else 
-            showToast(`🔌 OFFLINE: PVLT not accessible`, true);
-    }
-    
-    // attach event listeners
-    disconnectBtn.addEventListener('click', toggleDisconnect);
-    buyEnergyBtn.addEventListener('click', buyEnergy);
-    convertBtn.addEventListener('click', convertEnergyToPower);
-    claimBtn.addEventListener('click', claimReward);
-    
-    // secret: stats panel double-click reveal PVLT (fun)
-    const statsPanel = document.querySelector('.stats-panel');
-    statsPanel.addEventListener('dblclick', () => {
-        if(!isDisconnected) {
-            showToast(`💎 PVLT balance: ${pvltBalance} | Power: ${powerStat} | Rate: ${conversionRate.toFixed(2)}`);
-        } else {
-            showToast(`Offline mode — PVLT hidden`, true);
-        }
-    });
-    
-    // also clicking energy badge displays helpful info
-    const energyBadgeDiv = document.querySelector('.energy-badge');
-    if(energyBadgeDiv) {
-        energyBadgeDiv.addEventListener('click', () => {
-            showToast(`⚡ ENERGY: ${energyAmount} units | PVLT: ${pvltBalance}`, false);
+    modalOverlay.classList.add("active");
+  }
+  function closeBuyModal() {
+    modalOverlay.classList.remove("active");
+  }
+  cancelBuyBtn.onclick = closeBuyModal;
+
+  // ========== WALLET CONNECTION (fixed ui & chain validation) ==========
+  async function connectWallet() {
+    try {
+      let provider;
+      if (window.ethereum) {
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+      } else {
+        const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
+        const wcProvider = await WalletConnectProvider.init({
+          projectId: PROJECT_ID,
+          chains: [137],
+          showQrModal: true,
+          optionalChains: [],
         });
+        await wcProvider.connect();
+        provider = new ethers.providers.Web3Provider(wcProvider);
+      }
+      const signer = provider.getSigner();
+      const address = await signer.getAddress();
+      web3Provider = provider;
+      walletAddress = address;
+
+      // UI feedback
+      walletInput.value = `${address.slice(0,6)}...${address.slice(-4)}`;
+      walletBtn.innerText = "✅ WALLET CONNECTED";
+      walletStatusDiv.style.display = "block";
+      walletStatusDiv.innerText = `🟢 ${address.slice(0,6)}...${address.slice(-4)}`;
+
+      // Load user data from backend
+      const res = await fetch(API + "/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet: walletAddress })
+      });
+      const data = await res.json();
+      points = data.points ?? 0;
+      energy = data.energy ?? 50;
+      pvltg = data.pvltg ?? 0;
+      updateUI();
+
+      // ensure energy not over 100
+      if (energy > 100) energy = 100;
+      updateUI();
+    } catch (err) {
+      console.error(err);
+      alert("Connection failed. Try again or use MetaMask / Polygon Wallet.");
     }
-    
-    // initial sync
+  }
+
+  // ========== TAP function (with energy validation) ==========
+  async function tapAction() {
+    if (!walletAddress) {
+      alert("🔌 Connect wallet to earn points!");
+      return;
+    }
+    if (energy < 1) {
+      alert("⛔ Out of energy! Buy energy pack or wait for regeneration.");
+      return;
+    }
+    try {
+      const res = await fetch(API + "/tap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet: walletAddress })
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+      points = data.points;
+      energy = data.energy;
+      updateUI();
+      // subtle haptic if supported (vibration)
+      if (navigator.vibrate) navigator.vibrate(30);
+    } catch (err) {
+      console.error(err);
+      alert("Tap error, check network");
+    }
+  }
+
+  // ========== BUY ENERGY (100 PVLT) ==========
+  async function executeEnergyPurchase() {
+    if (!web3Provider || !walletAddress) {
+      alert("Connect wallet first");
+      closeBuyModal();
+      return;
+    }
+    const originalText = confirmBuyBtn.innerText;
+    confirmBuyBtn.innerText = "⏳ Sending...";
+    confirmBuyBtn.disabled = true;
+    try {
+      const network = await web3Provider.getNetwork();
+      if (network.chainId !== 137) {
+        alert("⚠️ Please switch to Polygon Mainnet (chainId 137)");
+        return;
+      }
+      const signer = web3Provider.getSigner();
+      const tokenContract = new ethers.Contract(
+        PVLT_TOKEN_ADDRESS,
+        [
+          "function transfer(address to, uint256 amount) external returns(bool)",
+          "function balanceOf(address owner) view returns(uint256)"
+        ],
+        signer
+      );
+      const amountToSend = ethers.utils.parseUnits("100", TOKEN_DECIMALS);
+      const balance = await tokenContract.balanceOf(walletAddress);
+      if (balance.lt(amountToSend)) {
+        alert(`❌ Insufficient PVLT balance. Need 100 PVLT.\nYour balance: ${ethers.utils.formatUnits(balance, TOKEN_DECIMALS)} PVLT`);
+        return;
+      }
+      const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, amountToSend);
+      closeBuyModal();
+      alert("📦 Transaction broadcast! Waiting confirmation...");
+      await tx.wait();
+      // call backend refill
+      const refillRes = await fetch(API + "/refill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet: walletAddress, txHash: tx.hash })
+      });
+      const refillData = await refillRes.json();
+      if (refillData.error) throw new Error(refillData.error);
+      energy = refillData.energy;
+      if (energy > 100) energy = 100;
+      updateUI();
+      alert("✅ +100,000 Energy delivered! Tap away!");
+    } catch (err) {
+      console.error(err);
+      let msg = err.reason || err.message || "Transaction failed";
+      alert("Energy purchase failed: " + msg);
+    } finally {
+      confirmBuyBtn.innerText = originalText;
+      confirmBuyBtn.disabled = false;
+      closeBuyModal();
+    }
+  }
+
+  // ========== SWAP POINTS -> PVLTG ==========
+  async function swapPoints() {
+    if (!walletAddress) {
+      alert("Connect wallet first");
+      return;
+    }
+    if (points < 1) {
+      alert("No points to swap");
+      return;
+    }
+    try {
+      const res = await fetch(API + "/swap-points", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet: walletAddress })
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+      points = 0;
+      pvltg = data.pvltg;
+      updateUI();
+      alert(`✨ Swapped! You now have ${pvltg.toFixed(4)} PVLTG`);
+    } catch (err) {
+      alert("Swap failed: " + err.message);
+    }
+  }
+
+  // ========== CLAIM PVLT (requires 100 PVLTG + approve) ==========
+  async function claimPVLT() {
+    if (!walletAddress || !web3Provider) {
+      alert("Connect wallet first");
+      return;
+    }
+    if (pvltg < 100) {
+      alert(`💎 Need at least 100 PVLTG to claim 1 PVLT. Current: ${pvltg.toFixed(4)} PVLTG`);
+      return;
+    }
+    try {
+      const network = await web3Provider.getNetwork();
+      if (network.chainId !== 137) {
+        alert("Switch to Polygon network to claim PVLT");
+        return;
+      }
+      const signer = web3Provider.getSigner();
+      // PVLTG token approval (for treasury to burn or manage)
+      const pvltgContract = new ethers.Contract(
+        PVLTG_TOKEN_ADDRESS,
+        ["function approve(address spender, uint256 amount) external returns(bool)"],
+        signer
+      );
+      const amountToApprove = ethers.utils.parseUnits(pvltg.toString(), TOKEN_DECIMALS);
+      const approveTx = await pvltgContract.approve(GAME_TREASURY_ADDRESS, amountToApprove);
+      await approveTx.wait();
+
+      const res = await fetch(API + "/claim-pvltg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wallet: walletAddress })
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+        return;
+      }
+      pvltg = 0;
+      updateUI();
+      alert("🎉 PVLT claimed successfully! Check your wallet.");
+    } catch (err) {
+      console.error(err);
+      alert("Claim failed: " + (err.message || "approve or server error"));
+    }
+  }
+
+  // ========== Attach event listeners with mobile friendliness ==========
+  tapButton.addEventListener("click", (e) => {
+    e.preventDefault();
+    tapAction();
+  });
+  // disable context menu on tap image / button
+  tapButton.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  walletBtn.addEventListener("click", () => connectWallet());
+  buyEnergyBtn.addEventListener("click", () => openBuyModal());
+  swapPointsBtn.addEventListener("click", () => swapPoints());
+  claimPVLTBtn.addEventListener("click", () => claimPVLT());
+  confirmBuyBtn.addEventListener("click", () => executeEnergyPurchase());
+
+  // Prevent double-tap zoom on buttons (additional)
+  const allButtons = document.querySelectorAll("button, .tapBtn");
+  allButtons.forEach(btn => {
+    btn.addEventListener("touchstart", (e) => {
+      // just to ensure no zoom triggers
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+  });
+  // reset preventdefault only for button to avoid breaking clicks, but better UX: we use fast clicks
+  // Use pointer events fine, but touch-action on body is pan-y. Keep tap button responsive.
+
+  // Also ensure energy never negative/discrepancy, manual sync
+  window.addEventListener("load", () => {
     updateUI();
-    showToast("TAPI! terminal online. ⚡ Buy, Convert, Claim.", false);
-    
-    // small responsiveness for rate tracking to make sure convert uses dynamic rate
-    // Guarantee conversion uses current rate (ceil)
-    // improve if rate is updated via claim, conversion uses new rate
-    // ready
-    // Additional reset? just for consistency,  we also make sure that buying energy can affect other future combos.
-    // since 'Convert' uses rate, that is perfectly dynamic.
-    // additionally we ensure that after a huge energy buy, conversion becomes more accessible.
-    // Provide a small micro interaction: If energy is above 5000, add subtle glow to convert button? optional but not needed.
-    
-    // polishing: ensure disconnect style properly reverts interactions but all handlers check isDisconnected first.
-    // Also proper demo for 'Reconnect' label; disconnect button toggles perfectly.
-    // Image reference also shows "Buy 10,000 Energy (100 PVLT)" and "Convert / Claim" — all implemented.
-    // In the disconnected mode, buttons look active but show toast warnings.
-    // Additionally we want to match the same three numbers: 21 / 63 / 5.00 initial, which are exactly represented.
-    // Now let's make sure that claim function modifies the rate and updates properly. Good.
-    // also after many claims, rate goes up, convert becomes more expensive (requires more energy per power conversion)
-    // That's interesting and makes strategy. Perfect.
-    
-    // Let's add micro behavior: if rate is >10, convert cost shouldn't exceed energy, but it's ceil(rate) so possible.
-    // handle extreme conversions already bounded by check.
-    
-    // Bonus: simulate that after disconnect/reconnect we keep data.
-    // Final polishing: in convert function we use Math.ceil(conversionRate) if rate becomes 5.8 => cost 6 energy for +1 Power, balanced.
-    // good.
-    
-    // Additional: "PVLT balance" after buying, we show remaining.
-    // Add ability to get bonus pvlt? not needed for demo but could be added but not necessary.
-    // For better user experience and consistent with the screenshot, we also add a small total at bottom of the toast area that disappears.
-    // Double click stats panel shows full state.
-    // Also ensure the energy amount never goes negative. guard in convert.
-    // Done.
-    
-    // optional: if energy amount surpass huge numbers, UI remains clean.
-    // also we listen to "Buy Energy" gives 10k energy, massive, makes claim/convert interesting. All good.
-    // The reference image includes "TAPI!" title, disconnect, and 3 stats, now fully matching.
-    
-    // final modification: For realistic feeling, maybe the 'Convert' can cause rate small incremental? no need, but claim gives rate increase.
-    // add one more surprise: when buying energy three times, we give small rate boost? Not mandatory, but nice easter egg.
-    let buyCounter = 0;
-    const originalBuy = buyEnergy;
-    window.buyEnergy = buyEnergy; // not overriding, just extend counter. but redefining:
-    const superBuy = function() {
-        buyEnergy();
-        if(!isDisconnected) {
-            buyCounter++;
-            if(buyCounter === 3) {
-                conversionRate = parseFloat((conversionRate + 0.15).toFixed(2));
-                updateUI();
-                showToast("🎉 Energy patron bonus! Conversion rate +0.15!", false);
-            }
-            if(buyCounter === 6) {
-                conversionRate = parseFloat((conversionRate + 0.2).toFixed(2));
-                updateUI();
-                showToast("⚡ Overcharge bonus! Rate increased further!", false);
-            }
-        }
+    // if any stored data from previous session? no, but default.
+    if (localStorage.getItem("guestWalletNotice")) {} // placeholder
+  });
+
+  // Side effect: auto-reconnect if ethereum accounts changed? optional but keep user friendly
+  if (window.ethereum) {
+    window.ethereum.on("accountsChanged", (accounts) => {
+      if (accounts.length === 0) {
+        walletAddress = "";
+        walletInput.value = "Not connected";
+        walletBtn.innerText = "🔗 CONNECT WALLET";
+        walletStatusDiv.style.display = "none";
+        points = 0; energy = 50; pvltg = 0;
+        updateUI();
+      } else {
+        connectWallet();
+      }
+    });
+    window.ethereum.on("chainChanged", () => window.location.reload());
+  }
+
+  // Fix missing image fallback
+  const tapImg = document.querySelector(".tapBtn img");
+  if (tapImg) {
+    tapImg.onerror = () => {
+      tapImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%2300ccaa'/%3E%3Ctext x='50' y='67' text-anchor='middle' fill='white' font-size='28' font-weight='bold'%3ETAP%3C/text%3E%3C/svg%3E";
     };
-    // replace buy handler with counter version
-    buyEnergyBtn.removeEventListener('click', buyEnergy);
-    buyEnergyBtn.addEventListener('click', superBuy);
-    // reassign reference to avoid confusion
-    window.superBuy = superBuy;
-    // final adjust ensure everything is bound correctly.
-    
-    // Ensure the original functions for other buttons stay intact.
-    // Final check: Disconnect doesn't affect bonus counter but ok.
-    showToast("✨ TAPI! ready | Buy 10k Energy, Convert, Claim", false);
+  }
+
+  // UI polish: show loading if needed
+  console.log("UI fixed — smooth tapping, energy logic, modals and wallet ready");
 </script>
 </body>
 </html>
