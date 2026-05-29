@@ -70,15 +70,13 @@ body {
   font-family: 'Monaco', 'Courier New', monospace;
   text-shadow: 0 0 6px #00e0c0;
   line-height: 1.2;
+  transition: all 0.2s ease;
 }
 
-/* Blurred/disabled state for stats before wallet connect */
 .stat-value.disabled {
   filter: blur(4px);
-  opacity: 0.5;
+  opacity: 0.4;
   text-shadow: none;
-  cursor: default;
-  user-select: none;
 }
 
 .action-btn {
@@ -89,7 +87,7 @@ body {
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.1s ease, opacity 0.2s;
+  transition: transform 0.1s ease, opacity 0.2s, background 0.2s;
   font-family: inherit;
   text-align: center;
   background: linear-gradient(95deg, #46c9b0, #1d9b87);
@@ -114,10 +112,21 @@ body {
   text-shadow: none;
 }
 
+/* Single connect/disconnect button - changes style when connected */
 #connectWalletBtn {
   background: linear-gradient(95deg, #46c9b0, #1d9b87);
   color: white;
   margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+#connectWalletBtn.connected {
+  background: linear-gradient(95deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+#connectWalletBtn.connected:hover {
+  background: linear-gradient(95deg, #dc2626, #b91c1c);
 }
 
 .status-bar {
@@ -150,11 +159,20 @@ body {
   align-items: center;
   box-shadow: 0 0 48px rgba(0, 250, 180, 0.5), inset 0 0 20px rgba(0,0,0,0.2);
   cursor: pointer;
-  transition: transform 0.04s linear;
+  transition: transform 0.04s linear, opacity 0.2s;
 }
 
 .pepe-core:active {
   transform: scale(0.94);
+}
+
+.pepe-core.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pepe-core.disabled:active {
+  transform: scale(1);
 }
 
 .pepe-core img {
@@ -213,6 +231,7 @@ body {
     <div class="stat-card"><div class="stat-label">🪙 PVLT</div><div class="stat-value disabled" id="pvltDisplay">0</div></div>
   </div>
 
+  <!-- Single button that toggles between Connect and Disconnect -->
   <button class="action-btn" id="connectWalletBtn">🔌 CONNECT WALLET (POLYGON)</button>
 
   <div class="status-bar" id="statusBar">
@@ -220,7 +239,7 @@ body {
   </div>
 
   <div class="tap-arena">
-    <div class="pepe-core" id="tapButton">
+    <div class="pepe-core disabled" id="tapButton">
       <img src="https://i.imgur.com/8Km9tLL.png" alt="PEPE" draggable="false">
     </div>
   </div>
@@ -255,7 +274,7 @@ body {
   const claimBtn = document.getElementById("claimPvltAction");
   const statusBar = document.getElementById("statusBar");
 
-  // Game state - only active when wallet connected
+  // Game state
   let energy = 0;
   let points = 0;
   let inGamePvlt = 0;
@@ -320,10 +339,8 @@ body {
     }
   }
 
-  // Enable/disable UI elements based on connection state
   function setUIActive(active) {
     if (active) {
-      // Connected - show actual numbers, enable buttons
       energySpan.classList.remove('disabled');
       pointsSpan.classList.remove('disabled');
       pvltSpan.classList.remove('disabled');
@@ -331,10 +348,12 @@ body {
       buyEnergyBtn.style.opacity = "1";
       claimBtn.disabled = inGamePvlt < 1;
       claimBtn.style.opacity = inGamePvlt >= 1 ? "1" : "0.55";
+      tapCircle.classList.remove('disabled');
       tapCircle.style.opacity = "1";
       tapCircle.style.cursor = "pointer";
+      connectBtn.classList.add('connected');
+      connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount ? userAccount.slice(0,6)+'...'+userAccount.slice(-4) : ''}`;
     } else {
-      // Not connected - blur stats, disable everything
       energySpan.classList.add('disabled');
       pointsSpan.classList.add('disabled');
       pvltSpan.classList.add('disabled');
@@ -342,13 +361,15 @@ body {
       buyEnergyBtn.style.opacity = "0.55";
       claimBtn.disabled = true;
       claimBtn.style.opacity = "0.55";
+      tapCircle.classList.add('disabled');
       tapCircle.style.opacity = "0.6";
       tapCircle.style.cursor = "not-allowed";
+      connectBtn.classList.remove('connected');
+      connectBtn.innerHTML = "🔌 CONNECT WALLET (POLYGON)";
     }
   }
 
   async function refreshUI() {
-    // Always update the text values (they're blurred when disconnected)
     energySpan.innerText = Math.floor(energy);
     pointsSpan.innerText = Math.floor(points);
     pvltSpan.innerText = Math.floor(inGamePvlt);
@@ -358,12 +379,11 @@ body {
       setUIActive(true);
       claimBtn.disabled = inGamePvlt < 1;
       claimBtn.style.opacity = inGamePvlt >= 1 ? "1" : "0.55";
-      connectBtn.innerText = `🟢 ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-      statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | 💼 ${realWalletBalance.toFixed(4)} PVLT | ⚡ ${Math.floor(energy)}/10000`;
+      connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
+      statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | 💼 ${realWalletBalance.toFixed(4)} PVLT | ⚡ ${Math.floor(energy)}/10000 | 💎 ${Math.floor(points)} pts`;
     } else {
       setUIActive(false);
-      connectBtn.innerText = "🔌 CONNECT WALLET (POLYGON)";
-      statusBar.innerHTML = `🔒 Connect wallet to start earning PVLT | Tap the PEPE after connecting!`;
+      statusBar.innerHTML = `🔒 Connect wallet to start earning PVLT | Tap PEPE after connecting!`;
     }
     
     if (userAccount) {
@@ -372,7 +392,6 @@ body {
   }
 
   function performTap(clientX, clientY) {
-    // Only allow tapping if wallet is connected
     if (!userAccount) {
       showFloatingText(clientX, clientY, "🔒 Connect wallet first!", "#ffaa88");
       return;
@@ -451,22 +470,36 @@ body {
     }
   }
   
-  async function connectWallet() {
-    // If already connected, disconnect
-    if (wcProviderInstance && userAccount) {
+  // Disconnect function
+  async function disconnectWallet() {
+    if (wcProviderInstance) {
       try {
         await wcProviderInstance.disconnect();
-      } catch(e) {}
-      wcProviderInstance = null;
-      userAccount = null;
-      tokenContract = null;
-      energy = 0;
-      points = 0;
-      inGamePvlt = 0;
-      await refreshUI();
-      return;
+      } catch(e) {
+        console.warn("Disconnect error:", e);
+      }
     }
     
+    // Save current data before disconnecting
+    if (userAccount) {
+      saveGameData();
+    }
+    
+    // Reset all state
+    wcProviderInstance = null;
+    userAccount = null;
+    tokenContract = null;
+    energy = 0;
+    points = 0;
+    inGamePvlt = 0;
+    realWalletBalance = 0;
+    
+    await refreshUI();
+    console.log("🔴 Wallet disconnected");
+  }
+  
+  // Connect function
+  async function connectWallet() {
     try {
       const wcProvider = await EthereumProvider.init({
         projectId: "1731f99148b9cf6107dee70b6efb14b7",
@@ -496,7 +529,9 @@ body {
       
       try {
         tokenDecimals = await tokenContract.decimals();
-      } catch(e) {}
+      } catch(e) {
+        console.warn("Could not fetch decimals, using default 18");
+      }
       
       // Load saved data for this wallet address
       loadGameData();
@@ -506,56 +541,53 @@ body {
       
       console.log("✅ Connected to:", userAccount);
       
+      // Set up event listeners
       wcProvider.on("accountsChanged", async (newAccounts) => {
+        console.log("Accounts changed:", newAccounts);
         if (newAccounts && newAccounts.length > 0) {
-          // Save current data before switching
           saveGameData();
           userAccount = newAccounts[0];
           loadGameData();
           await updateRealWalletBalance();
           await refreshUI();
         } else {
-          saveGameData();
-          userAccount = null;
-          tokenContract = null;
-          energy = 0;
-          points = 0;
-          inGamePvlt = 0;
-          await refreshUI();
+          await disconnectWallet();
         }
       });
       
       wcProvider.on("chainChanged", (chainId) => {
+        console.log("Chain changed:", chainId);
         if (chainId !== "0x89") {
-          alert("Please switch to Polygon Mainnet");
+          alert("⚠️ Please switch to Polygon Mainnet for PepeVolt");
         }
       });
       
-      wcProvider.on("disconnect", () => {
-        saveGameData();
-        userAccount = null;
-        tokenContract = null;
-        wcProviderInstance = null;
-        energy = 0;
-        points = 0;
-        inGamePvlt = 0;
-        refreshUI();
+      wcProvider.on("disconnect", async () => {
+        console.log("Wallet disconnected by provider");
+        await disconnectWallet();
       });
       
     } catch (err) {
       console.error("Connection error:", err);
-      alert(`Connection failed: ${err.message}`);
+      alert(`Connection failed: ${err.message || "Unknown error"}`);
       userAccount = null;
       tokenContract = null;
       wcProviderInstance = null;
-      refreshUI();
+      await refreshUI();
     }
   }
   
-  // Event listeners
-  connectBtn.addEventListener("click", (e) => {
+  // Single button handler - toggles between connect and disconnect
+  connectBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
-    connectWallet();
+    
+    // If already connected, disconnect
+    if (userAccount && wcProviderInstance) {
+      await disconnectWallet();
+    } else {
+      // Otherwise connect
+      await connectWallet();
+    }
   });
 
   tapCircle.addEventListener("click", (e) => {
@@ -576,7 +608,7 @@ body {
     e.preventDefault();
     if (!userAccount) {
       const touch = e.touches[0];
-      showFloatingText(touch.clientX, touch.clientY, "🔒 Connect wallet first!", "#ffaa88");
+      if (touch) showFloatingText(touch.clientX, touch.clientY, "🔒 Connect wallet first!", "#ffaa88");
       return;
     }
     const touch = e.touches[0];
@@ -593,7 +625,7 @@ body {
     claimPvltHandler();
   });
   
-  // Energy regeneration
+  // Energy regeneration - only when connected
   setInterval(() => {
     if (userAccount && energy < 10000) {
       energy = Math.min(energy + 1, 10000);
@@ -602,10 +634,10 @@ body {
     }
   }, 15000);
   
-  // Initial load - all stats show 0 and are blurred until wallet connects
+  // Initial load
   refreshUI();
   
-  console.log("🔥 PepeVolt Ready | Connect wallet to reveal stats and start tapping");
+  console.log("🔥 PepeVolt Ready | Single button connects/disconnects wallet");
 </script>
 </body>
 </html>
