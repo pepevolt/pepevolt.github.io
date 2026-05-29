@@ -2,69 +2,66 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TapVerse — Web3 Tapping Game on Polygon</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PVLT Tap Game — Web3 Tapping on Polygon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
-    <!-- WalletConnect v2 Provider -->
-    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.13.0/dist/index.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
         }
 
         body {
             background: linear-gradient(145deg, #0B1120 0%, #0A0F1A 100%);
             font-family: 'Inter', sans-serif;
-            color: #EFF3FF;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 16px;
         }
 
         .game-container {
-            max-width: 550px;
+            max-width: 500px;
             width: 100%;
-            background: rgba(18, 25, 45, 0.65);
+            background: rgba(18, 25, 45, 0.8);
             backdrop-filter: blur(12px);
-            border-radius: 56px;
-            border: 1px solid rgba(72, 187, 255, 0.2);
-            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
+            border-radius: 48px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
             overflow: hidden;
         }
 
+        /* Top Nav */
         .top-nav {
             display: flex;
             justify-content: space-between;
-            padding: 18px 24px;
+            padding: 20px 24px;
             background: rgba(6, 12, 24, 0.7);
-            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.15);
             gap: 12px;
         }
 
         .nav-card {
             flex: 1;
-            background: #0E1628;
-            border-radius: 40px;
-            padding: 10px 14px;
+            background: rgba(14, 22, 40, 0.9);
+            border-radius: 32px;
+            padding: 10px 12px;
             text-align: center;
             border: 1px solid rgba(0, 212, 255, 0.2);
         }
 
         .nav-label {
-            font-size: 12px;
+            font-size: 11px;
             color: #8F9BB5;
             margin-bottom: 6px;
+            letter-spacing: 0.5px;
         }
 
         .nav-value {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
             background: linear-gradient(135deg, #FFFFFF, #A0D6FF);
             -webkit-background-clip: text;
@@ -75,21 +72,22 @@
         .energy-value {
             display: flex;
             justify-content: center;
+            align-items: baseline;
             gap: 4px;
         }
 
         .energy-current {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
             color: #FFD966;
         }
 
         .energy-max {
-            font-size: 15px;
-            font-weight: 600;
+            font-size: 13px;
             color: #7D8FB3;
         }
 
+        /* Body */
         .body-area {
             padding: 32px 24px 28px;
             display: flex;
@@ -97,49 +95,61 @@
             align-items: center;
         }
 
+        /* Tap Circle */
         .tap-circle {
-            width: 210px;
-            height: 210px;
-            background: radial-gradient(circle at 30% 25%, #FFB347, #FF7E05);
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle at 30% 30%, #FFB347, #FF7E05);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4);
-            transition: transform 0.08s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            margin-bottom: 32px;
-            font-size: 32px;
-            font-weight: 800;
-            color: white;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4), 0 0 0 6px rgba(255, 140, 0, 0.3);
+            transition: transform 0.06s ease;
+            margin-bottom: 28px;
         }
 
         .tap-circle:active {
             transform: scale(0.94);
         }
 
-        .tap-circle.disabled-tap {
+        .tap-circle.disabled {
+            opacity: 0.5;
             filter: grayscale(0.3);
-            opacity: 0.75;
             cursor: not-allowed;
         }
 
+        .tap-circle.disabled:active {
+            transform: none;
+        }
+
+        .tap-logo {
+            width: 55%;
+            height: 55%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        /* Buttons */
         .action-buttons {
             display: flex;
-            gap: 18px;
-            margin: 12px 0 20px;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            margin: 8px 0;
         }
 
         .btn {
             border: none;
             font-weight: 700;
-            padding: 12px 18px;
+            padding: 14px 20px;
             border-radius: 60px;
             font-family: 'Inter', sans-serif;
+            font-size: 15px;
             cursor: pointer;
             transition: 0.15s;
+            width: 100%;
         }
 
         .btn-primary {
@@ -160,54 +170,48 @@
             border: 1px solid #E879F9;
         }
 
-        .claim-area {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 48px;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            margin-top: 12px;
-        }
-
         .wallet-status {
-            background: #070C1A;
-            padding: 6px 14px;
-            border-radius: 40px;
-            display: inline-flex;
+            background: rgba(7, 12, 26, 0.9);
+            padding: 10px 16px;
+            border-radius: 60px;
+            display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            width: 100%;
+            justify-content: center;
         }
 
-        .dot-connected {
+        .dot {
             width: 10px;
             height: 10px;
             background: #6B7280;
             border-radius: 50%;
         }
 
-        .dot-connected.connected {
+        .dot.connected {
             background: #27E0A6;
             box-shadow: 0 0 6px #27E0A6;
         }
 
-        .error-msg {
+        .feedback {
             color: #FF8A8A;
             font-size: 12px;
             text-align: center;
-            margin-top: 8px;
-            min-height: 36px;
+            margin-top: 12px;
+            min-height: 40px;
         }
 
-        .network-badge {
+        .info-text {
             font-size: 10px;
-            background: #2a2f45;
-            padding: 2px 8px;
-            border-radius: 30px;
+            text-align: center;
+            margin-top: 20px;
+            opacity: 0.6;
+            line-height: 1.5;
         }
 
-        /* Modal Styles */
+        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -220,16 +224,14 @@
             align-items: center;
             justify-content: center;
             z-index: 10000;
-            font-family: 'Inter', sans-serif;
         }
 
         .modal-container {
             background: #1A1F2E;
             border-radius: 32px;
             width: 90%;
-            max-width: 420px;
+            max-width: 400px;
             padding: 24px 20px 28px;
-            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
@@ -246,7 +248,7 @@
             font-weight: 700;
         }
 
-        .modal-close-btn {
+        .modal-close {
             background: none;
             border: none;
             color: #aaa;
@@ -263,15 +265,15 @@
         .wallets-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 20px 12px;
-            margin-bottom: 28px;
+            gap: 16px 8px;
+            margin-bottom: 24px;
         }
 
         .wallet-option {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             cursor: pointer;
             padding: 8px 4px;
             border-radius: 16px;
@@ -287,61 +289,19 @@
             height: 48px;
             border-radius: 16px;
             background: #0F111A;
-            padding: 6px;
+            padding: 8px;
         }
 
         .wallet-option span {
             color: #EFF3FF;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
         }
 
-        .recent-section {
-            background: #0F111A;
-            border-radius: 20px;
-            padding: 12px 16px;
-            margin-bottom: 16px;
-        }
-
-        .recent-label {
-            color: #7D8FB3;
-            font-size: 11px;
-            margin-bottom: 6px;
-        }
-
-        .recent-wallet {
-            color: white;
-            font-size: 14px;
-        }
-
-        .view-all-btn {
-            width: 100%;
-            background: #2D3748;
-            border: none;
-            padding: 10px;
-            border-radius: 40px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        @media (max-width: 480px) {
-            .wallets-grid { gap: 12px; }
-            .wallet-option img { width: 40px; height: 40px; }
-            .tap-circle { width: 170px; height: 170px; font-size: 26px; }
-        }
-
-        .qr-container {
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .qr-container img {
-            width: 200px;
-            height: 200px;
-            margin: 10px auto;
-            background: white;
-            border-radius: 16px;
+        @media (max-width: 450px) {
+            .tap-circle { width: 170px; height: 170px; }
+            .nav-value, .energy-current { font-size: 18px; }
+            .top-nav { padding: 14px 16px; }
         }
     </style>
 </head>
@@ -351,266 +311,216 @@
         <div class="nav-card">
             <div class="nav-label">⚡ ENERGY</div>
             <div class="energy-value">
-                <span class="energy-current" id="energyCurrent">50</span>
-                <span class="energy-max">/ <span id="energyMax">10000</span></span>
+                <span class="energy-current" id="energyValue">50</span>
+                <span class="energy-max">/<span id="energyMax">10000</span></span>
             </div>
         </div>
         <div class="nav-card">
             <div class="nav-label">🎯 POINTS</div>
-            <div class="nav-value" id="pointsDisplay">0</div>
+            <div class="nav-value" id="pointsValue">0</div>
         </div>
         <div class="nav-card">
             <div class="nav-label">💎 GAME CURRENCY</div>
-            <div class="nav-value" id="gameCurrencyDisplay">0</div>
+            <div class="nav-value" id="currencyValue">0</div>
         </div>
     </div>
 
     <div class="body-area">
         <div class="wallet-status">
-            <span class="dot-connected" id="walletDot"></span>
-            <span id="walletAddressText">Not Connected</span>
-            <span id="networkBadge" class="network-badge">Polygon</span>
+            <span class="dot" id="walletDot"></span>
+            <span id="walletAddress">Not Connected</span>
         </div>
 
         <div class="tap-circle" id="tapCircle">
-            👆 TAP
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M1 5h22v2H1V5zm0 6h22v2H1v-2zm0 6h22v2H1v-2z'/%3E%3C/svg%3E" class="tap-logo" alt="tap">
         </div>
 
         <div class="action-buttons">
-            <button class="btn btn-primary" id="connectWalletBtn">🔗 Connect Wallet</button>
-            <button class="btn btn-success" id="buyEnergyBtn">⚡ Buy 10000 Energy (100 PVLT)</button>
+            <button class="btn btn-primary" id="connectBtn">🔗 CONNECT WALLET</button>
+            <button class="btn btn-success" id="buyEnergyBtn">⚡ BUY 10000 ENERGY (100 PVLT)</button>
+            <button class="btn btn-claim" id="claimBtn">🔥 CLAIM (10 CURRENCY → PVLT)</button>
         </div>
 
-        <div class="claim-area">
-            <span class="claim-text">💰 Burn 10 Game Currency → Claim PVLT</span>
-            <button class="btn btn-claim" id="claimBtn">🔥 CLAIM</button>
-        </div>
-
-        <div id="txFeedback" class="error-msg"></div>
-        <div style="font-size: 11px; text-align: center; margin-top: 16px; opacity: 0.8;">
+        <div id="feedback" class="feedback"></div>
+        <div class="info-text">
             🎯 Tap: +1 point -1 energy | ⚡ Auto refill +1/3s up to 50<br>
-            💰 Buy 10000 energy with 100 PVLT (Polygon) | 💎 100 points → +1 Game Currency | 10 GC → Claim PVLT
+            💎 100 points → +1 Game Currency | 10 Game Currency → Claim PVLT
         </div>
     </div>
 </div>
 
 <script>
-    // GAME STATE
+    // ==================== GAME STATE ====================
     let energy = 50;
-    let maxBaseRefillCap = 50;
-    let absoluteMaxEnergy = 10000;
+    let maxEnergy = 10000;
+    let baseRefillCap = 50;
     let points = 0;
     let gameCurrency = 0;
     let refillInterval = null;
-    const POINTS_TO_CURRENCY = 100;
-    const CURRENCY_BURN_REWARD = 10;
 
-    // Web3 State
+    // ==================== WEB3 STATE ====================
     let provider = null;
     let signer = null;
     let userAddress = null;
-    let walletConnected = false;
+    let connected = false;
     let currentChainId = null;
-    let walletConnectProvider = null;
 
-    // WalletConnect Project ID
-    const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
-
-    // DOM Elements
-    const energyCurrentEl = document.getElementById('energyCurrent');
-    const pointsDisplayEl = document.getElementById('pointsDisplay');
-    const gameCurrencyDisplayEl = document.getElementById('gameCurrencyDisplay');
-    const walletAddressSpan = document.getElementById('walletAddressText');
+    // DOM elements
+    const energyEl = document.getElementById('energyValue');
+    const pointsEl = document.getElementById('pointsValue');
+    const currencyEl = document.getElementById('currencyValue');
     const walletDot = document.getElementById('walletDot');
-    const networkBadge = document.getElementById('networkBadge');
+    const walletAddressEl = document.getElementById('walletAddress');
     const tapCircle = document.getElementById('tapCircle');
-    const txFeedback = document.getElementById('txFeedback');
+    const feedbackEl = document.getElementById('feedback');
 
-    function updateGameUI() {
-        energyCurrentEl.innerText = Math.floor(energy);
-        pointsDisplayEl.innerText = points;
-        gameCurrencyDisplayEl.innerText = gameCurrency;
+    // Constants
+    const POINTS_TO_CURRENCY = 100;
+    const CURRENCY_TO_CLAIM = 10;
+
+    // ==================== GAME FUNCTIONS ====================
+    function updateUI() {
+        energyEl.innerText = Math.floor(energy);
+        pointsEl.innerText = points;
+        currencyEl.innerText = gameCurrency;
+        
         if (energy <= 0) {
-            tapCircle.classList.add('disabled-tap');
+            tapCircle.classList.add('disabled');
         } else {
-            tapCircle.classList.remove('disabled-tap');
+            tapCircle.classList.remove('disabled');
+        }
+    }
+
+    function saveGameState() {
+        if (!userAddress) return;
+        const gameData = {
+            energy: energy,
+            points: points,
+            gameCurrency: gameCurrency
+        };
+        localStorage.setItem(`tapgame_${userAddress}`, JSON.stringify(gameData));
+    }
+
+    function loadGameState() {
+        if (!userAddress) return;
+        const saved = localStorage.getItem(`tapgame_${userAddress}`);
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                energy = data.energy ?? 50;
+                points = data.points ?? 0;
+                gameCurrency = data.gameCurrency ?? 0;
+                if (energy > maxEnergy) energy = maxEnergy;
+                updateUI();
+            } catch(e) {}
         }
     }
 
     function startRefill() {
         if (refillInterval) clearInterval(refillInterval);
         refillInterval = setInterval(() => {
-            if (energy < maxBaseRefillCap) {
+            if (energy < baseRefillCap) {
                 let newEnergy = energy + 1;
-                if (newEnergy > maxBaseRefillCap) newEnergy = maxBaseRefillCap;
+                if (newEnergy > baseRefillCap) newEnergy = baseRefillCap;
                 if (newEnergy !== energy) {
                     energy = newEnergy;
-                    updateGameUI();
+                    updateUI();
+                    saveGameState();
                 }
             }
         }, 3000);
     }
 
     function handleTap() {
+        if (!connected) {
+            showFeedback("❌ Connect wallet first!", 1500);
+            return;
+        }
+        
         if (energy <= 0) {
             showFeedback("⛔ No energy! Wait for refill or buy energy.", 1500);
             return;
         }
+        
         energy--;
         points++;
-
+        
+        // Convert points to game currency
         if (points >= POINTS_TO_CURRENCY) {
-            const convertedCount = Math.floor(points / POINTS_TO_CURRENCY);
-            gameCurrency += convertedCount;
+            const converted = Math.floor(points / POINTS_TO_CURRENCY);
+            gameCurrency += converted;
             points = points % POINTS_TO_CURRENCY;
-            showFeedback(`✨ +${convertedCount} Game Currency!`, 1200);
+            showFeedback(`✨ +${converted} Game Currency!`, 1200);
         }
-
-        updateGameUI();
+        
+        updateUI();
+        saveGameState();
+        
+        // Haptic feedback
         if (navigator.vibrate) navigator.vibrate(20);
     }
 
-    function addPurchasedEnergy() {
-        let newEnergy = energy + 10000;
-        if (newEnergy > absoluteMaxEnergy) newEnergy = absoluteMaxEnergy;
-        energy = newEnergy;
-        updateGameUI();
-        showFeedback(`⚡ +10000 Energy! Total: ${energy}/${absoluteMaxEnergy}`, 2000);
-    }
-
-    async function buyEnergyWithPVLT() {
-        if (!walletConnected || !signer) {
-            showFeedback("❌ Please connect your wallet first!", 2000);
+    function buyEnergy() {
+        if (!connected) {
+            showFeedback("❌ Connect wallet first!", 1500);
             return;
         }
-
-        if (currentChainId !== 137 && currentChainId !== 80001) {
-            showFeedback("⚠️ Please switch to Polygon Mainnet (chainId 137) or Mumbai testnet.", 3500);
-            return;
-        }
-
-        showFeedback("⏳ Initiating 100 PVLT purchase on Polygon...", 2000);
         
+        if (currentChainId !== 137 && currentChainId !== 80001) {
+            showFeedback("⚠️ Please switch to Polygon network (chainId 137)", 2500);
+            return;
+        }
+        
+        showFeedback("⏳ Processing 100 PVLT payment on Polygon...", 2000);
+        
+        // Simulate transaction (in production, call actual PVLT contract)
         setTimeout(() => {
-            addPurchasedEnergy();
-            showFeedback("✅ Purchase successful! +10000 Energy added.", 2500);
+            let newEnergy = energy + 10000;
+            if (newEnergy > maxEnergy) newEnergy = maxEnergy;
+            energy = newEnergy;
+            updateUI();
+            saveGameState();
+            showFeedback("✅ +10000 Energy! Purchase successful.", 2500);
         }, 1500);
     }
 
-    async function claimPVLT() {
-        if (!walletConnected || !signer) {
-            showFeedback("🔌 Connect wallet to claim PVLT!", 2000);
+    function claimReward() {
+        if (!connected) {
+            showFeedback("❌ Connect wallet first!", 1500);
             return;
         }
-        if (gameCurrency < CURRENCY_BURN_REWARD) {
-            showFeedback(`💢 Need ${CURRENCY_BURN_REWARD} Game Currency. You have ${gameCurrency}`, 2000);
+        
+        if (gameCurrency < CURRENCY_TO_CLAIM) {
+            showFeedback(`💢 Need ${CURRENCY_TO_CLAIM} Game Currency. You have ${gameCurrency}`, 2000);
             return;
         }
-
-        showFeedback("🔥 Burning 10 Game Currency, claiming PVLT...", 2000);
+        
+        if (currentChainId !== 137 && currentChainId !== 80001) {
+            showFeedback("⚠️ Please switch to Polygon network to claim PVLT", 2500);
+            return;
+        }
+        
+        showFeedback("🔥 Burning 10 Game Currency, sending PVLT...", 2000);
+        
         setTimeout(() => {
-            gameCurrency -= CURRENCY_BURN_REWARD;
-            updateGameUI();
-            showFeedback(`🎉 Claimed 10 PVLT to ${userAddress?.slice(0,8)}...!`, 2800);
+            gameCurrency -= CURRENCY_TO_CLAIM;
+            updateUI();
+            saveGameState();
+            showFeedback(`🎉 Claimed 10 PVLT to ${userAddress.slice(0,8)}...!`, 3000);
         }, 1000);
     }
 
-    function showFeedback(msg, duration = 2500) {
-        txFeedback.innerText = msg;
+    function showFeedback(msg, duration = 2000) {
+        feedbackEl.innerText = msg;
         setTimeout(() => {
-            if (txFeedback.innerText === msg) txFeedback.innerText = "";
+            if (feedbackEl.innerText === msg) feedbackEl.innerText = "";
         }, duration);
     }
 
-    function updateWalletUI(address, chainId) {
-        if (address) {
-            walletAddressSpan.innerHTML = `${address.slice(0,6)}...${address.slice(-4)}`;
-            walletDot.classList.add('connected');
-        } else {
-            walletAddressSpan.innerHTML = "Not Connected";
-            walletDot.classList.remove('connected');
-        }
-        
-        if (chainId === 137) {
-            networkBadge.innerHTML = `🟣 Polygon Mainnet`;
-        } else if (chainId === 80001) {
-            networkBadge.innerHTML = `🟣 Mumbai Testnet`;
-        } else if (chainId) {
-            networkBadge.innerHTML = `⚠️ Chain ${chainId}`;
-        } else {
-            networkBadge.innerHTML = `⚡ Polygon`;
-        }
-    }
-
-    // Connect using WalletConnect (works with all wallets)
-    async function connectWithWalletConnect() {
-        try {
-            showFeedback("Opening WalletConnect...", 1500);
-            
-            // Initialize WalletConnect provider
-            const EthereumProvider = window.EthereumProvider;
-            
-            if (!EthereumProvider) {
-                showFeedback("Loading WalletConnect SDK... Please refresh.", 2000);
-                return;
-            }
-            
-            walletConnectProvider = await EthereumProvider.init({
-                projectId: PROJECT_ID,
-                chains: [137, 80001],
-                optionalChains: [137],
-                showQrModal: true,
-                qrModalOptions: {
-                    themeMode: 'dark',
-                    themeVariables: {
-                        '--w3m-z-index': '10001',
-                        '--w3m-font-family': 'Inter, sans-serif'
-                    }
-                },
-                rpcMap: {
-                    137: 'https://polygon-rpc.com',
-                    80001: 'https://rpc-mumbai.maticvigil.com'
-                },
-                metadata: {
-                    name: 'TapVerse Game',
-                    description: 'Web3 Tapping Game on Polygon',
-                    url: window.location.origin,
-                    icons: ['https://avatars.githubusercontent.com/u/37784886']
-                }
-            });
-            
-            // Connect to wallet
-            await walletConnectProvider.connect();
-            
-            // Create ethers provider
-            provider = new ethers.BrowserProvider(walletConnectProvider);
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-            const network = await provider.getNetwork();
-            currentChainId = Number(network.chainId);
-            
-            walletConnected = true;
-            updateWalletUI(userAddress, currentChainId);
-            showFeedback(`✅ Connected to ${userAddress.slice(0,6)}...`, 2000);
-            
-            // Handle disconnect
-            walletConnectProvider.on('disconnect', () => {
-                walletConnected = false;
-                updateWalletUI(null, null);
-                showFeedback("Wallet disconnected", 2000);
-            });
-            
-        } catch (err) {
-            console.error(err);
-            showFeedback(`Connection failed: ${err.message?.slice(0,80) || "Unknown error"}`, 3000);
-            walletConnected = false;
-        }
-    }
-    
-    // Connect using injected wallet (MetaMask, Trust, etc.)
-    async function connectWithInjected() {
+    // ==================== WALLET CONNECTION ====================
+    async function connectInjected() {
         if (!window.ethereum) {
-            showFeedback("No injected wallet found. Please install MetaMask or use WalletConnect.", 3000);
+            showFeedback("❌ No wallet found! Please install MetaMask or Trust Wallet", 3000);
             return false;
         }
         
@@ -622,27 +532,49 @@
             const network = await provider.getNetwork();
             currentChainId = Number(network.chainId);
             
-            walletConnected = true;
-            updateWalletUI(userAddress, currentChainId);
-            showFeedback(`✅ Connected to ${userAddress.slice(0,6)}...`, 2000);
+            connected = true;
+            walletAddressEl.innerText = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+            walletDot.classList.add('connected');
+            
+            loadGameState();
+            
+            const netName = currentChainId === 137 ? "Polygon" : currentChainId === 80001 ? "Mumbai" : "Chain " + currentChainId;
+            showFeedback(`✅ Connected to ${netName}`, 2000);
+            
+            // Listen for account changes
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length === 0) {
+                    connected = false;
+                    userAddress = null;
+                    walletAddressEl.innerText = "Not Connected";
+                    walletDot.classList.remove('connected');
+                } else {
+                    window.location.reload();
+                }
+            });
+            
+            window.ethereum.on('chainChanged', () => {
+                window.location.reload();
+            });
+            
             return true;
         } catch (err) {
-            showFeedback(`Connection failed: ${err.message}`, 3000);
+            showFeedback(`Connection failed: ${err.message.slice(0,80)}`, 3000);
             return false;
         }
     }
 
-    // Show Wallet Modal
+    // Custom wallet modal
     function showWalletModal() {
-        const modalDiv = document.createElement('div');
-        modalDiv.className = 'modal-overlay';
-        modalDiv.innerHTML = `
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
             <div class="modal-container">
                 <div class="modal-header">
-                    <h3>WalletConnect</h3>
-                    <button class="modal-close-btn" id="closeModalBtn">✕</button>
+                    <h3>Connect Wallet</h3>
+                    <button class="modal-close" id="closeModal">✕</button>
                 </div>
-                <div class="modal-subtitle">Connect your wallet</div>
+                <div class="modal-subtitle">Choose your wallet</div>
                 <div class="wallets-grid">
                     <div class="wallet-option" data-wallet="metamask">
                         <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1.635/networks/metamask.svg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23F6851B%22%3E%3Crect width=%2224%22 height=%2224%22 fill=%22%23F6851B%22/%3E%3C/svg%3E'">
@@ -657,69 +589,60 @@
                         <span>Binance</span>
                     </div>
                     <div class="wallet-option" data-wallet="safepal">
-                        <img src="https://www.safepal.com/favicon.ico" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%234CAF50%22%3E%3Crect width=%2224%22 height=%2224%22 fill=%22%234CAF50%22/%3E%3C/svg%3E'">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234CAF50'%3E%3Crect width='24' height='24' fill='%234CAF50'/%3E%3Ctext x='4' y='17' fill='white' font-size='14'%3ESP%3C/text%3E%3C/svg%3E">
                         <span>SafePal</span>
                     </div>
                     <div class="wallet-option" data-wallet="okx">
-                        <img src="https://www.okx.com/favicon.ico" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23000000%22%3E%3Crect width=%2224%22 height=%2224%22 fill=%22%23000000%22/%3E%3C/svg%3E'">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Crect width='24' height='24' fill='%23000000'/%3E%3Ctext x='5' y='17' fill='white' font-size='12'%3EOKX%3C/text%3E%3C/svg%3E">
                         <span>OKX Wallet</span>
                     </div>
                     <div class="wallet-option" data-wallet="tokenpocket">
-                        <img src="https://tokenpocket.pro/static/img/logo.png" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%233399FF%22%3E%3Crect width=%2224%22 height=%2224%22 fill=%22%233399FF%22/%3E%3C/svg%3E'">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233399FF'%3E%3Crect width='24' height='24' fill='%233399FF'/%3E%3Ctext x='2' y='17' fill='white' font-size='10'%3ETP%3C/text%3E%3C/svg%3E">
                         <span>TokenPocket</span>
                     </div>
-                    <div class="wallet-option" data-wallet="walletconnect">
-                        <img src="https://walletconnect.com/favicon.ico" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%233B88F0%22%3E%3Crect width=%2224%22 height=%2224%22 fill=%22%233B88F0%22/%3E%3C/svg%3E'">
-                        <span>WalletConnect</span>
+                    <div class="wallet-option" data-wallet="coinbase">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230052FF'%3E%3Crect width='24' height='24' fill='%230052FF'/%3E%3Ctext x='2' y='17' fill='white' font-size='10'%3ECB%3C/text%3E%3C/svg%3E">
+                        <span>Coinbase</span>
                     </div>
-                    <div class="wallet-option" data-wallet="fireblocks">
-                        <img src="https://www.fireblocks.com/wp-content/uploads/2022/12/cropped-favicon-32x32.png" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23FF6B35%22%3E%3Crect width=%2224%22 height=%2224%22 fill=%22%23FF6B35%22/%3E%3C/svg%3E'">
-                        <span>Fireblocks</span>
+                    <div class="wallet-option" data-wallet="rabby">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF6B35'%3E%3Crect width='24' height='24' fill='%23FF6B35'/%3E%3Ctext x='3' y='17' fill='white' font-size='10'%3ERB%3C/text%3E%3C/svg%3E">
+                        <span>Rabby</span>
                     </div>
                 </div>
-                <div class="recent-section">
-                    <div class="recent-label">RECENT</div>
-                    <div class="recent-wallet" id="recentWallet">Select a wallet above</div>
+                <div style="text-align: center; margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 16px;">
+                    <div style="font-size: 12px; color: #8F9BB5;">🟣 Works on Polygon network</div>
                 </div>
-                <button class="view-all-btn">View All Wallets</button>
             </div>
         `;
-        document.body.appendChild(modalDiv);
-
-        document.getElementById('closeModalBtn').addEventListener('click', () => modalDiv.remove());
+        
+        document.body.appendChild(modal);
+        
+        document.getElementById('closeModal').addEventListener('click', () => modal.remove());
         
         document.querySelectorAll('.wallet-option').forEach(opt => {
             opt.addEventListener('click', async () => {
-                const walletType = opt.getAttribute('data-wallet');
-                modalDiv.remove();
-                
-                if (walletType === 'walletconnect') {
-                    await connectWithWalletConnect();
-                } else {
-                    const success = await connectWithInjected();
-                    if (!success && walletType !== 'walletconnect') {
-                        showFeedback(`Try using "WalletConnect" option for mobile wallets`, 3000);
-                    }
-                }
+                modal.remove();
+                await connectInjected();
             });
         });
-        
-        document.querySelector('.view-all-btn').addEventListener('click', () => {
-            showFeedback("All wallets supported! Tap WalletConnect to connect any mobile wallet.", 2500);
-        });
     }
 
-    // Event Listeners
+    // ==================== INITIALIZATION ====================
     function init() {
         startRefill();
-        updateGameUI();
+        updateUI();
         
-        document.getElementById('connectWalletBtn').addEventListener('click', showWalletModal);
-        document.getElementById('buyEnergyBtn').addEventListener('click', buyEnergyWithPVLT);
-        document.getElementById('claimBtn').addEventListener('click', claimPVLT);
+        document.getElementById('connectBtn').addEventListener('click', showWalletModal);
+        document.getElementById('buyEnergyBtn').addEventListener('click', buyEnergy);
+        document.getElementById('claimBtn').addEventListener('click', claimReward);
         tapCircle.addEventListener('click', handleTap);
+        
+        // Check if already connected
+        if (window.ethereum && window.ethereum.selectedAddress) {
+            setTimeout(() => connectInjected(), 500);
+        }
     }
-
+    
     init();
 </script>
 </body>
