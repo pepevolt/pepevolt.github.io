@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Web3 Arcade | Energy · Points · Token</title>
+  <title>Tap Circle | Web3 Arcade</title>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      user-select: none; /* prevents accidental text selection while tapping */
     }
 
     body {
@@ -20,7 +21,7 @@
       color: #ffffff;
     }
 
-    /* ========= TOP NAVIGATION (only stats, no connect button) ========= */
+    /* ========= TOP NAVIGATION (stats only, no connect button) ========= */
     .top-nav {
       position: fixed;
       top: 0;
@@ -38,7 +39,6 @@
       gap: 1rem;
     }
 
-    /* logo / brand (minimal) */
     .nav-brand {
       font-weight: 600;
       font-size: 1.2rem;
@@ -49,7 +49,6 @@
       color: transparent;
     }
 
-    /* nav links group: Energy · Points · Token with emojis */
     .nav-stats {
       display: flex;
       align-items: center;
@@ -89,12 +88,11 @@
       text-align: center;
     }
 
-    /* right side empty spacer to keep nav balanced (no button) */
     .nav-spacer {
       width: 80px;
     }
 
-    /* main content area: centers the primary big button */
+    /* main content: tapping circle + connect button */
     .hero-section {
       flex: 1;
       display: flex;
@@ -104,15 +102,85 @@
       min-height: 100vh;
       padding: 6rem 1.5rem 2rem 1.5rem;
       text-align: center;
+      gap: 2.5rem;
     }
 
-    /* single connect wallet button (main) */
+    /* ========= TAPPING CIRCLE (above the button) ========= */
+    .tap-circle-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .tap-circle {
+      width: 160px;
+      height: 160px;
+      background: radial-gradient(circle at 30% 30%, #2a2a2a, #0f0f0f);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.08s linear;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(2px);
+      will-change: transform;
+    }
+
+    /* tapping animation effect */
+    .tap-circle:active {
+      transform: scale(0.92);
+      transition: transform 0.03s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    }
+
+    /* inner ripple / pulse effect on tap (via JS class) */
+    .tap-circle.ripple-effect {
+      animation: rippleFlash 0.2s ease-out;
+    }
+
+    @keyframes rippleFlash {
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5), 0 0 0 0 rgba(255, 215, 0, 0.3);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 12px rgba(255, 255, 255, 0.2), 0 0 0 20px rgba(255, 215, 0, 0.1);
+        transform: scale(0.96);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0), 0 0 0 0 rgba(255, 215, 0, 0);
+        transform: scale(1);
+      }
+    }
+
+    .tap-emoji {
+      font-size: 3.5rem;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    .tap-counter-text {
+      font-size: 1rem;
+      font-weight: 700;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      padding: 0.2rem 0.8rem;
+      border-radius: 40px;
+      font-family: monospace;
+      letter-spacing: 1px;
+      color: #FFE6A7;
+    }
+
+    /* connect wallet button (main) */
     .main-connect-btn {
       background: #1a1a1a;
       border: none;
-      padding: 1.1rem 2.2rem;
+      padding: 1rem 2.2rem;
       border-radius: 60px;
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 600;
       font-family: inherit;
       color: #ffffff;
@@ -145,7 +213,15 @@
       background-repeat: no-repeat;
     }
 
-    /* subtle decorative glow (background only) */
+    /* subtle hint text */
+    .hint-text {
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      opacity: 0.35;
+      letter-spacing: 0.3px;
+    }
+
+    /* decorative background glow */
     .glow-orb {
       position: fixed;
       width: 50vw;
@@ -158,15 +234,6 @@
       filter: blur(60px);
     }
 
-    /* optional tiny hint (barely visible) */
-    .stats-update-hint {
-      margin-top: 2rem;
-      font-size: 0.7rem;
-      opacity: 0.25;
-      letter-spacing: 0.3px;
-    }
-
-    /* responsive */
     @media (max-width: 700px) {
       .top-nav {
         padding: 0.7rem 1rem;
@@ -181,8 +248,15 @@
       .stat-item {
         font-size: 0.8rem;
       }
+      .tap-circle {
+        width: 130px;
+        height: 130px;
+      }
+      .tap-emoji {
+        font-size: 2.8rem;
+      }
       .main-connect-btn {
-        padding: 0.9rem 1.8rem;
+        padding: 0.8rem 1.8rem;
         font-size: 1rem;
       }
       .nav-spacer {
@@ -193,9 +267,9 @@
 </head>
 <body>
 
-<!-- TOP NAVIGATION: Energy ⚡ Points ⭐ Token 💎 (no connect button) -->
+<!-- TOP NAVIGATION: Energy ⚡ Points ⭐ Token 💎 (no connect button, values start 0) -->
 <div class="top-nav">
-  <div class="nav-brand">✦ NEXUS</div>
+  <div class="nav-brand">✦ TAPVERSE</div>
   <div class="nav-stats">
     <div class="stat-item">
       <span class="stat-emoji">⚡</span>
@@ -213,28 +287,40 @@
       <span class="stat-value" id="tokenValue">0</span>
     </div>
   </div>
-  <div class="nav-spacer"></div> <!-- empty spacer to keep alignment -->
+  <div class="nav-spacer"></div>
 </div>
 
-<!-- main hero area (single central connect wallet button) -->
+<!-- main content: TAPPING CIRCLE + Connect Wallet button -->
 <div class="hero-section">
+  <!-- tapping circle area -->
+  <div class="tap-circle-container">
+    <div id="tapCircle" class="tap-circle">
+      <div class="tap-emoji">👆</div>
+      <div class="tap-counter-text" id="tapCountDisplay">0</div>
+    </div>
+  </div>
+  <div class="hint-text">tap the circle · earn energy</div>
+  
+  <!-- single connect wallet button -->
   <button id="mainConnectBtn" class="main-connect-btn">
     <span class="main-icon"></span>
     <span id="mainBtnText">Connect Wallet</span>
   </button>
-  <div class="stats-update-hint">⚡ connect wallet to update stats</div>
 </div>
 
 <div class="glow-orb"></div>
 
 <script>
-  // ULTRA CLEAN: Only ONE connect wallet button (main).
-  // Top nav has NO button, only Energy, Points, Token with values starting at 0.
-  // When wallet connects, stats become dynamic (simulated realistic values).
-  // No extra text or second button.
+  // =========  TAPPING CIRCLE LOGIC + WALLET INTEGRATION =========
+  // Top nav stats start at 0. Tapping circle increments "points" when wallet is connected.
+  // When wallet not connected, tapping circle still increments a local counter (visible on circle)
+  // but points/energy in top nav only update after wallet connect (sync).
+  // Tapping also gives visual ripple and increases user stats (Energy/Points/Token) after connection.
   
   (function() {
-    // DOM elements
+    // ---------- DOM elements ----------
+    const tapCircle = document.getElementById('tapCircle');
+    const tapCountSpan = document.getElementById('tapCountDisplay');
     const mainConnectBtn = document.getElementById('mainConnectBtn');
     const mainBtnText = document.getElementById('mainBtnText');
     
@@ -243,63 +329,118 @@
     const pointsSpan = document.getElementById('pointsValue');
     const tokenSpan = document.getElementById('tokenValue');
     
-    // wallet state
+    // ---------- State ----------
     let isConnected = false;
     let currentAccount = null;
     
-    // Stats object — all start at 0 as requested.
-    let stats = {
+    // Tap session counter (shows on circle)
+    let sessionTaps = 0;
+    
+    // User stats (Energy, Points, Token) - start at 0
+    let userStats = {
       energy: 0,
       points: 0,
       token: 0
     };
     
-    // Helper: update UI stats
+    // Flag to ensure stats initialization after connection happens only once
+    let statsInitialized = false;
+    
+    // Helper: update top nav UI with current stats
     function updateStatsUI() {
-      if (energySpan) energySpan.innerText = stats.energy.toLocaleString();
-      if (pointsSpan) pointsSpan.innerText = stats.points.toLocaleString();
-      if (tokenSpan) tokenSpan.innerText = stats.token.toLocaleString();
+      if (energySpan) energySpan.innerText = Math.floor(userStats.energy);
+      if (pointsSpan) pointsSpan.innerText = Math.floor(userStats.points);
+      if (tokenSpan) tokenSpan.innerText = userStats.token.toFixed(2);
     }
     
-    // When wallet connects, assign fresh stats (simulating user data)
-    // Instead of bonus, we set meaningful numbers: Energy = 850, Points = 3200, Token = 125
-    // But requirement just said "make energy,points and token number 0" initially.
-    // After connection, they can change to show activity.
-    function applyConnectedStats() {
-      // only set once per connection session
-      if (window._statsInitialized) return;
-      
-      // Set realistic values after wallet connection (user-specific)
-      stats.energy = 1240;
-      stats.points = 5670;
-      stats.token = 230;
-      updateStatsUI();
-      window._statsInitialized = true;
-    }
-    
-    // reset stats to zero on disconnect
+    // Reset stats to zero (disconnect or fresh)
     function resetStatsToZero() {
-      stats.energy = 0;
-      stats.points = 0;
-      stats.token = 0;
+      userStats = { energy: 0, points: 0, token: 0 };
       updateStatsUI();
-      window._statsInitialized = false;
+      statsInitialized = false;
     }
     
-    // change main button text based on connection state
-    function setButtonConnectedState(connected) {
-      if (connected) {
-        if (mainBtnText) mainBtnText.innerText = 'Connected ✓';
-      } else {
-        if (mainBtnText) mainBtnText.innerText = 'Connect Wallet';
+    // When wallet connects, we set initial meaningful stats (but can also keep previous tapping progress?)
+    // To make tapping rewarding: after connecting, we sync the session taps into points/energy.
+    // But requirement: tapping circle should affect the stats after wallet connected.
+    // Also energy/points/token start at 0, tapping increases them.
+    function applyConnectedStats() {
+      if (statsInitialized) return;
+      // When wallet first connects, we keep existing stats from zero — but we want to reflect any previous taps done while disconnected?
+      // Taps made while disconnected are stored in sessionTaps but not added to userStats. To make it fair:
+      // We'll add current sessionTaps to points/energy when connecting.
+      if (sessionTaps > 0) {
+        // convert taps to in-game resources: each tap gives +5 energy, +3 points, +0.2 token
+        const bonusEnergy = sessionTaps * 5;
+        const bonusPoints = sessionTaps * 3;
+        const bonusToken = sessionTaps * 0.2;
+        userStats.energy += bonusEnergy;
+        userStats.points += bonusPoints;
+        userStats.token += bonusToken;
+        updateStatsUI();
       }
+      statsInitialized = true;
     }
     
-    // main wallet connection logic (using ethereum provider)
+    // Function to increment stats based on tap (only if wallet is connected)
+    function processTapReward() {
+      if (!isConnected) {
+        // when wallet not connected, taps only increment session counter but do NOT affect top-nav stats.
+        // That encourages connection, but we still show tap count on circle.
+        // We do not modify userStats.
+        return false;
+      }
+      
+      // Wallet connected: each tap adds rewards
+      // reward schema: +3 energy, +2 points, +0.1 token per tap
+      userStats.energy += 3;
+      userStats.points += 2;
+      userStats.token += 0.1;
+      
+      // Keep numbers sane (max limits optional)
+      if (userStats.token > 9999) userStats.token = 9999;
+      if (userStats.energy > 99999) userStats.energy = 99999;
+      if (userStats.points > 99999) userStats.points = 99999;
+      
+      updateStatsUI();
+      return true;
+    }
+    
+    // Update the circle's internal tap counter display
+    function updateTapDisplay() {
+      if (tapCountSpan) tapCountSpan.innerText = sessionTaps;
+    }
+    
+    // Handle tap on circle
+    function onTapCircle(e) {
+      e.stopPropagation();
+      // add visual ripple class
+      tapCircle.classList.add('ripple-effect');
+      setTimeout(() => {
+        tapCircle.classList.remove('ripple-effect');
+      }, 200);
+      
+      // increment session taps
+      sessionTaps++;
+      updateTapDisplay();
+      
+      // If wallet connected, reward stats increase
+      if (isConnected) {
+        processTapReward();
+      } else {
+        // disconnected: no stats increase, but we still show tap count on circle
+        // Also we can add a subtle micro feedback? but no extra text
+        console.log("Tap recorded, connect wallet to earn Energy/Points/Token");
+      }
+      
+      // haptic-like vibration if supported (tiny)
+      if (navigator.vibrate) navigator.vibrate(20);
+    }
+    
+    // ---------- Wallet Logic (single button) ----------
     async function connectWallet() {
       if (!window.ethereum) {
-        // silently fail, only console (no extra UI text)
-        console.warn('No Web3 wallet detected. Please install MetaMask or another wallet.');
+        console.warn('No Web3 wallet detected. Install MetaMask.');
         return;
       }
       
@@ -309,44 +450,45 @@
           currentAccount = accounts[0];
           isConnected = true;
           setButtonConnectedState(true);
+          // apply any pending taps from before connection
           applyConnectedStats();
-          
-          // Setup listeners for account / chain changes
           setupEventListeners();
-          
           console.log(`Wallet connected: ${currentAccount}`);
         } else {
-          // no accounts
           isConnected = false;
           setButtonConnectedState(false);
           resetStatsToZero();
         }
       } catch (err) {
-        console.error('Connection rejected or error:', err);
+        console.error('Connection error:', err);
         if (!isConnected) {
           setButtonConnectedState(false);
-          resetStatsToZero();
         }
       }
     }
     
-    // disconnect logic (local clear)
     function disconnectWallet() {
       isConnected = false;
       currentAccount = null;
       setButtonConnectedState(false);
       resetStatsToZero();
-      window._statsInitialized = false;
+      statsInitialized = false;
+      // sessionTaps remain? Better to keep session taps count but stats already reset.
+      // When reconnecting we will again apply sessionTaps? That's fine. But taps will apply fresh on reconnect.
+      // We'll keep sessionTaps as is, so reconnect gives credit for taps made.
     }
     
-    // event listeners for account/chain changes
+    function setButtonConnectedState(connected) {
+      if (mainBtnText) {
+        mainBtnText.innerText = connected ? 'Connected ✓' : 'Connect Wallet';
+      }
+    }
+    
     function setupEventListeners() {
       if (!window.ethereum) return;
-      
       if (window._accountsChangedHandler) {
         window.ethereum.removeListener('accountsChanged', window._accountsChangedHandler);
       }
-      
       const accountsChangedHandler = (accounts) => {
         if (accounts && accounts.length > 0) {
           currentAccount = accounts[0];
@@ -355,28 +497,21 @@
             setButtonConnectedState(true);
             applyConnectedStats();
           } else {
-            // account changed, ensure stats are applied if not already
-            if (!window._statsInitialized) applyConnectedStats();
+            if (!statsInitialized) applyConnectedStats();
           }
         } else {
-          // no accounts = disconnected
           disconnectWallet();
         }
       };
-      
       const chainChangedHandler = () => {
-        // chain changed: keep connection state, stats remain fine.
-        if (isConnected && !window._statsInitialized) applyConnectedStats();
+        if (isConnected && !statsInitialized) applyConnectedStats();
       };
-      
       window.ethereum.on('accountsChanged', accountsChangedHandler);
       window.ethereum.on('chainChanged', chainChangedHandler);
-      
       window._accountsChangedHandler = accountsChangedHandler;
       window._chainChangedHandler = chainChangedHandler;
     }
     
-    // check initial connection on page load (retain session)
     async function checkInitialConnection() {
       if (window.ethereum) {
         try {
@@ -388,39 +523,33 @@
             applyConnectedStats();
             setupEventListeners();
           } else {
-            // default state: not connected, stats remain 0
             setButtonConnectedState(false);
             resetStatsToZero();
           }
         } catch (err) {
-          console.warn('initial check failed', err);
           setButtonConnectedState(false);
           resetStatsToZero();
         }
       } else {
-        // no provider, stats stay 0, disconnected UI
         setButtonConnectedState(false);
         resetStatsToZero();
       }
     }
     
-    // Handle connect button click (single entry point)
     function handleConnectClick() {
       if (isConnected) {
-        // If already connected, allow switching accounts: re-trigger connection to open account selector.
+        // Switch account feature: re-trigger request
         if (window.ethereum) {
           window.ethereum.request({ method: 'eth_requestAccounts' }).then(accounts => {
             if (accounts && accounts.length > 0) {
               currentAccount = accounts[0];
               isConnected = true;
               setButtonConnectedState(true);
-              if (!window._statsInitialized) applyConnectedStats();
+              if (!statsInitialized) applyConnectedStats();
             } else {
               disconnectWallet();
             }
-          }).catch(err => {
-            console.warn('Account switch cancelled', err);
-          });
+          }).catch(err => console.warn('Account switch cancelled', err));
         } else {
           disconnectWallet();
         }
@@ -429,50 +558,38 @@
       }
     }
     
-    // Attach event listener to the single main button
+    // Attach tap event to circle
+    if (tapCircle) {
+      tapCircle.addEventListener('click', onTapCircle);
+      // Also support touch for mobile without delay
+      tapCircle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        onTapCircle(e);
+      }, { passive: false });
+    }
+    
+    // Attach wallet button
     if (mainConnectBtn) {
       mainConnectBtn.addEventListener('click', handleConnectClick);
     }
     
-    // Optional: Live incremental update when connected (makes stats feel alive)
-    // But we keep it minimal and respectful. Stats will slowly increase when wallet is connected.
-    let intervalId = null;
-    function startLiveStatsUpdate() {
-      if (intervalId) clearInterval(intervalId);
-      intervalId = setInterval(() => {
-        if (isConnected && window._statsInitialized) {
-          // small increments to simulate active session
-          stats.energy = Math.floor(stats.energy + 2);
-          stats.points = Math.floor(stats.points + 5);
-          stats.token = parseFloat((stats.token + 0.3).toFixed(2));
-          // keep numbers clean
-          if (stats.token > 999) stats.token = 999;
-          if (stats.energy > 9999) stats.energy = 9999;
-          if (stats.points > 99999) stats.points = 99999;
-          updateStatsUI();
-        }
-      }, 7000);
-    }
-    
-    // override reset to ensure interval friendly
-    const originalReset = resetStatsToZero;
-    window.resetStatsToZero = function() {
-      originalReset();
-    };
-    
-    // initialize periodic updater only after connection, but it's fine to start now
-    startLiveStatsUpdate();
-    
-    // Ensure stats start at ZERO and remain zero until connected.
-    // Double-check on page load: stats values forced to 0
+    // Initialize: stats 0, taps 0
     resetStatsToZero();
-    
-    // initial connection check (if wallet already connected, stats update accordingly)
+    updateTapDisplay();
     checkInitialConnection();
     
-    // If there is no wallet ever, stats stay zero, no button duplication.
-    // Also we ensure the top nav does not contain any connect element.
-    console.log('Ready — single connect wallet button, top nav stats start at 0');
+    // Optional: small periodic effect: if connected and stats grow, no extra text.
+    // Keep live background sync. Also when tapping while connected, top nav updates dynamically.
+    // Also Energy/Points/Token numbers can be increased by tapping.
+    // Additionally we can add a subtle bonus if tapping rapidly? Not needed but smooth.
+    // For fun: when wallet connected, show a little glow on circle? we can style but optional.
+    // Also ensure that after disconnect, the top nav stats go back to 0, and tapping while disconnected only increments local circle counter.
+    // Then after reconnect, the accumulated taps (sessionTaps) will be converted to points/energy/tokens via applyConnectedStats()
+    // ApplyConnectedStats also uses existing sessionTaps each time connecting; prevents double counting via flag.
+    // But we must ensure that after disconnect and reconnect, we dont add taps twice: statsInitialized flag resets on disconnect.
+    // On reconnect, applyConnectedStats will add rewards based on sessionTaps again. That's correct because while disconnected stats are zero.
+    // To avoid exploit: we only call applyConnectedStats once per connection, reset on disconnect.
+    console.log("Ready: Tapping circle above Connect Wallet button — earn rewards after connecting.");
   })();
 </script>
 </body>
