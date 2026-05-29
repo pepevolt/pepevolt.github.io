@@ -6,6 +6,8 @@
     <title>TapVerse — Web3 Tapping Game on Polygon</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+    <!-- WalletConnect v2 Provider -->
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.13.0/dist/index.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -212,8 +214,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -328,6 +330,19 @@
             .wallet-option img { width: 40px; height: 40px; }
             .tap-circle { width: 170px; height: 170px; font-size: 26px; }
         }
+
+        .qr-container {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .qr-container img {
+            width: 200px;
+            height: 200px;
+            margin: 10px auto;
+            background: white;
+            border-radius: 16px;
+        }
     </style>
 </head>
 <body>
@@ -396,6 +411,10 @@
     let userAddress = null;
     let walletConnected = false;
     let currentChainId = null;
+    let walletConnectProvider = null;
+
+    // WalletConnect Project ID
+    const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
 
     // DOM Elements
     const energyCurrentEl = document.getElementById('energyCurrent');
@@ -472,7 +491,6 @@
 
         showFeedback("⏳ Initiating 100 PVLT purchase on Polygon...", 2000);
         
-        // Simulate transaction (in production, call actual PVLT contract)
         setTimeout(() => {
             addPurchasedEnergy();
             showFeedback("✅ Purchase successful! +10000 Energy added.", 2500);
@@ -517,12 +535,104 @@
             networkBadge.innerHTML = `🟣 Polygon Mainnet`;
         } else if (chainId === 80001) {
             networkBadge.innerHTML = `🟣 Mumbai Testnet`;
+        } else if (chainId) {
+            networkBadge.innerHTML = `⚠️ Chain ${chainId}`;
         } else {
             networkBadge.innerHTML = `⚡ Polygon`;
         }
     }
 
-    // Wallet Modal
+    // Connect using WalletConnect (works with all wallets)
+    async function connectWithWalletConnect() {
+        try {
+            showFeedback("Opening WalletConnect...", 1500);
+            
+            // Initialize WalletConnect provider
+            const EthereumProvider = window.EthereumProvider;
+            
+            if (!EthereumProvider) {
+                showFeedback("Loading WalletConnect SDK... Please refresh.", 2000);
+                return;
+            }
+            
+            walletConnectProvider = await EthereumProvider.init({
+                projectId: PROJECT_ID,
+                chains: [137, 80001],
+                optionalChains: [137],
+                showQrModal: true,
+                qrModalOptions: {
+                    themeMode: 'dark',
+                    themeVariables: {
+                        '--w3m-z-index': '10001',
+                        '--w3m-font-family': 'Inter, sans-serif'
+                    }
+                },
+                rpcMap: {
+                    137: 'https://polygon-rpc.com',
+                    80001: 'https://rpc-mumbai.maticvigil.com'
+                },
+                metadata: {
+                    name: 'TapVerse Game',
+                    description: 'Web3 Tapping Game on Polygon',
+                    url: window.location.origin,
+                    icons: ['https://avatars.githubusercontent.com/u/37784886']
+                }
+            });
+            
+            // Connect to wallet
+            await walletConnectProvider.connect();
+            
+            // Create ethers provider
+            provider = new ethers.BrowserProvider(walletConnectProvider);
+            signer = await provider.getSigner();
+            userAddress = await signer.getAddress();
+            const network = await provider.getNetwork();
+            currentChainId = Number(network.chainId);
+            
+            walletConnected = true;
+            updateWalletUI(userAddress, currentChainId);
+            showFeedback(`✅ Connected to ${userAddress.slice(0,6)}...`, 2000);
+            
+            // Handle disconnect
+            walletConnectProvider.on('disconnect', () => {
+                walletConnected = false;
+                updateWalletUI(null, null);
+                showFeedback("Wallet disconnected", 2000);
+            });
+            
+        } catch (err) {
+            console.error(err);
+            showFeedback(`Connection failed: ${err.message?.slice(0,80) || "Unknown error"}`, 3000);
+            walletConnected = false;
+        }
+    }
+    
+    // Connect using injected wallet (MetaMask, Trust, etc.)
+    async function connectWithInjected() {
+        if (!window.ethereum) {
+            showFeedback("No injected wallet found. Please install MetaMask or use WalletConnect.", 3000);
+            return false;
+        }
+        
+        try {
+            provider = new ethers.BrowserProvider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = await provider.getSigner();
+            userAddress = await signer.getAddress();
+            const network = await provider.getNetwork();
+            currentChainId = Number(network.chainId);
+            
+            walletConnected = true;
+            updateWalletUI(userAddress, currentChainId);
+            showFeedback(`✅ Connected to ${userAddress.slice(0,6)}...`, 2000);
+            return true;
+        } catch (err) {
+            showFeedback(`Connection failed: ${err.message}`, 3000);
+            return false;
+        }
+    }
+
+    // Show Wallet Modal
     function showWalletModal() {
         const modalDiv = document.createElement('div');
         modalDiv.className = 'modal-overlay';
@@ -569,9 +679,9 @@
                 </div>
                 <div class="recent-section">
                     <div class="recent-label">RECENT</div>
-                    <div class="recent-wallet" id="recentWallet">—</div>
+                    <div class="recent-wallet" id="recentWallet">Select a wallet above</div>
                 </div>
-                <button class="view-all-btn">View All</button>
+                <button class="view-all-btn">View All Wallets</button>
             </div>
         `;
         document.body.appendChild(modalDiv);
@@ -580,33 +690,23 @@
         
         document.querySelectorAll('.wallet-option').forEach(opt => {
             opt.addEventListener('click', async () => {
+                const walletType = opt.getAttribute('data-wallet');
                 modalDiv.remove();
-                await connectWalletWithInjected();
+                
+                if (walletType === 'walletconnect') {
+                    await connectWithWalletConnect();
+                } else {
+                    const success = await connectWithInjected();
+                    if (!success && walletType !== 'walletconnect') {
+                        showFeedback(`Try using "WalletConnect" option for mobile wallets`, 3000);
+                    }
+                }
             });
         });
-    }
-
-    async function connectWalletWithInjected() {
-        if (!window.ethereum) {
-            showFeedback("❌ No wallet found! Please install MetaMask or Trust Wallet.", 3000);
-            return;
-        }
-
-        try {
-            provider = new ethers.BrowserProvider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-            const network = await provider.getNetwork();
-            currentChainId = Number(network.chainId);
-            
-            walletConnected = true;
-            updateWalletUI(userAddress, currentChainId);
-            showFeedback(`✅ Connected to ${userAddress.slice(0,6)}...`, 2000);
-        } catch (err) {
-            showFeedback(`Connection failed: ${err.message}`, 3000);
-            walletConnected = false;
-        }
+        
+        document.querySelector('.view-all-btn').addEventListener('click', () => {
+            showFeedback("All wallets supported! Tap WalletConnect to connect any mobile wallet.", 2500);
+        });
     }
 
     // Event Listeners
