@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Tap to Earn | Energy ⚡ Points ⭐</title>
+  <title>Tap to Earn | Energy → Points → Token</title>
   <style>
     * {
       margin: 0;
@@ -164,7 +164,6 @@
       transform: scale(0.9);
     }
 
-    /* disabled / low energy state */
     .tap-circle.disabled {
       cursor: not-allowed;
       opacity: 0.6;
@@ -221,7 +220,7 @@
       background-repeat: no-repeat;
     }
 
-    /* floating +1 point feedback */
+    /* floating feedback */
     @keyframes floatUp {
       0% {
         opacity: 0.9;
@@ -229,24 +228,26 @@
       }
       100% {
         opacity: 0;
-        transform: translateY(-40px) scale(1.3);
+        transform: translateY(-42px) scale(1.3);
       }
     }
 
     .tap-feedback {
       position: fixed;
       pointer-events: none;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: bold;
       color: #FFD966;
       text-shadow: 0 0 5px #000;
       z-index: 2000;
       animation: floatUp 0.6s ease-out forwards;
       font-family: monospace;
+      white-space: nowrap;
     }
 
-    .energy-feedback {
-      color: #6ee7ff;
+    .token-feedback {
+      color: #c084fc;
+      text-shadow: 0 0 3px #4a1d6d;
     }
 
     /* glow background */
@@ -295,7 +296,7 @@
 </head>
 <body>
 
-<!-- TOP NAVIGATION: Energy ⚡ Points ⭐ Token 💎 (Energy starts at 10000) -->
+<!-- TOP NAVIGATION: Energy ⚡ Points ⭐ Token 💎 -->
 <div class="top-nav">
   <div class="nav-brand">✦ TAPVERSE</div>
   <div class="nav-stats">
@@ -325,7 +326,7 @@
       <div class="tap-emoji">👆</div>
     </div>
   </div>
-  <div class="hint-text">tap to spend 1 energy → earn 1 point</div>
+  <div class="hint-text">tap → -1 energy → +1 point | every 100 points = 1 token</div>
   
   <!-- single connect wallet button -->
   <button id="mainConnectBtn" class="main-connect-btn">
@@ -337,13 +338,12 @@
 <div class="glow-orb"></div>
 
 <script>
-  // =========  ENERGY & POINTS SYSTEM =========
-  // Total Energy: 10,000 (starting value)
-  // Every tap: Energy -1, Points +1
-  // Token is separate (optional, starts at 0, not affected by taps — can be bonus later)
-  // When energy reaches 0, tapping is disabled.
-  // Tapping circle shows number on Points in top nav (Points increase) and Energy decreases.
-  // No counter on circle itself.
+  // =========  ENERGY, POINTS & TOKEN SYSTEM =========
+  // Total Energy: 10,000 (starting)
+  // Each tap: Energy -1, Points +1
+  // Every 100 points earned (in total) gives +1 Token.
+  // Token calculation based on total points accumulated (floor(points / 100))
+  // Energy regen: +1 every 15 seconds (max 10000)
   
   (function() {
     // DOM elements
@@ -356,20 +356,35 @@
     const pointsSpan = document.getElementById('pointsValue');
     const tokenSpan = document.getElementById('tokenValue');
     
-    // Wallet state (optional, but we keep it)
+    // Wallet state (optional integration)
     let isConnected = false;
     let currentAccount = null;
     
-    // Stats: Energy starts at 10000, Points at 0, Token at 0
-    let energy = 10000;
-    let points = 0;
-    let token = 0;
+    // Stats
+    let energy = 10000;      // starts at 10000
+    let points = 0;          // total points earned
+    let tokens = 0;          // tokens = floor(points / 100)
     
-    // Helper: update top nav UI
+    // Helper: recalculate token based on points
+    function updateTokenFromPoints() {
+      const newTokens = Math.floor(points / 100);
+      if (newTokens !== tokens) {
+        const gained = newTokens - tokens;
+        tokens = newTokens;
+        // show floating token feedback if gained > 0
+        if (gained > 0 && window.lastTapPosition) {
+          showTokenFeedback(window.lastTapPosition.x, window.lastTapPosition.y, gained);
+        }
+      }
+      // update UI after token change
+      if (tokenSpan) tokenSpan.innerText = tokens;
+    }
+    
+    // Update all UI elements
     function updateStatsUI() {
       if (energySpan) energySpan.innerText = Math.floor(energy);
       if (pointsSpan) pointsSpan.innerText = Math.floor(points);
-      if (tokenSpan) tokenSpan.innerText = token.toFixed(2);
+      if (tokenSpan) tokenSpan.innerText = tokens;
       
       // Enable/disable tap circle based on energy
       if (energy <= 0) {
@@ -379,19 +394,34 @@
       }
     }
     
-    // Reset stats to initial state (only if needed, but we keep fresh)
+    // Reset to initial state (if needed)
     function resetToInitial() {
       energy = 10000;
       points = 0;
-      token = 0;
+      tokens = 0;
+      updateTokenFromPoints(); // syncs token = 0
       updateStatsUI();
     }
     
-    // Process tap: decrease energy by 1, increase points by 1
-    // Returns boolean indicating if tap was successful
+    // Show floating token notification
+    function showTokenFeedback(x, y, gained) {
+      const feedback = document.createElement('div');
+      feedback.className = 'tap-feedback token-feedback';
+      feedback.innerHTML = `+${gained} 💎 TOKEN`;
+      feedback.style.left = `${x - 40}px`;
+      feedback.style.top = `${y - 50}px`;
+      document.body.appendChild(feedback);
+      setTimeout(() => {
+        if (feedback && feedback.remove) feedback.remove();
+      }, 700);
+    }
+    
+    // Store last tap coordinates for token feedback
+    let lastTapPosition = { x: 0, y: 0 };
+    
+    // Process tap: -1 energy, +1 point, then recalc tokens
     function processTap() {
       if (energy <= 0) {
-        // No energy left
         return false;
       }
       
@@ -399,23 +429,20 @@
       energy -= 1;
       points += 1;
       
-      // Optional token bonus: each tap gives 0.02 token? Not required but nice extra
-      token += 0.02;
+      // Update token based on new points total
+      updateTokenFromPoints();
       
-      // Cap token at reasonable value
-      if (token > 9999) token = 9999;
-      
+      // Update UI
       updateStatsUI();
       return true;
     }
     
-    // Create floating feedback (+1 point & -1 energy)
+    // Create floating feedback for tap (+1 point, -1 energy)
     function createFloatingFeedback(x, y) {
-      // create two floating elements? combine into one line
       const feedback = document.createElement('div');
       feedback.className = 'tap-feedback';
-      feedback.innerHTML = `+1 ⭐ &nbsp;|&nbsp; -1 ⚡`;
-      feedback.style.left = `${x - 35}px`;
+      feedback.innerHTML = `+1 ⭐ &nbsp; -1 ⚡`;
+      feedback.style.left = `${x - 40}px`;
       feedback.style.top = `${y - 40}px`;
       document.body.appendChild(feedback);
       setTimeout(() => {
@@ -427,9 +454,8 @@
     function onTapCircle(e) {
       e.stopPropagation();
       
-      // Check if enough energy
+      // Check energy
       if (energy <= 0) {
-        // show a quick "out of energy" feedback but minimal
         const rect = tapCircle.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
@@ -437,27 +463,27 @@
         warning.className = 'tap-feedback';
         warning.innerText = '❌ No Energy';
         warning.style.color = '#ff8888';
-        warning.style.left = `${centerX - 40}px`;
+        warning.style.left = `${centerX - 45}px`;
         warning.style.top = `${centerY - 20}px`;
         document.body.appendChild(warning);
         setTimeout(() => warning.remove(), 500);
         return;
       }
       
-      // Add visual ripple class
+      // Visual ripple
       tapCircle.classList.add('ripple-effect');
       setTimeout(() => {
         tapCircle.classList.remove('ripple-effect');
       }, 200);
       
-      // Process tap: -1 energy, +1 point
+      // Process tap (energy -1, points +1, token recalc)
       const success = processTap();
       if (!success) return;
       
-      // Haptic feedback if supported
+      // Haptic feedback
       if (navigator.vibrate) navigator.vibrate(15);
       
-      // Get tap coordinates for floating feedback
+      // Get tap coordinates
       let clientX, clientY;
       if (e.touches) {
         clientX = e.touches[0].clientX;
@@ -467,25 +493,25 @@
         clientY = e.clientY;
       }
       if (clientX && clientY) {
+        lastTapPosition = { x: clientX, y: clientY };
         createFloatingFeedback(clientX, clientY);
       } else {
         const rect = tapCircle.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
+        lastTapPosition = { x: centerX, y: centerY };
         createFloatingFeedback(centerX, centerY);
       }
       
-      console.log(`Tap! Energy: ${energy} | Points: ${points} | Token: ${token.toFixed(2)}`);
+      console.log(`Tap! Energy: ${energy} | Points: ${points} | Tokens: ${tokens}`);
     }
     
-    // ---------- Wallet Integration (kept minimal, no effect on energy/points) ----------
+    // ---------- Wallet Integration (optional, no effect on game stats) ----------
     async function connectWallet() {
       if (!window.ethereum) {
         console.warn('No Web3 wallet detected. Install MetaMask.');
-        // subtle visual feedback? not required
         return;
       }
-      
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         if (accounts && accounts.length > 0) {
@@ -598,30 +624,25 @@
       mainConnectBtn.addEventListener('click', handleConnectClick);
     }
     
-    // Initialize: Energy = 10000, Points = 0, Token = 0
-    resetToInitial();
-    checkInitialConnection();
-    
-    // Optional: Add regeneration? Not required, but could be a nice feature: regen 1 energy every 10 seconds?
-    // But spec not needed. We can add small regen to make it playable? However requirement is clear: each tap decrease energy by 1, add one point.
-    // Energy starts at 10000 and can go to zero, after that no more taps.
-    // To improve user experience, we add a slow regeneration of 1 energy every 15 seconds (optional but nice).
-    // This ensures that the game doesn't end permanently. But we'll implement it as a subtle bonus, but not interfering with core logic.
-    // Regeneration will only happen if energy < 10000 and not exceed max.
+    // Energy regeneration: +1 energy every 15 seconds, max 10000
     let regenInterval = setInterval(() => {
       if (energy < 10000) {
         energy = Math.min(energy + 1, 10000);
         updateStatsUI();
-        // show subtle regen feedback? not necessary
+        // optional subtle regen indicator? no extra text needed
       }
-    }, 15000); // 1 energy per 15 seconds
+    }, 15000);
     
-    // Cleanup hypothetical interval on page unload (good practice)
+    // Cleanup interval on page unload
     window.addEventListener('beforeunload', () => {
       if (regenInterval) clearInterval(regenInterval);
     });
     
-    console.log("Ready: Total Energy = 10000. Each tap: -1 Energy, +1 Point. Points shown in top nav.");
+    // Initialize game
+    resetToInitial();
+    checkInitialConnection();
+    
+    console.log("Ready: Energy 10000 | Tap: -1 energy, +1 point | Every 100 points = 1 Token");
   })();
 </script>
 </body>
