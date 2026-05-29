@@ -1,649 +1,617 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PVLT Tap Game — Web3 Tapping on Polygon</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Web3 Demo | Connect Wallet Button</title>
+  <!-- Google Fonts & simple reset for a clean look -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        body {
-            background: linear-gradient(145deg, #0B1120 0%, #0A0F1A 100%);
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-        }
+    body {
+      background: linear-gradient(145deg, #f6f9fc 0%, #eef2f5 100%);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
 
-        .game-container {
-            max-width: 500px;
-            width: 100%;
-            background: rgba(18, 25, 45, 0.8);
-            backdrop-filter: blur(12px);
-            border-radius: 48px;
-            border: 1px solid rgba(0, 255, 255, 0.2);
-            overflow: hidden;
-        }
+    /* card container */
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(2px);
+      border-radius: 2.5rem;
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.02);
+      padding: 2rem 2rem 2.2rem 2rem;
+      max-width: 500px;
+      width: 100%;
+      transition: all 0.2s ease;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.6);
+    }
 
-        /* Top Nav */
-        .top-nav {
-            display: flex;
-            justify-content: space-between;
-            padding: 20px 24px;
-            background: rgba(6, 12, 24, 0.7);
-            border-bottom: 1px solid rgba(0, 255, 255, 0.15);
-            gap: 12px;
-        }
+    h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1E2A3E, #0F2027);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.3px;
+      margin-bottom: 0.5rem;
+    }
 
-        .nav-card {
-            flex: 1;
-            background: rgba(14, 22, 40, 0.9);
-            border-radius: 32px;
-            padding: 10px 12px;
-            text-align: center;
-            border: 1px solid rgba(0, 212, 255, 0.2);
-        }
+    .sub {
+      color: #4b5b6c;
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+      font-weight: 500;
+      border-bottom: 1px solid #e2e8f0;
+      display: inline-block;
+      padding-bottom: 0.3rem;
+    }
 
-        .nav-label {
-            font-size: 11px;
-            color: #8F9BB5;
-            margin-bottom: 6px;
-            letter-spacing: 0.5px;
-        }
+    /* connect wallet button */
+    .connect-btn {
+      background: #0b1120;
+      border: none;
+      padding: 1rem 1.8rem;
+      border-radius: 60px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      width: 100%;
+      max-width: 260px;
+      letter-spacing: 0.2px;
+    }
 
-        .nav-value {
-            font-size: 24px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #FFFFFF, #A0D6FF);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
+    .connect-btn:hover {
+      background: #1f2a46;
+      transform: scale(1.02);
+      box-shadow: 0 12px 20px -12px rgba(0, 0, 0, 0.25);
+    }
 
-        .energy-value {
-            display: flex;
-            justify-content: center;
-            align-items: baseline;
-            gap: 4px;
-        }
+    .connect-btn:active {
+      transform: scale(0.98);
+    }
 
-        .energy-current {
-            font-size: 24px;
-            font-weight: 800;
-            color: #FFD966;
-        }
+    /* wallet icon inside button */
+    .wallet-icon {
+      width: 22px;
+      height: 22px;
+      display: inline-block;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5M16 12h3M3 10h18' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+      background-size: contain;
+      background-repeat: no-repeat;
+      filter: brightness(0) invert(1);
+    }
 
-        .energy-max {
-            font-size: 13px;
-            color: #7D8FB3;
-        }
+    /* account & status area */
+    .wallet-status {
+      margin-top: 2rem;
+      background: #ffffffcc;
+      backdrop-filter: blur(4px);
+      border-radius: 1.8rem;
+      padding: 1.2rem 1rem;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: all 0.2s;
+    }
 
-        /* Body */
-        .body-area {
-            padding: 32px 24px 28px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+    .address-chip {
+      background: #eef2ff;
+      padding: 0.5rem 1rem;
+      border-radius: 40px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #0f172a;
+      word-break: break-all;
+      max-width: 100%;
+      margin-bottom: 0.8rem;
+    }
 
-        /* Tap Circle */
-        .tap-circle {
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle at 30% 30%, #FFB347, #FF7E05);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4), 0 0 0 6px rgba(255, 140, 0, 0.3);
-            transition: transform 0.06s ease;
-            margin-bottom: 28px;
-        }
+    .indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
 
-        .tap-circle:active {
-            transform: scale(0.94);
-        }
+    .network-badge {
+      background: #e6f7ec;
+      color: #1e7b3c;
+      padding: 0.3rem 1rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
 
-        .tap-circle.disabled {
-            opacity: 0.5;
-            filter: grayscale(0.3);
-            cursor: not-allowed;
-        }
+    .error-msg {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-radius: 60px;
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-top: 0.8rem;
+      display: inline-block;
+    }
 
-        .tap-circle.disabled:active {
-            transform: none;
-        }
+    .balance-row {
+      margin-top: 0.7rem;
+      font-size: 0.9rem;
+      background: #f8fafc;
+      border-radius: 32px;
+      padding: 0.5rem 1rem;
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
 
-        .tap-logo {
-            width: 55%;
-            height: 55%;
-            object-fit: contain;
-            pointer-events: none;
-        }
+    .balance-label {
+      font-weight: 600;
+      color: #2c3e66;
+    }
 
-        /* Buttons */
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: 100%;
-            margin: 8px 0;
-        }
+    .balance-value {
+      font-family: monospace;
+      font-weight: 700;
+      color: #0b1120;
+    }
 
-        .btn {
-            border: none;
-            font-weight: 700;
-            padding: 14px 20px;
-            border-radius: 60px;
-            font-family: 'Inter', sans-serif;
-            font-size: 15px;
-            cursor: pointer;
-            transition: 0.15s;
-            width: 100%;
-        }
+    button {
+      background: none;
+      border: none;
+    }
 
-        .btn-primary {
-            background: linear-gradient(95deg, #2D5F9E, #1C3E6C);
-            color: white;
-            border: 1px solid #3D8BFF;
-        }
+    .disconnect-btn {
+      background: transparent;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      padding: 0.4rem 1rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-left: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
 
-        .btn-success {
-            background: linear-gradient(95deg, #1F6D43, #0F4A2E);
-            color: white;
-            border: 1px solid #4cd964;
-        }
+    .disconnect-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
 
-        .btn-claim {
-            background: linear-gradient(95deg, #9B4D96, #6B2E68);
-            color: white;
-            border: 1px solid #E879F9;
-        }
+    .flex-btns {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      align-items: center;
+    }
 
-        .wallet-status {
-            background: rgba(7, 12, 26, 0.9);
-            padding: 10px 16px;
-            border-radius: 60px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 24px;
-            font-size: 13px;
-            width: 100%;
-            justify-content: center;
-        }
+    hr {
+      margin: 1rem 0;
+      border: none;
+      border-top: 1px solid #e2edf2;
+    }
 
-        .dot {
-            width: 10px;
-            height: 10px;
-            background: #6B7280;
-            border-radius: 50%;
-        }
-
-        .dot.connected {
-            background: #27E0A6;
-            box-shadow: 0 0 6px #27E0A6;
-        }
-
-        .feedback {
-            color: #FF8A8A;
-            font-size: 12px;
-            text-align: center;
-            margin-top: 12px;
-            min-height: 40px;
-        }
-
-        .info-text {
-            font-size: 10px;
-            text-align: center;
-            margin-top: 20px;
-            opacity: 0.6;
-            line-height: 1.5;
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(12px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        }
-
-        .modal-container {
-            background: #1A1F2E;
-            border-radius: 32px;
-            width: 90%;
-            max-width: 400px;
-            padding: 24px 20px 28px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .modal-header h3 {
-            color: white;
-            font-size: 22px;
-            font-weight: 700;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: #aaa;
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .modal-subtitle {
-            color: #9CA3AF;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-
-        .wallets-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px 8px;
-            margin-bottom: 24px;
-        }
-
-        .wallet-option {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            padding: 8px 4px;
-            border-radius: 16px;
-            transition: 0.1s;
-        }
-
-        .wallet-option:hover {
-            background: #2A2F42;
-        }
-
-        .wallet-option img {
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
-            background: #0F111A;
-            padding: 8px;
-        }
-
-        .wallet-option span {
-            color: #EFF3FF;
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        @media (max-width: 450px) {
-            .tap-circle { width: 170px; height: 170px; }
-            .nav-value, .energy-current { font-size: 18px; }
-            .top-nav { padding: 14px 16px; }
-        }
-    </style>
+    footer {
+      margin-top: 1.5rem;
+      font-size: 0.7rem;
+      color: #6c7a8e;
+    }
+  </style>
 </head>
 <body>
-<div class="game-container">
-    <div class="top-nav">
-        <div class="nav-card">
-            <div class="nav-label">⚡ ENERGY</div>
-            <div class="energy-value">
-                <span class="energy-current" id="energyValue">50</span>
-                <span class="energy-max">/<span id="energyMax">10000</span></span>
-            </div>
-        </div>
-        <div class="nav-card">
-            <div class="nav-label">🎯 POINTS</div>
-            <div class="nav-value" id="pointsValue">0</div>
-        </div>
-        <div class="nav-card">
-            <div class="nav-label">💎 GAME CURRENCY</div>
-            <div class="nav-value" id="currencyValue">0</div>
-        </div>
+
+<div class="card">
+  <h1>⚡ Web3 Portal</h1>
+  <div class="sub">Connect your wallet</div>
+
+  <!-- main dynamic connect button -->
+  <div id="walletButtonContainer">
+    <button id="connectWalletBtn" class="connect-btn">
+      <span class="wallet-icon"></span>
+      <span id="btnText">Connect Wallet</span>
+    </button>
+  </div>
+
+  <!-- status panel: shows account, network, balance after connection -->
+  <div id="walletStatusPanel" class="wallet-status" style="display: none;">
+    <div class="address-chip">
+      <span>🆔</span>
+      <span id="accountAddress">0x0000...0000</span>
+      <button id="disconnectBtn" class="disconnect-btn" style="margin-left: 6px;">Disconnect</button>
     </div>
-
-    <div class="body-area">
-        <div class="wallet-status">
-            <span class="dot" id="walletDot"></span>
-            <span id="walletAddress">Not Connected</span>
-        </div>
-
-        <div class="tap-circle" id="tapCircle">
-            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M1 5h22v2H1V5zm0 6h22v2H1v-2zm0 6h22v2H1v-2z'/%3E%3C/svg%3E" class="tap-logo" alt="tap">
-        </div>
-
-        <div class="action-buttons">
-            <button class="btn btn-primary" id="connectBtn">🔗 CONNECT WALLET</button>
-            <button class="btn btn-success" id="buyEnergyBtn">⚡ BUY 10000 ENERGY (100 PVLT)</button>
-            <button class="btn btn-claim" id="claimBtn">🔥 CLAIM (10 CURRENCY → PVLT)</button>
-        </div>
-
-        <div id="feedback" class="feedback"></div>
-        <div class="info-text">
-            🎯 Tap: +1 point -1 energy | ⚡ Auto refill +1/3s up to 50<br>
-            💎 100 points → +1 Game Currency | 10 Game Currency → Claim PVLT
-        </div>
+    <div class="indicator">
+      <span class="network-badge" id="networkName">⚡ Network: --</span>
+      <div class="balance-row">
+        <span class="balance-label">💰 Balance</span>
+        <span class="balance-value" id="walletBalance">—</span>
+        <span style="font-size:0.7rem;">ETH</span>
+      </div>
     </div>
+    <div id="errorMessage" class="error-msg" style="display: none;"></div>
+    <footer>✓ Connected via MetaMask or any EIP-1193 provider</footer>
+  </div>
+  <footer style="margin-top: 1.2rem;">
+    Supports MetaMask, Trust Wallet, Coinbase Wallet, Brave, etc.
+  </footer>
 </div>
 
 <script>
-    // ==================== GAME STATE ====================
-    let energy = 50;
-    let maxEnergy = 10000;
-    let baseRefillCap = 50;
-    let points = 0;
-    let gameCurrency = 0;
-    let refillInterval = null;
+  // ---------- DOM Elements ----------
+  const connectBtn = document.getElementById('connectWalletBtn');
+  const btnTextSpan = document.getElementById('btnText');
+  const walletStatusPanel = document.getElementById('walletStatusPanel');
+  const accountAddressSpan = document.getElementById('accountAddress');
+  const networkNameSpan = document.getElementById('networkName');
+  const walletBalanceSpan = document.getElementById('walletBalance');
+  const errorMsgDiv = document.getElementById('errorMessage');
+  const disconnectButton = document.getElementById('disconnectBtn');
 
-    // ==================== WEB3 STATE ====================
-    let provider = null;
-    let signer = null;
-    let userAddress = null;
-    let connected = false;
-    let currentChainId = null;
+  // state variables
+  let currentAccount = null;          // connected account address
+  let currentChainId = null;          // current chain id (hex)
+  let currentProvider = null;          // ethereum provider reference
 
-    // DOM elements
-    const energyEl = document.getElementById('energyValue');
-    const pointsEl = document.getElementById('pointsValue');
-    const currencyEl = document.getElementById('currencyValue');
-    const walletDot = document.getElementById('walletDot');
-    const walletAddressEl = document.getElementById('walletAddress');
-    const tapCircle = document.getElementById('tapCircle');
-    const feedbackEl = document.getElementById('feedback');
-
-    // Constants
-    const POINTS_TO_CURRENCY = 100;
-    const CURRENCY_TO_CLAIM = 10;
-
-    // ==================== GAME FUNCTIONS ====================
-    function updateUI() {
-        energyEl.innerText = Math.floor(energy);
-        pointsEl.innerText = points;
-        currencyEl.innerText = gameCurrency;
-        
-        if (energy <= 0) {
-            tapCircle.classList.add('disabled');
-        } else {
-            tapCircle.classList.remove('disabled');
+  // Helper: show / hide error with auto-clear after 5 sec
+  function showError(message, isWarning = false) {
+    if (!errorMsgDiv) return;
+    errorMsgDiv.textContent = message;
+    errorMsgDiv.style.display = 'block';
+    if (!isWarning) {
+      // auto hide after 5 seconds for non-critical but keep visible for connection errors?
+      setTimeout(() => {
+        if (errorMsgDiv && errorMsgDiv.style.display === 'block') {
+          // Only hide if no new error triggered?
+          if (errorMsgDiv.textContent === message) {
+            errorMsgDiv.style.display = 'none';
+          }
         }
+      }, 5000);
+    }
+  }
+
+  function hideError() {
+    if (errorMsgDiv) errorMsgDiv.style.display = 'none';
+  }
+
+  // Format address: first6...last4
+  function formatAddress(address) {
+    if (!address) return '';
+    if (address.length < 12) return address;
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  }
+
+  // Get network name from chainId (hex string like "0x1", "0x5", etc.)
+  function getNetworkName(chainIdHex) {
+    if (!chainIdHex) return 'Unknown';
+    const chainId = parseInt(chainIdHex, 16);
+    const networks = {
+      1: 'Ethereum Mainnet',
+      5: 'Goerli Testnet',
+      11155111: 'Sepolia Testnet',
+      137: 'Polygon Mainnet',
+      80001: 'Mumbai Testnet',
+      56: 'BSC Mainnet',
+      97: 'BSC Testnet',
+      42161: 'Arbitrum One',
+      10: 'Optimism',
+      43114: 'Avalanche C-Chain',
+    };
+    return networks[chainId] || `Chain ID: ${chainId}`;
+  }
+
+  // Get ETH balance for given account
+  async function fetchBalance(provider, address) {
+    if (!provider || !address) return null;
+    try {
+      // Using provider.request with eth_getBalance
+      const balanceHex = await provider.request({
+        method: 'eth_getBalance',
+        params: [address, 'latest'],
+      });
+      const balanceWei = parseInt(balanceHex, 16);
+      const balanceEth = balanceWei / 1e18;
+      return balanceEth.toFixed(5);
+    } catch (err) {
+      console.warn('Balance fetch error:', err);
+      return null;
+    }
+  }
+
+  // Update UI after successful connection / account or network change
+  async function updateWalletUI(account, chainIdHex, provider) {
+    if (!account) {
+      // disconnected state: reset UI
+      walletStatusPanel.style.display = 'none';
+      connectBtn.style.display = 'inline-flex';
+      btnTextSpan.innerText = 'Connect Wallet';
+      currentAccount = null;
+      currentChainId = null;
+      return;
     }
 
-    function saveGameState() {
-        if (!userAddress) return;
-        const gameData = {
-            energy: energy,
-            points: points,
-            gameCurrency: gameCurrency
-        };
-        localStorage.setItem(`tapgame_${userAddress}`, JSON.stringify(gameData));
+    // show status panel and hide main connect button? we keep connect button but also show status; but we'll manage visibility: we can keep both, but connect button becomes less relevant, but we can also change text.
+    // Better: show status panel, but connect button remains but we'll change to "Switch Wallet?" maybe less confusing: we can keep connect button as "Change Account"?
+    // For UX we will keep connect button visible but change text to "Change Wallet" and let it trigger connection again.
+    // However user expectations: after connection they may want to disconnect or switch. We'll keep connect button but text becomes "Connect another" but we also have dedicated disconnect button.
+    // Let's modify connect button behavior: after connection, connect button becomes "Switch Account" (calls same requestAccounts). Good.
+    if (walletStatusPanel) walletStatusPanel.style.display = 'block';
+    if (connectBtn) {
+      // Change button text after connection to "Switch Wallet"
+      btnTextSpan.innerText = 'Switch Wallet';
     }
 
-    function loadGameState() {
-        if (!userAddress) return;
-        const saved = localStorage.getItem(`tapgame_${userAddress}`);
-        if (saved) {
-            try {
-                const data = JSON.parse(saved);
-                energy = data.energy ?? 50;
-                points = data.points ?? 0;
-                gameCurrency = data.gameCurrency ?? 0;
-                if (energy > maxEnergy) energy = maxEnergy;
-                updateUI();
-            } catch(e) {}
-        }
+    // Display account
+    accountAddressSpan.innerText = formatAddress(account);
+    
+    // Display network
+    const networkLabel = getNetworkName(chainIdHex);
+    networkNameSpan.innerHTML = `🌐 ${networkLabel}`;
+    
+    // Fetch and display balance
+    const balance = await fetchBalance(provider, account);
+    if (balance !== null) {
+      walletBalanceSpan.innerText = balance;
+    } else {
+      walletBalanceSpan.innerText = 'unavailable';
     }
 
-    function startRefill() {
-        if (refillInterval) clearInterval(refillInterval);
-        refillInterval = setInterval(() => {
-            if (energy < baseRefillCap) {
-                let newEnergy = energy + 1;
-                if (newEnergy > baseRefillCap) newEnergy = baseRefillCap;
-                if (newEnergy !== energy) {
-                    energy = newEnergy;
-                    updateUI();
-                    saveGameState();
-                }
-            }
-        }, 3000);
+    // store current state
+    currentAccount = account;
+    currentChainId = chainIdHex;
+    currentProvider = provider;
+    hideError();
+  }
+
+  // Reset UI to "disconnected" state
+  function resetUI() {
+    walletStatusPanel.style.display = 'none';
+    if (connectBtn) {
+      btnTextSpan.innerText = 'Connect Wallet';
+    }
+    currentAccount = null;
+    currentChainId = null;
+    currentProvider = null;
+    hideError();
+    // also clear any displayed values
+    accountAddressSpan.innerText = '0x0000...0000';
+    networkNameSpan.innerHTML = '⚡ Network: --';
+    walletBalanceSpan.innerText = '—';
+  }
+
+  // Main connect handler: request account access and setup listeners
+  async function connectWallet() {
+    // Check if window.ethereum is available (MetaMask or other EIP-1193 provider)
+    if (!window.ethereum) {
+      showError('⚠️ No Ethereum wallet detected! Please install MetaMask or use a Web3 browser.');
+      return;
     }
 
-    function handleTap() {
-        if (!connected) {
-            showFeedback("❌ Connect wallet first!", 1500);
-            return;
-        }
-        
-        if (energy <= 0) {
-            showFeedback("⛔ No energy! Wait for refill or buy energy.", 1500);
-            return;
-        }
-        
-        energy--;
-        points++;
-        
-        // Convert points to game currency
-        if (points >= POINTS_TO_CURRENCY) {
-            const converted = Math.floor(points / POINTS_TO_CURRENCY);
-            gameCurrency += converted;
-            points = points % POINTS_TO_CURRENCY;
-            showFeedback(`✨ +${converted} Game Currency!`, 1200);
-        }
-        
-        updateUI();
-        saveGameState();
-        
-        // Haptic feedback
-        if (navigator.vibrate) navigator.vibrate(20);
+    const provider = window.ethereum;
+    
+    try {
+      // Request account access
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      if (!accounts || accounts.length === 0) {
+        showError('No accounts returned. Please unlock your wallet.');
+        return;
+      }
+      const account = accounts[0];
+      // get current chainId
+      const chainIdHex = await provider.request({ method: 'eth_chainId' });
+      
+      // success
+      await updateWalletUI(account, chainIdHex, provider);
+      
+      // set up event listeners (accountsChanged, chainChanged, disconnect)
+      setupEventListeners(provider);
+      
+    } catch (err) {
+      console.error('Connection error:', err);
+      if (err.code === 4001) {
+        showError('🛑 Connection rejected by user. Please approve to connect wallet.');
+      } else {
+        showError(`Connection failed: ${err.message || 'Unknown error'}`);
+      }
+      resetUI();
     }
+  }
 
-    function buyEnergy() {
-        if (!connected) {
-            showFeedback("❌ Connect wallet first!", 1500);
-            return;
-        }
-        
-        if (currentChainId !== 137 && currentChainId !== 80001) {
-            showFeedback("⚠️ Please switch to Polygon network (chainId 137)", 2500);
-            return;
-        }
-        
-        showFeedback("⏳ Processing 100 PVLT payment on Polygon...", 2000);
-        
-        // Simulate transaction (in production, call actual PVLT contract)
-        setTimeout(() => {
-            let newEnergy = energy + 10000;
-            if (newEnergy > maxEnergy) newEnergy = maxEnergy;
-            energy = newEnergy;
-            updateUI();
-            saveGameState();
-            showFeedback("✅ +10000 Energy! Purchase successful.", 2500);
-        }, 1500);
+  // disconnect handler: resets app state (no built-in disconnect method in provider, we just forget locally)
+  function disconnectWallet() {
+    // reset UI and state, but DO NOT revoke permissions (just local clean)
+    resetUI();
+    // optional: remove listeners to avoid dangling but we can keep them, but they will trigger anyway if user switches account.
+    // To improve UX we keep listeners but they will call update when account changes again.
+    // Also we set currentAccount = null
+    currentAccount = null;
+    currentProvider = null;
+    // Also clear any error
+    hideError();
+    // If we want to re-show the connect button fresh: it's already reset.
+    // For extra safety remove event listeners? Not necessary but we can detach.
+    // However we can re-attach on next connect. Better to remove and re-add.
+    if (window.ethereum && window._listenersAttached) {
+      // Prevent duplicate listeners: remove existing before next connect.
+      removeEventListeners(window.ethereum);
+      window._listenersAttached = false;
     }
+  }
 
-    function claimReward() {
-        if (!connected) {
-            showFeedback("❌ Connect wallet first!", 1500);
-            return;
-        }
-        
-        if (gameCurrency < CURRENCY_TO_CLAIM) {
-            showFeedback(`💢 Need ${CURRENCY_TO_CLAIM} Game Currency. You have ${gameCurrency}`, 2000);
-            return;
-        }
-        
-        if (currentChainId !== 137 && currentChainId !== 80001) {
-            showFeedback("⚠️ Please switch to Polygon network to claim PVLT", 2500);
-            return;
-        }
-        
-        showFeedback("🔥 Burning 10 Game Currency, sending PVLT...", 2000);
-        
-        setTimeout(() => {
-            gameCurrency -= CURRENCY_TO_CLAIM;
-            updateUI();
-            saveGameState();
-            showFeedback(`🎉 Claimed 10 PVLT to ${userAddress.slice(0,8)}...!`, 3000);
-        }, 1000);
-    }
+  let currentListeners = {
+    accountsChanged: null,
+    chainChanged: null,
+    disconnect: null
+  };
 
-    function showFeedback(msg, duration = 2000) {
-        feedbackEl.innerText = msg;
-        setTimeout(() => {
-            if (feedbackEl.innerText === msg) feedbackEl.innerText = "";
-        }, duration);
-    }
-
-    // ==================== WALLET CONNECTION ====================
-    async function connectInjected() {
-        if (!window.ethereum) {
-            showFeedback("❌ No wallet found! Please install MetaMask or Trust Wallet", 3000);
-            return false;
-        }
-        
-        try {
-            provider = new ethers.BrowserProvider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = await provider.getSigner();
-            userAddress = await signer.getAddress();
-            const network = await provider.getNetwork();
-            currentChainId = Number(network.chainId);
-            
-            connected = true;
-            walletAddressEl.innerText = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-            walletDot.classList.add('connected');
-            
-            loadGameState();
-            
-            const netName = currentChainId === 137 ? "Polygon" : currentChainId === 80001 ? "Mumbai" : "Chain " + currentChainId;
-            showFeedback(`✅ Connected to ${netName}`, 2000);
-            
-            // Listen for account changes
-            window.ethereum.on('accountsChanged', (accounts) => {
-                if (accounts.length === 0) {
-                    connected = false;
-                    userAddress = null;
-                    walletAddressEl.innerText = "Not Connected";
-                    walletDot.classList.remove('connected');
-                } else {
-                    window.location.reload();
-                }
-            });
-            
-            window.ethereum.on('chainChanged', () => {
-                window.location.reload();
-            });
-            
-            return true;
-        } catch (err) {
-            showFeedback(`Connection failed: ${err.message.slice(0,80)}`, 3000);
-            return false;
-        }
-    }
-
-    // Custom wallet modal
-    function showWalletModal() {
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal-container">
-                <div class="modal-header">
-                    <h3>Connect Wallet</h3>
-                    <button class="modal-close" id="closeModal">✕</button>
-                </div>
-                <div class="modal-subtitle">Choose your wallet</div>
-                <div class="wallets-grid">
-                    <div class="wallet-option" data-wallet="metamask">
-                        <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1.635/networks/metamask.svg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23F6851B%22%3E%3Crect width=%2224%22 height=%2224%22 fill=%22%23F6851B%22/%3E%3C/svg%3E'">
-                        <span>MetaMask</span>
-                    </div>
-                    <div class="wallet-option" data-wallet="trust">
-                        <img src="https://assets.trustwalletapp.com/logo.png" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%233377FF%22%3E%3Crect width=%2224%22 height=%2224%22 fill=%22%233377FF%22/%3E%3C/svg%3E'">
-                        <span>Trust Wallet</span>
-                    </div>
-                    <div class="wallet-option" data-wallet="binance">
-                        <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1.635/icon/BNB.png" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23F3BA2F%22%3E%3Crect width=%2224%22 height=%2224%22 fill=%22%23F3BA2F%22/%3E%3C/svg%3E'">
-                        <span>Binance</span>
-                    </div>
-                    <div class="wallet-option" data-wallet="safepal">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234CAF50'%3E%3Crect width='24' height='24' fill='%234CAF50'/%3E%3Ctext x='4' y='17' fill='white' font-size='14'%3ESP%3C/text%3E%3C/svg%3E">
-                        <span>SafePal</span>
-                    </div>
-                    <div class="wallet-option" data-wallet="okx">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Crect width='24' height='24' fill='%23000000'/%3E%3Ctext x='5' y='17' fill='white' font-size='12'%3EOKX%3C/text%3E%3C/svg%3E">
-                        <span>OKX Wallet</span>
-                    </div>
-                    <div class="wallet-option" data-wallet="tokenpocket">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233399FF'%3E%3Crect width='24' height='24' fill='%233399FF'/%3E%3Ctext x='2' y='17' fill='white' font-size='10'%3ETP%3C/text%3E%3C/svg%3E">
-                        <span>TokenPocket</span>
-                    </div>
-                    <div class="wallet-option" data-wallet="coinbase">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230052FF'%3E%3Crect width='24' height='24' fill='%230052FF'/%3E%3Ctext x='2' y='17' fill='white' font-size='10'%3ECB%3C/text%3E%3C/svg%3E">
-                        <span>Coinbase</span>
-                    </div>
-                    <div class="wallet-option" data-wallet="rabby">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF6B35'%3E%3Crect width='24' height='24' fill='%23FF6B35'/%3E%3Ctext x='3' y='17' fill='white' font-size='10'%3ERB%3C/text%3E%3C/svg%3E">
-                        <span>Rabby</span>
-                    </div>
-                </div>
-                <div style="text-align: center; margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 16px;">
-                    <div style="font-size: 12px; color: #8F9BB5;">🟣 Works on Polygon network</div>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        document.getElementById('closeModal').addEventListener('click', () => modal.remove());
-        
-        document.querySelectorAll('.wallet-option').forEach(opt => {
-            opt.addEventListener('click', async () => {
-                modal.remove();
-                await connectInjected();
-            });
-        });
-    }
-
-    // ==================== INITIALIZATION ====================
-    function init() {
-        startRefill();
-        updateUI();
-        
-        document.getElementById('connectBtn').addEventListener('click', showWalletModal);
-        document.getElementById('buyEnergyBtn').addEventListener('click', buyEnergy);
-        document.getElementById('claimBtn').addEventListener('click', claimReward);
-        tapCircle.addEventListener('click', handleTap);
-        
-        // Check if already connected
-        if (window.ethereum && window.ethereum.selectedAddress) {
-            setTimeout(() => connectInjected(), 500);
-        }
+  function setupEventListeners(provider) {
+    // Avoid duplicate listeners: remove existing first
+    if (window._listenersAttached) {
+      removeEventListeners(provider);
     }
     
-    init();
+    const accountsChangedHandler = (accounts) => {
+      console.log('accountsChanged event', accounts);
+      if (!accounts || accounts.length === 0) {
+        // User disconnected wallet or locked
+        resetUI();
+        showError('Wallet disconnected or locked.', true);
+        currentAccount = null;
+      } else {
+        const newAccount = accounts[0];
+        // When accounts change, also fetch chainId again
+        provider.request({ method: 'eth_chainId' }).then(chainIdHex => {
+          updateWalletUI(newAccount, chainIdHex, provider).catch(err => {
+            console.warn('update after account change error', err);
+          });
+        }).catch(err => {
+          console.warn('chainId fetch error', err);
+          updateWalletUI(newAccount, currentChainId || '0x1', provider);
+        });
+      }
+    };
+    
+    const chainChangedHandler = (chainIdHex) => {
+      console.log('chainChanged event', chainIdHex);
+      if (currentAccount) {
+        // chain changed while connected: refresh UI with new chainId and re-fetch balance
+        updateWalletUI(currentAccount, chainIdHex, provider).catch(err => {
+          console.warn('update after chain change error', err);
+          showError('Network changed, but balance refresh error', true);
+        });
+      } else {
+        // not connected, just ignore
+      }
+    };
+    
+    // Some providers emit 'disconnect' event
+    const disconnectHandler = (error) => {
+      console.log('provider disconnect', error);
+      resetUI();
+      showError('Wallet provider disconnected. Please reconnect.', true);
+      currentAccount = null;
+    };
+    
+    provider.on('accountsChanged', accountsChangedHandler);
+    provider.on('chainChanged', chainChangedHandler);
+    if (provider.on && typeof provider.on === 'function') {
+      // handle disconnect if supported
+      if (provider.removeListener) {
+        provider.on('disconnect', disconnectHandler);
+      }
+    }
+    
+    // store handlers for potential removal
+    currentListeners.accountsChanged = accountsChangedHandler;
+    currentListeners.chainChanged = chainChangedHandler;
+    currentListeners.disconnect = disconnectHandler;
+    window._listenersAttached = true;
+    window._ethereumProvider = provider;
+  }
+  
+  function removeEventListeners(provider) {
+    if (!provider || !window._listenersAttached) return;
+    if (currentListeners.accountsChanged) {
+      provider.removeListener('accountsChanged', currentListeners.accountsChanged);
+    }
+    if (currentListeners.chainChanged) {
+      provider.removeListener('chainChanged', currentListeners.chainChanged);
+    }
+    if (currentListeners.disconnect && provider.removeListener) {
+      provider.removeListener('disconnect', currentListeners.disconnect);
+    }
+    currentListeners = { accountsChanged: null, chainChanged: null, disconnect: null };
+    window._listenersAttached = false;
+  }
+  
+  // Handle "Switch Wallet" or reconnect when button clicked after connection
+  function onMainButtonClick() {
+    if (currentAccount) {
+      // Already connected: we treat as "Switch Account" - triggers eth_requestAccounts again, which opens wallet selection or account switcher
+      if (!window.ethereum) {
+        showError('No wallet provider found');
+        return;
+      }
+      // call connectWallet again: it will request accounts and update accordingly
+      connectWallet().catch(e => console.warn(e));
+    } else {
+      connectWallet().catch(e => console.warn(e));
+    }
+  }
+  
+  // disconnect button handler
+  if (disconnectButton) {
+    disconnectButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      disconnectWallet();
+    });
+  }
+  
+  // Attach main connect / switch button
+  if (connectBtn) {
+    connectBtn.addEventListener('click', onMainButtonClick);
+  }
+  
+  // Auto-check if already connected on page load (for page refresh scenario)
+  async function checkInitialConnection() {
+    if (window.ethereum) {
+      try {
+        const provider = window.ethereum;
+        const accounts = await provider.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          const chainIdHex = await provider.request({ method: 'eth_chainId' });
+          await updateWalletUI(accounts[0], chainIdHex, provider);
+          setupEventListeners(provider);
+        } else {
+          // No active session, we remain disconnected but show connect button
+          resetUI();
+        }
+      } catch (err) {
+        console.warn('Initial connection check error', err);
+        resetUI();
+      }
+    } else {
+      // provider missing: show a silent hint? We can show but not intrusive.
+      // show subtle hint after a second.
+      setTimeout(() => {
+        if (!window.ethereum && !currentAccount) {
+          const msgDiv = document.createElement('div');
+          // but we don't want to disturb too much. Use existing error system briefly.
+          showError('💡 No Web3 wallet found. Install MetaMask to connect.', true);
+          setTimeout(() => hideError(), 8000);
+        }
+      }, 800);
+    }
+  }
+  
+  // start
+  checkInitialConnection();
 </script>
 </body>
 </html>
