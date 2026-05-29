@@ -311,6 +311,18 @@ body {
   text-align: center;
   color: #88ffcc;
 }
+
+.debug-panel {
+  background: rgba(0,0,0,0.8);
+  border-radius: 8px;
+  padding: 6px;
+  margin-top: 8px;
+  font-size: 8px;
+  font-family: monospace;
+  color: #0f0;
+  max-height: 60px;
+  overflow-y: auto;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 </head>
@@ -372,6 +384,10 @@ body {
     Only BUY ENERGY and CLAIM require blockchain transactions.
   </div>
   
+  <div class="debug-panel" id="debugPanel">
+    🔧 Ready. Connect wallet to start.
+  </div>
+  
   <div class="treasury-note" id="treasuryNote">
     🏆 100 points = 1 GAME PVLT | Tapping is FREE! | Energy regens every 15s
   </div>
@@ -379,23 +395,28 @@ body {
 
 <script>
   // ============ YOUR DEPLOYED CONTRACT ADDRESSES ============
-  const PVLT_TOKEN_ADDRESS = "0xceaD4DF05F3ad734eD2d70d02F7372Fd6Ea73a8E";
-  const GAME_CONTRACT_ADDRESS = "0xf5b5bA9A9AF4E29B1f716afFbF76A12cB9772D6E";
-
-  
+  const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
+  const GAME_CONTRACT_ADDRESS = "0x355126cC8A2f5108f4De45E74DD183f0e30358DC";
+  const TREASURY_ADDRESS = "0x2a224eB7A6f339f5C50944f3F2C5b3fAE6053f1f";
   
   // ============ CONTRACT ABIs ============
   const PVLT_ABI = [
     "function balanceOf(address) view returns (uint256)",
     "function approve(address spender, uint256 amount) returns (bool)",
     "function allowance(address owner, address spender) view returns (uint256)",
-    "function decimals() view returns (uint8)"
+    "function decimals() view returns (uint8)",
+    "function transfer(address to, uint256 amount) returns (bool)"
   ];
   
-  // Only claim and buy energy use blockchain!
   const GAME_ABI = [
-    "function refillEnergy() external",
-    "function claimRewards() external"
+    "function buyEnergy(uint256 amount) external",
+    "function claimRewards(uint256 amount) external",
+    "function getGameInfo() view returns (address, address, uint256)"
+  ];
+
+  const TREASURY_ABI = [
+    "function getTreasuryBalance() view returns (uint256)",
+    "function gameContract() view returns (address)"
   ];
 
   // DOM Elements
@@ -412,6 +433,17 @@ body {
   const claimBtn = document.getElementById("claimPvltAction");
   const statusBar = document.getElementById("statusBar");
   const tapProgressFill = document.getElementById("tapProgressFill");
+  const debugPanel = document.getElementById("debugPanel");
+
+  function debugLog(msg) {
+    console.log(msg);
+    const time = new Date().toLocaleTimeString();
+    debugPanel.innerHTML += `<div>${time}: ${msg}</div>`;
+    debugPanel.scrollTop = debugPanel.scrollHeight;
+    while(debugPanel.children.length > 8) {
+      debugPanel.removeChild(debugPanel.firstChild);
+    }
+  }
 
   // Game State (ALL LOCAL - NO BLOCKCHAIN FOR TAPPING!)
   let userAccount = null;
@@ -419,6 +451,7 @@ body {
   let signer = null;
   let tokenContract = null;
   let gameContract = null;
+  let treasuryContract = null;
   let decimals = 18;
   
   let maxEnergy = 50;
@@ -479,9 +512,38 @@ body {
     try {
       const balance = await tokenContract.balanceOf(userAccount);
       walletBalance = parseFloat(ethers.utils.formatUnits(balance, decimals));
+      debugLog(`Wallet balance: ${walletBalance} PVLT`);
     } catch(e) {
-      console.error("Balance error:", e);
+      debugLog(`Balance error: ${e.message}`);
       walletBalance = 0;
+    }
+  }
+
+  async function checkTreasuryBalance() {
+    if (!treasuryContract) return;
+    try {
+      const balance = await treasuryContract.getTreasuryBalance();
+      const balanceFormatted = parseFloat(ethers.utils.formatUnits(balance, decimals));
+      debugLog(`💰 Treasury balance: ${balanceFormatted} PVLT`);
+      if (balanceFormatted < 1) {
+        debugLog(`⚠️ WARNING: Treasury has low balance! Send PVLT to ${TREASURY_ADDRESS}`);
+      }
+      return balanceFormatted;
+    } catch(e) {
+      debugLog(`Treasury check error: ${e.message}`);
+    }
+  }
+
+  async function checkGameContract() {
+    if (!treasuryContract) return;
+    try {
+      const gameAddr = await treasuryContract.gameContract();
+      debugLog(`Game contract in treasury: ${gameAddr}`);
+      if (gameAddr.toLowerCase() !== GAME_CONTRACT_ADDRESS.toLowerCase()) {
+        debugLog(`⚠️ WARNING: Game contract not set in Treasury!`);
+      }
+    } catch(e) {
+      debugLog(`Game check error: ${e.message}`);
     }
   }
 
@@ -580,6 +642,7 @@ body {
       gamePvltBalance += earnedPvlt;
       points = points % 100;
       showFloat(x, y - 30, `🎉 +${earnedPvlt} GAME PVLT! 🎉`, "#ffea80");
+      debugLog(`Earned ${earnedPvlt} GAME PVLT! Total: ${gamePvltBalance}`);
     }
     
     showFloat(x, y, "+1 POINT!", "#aaffdd");
@@ -602,20 +665,26 @@ body {
     }
     
     try {
+      debugLog(`Buying energy - Wallet balance: ${walletBalance} PVLT`);
       statusBar.innerHTML = "⏳ Checking allowance...";
       const amount = ethers.utils.parseUnits("100", decimals);
       
       const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
+      debugLog(`Allowance: ${allowance.toString()}`);
       
       if (allowance.lt(amount)) {
         statusBar.innerHTML = "⏳ Approving PVLT spending...";
+        debugLog("Approving PVLT...");
         const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amount);
         await approveTx.wait();
+        debugLog("Approved!");
       }
       
       statusBar.innerHTML = "⏳ Buying 1000 energy (cost: 100 PVLT)...";
-      const tx = await gameContract.refillEnergy();
+      debugLog("Calling buyEnergy...");
+      const tx = await gameContract.buyEnergy(100);
       await tx.wait();
+      debugLog("Energy purchased!");
       
       // After buying, update local energy
       energy = Math.min(energy + 1000, maxEnergy);
@@ -627,7 +696,7 @@ body {
       showFloat(window.innerWidth/2, window.innerHeight/2, "⚡ +1000 ENERGY ⚡", "#ffd966");
       
     } catch(e) {
-      console.error("Buy error:", e);
+      debugLog(`Buy error: ${e.message}`);
       alert(`❌ Failed: ${e.message.slice(0,100)}`);
       statusBar.innerHTML = "❌ Purchase failed";
     }
@@ -645,12 +714,24 @@ body {
       return;
     }
     
-    const amountToClaim = gamePvltBalance;
+    const amountToClaim = Math.floor(gamePvltBalance);
+    if (amountToClaim < 1) {
+      alert("❌ Need at least 1 GAME PVLT to claim!");
+      return;
+    }
+    
+    debugLog(`Attempting to claim ${amountToClaim} GAME PVLT`);
     
     try {
-      statusBar.innerHTML = `⏳ Claiming ${amountToClaim.toFixed(2)} GAME PVLT to your wallet...`;
-      const tx = await gameContract.claimRewards();
+      statusBar.innerHTML = `⏳ Claiming ${amountToClaim} GAME PVLT to your wallet...`;
+      debugLog("Calling claimRewards() on game contract...");
+      
+      const tx = await gameContract.claimRewards(amountToClaim);
+      debugLog(`Transaction sent: ${tx.hash}`);
+      
+      statusBar.innerHTML = "⏳ Waiting for confirmation...";
       await tx.wait();
+      debugLog("Transaction confirmed!");
       
       // Reset game PVLT after successful claim
       gamePvltBalance = 0;
@@ -658,13 +739,30 @@ body {
       await updateWalletBalance();
       updateUI();
       
-      statusBar.innerHTML = `✅ Claimed ${amountToClaim.toFixed(2)} PVLT to wallet!`;
+      // Check treasury balance after claim
+      await checkTreasuryBalance();
+      
+      statusBar.innerHTML = `✅ Claimed ${amountToClaim} PVLT to wallet!`;
       showFloat(window.innerWidth/2, window.innerHeight/2, "💎 PVLT CLAIMED! 💎", "#46c9b0");
+      debugLog(`Successfully claimed ${amountToClaim} PVLT!`);
       
     } catch(e) {
-      console.error("Claim error:", e);
-      alert(`❌ Claim failed: ${e.message.slice(0,100)}`);
-      statusBar.innerHTML = "❌ Claim failed";
+      debugLog(`Claim error: ${e.message}`);
+      
+      let errorMsg = e.message;
+      if (errorMsg.includes("execution reverted")) {
+        if (errorMsg.includes("Treasury insufficient balance")) {
+          errorMsg = "Treasury has no PVLT! Contact admin to fund treasury.";
+          await checkTreasuryBalance();
+        } else {
+          errorMsg = "Transaction failed. Make sure you have MATIC for gas.";
+        }
+      } else if (errorMsg.includes("insufficient funds")) {
+        errorMsg = "Insufficient MATIC for gas! Get some MATIC first.";
+      }
+      
+      alert(`❌ Claim failed: ${errorMsg}`);
+      statusBar.innerHTML = `❌ ${errorMsg.slice(0,60)}`;
     }
   }
 
@@ -680,11 +778,14 @@ body {
       
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAccount = accounts[0];
+      debugLog(`Account: ${userAccount}`);
       
       provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
       
       const network = await provider.getNetwork();
+      debugLog(`Network chainId: ${network.chainId}`);
+      
       if (network.chainId !== 137) {
         statusBar.innerHTML = "⚠️ Please switch to Polygon Mainnet";
         try {
@@ -701,8 +802,21 @@ body {
       
       tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+      treasuryContract = new ethers.Contract(TREASURY_ADDRESS, TREASURY_ABI, provider);
       
       decimals = await tokenContract.decimals();
+      debugLog(`Decimals: ${decimals}`);
+      
+      // Check contract info
+      try {
+        const gameInfo = await gameContract.getGameInfo();
+        debugLog(`Game owner: ${gameInfo[0]}, Treasury: ${gameInfo[1]}, Price: ${gameInfo[2]}`);
+      } catch(e) {
+        debugLog(`Game info error: ${e.message}`);
+      }
+      
+      await checkTreasuryBalance();
+      await checkGameContract();
       
       loadData();
       await updateWalletBalance();
@@ -712,6 +826,7 @@ body {
       connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
       tapCircle.classList.remove("disabled");
       statusBar.innerHTML = "✅ Connected! TAP FOR FREE!";
+      debugLog("Connected successfully!");
       
       if (refreshInterval) clearInterval(refreshInterval);
       refreshInterval = setInterval(() => {
@@ -729,7 +844,7 @@ body {
       window.ethereum.on('chainChanged', () => window.location.reload());
       
     } catch(error) {
-      console.error("Connection error:", error);
+      debugLog(`Connection error: ${error.message}`);
       alert("❌ " + error.message.slice(0,100));
       userAccount = null;
     } finally {
@@ -746,6 +861,7 @@ body {
     userAccount = null;
     tokenContract = null;
     gameContract = null;
+    treasuryContract = null;
     energy = 50;
     points = 0;
     gamePvltBalance = 0;
@@ -755,6 +871,7 @@ body {
     tapCircle.classList.add("disabled");
     updateUI();
     statusBar.innerHTML = "🔒 Disconnected";
+    debugLog("Disconnected");
   }
   
   // Event Listeners
@@ -775,14 +892,16 @@ body {
   claimBtn.onclick = () => claimRewards();
   
   document.getElementById("treasuryNote").onclick = () => {
-    navigator.clipboard.writeText(GAME_CONTRACT_ADDRESS);
-    statusBar.innerHTML = "📋 Game address copied!";
+    navigator.clipboard.writeText(TREASURY_ADDRESS);
+    statusBar.innerHTML = "📋 Treasury address copied! Send PVLT here for rewards";
+    debugLog(`Treasury address: ${TREASURY_ADDRESS}`);
   };
   
   updateUI();
-  console.log("🎮 PepeVolt Ready - TAPPING IS FREE!");
-  console.log(`Game Contract: ${GAME_CONTRACT_ADDRESS}`);
-  console.log(`PVLT Token: ${PVLT_TOKEN_ADDRESS}`);
+  debugLog("🎮 PepeVolt Ready - TAPPING IS FREE!");
+  debugLog(`PVLT Token: ${PVLT_TOKEN_ADDRESS}`);
+  debugLog(`Game Contract: ${GAME_CONTRACT_ADDRESS}`);
+  debugLog(`Treasury: ${TREASURY_ADDRESS}`);
 </script>
 </body>
 </html>
