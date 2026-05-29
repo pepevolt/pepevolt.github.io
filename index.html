@@ -92,7 +92,7 @@
       width: 80px;
     }
 
-    /* main content: tapping circle + connect button + resource buttons */
+    /* main content */
     .hero-section {
       flex: 1;
       display: flex;
@@ -191,7 +191,6 @@
       margin-top: 0.5rem;
     }
 
-    /* main connect wallet button */
     .main-connect-btn {
       background: #1a1a1a;
       border: none;
@@ -232,7 +231,6 @@
       background-repeat: no-repeat;
     }
 
-    /* resource action buttons row */
     .resource-buttons {
       display: flex;
       gap: 1rem;
@@ -318,7 +316,6 @@
       color: #60a5fa;
     }
 
-    /* glow background */
     .glow-orb {
       position: fixed;
       width: 50vw;
@@ -367,7 +364,7 @@
 </head>
 <body>
 
-<!-- TOP NAVIGATION: Energy ⚡ Points ⭐ Token 💎 -->
+<!-- TOP NAVIGATION -->
 <div class="top-nav">
   <div class="nav-brand">✦ TAPVERSE</div>
   <div class="nav-stats">
@@ -392,7 +389,6 @@
 
 <!-- main content -->
 <div class="hero-section">
-  <!-- Tapping Circle -->
   <div class="tap-circle-container">
     <div id="tapCircle" class="tap-circle">
       <div class="tap-emoji">👆</div>
@@ -400,40 +396,35 @@
   </div>
   <div class="hint-text">tap → -1 energy → +1 point | 100 points → +1 token & points reset</div>
   
-  <!-- Button Group: Connect Wallet + Buy/Claim Buttons -->
   <div class="button-group">
-    <!-- Connect Wallet Button -->
     <button id="mainConnectBtn" class="main-connect-btn">
       <span class="main-icon"></span>
       <span id="mainBtnText">Connect Wallet</span>
     </button>
     
-    <!-- Buy Claim Buttons (Energy and Token) -->
     <div class="resource-buttons">
       <button id="buyEnergyBtn" class="action-btn">
         <span class="btn-emoji">⚡</span>
-        <span>Buy Claim</span>
+        <span>Buy Energy</span>
       </button>
-      <button id="buyTokenBtn" class="action-btn">
+      <button id="claimTokenBtn" class="action-btn">
         <span class="btn-emoji">💎</span>
-        <span>Buy Claim</span>
+        <span>Claim Token</span>
       </button>
     </div>
-    <div class="hint-text" style="margin-top: -0.25rem; font-size: 0.7rem;">spend points to claim resources</div>
+    <div class="hint-text" style="margin-top: -0.25rem; font-size: 0.7rem;">Buy Energy: 100 Tokens → +500 Energy | Claim Token: 200 Points → +1 Token</div>
   </div>
 </div>
 
 <div class="glow-orb"></div>
 
 <script>
-  // =========  ENERGY, POINTS & TOKEN SYSTEM WITH LOOP & BUY CLAIM BUTTONS =========
-  // Total Energy: 10,000 (starting)
-  // Each tap: Energy -1, Points +1
-  // When Points reaches 100: Award +1 Token, then Points reset to 0 (loop)
-  // Energy regen: +1 every 15 seconds (max 10000)
-  // BUY CLAIM (Energy): Spend 50 Points to gain +20 Energy
-  // BUY CLAIM (Token):  Spend 200 Points to gain +1 Token
-  // Points cannot go negative, buttons disable when insufficient points.
+  // =========  GAME SYSTEM =========
+  // Tap: -1 Energy, +1 Point
+  // 100 Points → +1 Token, Points reset to 0
+  // Energy regen: +1 every 15 sec (max 10000)
+  // BUY ENERGY: Spend 100 Tokens → gain +500 Energy
+  // CLAIM TOKEN: Spend 200 Points → gain +1 Token
   
   (function() {
     // DOM elements
@@ -441,56 +432,52 @@
     const mainConnectBtn = document.getElementById('mainConnectBtn');
     const mainBtnText = document.getElementById('mainBtnText');
     const buyEnergyBtn = document.getElementById('buyEnergyBtn');
-    const buyTokenBtn = document.getElementById('buyTokenBtn');
+    const claimTokenBtn = document.getElementById('claimTokenBtn');
     
-    // stats spans
     const energySpan = document.getElementById('energyValue');
     const pointsSpan = document.getElementById('pointsValue');
     const tokenSpan = document.getElementById('tokenValue');
     
-    // Wallet state (optional integration)
+    // Wallet state
     let isConnected = false;
     let currentAccount = null;
     
     // Stats
-    let energy = 10000;      // starts at 10000
-    let points = 0;          // current points (0-99, resets at 100)
-    let tokens = 0;          // total tokens earned from milestones
+    let energy = 10000;
+    let points = 0;
+    let tokens = 0;
     
-    // Store last tap coordinates for visual feedback
     let lastTapPosition = { x: 0, y: 0 };
     
-    // Helper: update all UI elements and button states
     function updateStatsUI() {
       if (energySpan) energySpan.innerText = Math.floor(energy);
       if (pointsSpan) pointsSpan.innerText = Math.floor(points);
       if (tokenSpan) tokenSpan.innerText = tokens;
       
-      // Enable/disable tap circle based on energy
       if (energy <= 0) {
         tapCircle.classList.add('disabled');
       } else {
         tapCircle.classList.remove('disabled');
       }
       
-      // Update Buy Claim buttons state based on points
+      // Update Buy Energy button: needs 100 tokens
       if (buyEnergyBtn) {
-        if (points >= 50) {
+        if (tokens >= 100) {
           buyEnergyBtn.classList.remove('disabled-action');
         } else {
           buyEnergyBtn.classList.add('disabled-action');
         }
       }
-      if (buyTokenBtn) {
+      // Update Claim Token button: needs 200 points
+      if (claimTokenBtn) {
         if (points >= 200) {
-          buyTokenBtn.classList.remove('disabled-action');
+          claimTokenBtn.classList.remove('disabled-action');
         } else {
-          buyTokenBtn.classList.add('disabled-action');
+          claimTokenBtn.classList.add('disabled-action');
         }
       }
     }
     
-    // Show floating feedback
     function showFloatingFeedback(x, y, text, colorClass = '') {
       const feedback = document.createElement('div');
       feedback.className = `tap-feedback ${colorClass}`;
@@ -503,7 +490,6 @@
       }, 600);
     }
     
-    // Show milestone feedback
     function showMilestoneFeedback(x, y) {
       const feedback = document.createElement('div');
       feedback.className = 'tap-feedback milestone-feedback';
@@ -516,25 +502,17 @@
       }, 800);
     }
     
-    // Process tap: -1 energy, +1 point, check milestone
+    // Process tap
     function processTap() {
-      if (energy <= 0) {
-        return false;
-      }
+      if (energy <= 0) return false;
       
-      // Consume 1 energy
       energy -= 1;
-      // Add 1 point
       points += 1;
       
-      let milestoneReached = false;
-      
-      // Check milestone (every 100 points)
       if (points >= 100) {
         const tokensEarned = Math.floor(points / 100);
         tokens += tokensEarned;
         points = points % 100;
-        milestoneReached = true;
         
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
           showMilestoneFeedback(lastTapPosition.x, lastTapPosition.y);
@@ -546,47 +524,46 @@
       return true;
     }
     
-    // Buy Claim Energy: Spend 50 points to gain 20 energy
-    function buyClaimEnergy() {
-      if (points >= 50) {
-        points -= 50;
-        energy += 20;
+    // BUY ENERGY: Spend 100 Tokens → Gain +500 Energy
+    function buyEnergy() {
+      if (tokens >= 100) {
+        tokens -= 100;
+        energy += 500;
         if (energy > 10000) energy = 10000;
         updateStatsUI();
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+20 ⚡ ENERGY (Claimed)`, 'energy-feedback');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+500 ⚡ ENERGY`, 'energy-feedback');
         }
-        console.log(`Buy Claim Energy: +20 | Points left: ${points} | Energy: ${energy}`);
+        console.log(`Bought Energy: +500 | Tokens left: ${tokens} | Energy: ${energy}`);
         return true;
       } else {
-        // show insufficient points feedback
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 50 points`, '');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 100 Tokens`, '');
         }
         return false;
       }
     }
     
-    // Buy Claim Token: Spend 200 points to gain 1 token
-    function buyClaimToken() {
+    // CLAIM TOKEN: Spend 200 Points → Gain +1 Token
+    function claimToken() {
       if (points >= 200) {
         points -= 200;
         tokens += 1;
         updateStatsUI();
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 💎 TOKEN (Claimed)`, 'token-feedback');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 💎 TOKEN`, 'token-feedback');
         }
-        console.log(`Buy Claim Token: +1 | Points left: ${points} | Tokens: ${tokens}`);
+        console.log(`Claimed Token: +1 | Points left: ${points} | Tokens: ${tokens}`);
         return true;
       } else {
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 200 points`, '');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 200 Points`, '');
         }
         return false;
       }
     }
     
-    // Handle tap on circle
+    // Tap handler
     function onTapCircle(e) {
       e.stopPropagation();
       
@@ -598,13 +575,11 @@
         return;
       }
       
-      // Visual ripple
       tapCircle.classList.add('ripple-effect');
       setTimeout(() => {
         tapCircle.classList.remove('ripple-effect');
       }, 200);
       
-      // Get tap coordinates
       let clientX, clientY;
       if (e.touches) {
         clientX = e.touches[0].clientX;
@@ -630,7 +605,7 @@
       }
     }
     
-    // ---------- Wallet Integration (optional) ----------
+    // ---------- Wallet Integration ----------
     async function connectWallet() {
       if (!window.ethereum) {
         console.warn('No Web3 wallet detected.');
@@ -749,18 +724,18 @@
     if (buyEnergyBtn) {
       buyEnergyBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        buyClaimEnergy();
+        buyEnergy();
       });
     }
     
-    if (buyTokenBtn) {
-      buyTokenBtn.addEventListener('click', (e) => {
+    if (claimTokenBtn) {
+      claimTokenBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        buyClaimToken();
+        claimToken();
       });
     }
     
-    // Energy regeneration: +1 energy every 15 seconds
+    // Energy regeneration
     let regenInterval = setInterval(() => {
       if (energy < 10000) {
         energy = Math.min(energy + 1, 10000);
@@ -772,7 +747,7 @@
       if (regenInterval) clearInterval(regenInterval);
     });
     
-    // Initialize game
+    // Initialize
     function initGame() {
       energy = 10000;
       points = 0;
@@ -782,7 +757,7 @@
     initGame();
     checkInitialConnection();
     
-    console.log("Ready: Tap to earn | Buy Claim buttons below connect wallet");
+    console.log("Ready: Buy Energy (100 Tokens → +500 Energy) | Claim Token (200 Points → +1 Token)");
   })();
 </script>
 </body>
