@@ -72,6 +72,15 @@ body {
   line-height: 1.2;
 }
 
+/* Blurred/disabled state for stats before wallet connect */
+.stat-value.disabled {
+  filter: blur(4px);
+  opacity: 0.5;
+  text-shadow: none;
+  cursor: default;
+  user-select: none;
+}
+
 .action-btn {
   width: 100%;
   border: none;
@@ -199,15 +208,15 @@ body {
 <body>
 <div class="app">
   <div class="top-stats">
-    <div class="stat-card"><div class="stat-label">⚡ ENERGY</div><div class="stat-value" id="energyDisplay">0</div></div>
-    <div class="stat-card"><div class="stat-label">💎 POINTS</div><div class="stat-value" id="pointsDisplay">0</div></div>
-    <div class="stat-card"><div class="stat-label">🪙 PVLT</div><div class="stat-value" id="pvltDisplay">0</div></div>
+    <div class="stat-card"><div class="stat-label">⚡ ENERGY</div><div class="stat-value disabled" id="energyDisplay">0</div></div>
+    <div class="stat-card"><div class="stat-label">💎 POINTS</div><div class="stat-value disabled" id="pointsDisplay">0</div></div>
+    <div class="stat-card"><div class="stat-label">🪙 PVLT</div><div class="stat-value disabled" id="pvltDisplay">0</div></div>
   </div>
 
   <button class="action-btn" id="connectWalletBtn">🔌 CONNECT WALLET (POLYGON)</button>
 
   <div class="status-bar" id="statusBar">
-    ⚡ Tap to earn PVLT | +1 energy every 15s
+    🔒 Connect wallet to start earning PVLT
   </div>
 
   <div class="tap-arena">
@@ -217,8 +226,8 @@ body {
   </div>
 
   <div class="action-stack">
-    <button class="action-btn buy-energy-btn" id="buyEnergyAction">⚡ BUY 10,000 ENERGY (100 PVLT)</button>
-    <button class="action-btn" id="claimPvltAction">💎 CLAIM PVLT TO WALLET</button>
+    <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 10,000 ENERGY (100 PVLT)</button>
+    <button class="action-btn" id="claimPvltAction" disabled>💎 CLAIM PVLT TO WALLET</button>
   </div>
   <div class="treasury-note">🏦 treasuryVolt: 0x4251Ef...Bda5 | game: 0x41A9...3Ff</div>
 </div>
@@ -246,7 +255,7 @@ body {
   const claimBtn = document.getElementById("claimPvltAction");
   const statusBar = document.getElementById("statusBar");
 
-  // Game state - these will be set to 0 when wallet connects
+  // Game state - only active when wallet connected
   let energy = 0;
   let points = 0;
   let inGamePvlt = 0;
@@ -257,9 +266,6 @@ body {
   let userAccount = null;
   let tokenContract = null;
   let wcProviderInstance = null;
-  
-  // Flag to track if we've already reset for this connection session
-  let hasResetForCurrentSession = false;
 
   function showFloatingText(clientX, clientY, text, color = "#caffb9") {
     const floatDiv = document.createElement("div");
@@ -272,28 +278,23 @@ body {
     setTimeout(() => floatDiv.remove(), 750);
   }
 
-  // Save game data - only save if not connected (guest mode)
-  function persistGameData() {
-    // Only save guest progress if wallet is NOT connected
-    if (!userAccount) {
-      localStorage.setItem("pepevolt_save_v2", JSON.stringify({ energy, points, inGamePvlt }));
+  function saveGameData() {
+    if (userAccount) {
+      localStorage.setItem(`pepevolt_${userAccount}`, JSON.stringify({ energy, points, inGamePvlt }));
     }
   }
 
-  function loadPersistedData() {
-    // Only load guest data if no wallet connected
-    if (!userAccount) {
-      const raw = localStorage.getItem("pepevolt_save_v2");
-      if (raw) {
+  function loadGameData() {
+    if (userAccount) {
+      const saved = localStorage.getItem(`pepevolt_${userAccount}`);
+      if (saved) {
         try {
-          const saved = JSON.parse(raw);
-          energy = saved.energy ?? 0;
-          points = saved.points ?? 0;
-          inGamePvlt = saved.inGamePvlt ?? 0;
+          const data = JSON.parse(saved);
+          energy = data.energy ?? 0;
+          points = data.points ?? 0;
+          inGamePvlt = data.inGamePvlt ?? 0;
           if (energy > 10000) energy = 10000;
           if (energy < 0) energy = 0;
-          if (points < 0) points = 0;
-          if (inGamePvlt < 0) inGamePvlt = 0;
         } catch (e) {}
       } else {
         energy = 0;
@@ -301,16 +302,6 @@ body {
         inGamePvlt = 0;
       }
     }
-  }
-  
-  // Reset all game stats to ZERO when wallet connects
-  function resetGameStatsToZero() {
-    energy = 0;
-    points = 0;
-    inGamePvlt = 0;
-    hasResetForCurrentSession = true;
-    persistGameData();
-    console.log("🎮 Game stats reset to ZERO for new wallet connection");
   }
 
   async function updateRealWalletBalance() {
@@ -329,39 +320,64 @@ body {
     }
   }
 
+  // Enable/disable UI elements based on connection state
+  function setUIActive(active) {
+    if (active) {
+      // Connected - show actual numbers, enable buttons
+      energySpan.classList.remove('disabled');
+      pointsSpan.classList.remove('disabled');
+      pvltSpan.classList.remove('disabled');
+      buyEnergyBtn.disabled = false;
+      buyEnergyBtn.style.opacity = "1";
+      claimBtn.disabled = inGamePvlt < 1;
+      claimBtn.style.opacity = inGamePvlt >= 1 ? "1" : "0.55";
+      tapCircle.style.opacity = "1";
+      tapCircle.style.cursor = "pointer";
+    } else {
+      // Not connected - blur stats, disable everything
+      energySpan.classList.add('disabled');
+      pointsSpan.classList.add('disabled');
+      pvltSpan.classList.add('disabled');
+      buyEnergyBtn.disabled = true;
+      buyEnergyBtn.style.opacity = "0.55";
+      claimBtn.disabled = true;
+      claimBtn.style.opacity = "0.55";
+      tapCircle.style.opacity = "0.6";
+      tapCircle.style.cursor = "not-allowed";
+    }
+  }
+
   async function refreshUI() {
+    // Always update the text values (they're blurred when disconnected)
     energySpan.innerText = Math.floor(energy);
     pointsSpan.innerText = Math.floor(points);
     pvltSpan.innerText = Math.floor(inGamePvlt);
     
     if (userAccount && tokenContract) {
       await updateRealWalletBalance();
-    }
-    
-    // Update button states
-    if (userAccount) {
-      buyEnergyBtn.disabled = false;
-      buyEnergyBtn.style.opacity = "1";
+      setUIActive(true);
       claimBtn.disabled = inGamePvlt < 1;
       claimBtn.style.opacity = inGamePvlt >= 1 ? "1" : "0.55";
       connectBtn.innerText = `🟢 ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
       statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | 💼 ${realWalletBalance.toFixed(4)} PVLT | ⚡ ${Math.floor(energy)}/10000`;
     } else {
-      buyEnergyBtn.disabled = true;
-      buyEnergyBtn.style.opacity = "0.55";
-      claimBtn.disabled = true;
-      claimBtn.style.opacity = "0.55";
+      setUIActive(false);
       connectBtn.innerText = "🔌 CONNECT WALLET (POLYGON)";
-      statusBar.innerHTML = `⚡ Tap to earn PVLT | In-game: ${Math.floor(inGamePvlt)} PVLT | +1 energy every 15s`;
+      statusBar.innerHTML = `🔒 Connect wallet to start earning PVLT | Tap the PEPE after connecting!`;
     }
     
-    // Save progress (only for guest mode)
-    if (!userAccount) {
-      persistGameData();
+    if (userAccount) {
+      saveGameData();
     }
   }
 
   function performTap(clientX, clientY) {
+    // Only allow tapping if wallet is connected
+    if (!userAccount) {
+      showFloatingText(clientX, clientY, "🔒 Connect wallet first!", "#ffaa88");
+      return;
+    }
+    
     if (energy <= 0) {
       showFloatingText(clientX, clientY, "❌ NO ENERGY", "#ffaa99");
       return;
@@ -436,7 +452,7 @@ body {
   }
   
   async function connectWallet() {
-    // If already connected, disconnect and reset to guest mode with saved guest data
+    // If already connected, disconnect
     if (wcProviderInstance && userAccount) {
       try {
         await wcProviderInstance.disconnect();
@@ -444,9 +460,9 @@ body {
       wcProviderInstance = null;
       userAccount = null;
       tokenContract = null;
-      hasResetForCurrentSession = false;
-      // Load guest saved data after disconnect
-      loadPersistedData();
+      energy = 0;
+      points = 0;
+      inGamePvlt = 0;
       await refreshUI();
       return;
     }
@@ -482,30 +498,29 @@ body {
         tokenDecimals = await tokenContract.decimals();
       } catch(e) {}
       
+      // Load saved data for this wallet address
+      loadGameData();
       await updateRealWalletBalance();
       wcProviderInstance = wcProvider;
-      
-      // CRITICAL: Reset game stats to ZERO when wallet connects
-      resetGameStatsToZero();
-      
       await refreshUI();
       
       console.log("✅ Connected to:", userAccount);
-      console.log("✅ Game stats reset to 0 for connected wallet");
       
       wcProvider.on("accountsChanged", async (newAccounts) => {
         if (newAccounts && newAccounts.length > 0) {
-          // Account changed - reset stats again for new account
+          // Save current data before switching
+          saveGameData();
           userAccount = newAccounts[0];
-          resetGameStatsToZero();
+          loadGameData();
           await updateRealWalletBalance();
           await refreshUI();
         } else {
-          // Disconnected - load guest data
+          saveGameData();
           userAccount = null;
           tokenContract = null;
-          hasResetForCurrentSession = false;
-          loadPersistedData();
+          energy = 0;
+          points = 0;
+          inGamePvlt = 0;
           await refreshUI();
         }
       });
@@ -517,11 +532,13 @@ body {
       });
       
       wcProvider.on("disconnect", () => {
+        saveGameData();
         userAccount = null;
         tokenContract = null;
         wcProviderInstance = null;
-        hasResetForCurrentSession = false;
-        loadPersistedData();
+        energy = 0;
+        points = 0;
+        inGamePvlt = 0;
         refreshUI();
       });
       
@@ -531,8 +548,6 @@ body {
       userAccount = null;
       tokenContract = null;
       wcProviderInstance = null;
-      hasResetForCurrentSession = false;
-      loadPersistedData();
       refreshUI();
     }
   }
@@ -544,6 +559,10 @@ body {
   });
 
   tapCircle.addEventListener("click", (e) => {
+    if (!userAccount) {
+      showFloatingText(e.clientX, e.clientY, "🔒 Connect wallet first!", "#ffaa88");
+      return;
+    }
     let x = e.clientX, y = e.clientY;
     if (!x || !y) {
       const rect = tapCircle.getBoundingClientRect();
@@ -555,6 +574,11 @@ body {
   
   tapCircle.addEventListener("touchstart", (e) => {
     e.preventDefault();
+    if (!userAccount) {
+      const touch = e.touches[0];
+      showFloatingText(touch.clientX, touch.clientY, "🔒 Connect wallet first!", "#ffaa88");
+      return;
+    }
     const touch = e.touches[0];
     if (touch) performTap(touch.clientX, touch.clientY);
   }, { passive: false });
@@ -571,44 +595,17 @@ body {
   
   // Energy regeneration
   setInterval(() => {
-    if (energy < 10000) {
+    if (userAccount && energy < 10000) {
       energy = Math.min(energy + 1, 10000);
       refreshUI();
+      saveGameData();
     }
   }, 15000);
   
-  // Initial load - all stats start at 0
-  // Load guest data only if exists, otherwise keep 0
-  const savedRaw = localStorage.getItem("pepevolt_save_v2");
-  if (savedRaw) {
-    try {
-      const saved = JSON.parse(savedRaw);
-      energy = saved.energy ?? 0;
-      points = saved.points ?? 0;
-      inGamePvlt = saved.inGamePvlt ?? 0;
-      if (energy > 10000) energy = 10000;
-      if (energy < 0) energy = 0;
-      if (points < 0) points = 0;
-      if (inGamePvlt < 0) inGamePvlt = 0;
-    } catch (e) {
-      energy = 0;
-      points = 0;
-      inGamePvlt = 0;
-    }
-  } else {
-    energy = 0;
-    points = 0;
-    inGamePvlt = 0;
-  }
-  
+  // Initial load - all stats show 0 and are blurred until wallet connects
   refreshUI();
-  setInterval(() => {
-    if (!userAccount) {
-      persistGameData();
-    }
-  }, 3000);
   
-  console.log("🔥 PepeVolt Ready | Energy, Points, PVLT start at 0, reset on wallet connect");
+  console.log("🔥 PepeVolt Ready | Connect wallet to reveal stats and start tapping");
 </script>
 </body>
 </html>
