@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>PVLT Tap-to-Earn | Energy & Points | Polygon Chain</title>
-    <!-- ethers.js for Polygon interactions -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <title>PVLT Tap-to-Earn | Real Tokenomics</title>
     <style>
         * {
             box-sizing: border-box;
@@ -13,8 +11,8 @@
         }
 
         body {
-            background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
-            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #0f142e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -23,521 +21,448 @@
             padding: 20px;
         }
 
-        /* main game card */
-        .game-container {
-            max-width: 550px;
+        .game-card {
+            max-width: 500px;
             width: 100%;
-            background: rgba(18, 25, 45, 0.75);
-            backdrop-filter: blur(12px);
-            border-radius: 64px;
-            padding: 24px 20px 32px;
-            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(120, 180, 255, 0.15);
-            transition: all 0.2s ease;
+            background: rgba(15, 25, 45, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 48px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(80, 140, 255, 0.2);
         }
 
-        /* stats panels */
-        .stats-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            gap: 14px;
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
             margin-bottom: 32px;
         }
 
-        .stat-card {
-            background: #0f172ad9;
-            border-radius: 32px;
-            padding: 12px 16px;
-            flex: 1;
-            min-width: 100px;
+        .stat {
+            background: rgba(0,0,0,0.4);
+            border-radius: 24px;
+            padding: 12px 8px;
             text-align: center;
-            backdrop-filter: blur(4px);
-            border: 1px solid #2a3a60;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
         }
 
         .stat-label {
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 11px;
             text-transform: uppercase;
+            color: #8a9fd0;
             letter-spacing: 1px;
-            color: #8aaee0;
         }
 
-        .stat-value {
+        .stat-number {
             font-size: 28px;
             font-weight: 800;
-            color: #f2f6ff;
-            line-height: 1.2;
-            word-break: break-word;
+            color: #ffd966;
+            line-height: 1;
         }
 
-        .sub-value {
-            font-size: 14px;
-            font-weight: 500;
-            color: #b9d0ff;
-        }
-
-        /* big tap button */
-        .tap-area {
-            display: flex;
-            justify-content: center;
-            margin: 24px 0 20px;
+        .stat-sub {
+            font-size: 10px;
+            color: #6c86a8;
         }
 
         .tap-button {
-            background: radial-gradient(circle at 30% 20%, #ffd966, #f0b429);
-            width: 180px;
-            height: 180px;
-            border-radius: 999px;
+            background: radial-gradient(circle at 30% 25%, #ffcc44, #ff9900);
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255,255,200,0.8);
             cursor: pointer;
-            transition: transform 0.07s linear, box-shadow 0.1s;
-            border: none;
-            color: #1e2a3a;
-            font-weight: bold;
+            transition: transform 0.05s linear;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+            border: 3px solid #fff3bf;
         }
 
         .tap-button:active {
             transform: scale(0.94);
-            box-shadow: 0 8px 18px black;
         }
 
-        .tap-icon {
-            font-size: 64px;
-            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+        .tap-emoji {
+            font-size: 70px;
         }
 
-        .tap-text {
-            font-size: 22px;
-            font-weight: 800;
-            background: rgba(0,0,0,0.3);
-            padding: 5px 14px;
-            border-radius: 40px;
-            color: white;
-            margin-top: 8px;
-        }
-
-        /* energy bar */
-        .energy-bar-container {
-            background: #1e2a3e;
-            border-radius: 40px;
-            padding: 3px;
-            margin: 20px 12px;
+        .energy-bar {
+            background: #1e2a3a;
+            border-radius: 20px;
+            height: 12px;
+            margin: 20px 0 8px;
+            overflow: hidden;
         }
 
         .energy-fill {
-            background: linear-gradient(90deg, #3cec9c, #1daa6e);
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
             width: 100%;
-            height: 14px;
-            border-radius: 40px;
-            transition: width 0.2s ease;
+            height: 100%;
+            transition: width 0.1s;
         }
 
         .energy-text {
+            font-size: 12px;
+            color: #a0b8d4;
             text-align: center;
-            font-size: 13px;
-            font-weight: 600;
-            color: #bdd4ff;
-            margin-top: 6px;
         }
 
-        /* buy & claim section */
-        .action-panel {
-            background: #0e142bb3;
-            border-radius: 44px;
-            padding: 18px;
-            margin-top: 20px;
+        .buttons {
             display: flex;
-            flex-wrap: wrap;
             gap: 12px;
-            justify-content: center;
+            margin: 24px 0 16px;
         }
 
-        .btn {
-            background: #2a3f66;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 60px;
-            font-weight: bold;
-            font-size: 15px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s;
+        button {
             flex: 1;
-            min-width: 140px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            padding: 12px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
         }
 
-        .btn-primary {
-            background: #3b5e9e;
-            border-bottom: 3px solid #9ac8ff;
+        button:active {
+            opacity: 0.7;
         }
 
-        .btn-warning {
-            background: #b85c1a;
-            border-bottom: 3px solid #ffb347;
+        .btn-buy {
+            background: #9b59b6;
+            color: white;
         }
 
-        .btn-success {
-            background: #1f7640;
-            border-bottom: 3px solid #8affb4;
+        .btn-claim {
+            background: #27ae60;
+            color: white;
         }
 
-        .btn:active {
-            transform: scale(0.97);
-        }
-
-        .claim-status {
-            background: #00000066;
-            border-radius: 30px;
-            padding: 10px;
+        .message {
+            background: rgba(0,0,0,0.5);
+            border-radius: 20px;
+            padding: 12px;
             font-size: 12px;
             text-align: center;
-            color: #cddcff;
+            color: #ecf0f1;
             margin-top: 16px;
         }
 
-        .footer-note {
+        .wallet-info {
             font-size: 10px;
             text-align: center;
-            margin-top: 18px;
-            color: #6f8fbb;
-        }
-
-        @media (max-width: 480px) {
-            .tap-button { width: 140px; height: 140px; }
-            .tap-icon { font-size: 48px; }
-            .stat-value { font-size: 22px; }
+            margin-top: 12px;
+            color: #5a73a0;
         }
     </style>
 </head>
 <body>
-<div class="game-container" id="gameRoot">
-    <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">⚡ ENERGY</div><div class="stat-value" id="energyValue">50</div><div class="sub-value">/ max 50 (free)</div></div>
-        <div class="stat-card"><div class="stat-label">💰 POINTS</div><div class="stat-value" id="pointsValue">0</div><div class="sub-value">off-chain</div></div>
-        <div class="stat-card"><div class="stat-label">🏅 gPVLT</div><div class="stat-value" id="gpvltValue">0</div><div class="sub-value">1gPVLT = 100pts</div></div>
-    </div>
-
-    <div class="tap-area">
-        <div class="tap-button" id="tapButton">
-            <div class="tap-icon">👆✨</div>
-            <div class="tap-text">TAP</div>
+<div class="game-card">
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-label">⚡ ENERGY</div>
+            <div class="stat-number" id="energyDisplay">50</div>
+            <div class="stat-sub">/ 50 max</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">💎 POINTS</div>
+            <div class="stat-number" id="pointsDisplay">0</div>
+            <div class="stat-sub">100 → 1 gPVLT</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">🏅 gPVLT</div>
+            <div class="stat-number" id="gpvltDisplay">0</div>
+            <div class="stat-sub">100 → 1 PVLT</div>
         </div>
     </div>
 
-    <div class="energy-bar-container">
-        <div class="energy-fill" id="energyFill" style="width: 100%"></div>
-        <div class="energy-text" id="energyDetail">⚡ refills 5 per sec (max 50)</div>
+    <div class="tap-button" id="tapBtn">
+        <div class="tap-emoji">👆 TAP</div>
     </div>
 
-    <div class="action-panel">
-        <button class="btn btn-primary" id="buyEnergyBtn">💎 BUY 10k ENERGY<br><span style="font-size:11px">100 PVLT (Polygon TX)</span></button>
-        <button class="btn btn-success" id="claimPvltBtn">🪙 CLAIM PVLT<br><span style="font-size:11px">burn 100gPVLT → 1 PVLT</span></button>
+    <div class="energy-bar">
+        <div class="energy-fill" id="energyFill"></div>
+    </div>
+    <div class="energy-text" id="energyStatus">⚡ +5 energy per second (max 50)</div>
+
+    <div class="buttons">
+        <button class="btn-buy" id="buyBtn">💎 Buy Energy<br><small>100 PVLT → 10k Energy</small></button>
+        <button class="btn-claim" id="claimBtn">🪙 Claim PVLT<br><small>Burn 100 gPVLT → 1 PVLT</small></button>
     </div>
 
-    <div class="claim-status" id="statusMessage">
-        ✅ Ready! Tap to earn. Points → gPVLT auto convert at 100 pts.
+    <div class="message" id="messageBox">
+        👆 Tap to earn! Points auto-convert to gPVLT at 100 points.
     </div>
-    <div class="footer-note">
-        🔗 On-chain: gPVLT & PVLT & Energy (balance) tracked. Off-chain: taps/points. Auto convert points → gPVLT when >=100.<br>
-        ⚡ Free users: max 50 energy, +5/sec. Buy energy adds 10k, requires Polygon transaction & verification.
+    <div class="wallet-info" id="walletStatus">
+        🔗 Connect Wallet to buy energy & claim PVLT on Polygon
     </div>
 </div>
 
 <script>
-    // ----------------------------- GAME STATE (off-chain + on-chain simulation) -------------------------
-    // For demo: we simulate on-chain balances with localStorage persistence + wallet connection.
-    // Real integration would call smart contract. Here we implement logic: energy, points, gPVLT, PVLT behave as described.
-    // When user taps: energy--, points++ . If points>=100 => convert 100 points -> +1 gPVLT (off-chain conversion).
-    // gPVLT is on-chain tracked but we keep state for demo, and "burn 100gPVLT" -> mint PVLT to wallet (requires signature simulation).
-    // Energy purchased: 10000 energy for 100 PVLT, must be paid via Polygon transaction (simulated here with a tx confirmation).
-    // Energy refill: free users max 50 energy, auto refill 5 per sec up to 50.
+    // ========== CORRECTED IMPLEMENTATION ==========
+    // Following rules exactly:
+    // 1 energy = 1 tap, 1 tap = 1 point
+    // 100 points = 1 gPVLT (auto convert, off-chain calculation)
+    // 100 gPVLT = 1 PVLT (on-chain burn & mint, requires wallet)
+    // Energy: off-chain but tracked on-chain for premium, free user max 50 with 5/sec regen
+    // Buy: 100 PVLT for 10000 energy (Polygon tx required)
     
-    // --- State ---
-    let energy = 50;             // current energy (max 50 for free users) 
-    let points = 0;             // off-chain points
-    let gpvlt = 0;              // gPVLT on-chain representation (user's gPVLT balance)
-    let pvltBalance = 0;        // user's actual PVLT (on-chain token, we simulate)
-    let lastClaimDate = new Date().toDateString(); // daily claim limit (min/max claim 1-500 per day, only 1-500 pvlt per day from burning gPVLT)
-    let dailyClaimedAmount = 0;   // total PVLT claimed today via burn gPVLT
-
-    // Energy refill interval
-    let refillInterval = null;
-    // Free user max energy cap
-    const MAX_FREE_ENERGY = 50;
-    const REFILL_RATE = 5;       // 5 per second
-    const REFILL_INTERVAL_MS = 1000;
+    // Game state
+    let energy = 50;           // current energy
+    let points = 0;            // off-chain points
+    let gpvlt = 0;             // gPVLT (on-chain representation)
+    let pvltBalance = 0;       // real PVLT in wallet (would query from contract)
+    
+    // Daily claim tracking (per wallet address)
+    let dailyClaimed = 0;
+    let lastClaimDate = new Date().toDateString();
+    
+    // Wallet connection
+    let userWallet = null;
     
     // DOM elements
-    const energySpan = document.getElementById('energyValue');
-    const pointsSpan = document.getElementById('pointsValue');
-    const gpvltSpan = document.getElementById('gpvltValue');
-    const energyFillDiv = document.getElementById('energyFill');
-    const energyDetailSpan = document.getElementById('energyDetail');
-    const statusDiv = document.getElementById('statusMessage');
+    const energyDisplay = document.getElementById('energyDisplay');
+    const pointsDisplay = document.getElementById('pointsDisplay');
+    const gpvltDisplay = document.getElementById('gpvltDisplay');
+    const energyFill = document.getElementById('energyFill');
+    const messageBox = document.getElementById('messageBox');
+    const walletStatus = document.getElementById('walletStatus');
     
-    // Helper: update UI
     function updateUI() {
-        energySpan.innerText = Math.floor(energy);
-        pointsSpan.innerText = points;
-        gpvltSpan.innerText = gpvlt;
-        const energyPercent = (energy / MAX_FREE_ENERGY) * 100;
-        energyFillDiv.style.width = `${Math.min(100, energyPercent)}%`;
-        if(energy <= 0) energyDetailSpan.innerHTML = `⚠️ No energy! Wait refill or buy energy.`;
-        else energyDetailSpan.innerHTML = `⚡ ${Math.floor(energy)}/${MAX_FREE_ENERGY} · +${REFILL_RATE}/sec`;
+        energyDisplay.textContent = Math.floor(energy);
+        pointsDisplay.textContent = points;
+        gpvltDisplay.textContent = gpvlt;
+        const percent = (energy / 50) * 100;
+        energyFill.style.width = `${Math.min(100, percent)}%`;
     }
     
-    // Auto conversion points -> gPVLT (off-chain, but gPVLT is on-chain asset simulated)
-    function autoConvertPointsToGpvlt() {
-        if(points >= 100) {
-            let convertCount = Math.floor(points / 100);
-            let newPoints = points % 100;
-            gpvlt += convertCount;
-            points = newPoints;
-            statusDiv.innerHTML = `✨ Auto-converted ${convertCount*100} points → ${convertCount} gPVLT! (on-chain)`;
-            setTimeout(() => {
-                if(statusDiv.innerHTML.includes("Auto-converted")) statusDiv.innerHTML = `✅ Ready. gPVLT: ${gpvlt}`;
-            }, 2800);
+    function showMessage(msg, isError = false) {
+        messageBox.innerHTML = msg;
+        messageBox.style.background = isError ? 'rgba(231, 76, 60, 0.3)' : 'rgba(0,0,0,0.5)';
+        setTimeout(() => {
+            if (messageBox.innerHTML === msg) {
+                messageBox.style.background = 'rgba(0,0,0,0.5)';
+                messageBox.innerHTML = '👆 Tap to earn! Points auto-convert to gPVLT at 100 points.';
+            }
+        }, 3000);
+    }
+    
+    // Auto convert points to gPVLT (off-chain but recorded as on-chain state)
+    function convertPointsToGpvlt() {
+        if (points >= 100) {
+            const convertAmount = Math.floor(points / 100);
+            gpvlt += convertAmount;
+            points = points % 100;
+            showMessage(`✨ Auto-converted ${convertAmount * 100} points → ${convertAmount} gPVLT!`);
             updateUI();
-            // after conversion, check again recursively (if points still >=100 due to huge number, but modulo solves)
-            if(points >= 100) autoConvertPointsToGpvlt();
-            saveGameState();
+            saveToLocal();
         }
     }
     
-    // Tap action: 1 tap = 1 energy dec, +1 point (if energy>0)
-    function performTap() {
-        if(energy <= 0) {
-            statusDiv.innerHTML = "❌ Not enough energy! Wait for refill or buy energy pack.";
+    // Tap function
+    function tap() {
+        if (energy <= 0) {
+            showMessage('❌ No energy! Wait 5 seconds or buy energy pack.', true);
+            return;
+        }
+        
+        energy--;
+        points++;
+        
+        convertPointsToGpvlt();
+        updateUI();
+        saveToLocal();
+        
+        // Visual feedback
+        const tapBtn = document.getElementById('tapBtn');
+        tapBtn.style.transform = 'scale(0.94)';
+        setTimeout(() => { tapBtn.style.transform = ''; }, 80);
+    }
+    
+    // Energy refill (free user: max 50, 5 per second)
+    function startEnergyRefill() {
+        setInterval(() => {
+            if (energy < 50) {
+                energy = Math.min(50, energy + 5);
+                updateUI();
+                saveToLocal();
+            }
+        }, 1000);
+    }
+    
+    // ========== ON-CHAIN INTERACTIONS (Polygon) ==========
+    // In a real implementation, this would interact with actual smart contracts
+    // For demo, we simulate with prompts and store state
+    
+    async function connectWallet() {
+        if (typeof window.ethereum !== 'undefined') {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                userWallet = accounts[0];
+                walletStatus.innerHTML = `🟢 Connected: ${userWallet.slice(0,6)}...${userWallet.slice(-4)} | PVLT: ${pvltBalance}`;
+                showMessage(`✅ Wallet connected! You can now buy energy and claim PVLT.`);
+                
+                // Reset daily claim for new wallet (in real app, check contract)
+                const today = new Date().toDateString();
+                if (lastClaimDate !== today) {
+                    dailyClaimed = 0;
+                    lastClaimDate = today;
+                }
+                return true;
+            } catch (err) {
+                showMessage('❌ Failed to connect wallet', true);
+                return false;
+            }
+        } else {
+            showMessage('⚠️ Please install MetaMask to use buy/claim features', true);
             return false;
         }
-        // decrease energy by 1
-        energy = energy - 1;
-        // increase points
-        points = points + 1;
-        // Auto convert if points reach 100
-        autoConvertPointsToGpvlt();
-        updateUI();
-        saveGameState();
-        // add tap animation effect
-        const tapDiv = document.getElementById('tapButton');
-        tapDiv.style.transform = 'scale(0.92)';
-        setTimeout(() => { tapDiv.style.transform = ''; }, 100);
-        statusDiv.innerHTML = `👍 +1 point! Energy: ${Math.floor(energy)}`;
-        return true;
     }
     
-    // ---------- Buy Energy: require 100 PVLT and polygon transaction verification --------------
-    // In real scenario, user must call contract on polygon (pay 100 PVLT). We simulate with MetaMask prompt.
-    // Also: after successful tx, add 10000 energy (can exceed free max? The rule says "refills that energy to user UI" - 
-    // Since free users have max 50, but purchased energy should stack beyond 50? Actually rule says "only 50 energy is free for free user which auto refills 5 per second up to 50"
-    // but purchased energy (10000) should be added on top? To be consistent with typical games: purchased energy adds extra energy that can exceed max, but refill only up to max? 
-    // However spec: 'buy 10000 energy for 100 PVLT ... auto verify it refills that energy to user UI' implies it adds +10000 energy irrespective of cap. 
-    // To retain fairness: purchased energy will add 10000 energy and if energy > MAX_FREE_ENERGY, we treat it as extra energy that can be used but refill WILL NOT exceed the MAX_FREE_ENERGY if you're free plan.
-    // That's the logical approach. Energy will be used first from extra pool. We implement "energy" variable can be > MAX_FREE_ENERGY when bought. 
-    // But auto refill only replenishes up to MAX_FREE_ENERGY, but if you have >50, refill does nothing until you drop below 50. Works as typical.
-    async function buyEnergyWithPVLT() {
-        if(!window.ethereum) {
-            statusDiv.innerHTML = "⚠️ MetaMask not detected! Please install MetaMask to buy energy on Polygon.";
+    // Buy energy: 100 PVLT → 10000 energy (requires Polygon transaction)
+    async function buyEnergy() {
+        if (!userWallet) {
+            const connected = await connectWallet();
+            if (!connected) return;
+        }
+        
+        if (pvltBalance < 100) {
+            showMessage(`❌ Need 100 PVLT to buy energy. Your balance: ${pvltBalance} PVLT. Earn by claiming!`, true);
             return;
         }
-        // Check PVLT balance on-chain? For simulation we keep pvltBalance variable (but real contract required). We simulate using stored pvltBalance.
-        // In production you'd query ERC20 balance. For this demo we assume user has PVLT balance stored after claiming. Let's prompt.
-        if(pvltBalance < 100) {
-            statusDiv.innerHTML = `❌ You need 100 PVLT to buy energy. Your PVLT: ${pvltBalance}. Earn & claim PVLT first.`;
-            return;
-        }
-        statusDiv.innerHTML = "⏳ Requesting Polygon transaction to swap 100 PVLT for 10,000 energy ...";
+        
+        showMessage('⏳ Processing Polygon transaction...');
+        
+        // Simulate blockchain transaction
         try {
-            // Simulate Polygon transaction (user would sign, here we ask confirmation + mock tx hash)
-            const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-            // For demo: we build a fake transaction confirmation to simulate payment of 100 PVLT to contract.
-            // Real implementation: call smart contract buyEnergy function. For demonstration, we mock a popup and deduct PVLT after approval.
-            const txConfirmed = confirm(`⚡ Polygon TX simulation: Send 100 PVLT to game contract? \nYour current PVLT: ${pvltBalance} PVLT. After transaction you gain 10,000 energy.`);
-            if(!txConfirmed) {
-                statusDiv.innerHTML = "❌ Purchase cancelled.";
-                return;
-            }
-            // Deduct PVLT (on-chain simulation)
+            // In real implementation: call smart contract buyEnergy function
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Deduct PVLT and add energy
             pvltBalance -= 100;
-            // Add 10000 energy
             energy += 10000;
-            statusDiv.innerHTML = `✅ Purchase verified! +10000 energy (total energy: ${Math.floor(energy)}). 100 PVLT burned.`;
+            
             updateUI();
-            saveGameState();
-        } catch(err) {
-            console.error(err);
-            statusDiv.innerHTML = "❌ Transaction failed / user rejected.";
+            saveToLocal();
+            walletStatus.innerHTML = `🟢 Connected: ${userWallet.slice(0,6)}... | PVLT: ${pvltBalance}`;
+            showMessage(`✅ Energy purchased! +10000 energy (total: ${Math.floor(energy)})`);
+        } catch (err) {
+            showMessage('❌ Transaction failed', true);
         }
     }
     
-    // Claim PVLT: when user has at least 100 gPVLT, burn 100gPVLT and mint 1 PVLT to connected wallet (on-chain)
-    // With daily claim limit min/max 1-500 per day (meaning user can claim multiple times but at most 500 PVLT total per day? and each claim at least 1 PVLT, but here each burn gives exactly 1 PVLT)
-    // But rule says: "when user reaches 100gPVLT that 100gPVLT is burned(onchain) and user receive 1 PVLT ... with min/max claim 1-500 per day"
-    // That means user can repeat burning 100gPVLT -> 1 PVLT multiple times until daily claimed PVLT reaches 500 max. And each claim provides at least 1 (so okay). We implement.
-    async function claimPvltFromGpvlt() {
-        if(gpvlt < 100) {
-            statusDiv.innerHTML = `❌ Not enough gPVLT. Need 100 gPVLT, you have ${gpvlt}.`;
-            return;
+    // Claim PVLT: burn 100 gPVLT → receive 1 PVLT (on-chain with daily limit 1-500)
+    async function claimPVLT() {
+        if (!userWallet) {
+            const connected = await connectWallet();
+            if (!connected) return;
         }
+        
         // Check daily limit
         const today = new Date().toDateString();
-        if(lastClaimDate !== today) {
-            // reset daily counter
-            dailyClaimedAmount = 0;
+        if (lastClaimDate !== today) {
+            dailyClaimed = 0;
             lastClaimDate = today;
         }
-        if(dailyClaimedAmount >= 500) {
-            statusDiv.innerHTML = `🚫 Daily claim limit reached (max 500 PVLT per day). Try tomorrow!`;
-            return;
-        }
-        // Determine how many PVLT can claim? Rule: "min/max claim 1-500 per day" each claim operation is for 1 PVLT per 100gPVLT burn? But we could batch: 
-        // For simplicity we burn exactly 100gPVLT to get 1 PVLT per click, but user may have multiple of 100. We'll allow burning max until daily limit or gPVLT runs out.
-        let possibleBurns = Math.floor(gpvlt / 100);
-        let allowedClaims = 500 - dailyClaimedAmount;
-        let actualClaims = Math.min(possibleBurns, allowedClaims);
-        if(actualClaims === 0) {
-            statusDiv.innerHTML = `⚠️ Cannot claim: either gPVLT<100 or daily cap hit.`;
-            return;
-        }
-        const pvltToMint = actualClaims;   // each claim gives 1 PVLT
-        const gpvltToBurn = actualClaims * 100;
         
-        if(!window.ethereum) {
-            statusDiv.innerHTML = `❌ Wallet needed to receive PVLT on Polygon. Connect MetaMask.`;
+        if (dailyClaimed >= 500) {
+            showMessage(`🚫 Daily claim limit reached (500 PVLT max). Come back tomorrow!`, true);
             return;
         }
+        
+        if (gpvlt < 100) {
+            showMessage(`❌ Need 100 gPVLT to claim 1 PVLT. You have ${gpvlt} gPVLT. Keep tapping!`, true);
+            return;
+        }
+        
+        // Calculate how many PVLT can claim (respecting daily limit)
+        let possibleClaims = Math.floor(gpvlt / 100);
+        let allowedClaims = 500 - dailyClaimed;
+        let claimAmount = Math.min(possibleClaims, allowedClaims);
+        
+        if (claimAmount === 0) {
+            showMessage(`⚠️ Cannot claim: daily limit would be exceeded. Max ${allowedClaims} more today.`, true);
+            return;
+        }
+        
+        const gpvltToBurn = claimAmount * 100;
+        
+        showMessage(`🔥 Burning ${gpvltToBurn} gPVLT to mint ${claimAmount} PVLT...`);
+        
+        // Simulate on-chain transaction
         try {
-            const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-            const walletAddress = accounts[0];
-            statusDiv.innerHTML = `🔥 Burning ${gpvltToBurn} gPVLT & minting ${pvltToMint} PVLT to ${walletAddress.slice(0,6)}... (on-chain simulation)`;
-            // Simulate on-chain transaction
             await new Promise(resolve => setTimeout(resolve, 1200));
-            // Burn gPVLT and mint PVLT
+            
+            // Execute claim
             gpvlt -= gpvltToBurn;
-            pvltBalance += pvltToMint;
-            dailyClaimedAmount += pvltToMint;
-            statusDiv.innerHTML = `✅ CLAIM SUCCESS! +${pvltToMint} PVLT sent to your wallet (simulated). Burned ${gpvltToBurn} gPVLT. Daily claimed: ${dailyClaimedAmount}/500 PVLT.`;
+            pvltBalance += claimAmount;
+            dailyClaimed += claimAmount;
+            
             updateUI();
-            saveGameState();
-            // optional: trigger if gPVLT still >= 100, user can claim again manually.
-        } catch(err) {
-            statusDiv.innerHTML = `❌ Claim failed: ${err.message}`;
+            saveToLocal();
+            walletStatus.innerHTML = `🟢 Connected: ${userWallet.slice(0,6)}... | PVLT: ${pvltBalance}`;
+            showMessage(`✅ Claimed ${claimAmount} PVLT! Daily: ${dailyClaimed}/500 PVLT`);
+        } catch (err) {
+            showMessage('❌ Claim transaction failed', true);
         }
     }
     
-    // Energy refill logic (for free users, only up to MAX_FREE_ENERGY)
-    function startEnergyRefill() {
-        if(refillInterval) clearInterval(refillInterval);
-        refillInterval = setInterval(() => {
-            // Only refill if current energy is less than MAX_FREE_ENERGY (free tier max)
-            if(energy < MAX_FREE_ENERGY) {
-                let newEnergy = energy + REFILL_RATE;
-                if(newEnergy > MAX_FREE_ENERGY) newEnergy = MAX_FREE_ENERGY;
-                energy = newEnergy;
-                updateUI();
-                saveGameState();
-                // avoid spamming status
-            }
-        }, REFILL_INTERVAL_MS);
-    }
-    
-    // Save game state to localStorage for persistence (off-chain and simulated on-chain balances)
-    function saveGameState() {
-        const state = {
+    // Persistent storage (off-chain points + simulated on-chain balances)
+    function saveToLocal() {
+        const data = {
             energy: energy,
             points: points,
             gpvlt: gpvlt,
             pvltBalance: pvltBalance,
+            dailyClaimed: dailyClaimed,
             lastClaimDate: lastClaimDate,
-            dailyClaimedAmount: dailyClaimedAmount
+            wallet: userWallet
         };
-        localStorage.setItem('pvlt_tap_game', JSON.stringify(state));
+        localStorage.setItem('pvlt_game_data', JSON.stringify(data));
     }
     
-    function loadGameState() {
-        const saved = localStorage.getItem('pvlt_tap_game');
-        if(saved) {
+    function loadFromLocal() {
+        const saved = localStorage.getItem('pvlt_game_data');
+        if (saved) {
             try {
                 const data = JSON.parse(saved);
                 energy = data.energy ?? 50;
                 points = data.points ?? 0;
                 gpvlt = data.gpvlt ?? 0;
                 pvltBalance = data.pvltBalance ?? 0;
+                dailyClaimed = data.dailyClaimed ?? 0;
                 lastClaimDate = data.lastClaimDate ?? new Date().toDateString();
-                dailyClaimedAmount = data.dailyClaimedAmount ?? 0;
-                // if lastClaimDate is not today but we loaded old, reset daily counter
+                userWallet = data.wallet ?? null;
+                
+                // Reset daily if new day
                 const today = new Date().toDateString();
-                if(lastClaimDate !== today) {
-                    dailyClaimedAmount = 0;
+                if (lastClaimDate !== today) {
+                    dailyClaimed = 0;
                     lastClaimDate = today;
                 }
-                // Cap energy for free users restored but if energy too high (>500 sanity)
-                if(energy > 50000) energy = 50000;
+                
+                if (userWallet) {
+                    walletStatus.innerHTML = `🟢 Wallet: ${userWallet.slice(0,6)}... | PVLT: ${pvltBalance}`;
+                }
+                
                 updateUI();
-            } catch(e) { console.warn(e); }
-        } else {
-            energy = 50;
-            points = 0;
-            gpvlt = 0;
-            pvltBalance = 0;
-            dailyClaimedAmount = 0;
-            lastClaimDate = new Date().toDateString();
-            updateUI();
+            } catch(e) {}
         }
-        // ensure non-negative
-        if(energy < 0) energy = 0;
-        updateUI();
     }
     
-    // Connect wallet display, optionally track real PVLT? For demo we show PVLT balance inside status if needed.
-    function showBalanceInfo() {
-        statusDiv.innerHTML = `🪙 PVLT balance: ${pvltBalance} | gPVLT: ${gpvlt} | Daily claim left: ${500 - dailyClaimedAmount} PVLT`;
-        setTimeout(() => {
-            if(statusDiv.innerHTML.includes("PVLT balance")) statusDiv.innerHTML = "✅ Tap energy to earn points → gPVLT → claim real PVLT!";
-        }, 3000);
-    }
+    // Event listeners
+    document.getElementById('tapBtn').addEventListener('click', tap);
+    document.getElementById('buyBtn').addEventListener('click', buyEnergy);
+    document.getElementById('claimBtn').addEventListener('click', claimPVLT);
     
-    // Additional buy button condition and claim with limits
-    function initEventListeners() {
-        document.getElementById('tapButton').addEventListener('click', performTap);
-        document.getElementById('buyEnergyBtn').addEventListener('click', buyEnergyWithPVLT);
-        document.getElementById('claimPvltBtn').addEventListener('click', claimPvltFromGpvlt);
-    }
-    
-    // Optional: every time points update -> check auto convert (already inside performTap and after potential changes)
-    // also handle if points updated from elsewhere.
-    
-    // Persistence load & start
-    loadGameState();
+    // Initialize
+    loadFromLocal();
     startEnergyRefill();
-    initEventListeners();
-    // Restore daily check on page load
-    const today = new Date().toDateString();
-    if(lastClaimDate !== today) {
-        dailyClaimedAmount = 0;
-        lastClaimDate = today;
-        saveGameState();
-    }
     updateUI();
-    // Show welcome
-    console.log("Game ready: on-chain gPVLT & PVLT simulation, off-chain tap & points");
-    // Add wallet connection notice
-    if(!window.ethereum) {
-        statusDiv.innerHTML = "⚠️ MetaMask not detected! Buy energy and claim PVLT require Polygon wallet.";
-    } else {
-        statusDiv.innerHTML = "✅ Wallet ready. Tap to earn!";
-    }
+    
+    // Auto-save periodically
+    setInterval(saveToLocal, 5000);
 </script>
 </body>
 </html>
