@@ -73,25 +73,48 @@ body {
   line-height: 1.2;
 }
 
-#connectBtn {
+/* Unified button style — matches claim PVLT button exactly */
+.action-btn {
   width: 100%;
   border: none;
   border-radius: 44px;
-  padding: 14px 12px;
-  margin-bottom: 12px;
+  padding: 16px 12px;
   font-size: 16px;
-  font-weight: 700;
-  color: #052022;
-  background: linear-gradient(105deg, #4effdc, #00c9a7);
+  font-weight: 800;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 230, 180, 0.3);
+  transition: transform 0.1s ease, opacity 0.2s;
   font-family: inherit;
+  text-align: center;
+  display: inline-block;
+  background: linear-gradient(95deg, #46c9b0, #1d9b87);
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
-#connectBtn:active {
+.action-btn:active {
   transform: scale(0.97);
-  box-shadow: 0 1px 4px rgba(0, 230, 180, 0.4);
+}
+
+.action-btn:disabled {
+  opacity: 0.55;
+  transform: none;
+  cursor: not-allowed;
+}
+
+/* Specific style for buy energy (different gradient for visual hierarchy) */
+.buy-energy-btn {
+  background: linear-gradient(95deg, #ffd966, #f5b042);
+  color: #0a1a22;
+  text-shadow: none;
+}
+
+/* Connect button now uses exact same style as claim PVLT button */
+#connectWalletBtn {
+  background: linear-gradient(95deg, #46c9b0, #1d9b87);
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  margin-bottom: 12px;
 }
 
 .wallet-panel {
@@ -183,29 +206,6 @@ body {
   margin-top: 12px;
 }
 
-.primary-action {
-  padding: 16px 12px;
-  border: none;
-  border-radius: 40px;
-  font-weight: 800;
-  font-size: 16px;
-  color: #0a1a22;
-  background: linear-gradient(95deg, #ffd966, #f5b042);
-  cursor: pointer;
-  transition: transform 0.1s ease, opacity 0.2s;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-.secondary-action {
-  background: linear-gradient(95deg, #46c9b0, #1d9b87);
-  color: white;
-  text-shadow: 0 1px 1px black;
-}
-
-.action-btn:active {
-  transform: scale(0.97);
-}
-
 .float-number {
   position: fixed;
   color: #e6ff73;
@@ -266,7 +266,8 @@ body {
     <div class="stat-card"><div class="stat-label">🪙 PVLT</div><div class="stat-value" id="pvltDisplay">0</div></div>
   </div>
 
-  <button id="connectWalletBtn">🔌 CONNECT WALLET (POLYGON)</button>
+  <!-- Connect button now uses class "action-btn" matching claim style exactly -->
+  <button class="action-btn" id="connectWalletBtn">🔌 CONNECT WALLET (POLYGON)</button>
 
   <div class="wallet-panel" id="walletInfoPanel">
     <div class="wallet-status-text">⚡ Tap to earn PVLT tokens — claim anytime!</div>
@@ -284,8 +285,8 @@ body {
   </div>
 
   <div class="action-stack">
-    <button class="primary-action" id="buyEnergyAction">⚡ BUY 10,000 ENERGY (100 PVLT)</button>
-    <button class="primary-action secondary-action" id="claimPvltAction">💎 CLAIM PVLT TO WALLET</button>
+    <button class="action-btn buy-energy-btn" id="buyEnergyAction">⚡ BUY 10,000 ENERGY (100 PVLT)</button>
+    <button class="action-btn" id="claimPvltAction">💎 CLAIM PVLT TO WALLET</button>
   </div>
   <div class="treasury-note">🏦 treasuryVolt: 0x4251Ef...Bda5 | game: 0x41A9...3Ff</div>
 </div>
@@ -293,7 +294,7 @@ body {
 <script type="module">
   import { EthereumProvider } from "@walletconnect/ethereum-provider";
 
-  // ---------- CONTRACT ADDRESSES (same as original, immutable) ----------
+  // ---------- CONTRACT ADDRESSES (immutable) ----------
   const PVLT_TOKEN_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
   const TREASURY_VOLT = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
   const PEPEVOLT_GAME = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
@@ -408,7 +409,7 @@ body {
       walletPvltLabel.innerText = "0.0000";
     }
     
-    // Buttons style & disable
+    // Buttons style & disable - connect button text updates but remains same class
     if (userAccount) {
       buyEnergyBtn.disabled = false;
       buyEnergyBtn.style.opacity = "1";
@@ -416,15 +417,19 @@ body {
       claimBtn.disabled = !claimActive;
       claimBtn.style.opacity = claimActive ? "1" : "0.55";
       connectBtn.innerText = `🟢 ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
+      connectBtn.disabled = false;
+      connectBtn.style.opacity = "1";
     } else {
       buyEnergyBtn.disabled = true;
       buyEnergyBtn.style.opacity = "0.55";
       claimBtn.disabled = true;
       claimBtn.style.opacity = "0.55";
-      connectBtn.innerText = "🔗 CONNECT WALLET (POLYGON)";
+      connectBtn.innerText = "🔌 CONNECT WALLET (POLYGON)";
+      connectBtn.disabled = false;
+      connectBtn.style.opacity = "1";
     }
     
-    // update wallet panel rich text
+    // update wallet panel rich html
     if (userAccount) {
       walletInfoDiv.innerHTML = `
         <div class="wallet-status-text">✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)} on Polygon</div>
@@ -492,7 +497,6 @@ body {
     }
     const amountWei = ethers.utils.parseUnits("100", tokenDecimals);
     try {
-      // visual feedback
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight - 100;
       showFloatingText(centerX, centerY, "🔄 Processing purchase...", "#ffcc88");
@@ -542,9 +546,10 @@ body {
     }
   }
   
-  // ---------- WALLET CONNECT (WalletConnect v2, fixed UI sync) ----------
+  // ---------- WALLET CONNECT (WalletConnect v2, same style as claim button) ----------
   async function connectWalletModern() {
-    if (wcProviderInstance) {
+    // If already connected, disconnect
+    if (wcProviderInstance && userAccount) {
       try {
         await wcProviderInstance.disconnect();
       } catch(e) {}
@@ -621,17 +626,10 @@ body {
     }
   }
   
+  // Unified connect/disconnect behavior
   connectBtn.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (wcProviderInstance && userAccount) {
-      wcProviderInstance.disconnect().catch(()=>{});
-      userAccount = null;
-      tokenContract = null;
-      wcProviderInstance = null;
-      refreshUI();
-    } else {
-      connectWalletModern();
-    }
+    connectWalletModern();
   });
 
   // Tap handlers (mouse + touch)
