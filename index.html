@@ -278,8 +278,6 @@ body {
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@walletconnect/modal@2.6.2/dist/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.11.2/dist/index.min.js"></script>
 </head>
 
 <body>
@@ -351,15 +349,6 @@ body {
     "function decimals() view returns (uint8)"
   ];
 
-  // WalletConnect Configuration
-  const projectId = "1731f99148b9cf6107dee70b6efb14b7";
-  const metadata = {
-    name: "PepeVolt Game",
-    description: "Tap to Earn PVLT tokens on Polygon",
-    url: window.location.origin,
-    icons: ["https://i.imgur.com/8Km9tLL.png"]
-  };
-
   // DOM Elements
   const connectBtn = document.getElementById("connectWalletBtn");
   const energySpan = document.getElementById("energyDisplay");
@@ -388,8 +377,6 @@ body {
   let provider = null;
   let signer = null;
   let lastRegenTime = Date.now();
-  let web3Modal = null;
-  let wcProvider = null;
 
   function showFloat(x, y, text, color = "#e6ff73") {
     const el = document.createElement("div");
@@ -601,102 +588,114 @@ body {
     }
   }
 
-  // ============ WALLETCONNECT MODAL (Like in your image) ============
-  async function initWalletConnect() {
+  // ============ SIMPLE META-MASK CONNECT (MOST RELIABLE) ============
+  async function connectMetaMask() {
+    // Check if MetaMask is installed
+    if (typeof window.ethereum === 'undefined') {
+      alert("❌ No wallet detected!\n\nPlease install one:\n• MetaMask: https://metamask.io/download/\n• Or use Trust Wallet / WalletConnect in Telegram");
+      statusBar.innerHTML = "❌ Please install MetaMask or use a Web3 wallet";
+      return;
+    }
+
     try {
-      // Create Ethereum provider
-      wcProvider = await EthereumProvider.init({
-        projectId: projectId,
-        chains: [137], // Polygon Mainnet
-        methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData", "eth_accounts", "eth_requestAccounts"],
-        rpcMap: {
-          137: "https://polygon-rpc.com"
-        },
-        metadata: metadata,
-        showQrModal: true, // This enables the beautiful modal!
-        qrModalOptions: {
-          themeMode: 'dark',
-          themeVariables: {
-            '--wcm-z-index': '10000',
-            '--wcm-accent-color': '#46c9b0',
-            '--wcm-background-color': '#03060c',
-            '--wcm-font-family': 'Inter, sans-serif'
-          }
-        }
-      });
+      connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
+      connectBtn.disabled = true;
       
-      // Listen for connection
-      wcProvider.on('connect', async () => {
-        console.log('WalletConnect connected');
-      });
+      // Request account access
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       
-      wcProvider.on('accountsChanged', (accounts) => {
-        if (accounts.length === 0) {
-          disconnect();
-        } else if (accounts[0] !== userAccount) {
-          saveData();
-          userAccount = accounts[0];
-          setupContract();
-          loadData();
-          refreshUI();
-        }
-      });
-      
-      wcProvider.on('disconnect', () => {
-        disconnect();
-      });
-      
-      wcProvider.on('chainChanged', (chainId) => {
-        if (chainId !== 137) {
-          statusBar.innerHTML = "⚠️ Please switch to Polygon Mainnet";
-        }
-      });
-      
-      // Request connection (opens the modal with all wallets)
-      await wcProvider.connect();
-      
-      const accounts = wcProvider.accounts;
       if (!accounts || accounts.length === 0) {
         throw new Error("No accounts found");
       }
       
       userAccount = accounts[0];
-      await setupContract();
+      
+      // Create provider
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      
+      // Check if we're on Polygon Mainnet (chainId: 137)
+      const network = await provider.getNetwork();
+      if (network.chainId !== 137) {
+        statusBar.innerHTML = "⚠️ Please switch to Polygon Mainnet in your wallet";
+        // Try to switch network
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x89' }], // 137 in hex
+          });
+        } catch(e) {
+          if (e.code === 4902) {
+            // Add Polygon network if it doesn't exist
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x89',
+                chainName: 'Polygon Mainnet',
+                nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+                rpcUrls: ['https://polygon-rpc.com'],
+                blockExplorerUrls: ['https://polygonscan.com/']
+              }]
+            });
+          } else {
+            alert("Please switch to Polygon Mainnet in your wallet manually");
+          }
+        }
+      }
+      
+      // Create token contract
+      tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+      
+      // Get decimals
+      try {
+        decimals = await tokenContract.decimals();
+      } catch(e) {
+        console.log("Using default decimals");
+      }
+      
+      // Load saved game data
       loadData();
       await refreshUI();
-      statusBar.innerHTML = "✅ Connected! Start tapping!";
+      
+      statusBar.innerHTML = "✅ Connected successfully! Start tapping!";
+      
+      // Setup event listeners for account/network changes
+      window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length === 0) {
+          disconnect();
+        } else if (accounts[0] !== userAccount) {
+          saveData();
+          userAccount = accounts[0];
+          loadData();
+          refreshUI();
+        }
+      });
+      
+      window.ethereum.on('chainChanged', () => {
+        window.location.reload();
+      });
       
     } catch(error) {
       console.error("Connection error:", error);
-      if (error.message && !error.message.includes("User rejected")) {
-        alert("❌ Connection failed: " + error.message);
+      let errorMsg = "Connection failed";
+      if (error.code === 4001) {
+        errorMsg = "You rejected the connection request";
+      } else if (error.message) {
+        errorMsg = error.message;
       }
+      alert("❌ " + errorMsg);
+      statusBar.innerHTML = "❌ Connection failed. Try again.";
       userAccount = null;
       await refreshUI();
-    }
-  }
-  
-  async function setupContract() {
-    if (!wcProvider || !userAccount) return;
-    
-    const ethersProvider = new ethers.providers.Web3Provider(wcProvider);
-    signer = ethersProvider.getSigner();
-    tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
-    
-    try { 
-      decimals = await tokenContract.decimals(); 
-    } catch(e) { 
-      console.log("Using default decimals"); 
+    } finally {
+      connectBtn.disabled = false;
+      if (!userAccount) {
+        connectBtn.innerHTML = "🔌 CONNECT WALLET (POLYGON)";
+      }
     }
   }
 
   async function disconnect() {
-    if (wcProvider) {
-      try { 
-        await wcProvider.disconnect(); 
-      } catch(e) {}
-      wcProvider = null;
-    }
     saveData();
     userAccount = null;
     tokenContract = null;
@@ -707,6 +706,7 @@ body {
     gamePvltBalance = 0;
     lastRegenTime = Date.now();
     await refreshUI();
+    statusBar.innerHTML = "🔒 Disconnected. Connect to play again!";
   }
 
   // Connect button handler
@@ -714,13 +714,7 @@ body {
     if (userAccount) {
       await disconnect();
     } else {
-      connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
-      connectBtn.disabled = true;
-      await initWalletConnect();
-      connectBtn.disabled = false;
-      if (!userAccount) {
-        connectBtn.innerHTML = "🔌 CONNECT WALLET (POLYGON)";
-      }
+      await connectMetaMask();
     }
   };
 
@@ -758,7 +752,12 @@ body {
   }, 1000);
   
   refreshUI();
-  console.log("🎮 PepeVolt Ready! Click Connect to see WalletConnect modal with all wallet options");
+  console.log("🎮 PepeVolt Ready! Click Connect to start earning PVLT");
+  
+  // Add note about Telegram wallets
+  if (navigator.userAgent.includes('Telegram')) {
+    statusBar.innerHTML = "📱 Telegram detected! Use MetaMask or Trust Wallet's browser to play";
+  }
 </script>
 </body>
 </html>
