@@ -191,6 +191,21 @@ body {
   margin-top: 10px;
   color: #4f699b;
 }
+
+.loading-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script type="importmap">
@@ -250,6 +265,7 @@ body {
   // State
   let energy = 0, points = 0, inGamePvlt = 0, walletBalance = 0, decimals = 18;
   let userAccount = null, tokenContract = null, provider = null;
+  let isLoading = false;
 
   function showFloat(x, y, text, color = "#e6ff73") {
     const el = document.createElement("div");
@@ -289,41 +305,30 @@ body {
   }
 
   async function refreshUI() {
-    // Update numbers
     energySpan.innerText = Math.floor(energy);
     pointsSpan.innerText = Math.floor(points);
     pvltSpan.innerText = Math.floor(inGamePvlt);
     
     if (userAccount) {
       await updateWalletBalance();
-      // Remove blur
       energySpan.classList.remove("blurred");
       pointsSpan.classList.remove("blurred");
       pvltSpan.classList.remove("blurred");
-      // Enable tap
       tapCircle.classList.remove("disabled");
-      // Enable buttons
       buyBtn.disabled = false;
       claimBtn.disabled = inGamePvlt < 1;
-      // Change button to disconnect
       connectBtn.classList.add("connected");
       connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-      // Update status
       statusBar.innerHTML = `✅ Connected | 💼 ${walletBalance.toFixed(4)} PVLT | ⚡ ${Math.floor(energy)}/10000 | 💎 ${Math.floor(points)} pts`;
     } else {
-      // Blur stats
       energySpan.classList.add("blurred");
       pointsSpan.classList.add("blurred");
       pvltSpan.classList.add("blurred");
-      // Disable tap
       tapCircle.classList.add("disabled");
-      // Disable buttons
       buyBtn.disabled = true;
       claimBtn.disabled = true;
-      // Change button to connect
       connectBtn.classList.remove("connected");
       connectBtn.innerHTML = "🔌 CONNECT WALLET (POLYGON)";
-      // Update status
       statusBar.innerHTML = "🔒 Connect wallet to start earning PVLT";
     }
   }
@@ -396,57 +401,89 @@ body {
     userAccount = null;
     tokenContract = null;
     energy = 0; points = 0; inGamePvlt = 0;
+    isLoading = false;
     await refreshUI();
   }
 
   async function connect() {
+    if (isLoading) return;
+    isLoading = true;
+    connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
+    connectBtn.disabled = true;
+    
     try {
       const wcProvider = await EthereumProvider.init({
         projectId: "1731f99148b9cf6107dee70b6efb14b7",
         chains: [137],
         showQrModal: true,
-        methods: ["eth_sendTransaction", "eth_accounts", "eth_requestAccounts"],
+        qrModalOptions: {
+          themeMode: 'dark',
+          enableExplorer: true,
+          explorerRecommendedWalletIds: [
+            "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96", // MetaMask
+            "971e689d0a5be527bac79629b4ee9b925e8227e516ff6ef140da2e3d968afbda" // Trust Wallet
+          ]
+        },
+        methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData", "eth_accounts", "eth_requestAccounts"],
         rpcMap: { 137: "https://polygon-rpc.com" },
-        metadata: { name: "PepeVolt", url: window.location.origin }
+        metadata: {
+          name: "PepeVolt Game",
+          description: "Tap to Earn PVLT tokens",
+          url: window.location.origin,
+          icons: ["https://i.imgur.com/8Km9tLL.png"]
+        }
       });
       
       await wcProvider.connect();
+      
+      // Get session and accounts
       const accounts = await wcProvider.request({ method: "eth_requestAccounts" });
-      if (!accounts || accounts.length === 0) throw new Error("No account");
+      
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No accounts found");
+      }
       
       userAccount = accounts[0];
       const ethersProvider = new ethers.providers.Web3Provider(wcProvider);
       const signer = ethersProvider.getSigner();
       tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       
-      try { decimals = await tokenContract.decimals(); } catch(e) {}
+      try { decimals = await tokenContract.decimals(); } catch(e) { decimals = 18; }
       
       provider = wcProvider;
       loadData();
       await refreshUI();
       
-      // Important: Force UI update again after a short delay
-      setTimeout(async () => {
-        await updateWalletBalance();
-        refreshUI();
-      }, 500);
-      
+      // Setup event listeners
       wcProvider.on("accountsChanged", async (newAcc) => {
-        if (newAcc && newAcc[0]) {
+        if (newAcc && newAcc.length > 0) {
           saveData();
           userAccount = newAcc[0];
           loadData();
           await refreshUI();
-        } else {
-          await disconnect();
         }
       });
       
-      wcProvider.on("disconnect", async () => { await disconnect(); });
+      wcProvider.on("chainChanged", (chainId) => {
+        if (chainId !== "0x89") {
+          statusBar.innerHTML = "⚠️ Please switch to Polygon Mainnet";
+        }
+      });
+      
+      wcProvider.on("disconnect", async () => {
+        await disconnect();
+      });
       
     } catch(e) {
-      alert("Connection error: " + e.message);
+      console.error("Connection error:", e);
+      alert("Connection failed: " + (e.message || "Unknown error"));
       await disconnect();
+    } finally {
+      isLoading = false;
+      connectBtn.disabled = false;
+      if (!userAccount) {
+        connectBtn.innerHTML = "🔌 CONNECT WALLET (POLYGON)";
+      }
     }
   }
 
