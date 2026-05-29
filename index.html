@@ -94,6 +94,15 @@
       color: #ffaaaa;
     }
 
+    .premium-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      font-size: 0.65rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      margin-left: 0.5rem;
+      font-weight: 600;
+    }
+
     .nav-spacer {
       width: 80px;
     }
@@ -462,14 +471,14 @@
 </head>
 <body>
 
-<!-- TOP NAVIGATION: Energy · Points · Burned PVLT (fake) · Real PVLT -->
+<!-- TOP NAVIGATION: Energy · Points · Burned PVLT · Real PVLT -->
 <div class="top-nav">
-  <div class="nav-brand">✦ TAPVERSE</div>
+  <div class="nav-brand">✦ TAPVERSE <span id="userTypeBadge" class="premium-badge" style="display: none;">FREE</span></div>
   <div class="nav-stats">
     <div class="stat-item">
       <span class="stat-emoji">⚡</span>
       <span>Energy</span>
-      <span class="stat-value" id="energyValue">10000</span>
+      <span class="stat-value" id="energyValue">50</span>
     </div>
     <div class="stat-item">
       <span class="stat-emoji">⭐</span>
@@ -497,12 +506,12 @@
       <div class="tap-emoji">👆</div>
     </div>
   </div>
-  <div class="hint-text">tap → -1 energy → +1 point | 100 points → +1 Burned PVLT & points reset</div>
+  <div class="hint-text" id="energyHint">tap → -1 energy → +1 point | 100 points → +1 Burned PVLT</div>
   
   <div class="button-group">
     <button id="mainConnectBtn" class="main-connect-btn">
       <span class="main-icon"></span>
-      <span id="mainBtnText">Connect Wallet</span>
+      <span id="mainBtnText">Connect Wallet (Free: 50 Energy)</span>
     </button>
     
     <div class="resource-buttons">
@@ -533,15 +542,13 @@
 <div class="glow-orb"></div>
 
 <script>
-  // =========  CORRECT SYSTEM =========
+  // =========  DUAL ENERGY SYSTEM =========
+  // Free user: 50 Energy max, no regeneration
+  // Paid user (connected wallet): 10000 Energy max, with regeneration
   // Tap: -1 Energy, +1 Point
-  // 100 Points → +1 BURNED PVLT (fake, shown in top nav), Points reset to 0
-  // Energy regen: +1 every 15 sec (max 10000)
-  // BUY ENERGY: Spend 100 REAL PVLT → gain +10000 Energy (caps at 10000)
+  // 100 Points → +1 Burned PVLT, Points reset to 0
+  // BUY ENERGY: Spend 100 REAL PVLT → gain +10000 Energy (caps at max energy for user type)
   // CLAIM: Convert Burned PVLT to Real PVLT (1-500 per day)
-  //   - Requires enough Burned PVLT balance
-  //   - Adds Real PVLT to wallet
-  //   - Daily limit 1-500 Real PVLT
   
   (function() {
     // DOM elements
@@ -553,6 +560,8 @@
     const claimAmountDisplay = document.getElementById('claimAmountDisplay');
     const submitClaimBtn = document.getElementById('submitClaimBtn');
     const dailyLimitStatus = document.getElementById('dailyLimitStatus');
+    const userTypeBadge = document.getElementById('userTypeBadge');
+    const energyHint = document.getElementById('energyHint');
     
     const energySpan = document.getElementById('energyValue');
     const pointsSpan = document.getElementById('pointsValue');
@@ -563,60 +572,64 @@
     // Wallet state
     let isConnected = false;
     let currentAccount = null;
+    let isPaidUser = false;  // Paid user = connected wallet
     
     // Game Stats
-    let energy = 10000;
+    let energy = 50;           // Starts at 50 for free users
     let points = 0;
-    let burnedPvlt = 0;      // BURNED PVLT (earned from tapping)
-    let realPvlt = 0;        // REAL PVLT (spendable, can buy energy)
+    let burnedPvlt = 0;
+    let realPvlt = 0;
     
     // Daily claim tracking
     let lastClaimDate = null;
     let dailyClaimUsed = false;
     
+    // Energy regeneration interval (only for paid users)
+    let regenInterval = null;
+    
     let lastTapPosition = { x: 0, y: 0 };
     
-    // Load saved data from localStorage
-    function loadSavedData() {
-      const saved = localStorage.getItem('tapverse_data_v2');
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          energy = data.energy ?? 10000;
-          points = data.points ?? 0;
-          burnedPvlt = data.burnedPvlt ?? 0;
-          realPvlt = data.realPvlt ?? 0;
-          lastClaimDate = data.lastClaimDate ? new Date(data.lastClaimDate) : null;
-          dailyClaimUsed = data.dailyClaimUsed ?? false;
-          
-          // Check if lastClaimDate is today, reset if new day
-          const today = new Date().toDateString();
-          if (lastClaimDate && new Date(lastClaimDate).toDateString() !== today) {
-            dailyClaimUsed = false;
-            lastClaimDate = null;
-          }
-          if (!lastClaimDate) dailyClaimUsed = false;
-        } catch(e) { console.warn(e); }
-      }
-      updateStatsUI();
-      updateDailyClaimUI();
+    // Get max energy based on user type
+    function getMaxEnergy() {
+      return isPaidUser ? 10000 : 50;
     }
     
-    function saveData() {
-      const data = {
-        energy, points, burnedPvlt, realPvlt,
-        lastClaimDate: lastClaimDate ? lastClaimDate.toISOString() : null,
-        dailyClaimUsed
-      };
-      localStorage.setItem('tapverse_data_v2', JSON.stringify(data));
+    // Update UI based on user type
+    function updateUserTypeUI() {
+      const maxEnergy = getMaxEnergy();
+      if (isPaidUser) {
+        userTypeBadge.style.display = 'inline-block';
+        userTypeBadge.textContent = '⭐ PAID';
+        userTypeBadge.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+        energyHint.innerHTML = 'tap → -1 energy → +1 point | 100 points → +1 Burned PVLT | ⭐ PAID: 10,000 Energy + Regen';
+        if (energy < maxEnergy && energy < maxEnergy) {
+          // Ensure energy doesn't exceed max
+          if (energy > maxEnergy) energy = maxEnergy;
+          updateStatsUI();
+        }
+      } else {
+        userTypeBadge.style.display = 'inline-block';
+        userTypeBadge.textContent = '🆓 FREE';
+        userTypeBadge.style.background = 'linear-gradient(135deg, #6b7280, #4b5563)';
+        energyHint.innerHTML = 'tap → -1 energy → +1 point | 100 points → +1 Burned PVLT | 🆓 FREE: 50 Energy (No Regen)';
+        if (energy > 50) energy = 50;
+        updateStatsUI();
+      }
+      updateStatsUI();
     }
     
     function updateStatsUI() {
-      if (energySpan) energySpan.innerText = Math.floor(energy);
+      const maxEnergy = getMaxEnergy();
+      if (energySpan) energySpan.innerText = Math.floor(Math.min(energy, maxEnergy));
       if (pointsSpan) pointsSpan.innerText = Math.floor(points);
       if (burnedPvltSpan) burnedPvltSpan.innerText = burnedPvlt;
       if (realPvltSpan) realPvltSpan.innerText = realPvlt;
       if (walletPvltBalanceSpan) walletPvltBalanceSpan.innerText = realPvlt;
+      
+      // Cap energy at max
+      if (energy > maxEnergy) {
+        energy = maxEnergy;
+      }
       
       if (energy <= 0) {
         tapCircle.classList.add('disabled');
@@ -624,7 +637,7 @@
         tapCircle.classList.remove('disabled');
       }
       
-      // Buy Energy: needs 100 REAL PVLT
+      // Buy Energy: needs 100 REAL PVLT and user must be paid? Actually anyone can buy energy if they have real PVLT
       if (buyEnergyBtn) {
         if (realPvlt >= 100) {
           buyEnergyBtn.classList.remove('disabled-action');
@@ -647,6 +660,41 @@
         dailyLimitStatus.innerHTML = '✅ Convert Burned PVLT to Real PVLT (1-500/day)';
         claimSlider.disabled = false;
       }
+    }
+    
+    function startRegeneration() {
+      if (regenInterval) clearInterval(regenInterval);
+      if (isPaidUser) {
+        regenInterval = setInterval(() => {
+          const maxEnergy = getMaxEnergy();
+          if (energy < maxEnergy) {
+            energy = Math.min(energy + 1, maxEnergy);
+            updateStatsUI();
+          }
+        }, 15000);
+      }
+    }
+    
+    function stopRegeneration() {
+      if (regenInterval) {
+        clearInterval(regenInterval);
+        regenInterval = null;
+      }
+    }
+    
+    function setPaidStatus(paid) {
+      isPaidUser = paid;
+      if (isPaidUser) {
+        // Upgrade to 10000 energy (or keep current if higher)
+        if (energy < 10000) energy = 10000;
+        startRegeneration();
+      } else {
+        // Downgrade to 50 energy max
+        if (energy > 50) energy = 50;
+        stopRegeneration();
+      }
+      updateUserTypeUI();
+      updateStatsUI();
     }
     
     function showFloatingFeedback(x, y, text, colorClass = '') {
@@ -673,7 +721,7 @@
       }, 800);
     }
     
-    // Process tap: -1 energy, +1 point, milestone gives +1 Burned PVLT
+    // Process tap
     function processTap() {
       if (energy <= 0) return false;
       
@@ -695,14 +743,15 @@
       return true;
     }
     
-    // BUY ENERGY: Spend 100 REAL PVLT → +10000 Energy
+    // BUY ENERGY: Spend 100 REAL PVLT → +Energy (caps at user's max)
     function buyEnergy() {
       if (realPvlt >= 100) {
         realPvlt -= 100;
-        energy = Math.min(energy + 10000, 10000);
+        const maxEnergy = getMaxEnergy();
+        energy = Math.min(energy + 10000, maxEnergy);
         updateStatsUI();
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+10,000 ⚡ ENERGY (Max 10k)`, 'energy-feedback');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+10,000 ⚡ ENERGY`, 'energy-feedback');
         }
         console.log(`Bought Energy: +10000 | Real PVLT left: ${realPvlt} | Energy: ${energy}`);
         return true;
@@ -735,7 +784,6 @@
         return false;
       }
       
-      // Process claim: burn burnedPvlt, gain realPvlt
       burnedPvlt -= amount;
       realPvlt += amount;
       dailyClaimUsed = true;
@@ -794,6 +842,49 @@
       }
     }
     
+    // Save/Load
+    function saveData() {
+      const data = {
+        energy, points, burnedPvlt, realPvlt,
+        lastClaimDate: lastClaimDate ? lastClaimDate.toISOString() : null,
+        dailyClaimUsed,
+        isPaidUser
+      };
+      localStorage.setItem('tapverse_data_v3', JSON.stringify(data));
+    }
+    
+    function loadSavedData() {
+      const saved = localStorage.getItem('tapverse_data_v3');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          energy = data.energy ?? 50;
+          points = data.points ?? 0;
+          burnedPvlt = data.burnedPvlt ?? 0;
+          realPvlt = data.realPvlt ?? 0;
+          lastClaimDate = data.lastClaimDate ? new Date(data.lastClaimDate) : null;
+          dailyClaimUsed = data.dailyClaimUsed ?? false;
+          
+          const today = new Date().toDateString();
+          if (lastClaimDate && new Date(lastClaimDate).toDateString() !== today) {
+            dailyClaimUsed = false;
+            lastClaimDate = null;
+          }
+          if (!lastClaimDate) dailyClaimUsed = false;
+          
+          // If saved as paid user, restore that status (but wallet connection overrides)
+          if (data.isPaidUser && isConnected) {
+            setPaidStatus(true);
+          } else if (!isConnected) {
+            setPaidStatus(false);
+          }
+        } catch(e) { console.warn(e); }
+      }
+      updateStatsUI();
+      updateDailyClaimUI();
+      updateUserTypeUI();
+    }
+    
     // ---------- Wallet Integration ----------
     async function connectWallet() {
       if (!window.ethereum) {
@@ -806,29 +897,36 @@
         if (accounts && accounts.length > 0) {
           currentAccount = accounts[0];
           isConnected = true;
+          setPaidStatus(true);  // Connected wallet = paid user (10000 energy)
           setButtonConnectedState(true);
           setupEventListeners();
           console.log(`Wallet connected: ${currentAccount}`);
-          showFloatingFeedback(lastTapPosition.x || window.innerWidth/2, lastTapPosition.y || window.innerHeight/2, `✅ Wallet Connected`, 'energy-feedback');
+          showFloatingFeedback(lastTapPosition.x || window.innerWidth/2, lastTapPosition.y || window.innerHeight/2, `✅ PAID USER: 10,000 ENERGY`, 'energy-feedback');
         } else {
           isConnected = false;
+          setPaidStatus(false);
           setButtonConnectedState(false);
         }
       } catch (err) {
         console.error('Connection error:', err);
-        if (!isConnected) setButtonConnectedState(false);
+        if (!isConnected) {
+          setPaidStatus(false);
+          setButtonConnectedState(false);
+        }
       }
     }
     
     function disconnectWallet() {
       isConnected = false;
       currentAccount = null;
+      setPaidStatus(false);
       setButtonConnectedState(false);
+      showFloatingFeedback(lastTapPosition.x || window.innerWidth/2, lastTapPosition.y || window.innerHeight/2, `🆓 FREE USER: 50 ENERGY`, '');
     }
     
     function setButtonConnectedState(connected) {
       if (mainBtnText) {
-        mainBtnText.innerText = connected ? 'Connected ✓' : 'Connect Wallet';
+        mainBtnText.innerText = connected ? 'Wallet Connected ✓ (10,000 Energy)' : 'Connect Wallet (Free: 50 Energy)';
       }
     }
     
@@ -842,113 +940,11 @@
           currentAccount = accounts[0];
           if (!isConnected) {
             isConnected = true;
+            setPaidStatus(true);
             setButtonConnectedState(true);
           }
         } else {
           disconnectWallet();
         }
       };
-      window.ethereum.on('accountsChanged', accountsChangedHandler);
-      window._accountsChangedHandler = accountsChangedHandler;
-    }
-    
-    async function checkInitialConnection() {
-      if (window.ethereum) {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts && accounts.length > 0) {
-            currentAccount = accounts[0];
-            isConnected = true;
-            setButtonConnectedState(true);
-            setupEventListeners();
-          } else {
-            setButtonConnectedState(false);
-          }
-        } catch (err) {
-          setButtonConnectedState(false);
-        }
-      } else {
-        setButtonConnectedState(false);
-      }
-    }
-    
-    function handleConnectClick() {
-      if (isConnected) {
-        if (window.ethereum) {
-          window.ethereum.request({ method: 'eth_requestAccounts' })
-            .then(accounts => {
-              if (accounts && accounts.length > 0) {
-                currentAccount = accounts[0];
-                isConnected = true;
-                setButtonConnectedState(true);
-              } else {
-                disconnectWallet();
-              }
-            })
-            .catch(err => console.warn('Account switch cancelled', err));
-        } else {
-          disconnectWallet();
-        }
-      } else {
-        connectWallet();
-      }
-    }
-    
-    // Slider handler
-    if (claimSlider) {
-      claimSlider.addEventListener('input', (e) => {
-        const val = e.target.value;
-        claimAmountDisplay.innerText = `${val} Real PVLT`;
-      });
-    }
-    
-    if (submitClaimBtn) {
-      submitClaimBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const amount = parseInt(claimSlider.value);
-        claimRealPvlt(amount);
-      });
-    }
-    
-    // Attach event listeners
-    if (tapCircle) {
-      tapCircle.addEventListener('click', onTapCircle);
-      tapCircle.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        onTapCircle(e);
-      }, { passive: false });
-    }
-    
-    if (mainConnectBtn) {
-      mainConnectBtn.addEventListener('click', handleConnectClick);
-    }
-    
-    if (buyEnergyBtn) {
-      buyEnergyBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        buyEnergy();
-      });
-    }
-    
-    // Energy regeneration
-    let regenInterval = setInterval(() => {
-      if (energy < 10000) {
-        energy = Math.min(energy + 1, 10000);
-        updateStatsUI();
-      }
-    }, 15000);
-    
-    window.addEventListener('beforeunload', () => {
-      if (regenInterval) clearInterval(regenInterval);
-      saveData();
-    });
-    
-    // Initialize
-    loadSavedData();
-    checkInitialConnection();
-    
-    console.log("Ready: Buy Energy (100 Real PVLT → +10,000 Energy) | Claim: Convert Burned PVLT → Real PVLT (1-500/day)");
-  })();
-</script>
-</body>
-</html>
+      window.ethereum
