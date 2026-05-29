@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Tap to Earn | Energy · Points · PVLT</title>
+  <title>Tap to Earn | Energy · Points · PVLT (Real & Burned)</title>
   <style>
     * {
       margin: 0;
@@ -86,6 +86,13 @@
       letter-spacing: 0.3px;
       min-width: 55px;
       text-align: center;
+    }
+
+    /* burned PVLT gets a special subtle style */
+    .burned-value {
+      background: rgba(255, 70, 70, 0.2);
+      border: 0.5px solid rgba(255, 100, 100, 0.3);
+      color: #ffaaaa;
     }
 
     .nav-spacer {
@@ -328,6 +335,17 @@
       filter: blur(60px);
     }
 
+    /* wallet balance display */
+    .wallet-balance {
+      margin-top: 1rem;
+      font-size: 0.7rem;
+      background: rgba(0,0,0,0.5);
+      padding: 0.3rem 1rem;
+      border-radius: 60px;
+      backdrop-filter: blur(4px);
+      border: 0.5px solid rgba(255,255,255,0.1);
+    }
+
     @media (max-width: 700px) {
       .top-nav {
         padding: 0.7rem 1rem;
@@ -364,7 +382,7 @@
 </head>
 <body>
 
-<!-- TOP NAVIGATION: Energy ⚡ Points ⭐ PVLT 💎 -->
+<!-- TOP NAVIGATION: Energy ⚡ Points ⭐ PVLT(fake/burned) 💎 -->
 <div class="top-nav">
   <div class="nav-brand">✦ TAPVERSE</div>
   <div class="nav-stats">
@@ -381,7 +399,7 @@
     <div class="stat-item">
       <span class="stat-emoji">💎</span>
       <span>PVLT</span>
-      <span class="stat-value" id="tokenValue">0</span>
+      <span class="stat-value burned-value" id="burnedPvltValue">0</span>
     </div>
   </div>
   <div class="nav-spacer"></div>
@@ -394,7 +412,7 @@
       <div class="tap-emoji">👆</div>
     </div>
   </div>
-  <div class="hint-text">tap → -1 energy → +1 point | 100 points → +1 PVLT & points reset</div>
+  <div class="hint-text">tap → -1 energy → +1 point | 100 points → +1 BURNED PVLT (top nav) & points reset</div>
   
   <div class="button-group">
     <button id="mainConnectBtn" class="main-connect-btn">
@@ -407,24 +425,28 @@
         <span class="btn-emoji">⚡</span>
         <span>Buy Energy</span>
       </button>
-      <button id="claimTokenBtn" class="action-btn">
+      <button id="claimRealPvltBtn" class="action-btn">
         <span class="btn-emoji">💎</span>
-        <span>Claim PVLT</span>
+        <span>Claim PVLT (Real)</span>
       </button>
     </div>
-    <div class="hint-text" style="margin-top: -0.25rem; font-size: 0.7rem;">Buy Energy: 100 PVLT → +10,000 Energy | Claim PVLT: 100 Points → +1 PVLT</div>
+    <div class="hint-text" style="margin-top: -0.25rem; font-size: 0.7rem;">Buy Energy: 100 BURNED PVLT → +10,000 Energy | Claim Real PVLT: 100 Points → +1 REAL PVLT to wallet</div>
+  </div>
+  
+  <!-- Display real wallet PVLT balance -->
+  <div class="wallet-balance" id="walletBalanceDisplay">
+    💎 Real PVLT in Wallet: <span id="realPvltAmount">0</span>
   </div>
 </div>
 
 <div class="glow-orb"></div>
 
 <script>
-  // =========  GAME SYSTEM =========
-  // Tap: -1 Energy, +1 Point
-  // 100 Points → +1 PVLT, Points reset to 0
-  // Energy regen: +1 every 15 sec (max 10000)
-  // BUY ENERGY: Spend 100 PVLT → gain +10000 Energy (caps at 10000)
-  // CLAIM PVLT: Spend 100 Points → gain +1 PVLT
+  // =========  DUAL PVLT SYSTEM =========
+  // Top nav PVLT (burned/fake) - earned from tapping (100 points = +1 burned PVLT)
+  // This burned PVLT is used to Buy Energy (100 burned PVLT → +10,000 Energy)
+  // Claim PVLT (Real) - spend 100 Points to gain +1 REAL PVLT added to user's wallet balance
+  // Real PVLT is separate and persists as user's actual earnings
   
   (function() {
     // DOM elements
@@ -432,27 +454,30 @@
     const mainConnectBtn = document.getElementById('mainConnectBtn');
     const mainBtnText = document.getElementById('mainBtnText');
     const buyEnergyBtn = document.getElementById('buyEnergyBtn');
-    const claimTokenBtn = document.getElementById('claimTokenBtn');
+    const claimRealPvltBtn = document.getElementById('claimRealPvltBtn');
     
     const energySpan = document.getElementById('energyValue');
     const pointsSpan = document.getElementById('pointsValue');
-    const tokenSpan = document.getElementById('tokenValue');
+    const burnedPvltSpan = document.getElementById('burnedPvltValue');
+    const realPvltSpan = document.getElementById('realPvltAmount');
     
-    // Wallet state
+    // Wallet state (for connection, not storing PVLT on blockchain - simulated)
     let isConnected = false;
     let currentAccount = null;
     
-    // Stats
-    let energy = 10000;
-    let points = 0;
-    let pvlt = 0;        // PVLT instead of tokens
+    // Game Stats
+    let energy = 10000;           // Energy resource
+    let points = 0;               // Points earned from taps
+    let burnedPvlt = 0;           // BURNED/FAKE PVLT (shown in top nav, used for buying energy)
+    let realPvlt = 0;             // REAL PVLT (user's actual wallet balance, shown separately)
     
     let lastTapPosition = { x: 0, y: 0 };
     
     function updateStatsUI() {
       if (energySpan) energySpan.innerText = Math.floor(energy);
       if (pointsSpan) pointsSpan.innerText = Math.floor(points);
-      if (tokenSpan) tokenSpan.innerText = pvlt;
+      if (burnedPvltSpan) burnedPvltSpan.innerText = burnedPvlt;
+      if (realPvltSpan) realPvltSpan.innerText = realPvlt;
       
       if (energy <= 0) {
         tapCircle.classList.add('disabled');
@@ -460,20 +485,20 @@
         tapCircle.classList.remove('disabled');
       }
       
-      // Update Buy Energy button: needs 100 PVLT
+      // Update Buy Energy button: needs 100 burned PVLT
       if (buyEnergyBtn) {
-        if (pvlt >= 100) {
+        if (burnedPvlt >= 100) {
           buyEnergyBtn.classList.remove('disabled-action');
         } else {
           buyEnergyBtn.classList.add('disabled-action');
         }
       }
-      // Update Claim PVLT button: needs 100 points
-      if (claimTokenBtn) {
+      // Update Claim Real PVLT button: needs 100 points
+      if (claimRealPvltBtn) {
         if (points >= 100) {
-          claimTokenBtn.classList.remove('disabled-action');
+          claimRealPvltBtn.classList.remove('disabled-action');
         } else {
-          claimTokenBtn.classList.add('disabled-action');
+          claimRealPvltBtn.classList.add('disabled-action');
         }
       }
     }
@@ -493,8 +518,8 @@
     function showMilestoneFeedback(x, y) {
       const feedback = document.createElement('div');
       feedback.className = 'tap-feedback milestone-feedback';
-      feedback.innerHTML = `✨ 100 POINTS! +1 PVLT ✨`;
-      feedback.style.left = `${x - 80}px`;
+      feedback.innerHTML = `✨ 100 POINTS! +1 BURNED PVLT ✨`;
+      feedback.style.left = `${x - 85}px`;
       feedback.style.top = `${y - 70}px`;
       document.body.appendChild(feedback);
       setTimeout(() => {
@@ -502,21 +527,22 @@
       }, 800);
     }
     
-    // Process tap
+    // Process tap: -1 energy, +1 point, check milestone for burned PVLT
     function processTap() {
       if (energy <= 0) return false;
       
       energy -= 1;
       points += 1;
       
+      // Milestone: every 100 points gives +1 BURNED PVLT (fake/used for buying energy)
       if (points >= 100) {
-        const pvltEarned = Math.floor(points / 100);
-        pvlt += pvltEarned;
+        const burnedEarned = Math.floor(points / 100);
+        burnedPvlt += burnedEarned;
         points = points % 100;
         
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
           showMilestoneFeedback(lastTapPosition.x, lastTapPosition.y);
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+${pvltEarned} 💎 PVLT!`, 'pvl-feedback');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+${burnedEarned} 🔥 BURNED PVLT`, 'pvl-feedback');
         }
       }
       
@@ -524,35 +550,35 @@
       return true;
     }
     
-    // BUY ENERGY: Spend 100 PVLT → Gain +10000 Energy (caps at 10000)
+    // BUY ENERGY: Spend 100 BURNED PVLT → Gain +10000 Energy (caps at 10000)
     function buyEnergy() {
-      if (pvlt >= 100) {
-        pvlt -= 100;
+      if (burnedPvlt >= 100) {
+        burnedPvlt -= 100;
         energy = Math.min(energy + 10000, 10000);
         updateStatsUI();
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
           showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+10,000 ⚡ ENERGY (Max 10k)`, 'energy-feedback');
         }
-        console.log(`Bought Energy: +10000 | PVLT left: ${pvlt} | Energy: ${energy}`);
+        console.log(`Bought Energy: +10000 | Burned PVLT left: ${burnedPvlt} | Energy: ${energy}`);
         return true;
       } else {
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 100 PVLT`, '');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 100 BURNED PVLT`, '');
         }
         return false;
       }
     }
     
-    // CLAIM PVLT: Spend 100 Points → Gain +1 PVLT
-    function claimPvlt() {
+    // CLAIM REAL PVLT: Spend 100 Points → Gain +1 REAL PVLT (added to user's actual wallet)
+    function claimRealPvlt() {
       if (points >= 100) {
         points -= 100;
-        pvlt += 1;
+        realPvlt += 1;
         updateStatsUI();
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 💎 PVLT`, 'pvl-feedback');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 💎 REAL PVLT (Wallet)`, 'pvl-feedback');
         }
-        console.log(`Claimed PVLT: +1 | Points left: ${points} | PVLT: ${pvlt}`);
+        console.log(`Claimed Real PVLT: +1 | Points left: ${points} | Real PVLT: ${realPvlt}`);
         return true;
       } else {
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
@@ -600,14 +626,16 @@
       if (success) {
         if (navigator.vibrate) navigator.vibrate(15);
         showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 ⭐ &nbsp; -1 ⚡`, '');
-        console.log(`Tap! Energy: ${energy} | Points: ${points} | PVLT: ${pvlt}`);
+        console.log(`Tap! Energy: ${energy} | Points: ${points} | Burned PVLT: ${burnedPvlt} | Real PVLT: ${realPvlt}`);
       }
     }
     
-    // ---------- Wallet Integration ----------
+    // ---------- Wallet Integration (for visual connection only) ----------
     async function connectWallet() {
       if (!window.ethereum) {
         console.warn('No Web3 wallet detected.');
+        // Still allow gameplay, just show message
+        showFloatingFeedback(window.innerWidth/2, window.innerHeight/2, `⚠️ No wallet detected`, '');
         return;
       }
       try {
@@ -618,6 +646,7 @@
           setButtonConnectedState(true);
           setupEventListeners();
           console.log(`Wallet connected: ${currentAccount}`);
+          showFloatingFeedback(lastTapPosition.x || window.innerWidth/2, lastTapPosition.y || window.innerHeight/2, `✅ Wallet Connected`, 'energy-feedback');
         } else {
           isConnected = false;
           setButtonConnectedState(false);
@@ -727,10 +756,10 @@
       });
     }
     
-    if (claimTokenBtn) {
-      claimTokenBtn.addEventListener('click', (e) => {
+    if (claimRealPvltBtn) {
+      claimRealPvltBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        claimPvlt();
+        claimRealPvlt();
       });
     }
     
@@ -746,17 +775,18 @@
       if (regenInterval) clearInterval(regenInterval);
     });
     
-    // Initialize
+    // Initialize game
     function initGame() {
       energy = 10000;
       points = 0;
-      pvlt = 0;
+      burnedPvlt = 0;
+      realPvlt = 0;
       updateStatsUI();
     }
     initGame();
     checkInitialConnection();
     
-    console.log("Ready: Buy Energy (100 PVLT → +10,000 Energy, max 10k) | Claim PVLT (100 Points → +1 PVLT)");
+    console.log("Ready: BURNED PVLT (top nav) earned from tapping | Used to Buy Energy | REAL PVLT claimed with Points → added to wallet");
   })();
 </script>
 </body>
