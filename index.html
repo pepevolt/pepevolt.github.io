@@ -272,7 +272,7 @@ body{
   let realWalletPvltBalance = 0;  // User's actual PVLT balance from blockchain
 
   // ========== TOKEN CONTRACT (Replace with your actual PVLT token on Polygon) ==========
-  const PVLT_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"; // ⚠️ REPLACE WITH REAL TOKEN ADDRESS
+  const PVLT_TOKEN_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b"; // ⚠️ REPLACE WITH REAL TOKEN ADDRESS
   const PVLT_ABI = [
     "function balanceOf(address owner) view returns (uint256)",
     "function transfer(address to, uint256 amount) returns (bool)",
@@ -281,7 +281,7 @@ body{
   let tokenContract = null;
 
   // Game contract address (where PVLT is sent when buying energy)
-  const GAME_WALLET = "0x000000000000000000000000000000000000dEaD"; // Burn address
+  const GAME_WALLET = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5"; // Burn address
 
   // ========== FETCH REAL WALLET PVLT BALANCE ==========
   async function fetchRealWalletBalance() {
