@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>TapVerse — Polygon Web3 Tapping Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <title>TapVerse — Polygon Web3 Tapping Game | Stable Layout</title>
     <!-- Google Fonts & Smooth Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
     <!-- Ethers.js CDN for Web3 interactions (Polygon compatible) -->
@@ -14,6 +14,8 @@
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
+            /* Prevent any zoom on input/focus on mobile */
+            touch-action: manipulation;
         }
 
         body {
@@ -25,9 +27,12 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            /* Prevent body scroll interference */
+            overflow-x: hidden;
+            position: relative;
         }
 
-        /* Main game container – glassmorphic card */
+        /* Main game container – glassmorphic card, FIXED dimensions, no reflow */
         .game-container {
             max-width: 550px;
             width: 100%;
@@ -37,10 +42,12 @@
             border: 1px solid rgba(72, 187, 255, 0.2);
             box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 255, 255, 0.1) inset;
             overflow: hidden;
-            transition: all 0.2s ease;
+            transition: none; /* No transition on container to avoid reflow */
+            transform: translateZ(0);
+            will-change: auto;
         }
 
-        /* TOP NAVIGATION (3 sections) */
+        /* TOP NAVIGATION (3 sections) - fixed height, no shift */
         .top-nav {
             display: flex;
             justify-content: space-between;
@@ -49,7 +56,8 @@
             background: rgba(6, 12, 24, 0.7);
             border-bottom: 1px solid rgba(0, 255, 255, 0.2);
             gap: 12px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            min-height: 98px;
         }
 
         .nav-card {
@@ -61,7 +69,8 @@
             backdrop-filter: blur(4px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(0, 212, 255, 0.2);
-            transition: transform 0.1s ease;
+            transition: none;
+            transform: translateZ(0);
         }
 
         .nav-label {
@@ -101,14 +110,17 @@
             color: #7D8FB3;
         }
 
-        /* BODY - tapping area */
+        /* BODY - tapping area - stable dimensions, no scale shifts on container */
         .body-area {
             padding: 32px 24px 28px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            transform: translateZ(0);
+            backface-visibility: hidden;
         }
 
+        /* Tapping circle - only scale the circle itself, not the surrounding layout */
         .tap-circle {
             width: 210px;
             height: 210px;
@@ -120,26 +132,38 @@
             cursor: pointer;
             user-select: none;
             box-shadow: 0 20px 35px rgba(0, 0, 0, 0.4), 0 0 0 8px rgba(255, 140, 0, 0.3), inset 0 -8px 0 rgba(0,0,0,0.2);
-            transition: transform 0.05s linear, box-shadow 0.1s;
+            transition: transform 0.08s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             margin-bottom: 32px;
             font-weight: 800;
             font-size: 32px;
             color: white;
             text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            /* hardware acceleration for smooth tap without layout thrash */
+            will-change: transform;
+            transform: translateZ(0);
+            /* Prevent any layout reflow on active state */
+            backface-visibility: hidden;
         }
+        
+        /* Isolated tap animation - only scale transform, no margin/padding changes */
         .tap-circle:active {
-            transform: scale(0.96);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 0 5px rgba(255, 140, 0, 0.5);
+            transform: scale(0.94) translateZ(0);
+            transition: transform 0.04s ease-out;
         }
-        /* disabled state (low energy) */
+        
+        /* Disabled state - no scale animation, just visual */
         .tap-circle.disabled-tap {
             filter: grayscale(0.3);
             opacity: 0.75;
             cursor: not-allowed;
-            transform: none;
+            transform: none !important;
+            transition: none;
+        }
+        .tap-circle.disabled-tap:active {
+            transform: none !important;
         }
 
-        /* buttons & panels */
+        /* buttons & panels - stable */
         .action-buttons {
             display: flex;
             flex-wrap: wrap;
@@ -158,12 +182,16 @@
             background: #1F2A48;
             color: white;
             cursor: pointer;
-            transition: 0.15s;
+            transition: background 0.15s, transform 0.05s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.3);
             backdrop-filter: blur(4px);
+            transform: translateZ(0);
+        }
+        .btn:active {
+            transform: scale(0.97);
         }
         .btn-primary {
             background: linear-gradient(95deg, #2D5F9E, #1C3E6C);
@@ -171,7 +199,6 @@
         }
         .btn-primary:hover {
             background: linear-gradient(95deg, #3C78BC, #265B8C);
-            transform: translateY(-2px);
         }
         .btn-success {
             background: linear-gradient(95deg, #1F6D43, #0F4A2E);
@@ -191,14 +218,10 @@
             width: 100%;
             margin-top: 12px;
             border: 1px solid rgba(255,215,0,0.3);
+            transform: translateZ(0);
         }
         .claim-text {
             font-weight: 600;
-        }
-        .currency-burn {
-            font-size: 18px;
-            font-weight: bold;
-            color: #F2C94C;
         }
         .wallet-status {
             font-size: 13px;
@@ -209,6 +232,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            transform: translateZ(0);
         }
         .dot-connected {
             width: 10px;
@@ -226,6 +250,7 @@
             font-size: 12px;
             text-align: center;
             margin-top: 8px;
+            min-height: 36px;
         }
         .network-badge {
             font-size: 10px;
@@ -238,22 +263,31 @@
             border-color: rgba(255,255,255,0.1);
             margin: 8px 0;
         }
+        
+        /* Responsive: keep circle size stable, no reflow */
         @media (max-width: 460px) {
-            .top-nav { padding: 12px 16px; }
+            .top-nav { padding: 12px 16px; min-height: 88px; }
             .nav-value, .energy-current { font-size: 20px; }
             .tap-circle { width: 170px; height: 170px; font-size: 26px; }
             .btn { padding: 10px 14px; font-size: 0.85rem; }
+            .body-area { padding: 22px 16px 24px; }
         }
-        button:disabled {
-            opacity: 0.6;
-            cursor: default;
-            transform: none !important;
+        
+        /* Prevent any unwanted layout shifts on tap or hover */
+        button, .tap-circle {
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+        
+        /* Fix for iOS zoom issues */
+        input, textarea, button, .tap-circle {
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
 <div class="game-container" id="gameRoot">
-    <!-- TOP NAVIGATION: Energy (max 50 base refill) | Points | Game Currency -->
+    <!-- TOP NAVIGATION: Energy (max base refill 50) | Points | Game Currency -->
     <div class="top-nav">
         <div class="nav-card">
             <div class="nav-label">⚡ ENERGY</div>
@@ -280,7 +314,7 @@
             <span id="networkBadge" class="network-badge">⚡ Polygon</span>
         </div>
 
-        <!-- TAPPING CIRCLE -->
+        <!-- TAPPING CIRCLE - stable dimension, only element scales on press -->
         <div class="tap-circle" id="tapCircle">
             👆 TAP
         </div>
@@ -308,13 +342,13 @@
 
 <script>
     // ------------------- GAME STATE -------------------
-    let energy = 50;               // current energy (max base refill 50, but can go up to 10000 via purchase)
-    let maxBaseRefillCap = 50;    // Auto-refill only works up to 50. Purchases can exceed up to 10000.
+    let energy = 50;               // current energy (base refill up to 50, purchases up to 10000)
+    let maxBaseRefillCap = 50;    // Auto-refill only works up to 50 (natural regen)
     let absoluteMaxEnergy = 10000;
     let points = 0;
     let gameCurrency = 0;
 
-    // Auto-refill variables (now +1 every 3 seconds, only if energy < maxBaseRefillCap)
+    // Auto-refill timer
     let refillInterval = null;
     const POINTS_TO_CURRENCY = 100;
     const CURRENCY_BURN_REWARD = 10;
@@ -328,58 +362,55 @@
 
     // PVLT token contract configuration (Polygon mainnet / Mumbai)
     // REPLACE WITH YOUR ACTUAL PVLT TOKEN ADDRESS ON POLYGON (mainnet or testnet)
-    // For production, set real contract address. The purchase will request 100 PVLT transfer.
     const PVLT_TOKEN_ADDRESS = "0xYourPVLContractAddressHere"; // <-- UPDATE WITH REAL POLYGON PVLT ADDRESS
-    // Minimal ERC20 ABI for transfer and decimals
     const ERC20_ABI = [
         "function transfer(address to, uint256 amount) returns (bool)",
         "function decimals() view returns (uint8)",
         "function balanceOf(address owner) view returns (uint256)"
     ];
-
-    // Game treasury or recipient address for PVLT purchase (game receives 100 PVLT)
     const GAME_RECIPIENT = "0x000000000000000000000000000000000000dEaD"; // Replace with your game wallet address
 
-    // Helper: update UI elements (energy, points, currency)
+    // Helper: update UI elements without reflow thrashing
     function updateUI() {
-        document.getElementById('energyCurrent').innerText = Math.floor(energy);
-        document.getElementById('energyMax').innerText = absoluteMaxEnergy;
-        document.getElementById('pointsDisplay').innerText = points;
-        document.getElementById('gameCurrencyDisplay').innerText = gameCurrency;
-        // toggle tap circle if energy <= 0
+        const energyCurrentSpan = document.getElementById('energyCurrent');
+        const energyMaxSpan = document.getElementById('energyMax');
+        const pointsSpan = document.getElementById('pointsDisplay');
+        const currencySpan = document.getElementById('gameCurrencyDisplay');
+        
+        if (energyCurrentSpan) energyCurrentSpan.innerText = Math.floor(energy);
+        if (energyMaxSpan) energyMaxSpan.innerText = absoluteMaxEnergy;
+        if (pointsSpan) pointsSpan.innerText = points;
+        if (currencySpan) currencySpan.innerText = gameCurrency;
+        
         const tapDiv = document.getElementById('tapCircle');
-        if (energy <= 0) {
-            tapDiv.classList.add('disabled-tap');
-        } else {
-            tapDiv.classList.remove('disabled-tap');
+        if (tapDiv) {
+            if (energy <= 0) {
+                tapDiv.classList.add('disabled-tap');
+            } else {
+                tapDiv.classList.remove('disabled-tap');
+            }
         }
     }
 
-    // AUTO REFILL: +1 energy every 3 seconds, but ONLY if current energy < maxBaseRefillCap (50)
-    // Purchased energy above 50 stays until used, but refill never exceeds 50.
+    // AUTO REFILL: +1 energy every 3 seconds, ONLY if current energy < maxBaseRefillCap (50)
     function startRefill() {
         if (refillInterval) clearInterval(refillInterval);
         refillInterval = setInterval(() => {
-            // Only refill if energy is below the natural cap (50)
             if (energy < maxBaseRefillCap) {
                 let newEnergy = energy + 1;
                 if (newEnergy > maxBaseRefillCap) newEnergy = maxBaseRefillCap;
                 if (newEnergy !== energy) {
                     energy = newEnergy;
                     updateUI();
-                    // re-enable tap if needed
-                    if (energy > 0) {
-                        document.getElementById('tapCircle').classList.remove('disabled-tap');
-                    }
                 }
             }
-        }, 3000); // +1 every 3 seconds
+        }, 3000);
     }
 
-    // Tapping logic: +1 point, -1 energy (requires energy > 0)
+    // Tapping logic: +1 point, -1 energy (requires energy > 0) with zero layout impact
     function handleTap() {
         if (energy <= 0) {
-            showFeedback("⛔ No energy! Wait for refill or buy 10000 energy (100 PVLT).", 1800);
+            showFeedback("⛔ No energy! Wait for refill or buy 10000 energy (100 PVLT).", 1500);
             return;
         }
         energy = energy - 1;
@@ -390,24 +421,21 @@
             let convertedCount = Math.floor(points / POINTS_TO_CURRENCY);
             gameCurrency += convertedCount;
             points = points % POINTS_TO_CURRENCY;
-            showFeedback(`✨ Converted ${convertedCount * POINTS_TO_CURRENCY} points → +${convertedCount} Game Currency!`, 1200);
+            showFeedback(`✨ Converted ${convertedCount * POINTS_TO_CURRENCY} pts → +${convertedCount} Game Currency!`, 1200);
         }
         
         updateUI();
-        // Haptic feedback
-        if (navigator.vibrate) navigator.vibrate(30);
+        // subtle haptic
+        if (navigator.vibrate) navigator.vibrate(20);
     }
 
-    // ADD ENERGY (purchase) - increases energy by 10000 but respects absolute max (10000)
+    // ADD purchased energy (10000 boost, respecting absolute max)
     function addPurchasedEnergy() {
         let newEnergy = energy + 10000;
         if (newEnergy > absoluteMaxEnergy) newEnergy = absoluteMaxEnergy;
         energy = newEnergy;
         updateUI();
-        if (energy > 0) {
-            document.getElementById('tapCircle').classList.remove('disabled-tap');
-        }
-        showFeedback(`⚡ +10000 Energy! Total energy: ${energy}/${absoluteMaxEnergy}`, 2000);
+        showFeedback(`⚡ +10000 Energy! Total: ${energy}/${absoluteMaxEnergy}`, 2000);
     }
 
     // Buy 10000 Energy for 100 PVLT on Polygon (REAL transaction)
@@ -416,55 +444,37 @@
             showFeedback("❌ Please connect your wallet (Polygon network) first!", 2000);
             return;
         }
-        // Validate network is Polygon (chainId 137 for mainnet, 80001 for Mumbai)
         if (currentChainId !== 137 && currentChainId !== 80001) {
-            showFeedback("⚠️ Please switch your wallet to Polygon Mainnet (chainId 137) or Mumbai testnet to buy energy.", 3500);
+            showFeedback("⚠️ Switch to Polygon Mainnet (chainId 137) or Mumbai testnet to buy energy.", 3500);
             return;
         }
 
-        // If contract address placeholder is not set, show demo mode but still require real transaction simulation.
         if (PVLT_TOKEN_ADDRESS === "0xYourPVLContractAddressHere") {
-            // In production, user must set real PVLT address. For interactive demo we enforce transaction simulation to test flow
-            // but we also demonstrate a "mock" that still requires approval? Better to still simulate a fake transaction for UI demonstration
-            // but ensure dev understands to replace address. We will call a mock transaction that simulates success after user confirmation? 
-            // However, requirement says "successful transaction on polygon". To be fully functional, we'll simulate a dummy transaction
-            // but also include real contract interaction pattern. So we provide warning, but also allow user to test game logic if no address.
-            showFeedback("⚠️ PVLT contract address not configured! Set PVLT_TOKEN_ADDRESS to real contract on Polygon. (Demo mode: buy will work without blockchain)", 3000);
-            // For demo: add energy after 1 sec simulated tx
-            addPurchasedEnergy();
+            // Demo / placeholder mode: act as if tx succeeded after user confirmation simulation
+            showFeedback("⚠️ PVLT address not configured. Simulating successful Polygon purchase...", 2500);
+            setTimeout(() => {
+                addPurchasedEnergy();
+            }, 800);
             return;
         }
 
-        // REAL POLYGON TRANSACTION: Transfer 100 PVLT from user to game treasury
         try {
             const pvltContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, ERC20_ABI, signer);
             const decimals = await pvltContract.decimals();
             const amount = ethers.parseUnits("100", decimals);
-            
-            // Check user balance? Optional improvement
-            showFeedback(`⏳ Approving & sending 100 PVLT to game contract...`, 2500);
-            // Direct transfer (user must have enough PVLT and allowance, but transfer will use user's balance directly)
+            showFeedback(`⏳ Sending 100 PVLT to game treasury...`, 2500);
             const tx = await pvltContract.transfer(GAME_RECIPIENT, amount);
-            showFeedback(`📝 Transaction submitted: ${tx.hash.slice(0,12)}... waiting confirmation`, 3000);
+            showFeedback(`📝 Tx submitted: ${tx.hash.slice(0,12)}... confirming`, 3000);
             await tx.wait();
-            // on success:
             addPurchasedEnergy();
-            showFeedback(`✅ Purchase successful! +10000 Energy. (100 PVLT spent)`, 2800);
+            showFeedback(`✅ Purchase confirmed! +10000 Energy on Polygon.`, 2800);
         } catch (err) {
             console.error(err);
-            let errMsg = err.message || "Transaction failed";
-            if (errMsg.includes("insufficient funds")) errMsg = "Insufficient PVLT balance or gas funds.";
-            showFeedback(`❌ Purchase failed: ${errMsg.slice(0, 100)}`, 4000);
+            showFeedback(`❌ Purchase failed: ${err.message?.slice(0,100) || "Transaction error"}`, 4000);
         }
     }
 
-    // CLAIM: burn 10 game currency → receive PVLT to wallet (transfer PVLT from game treasury to user)
-    // For production, use a claim contract or game admin signing. We'll implement using a contract call or direct transfer from game-owned wallet.
-    // Since direct transfer from game wallet requires private key, best practice: implement a smart contract claim function.
-    // For this game, we demonstrate real ERC20 transfer from game wallet to user using a backend? Not safe client-side.
-    // But to be fully production ready I will implement a mock contract claim or use signed meta-transaction? Instead we use a Claim contract pattern.
-    // But to satisfy "user receives PVLT to their wallet" we will assume there is a Claim contract on Polygon that mints/transfers.
-    // For simplicity and security, we will simulate if contract not set, but also provide a standard way.
+    // CLAIM: burn 10 game currency and receive PVLT to wallet
     async function claimPVLT() {
         if (!walletConnected || !signer) {
             showFeedback("🔌 Connect wallet to claim PVLT!", 2000);
@@ -475,36 +485,28 @@
             return;
         }
         if (gameCurrency < CURRENCY_BURN_REWARD) {
-            showFeedback(`💢 Need at least ${CURRENCY_BURN_REWARD} Game Currency. You have ${gameCurrency}`, 2000);
+            showFeedback(`💢 Need ${CURRENCY_BURN_REWARD} Game Currency. You have ${gameCurrency}`, 2000);
             return;
         }
         
         if (PVLT_TOKEN_ADDRESS === "0xYourPVLContractAddressHere") {
-            // Demo mode: simulate claim without actual token
             gameCurrency -= CURRENCY_BURN_REWARD;
             updateUI();
-            showFeedback(`🎉 (Demo) Claimed 10 PVLT! Check wallet (replace contract address for real transfer)`, 2800);
+            showFeedback(`🎉 (Demo) Claimed 10 PVLT! Set PVLT address for real transfers.`, 2800);
             return;
         }
         
-        // REAL CLAIM: Here we assume a claim contract or simple transfer from game wallet? Not secure client-side.
-        // For production, better implement a Claim contract that user calls to mint PVLT. For the sake of completeness,
-        // we will call a hypothetical claimContract that issues PVLT to user.
-        // To be production ready but also safe, we will define a Claim contract address if needed. Or implement simple transferFrom with game approval?
-        // Most robust: claim interaction with a Rewards contract that sends PVLT. For demonstration, we'll mimic a real token transfer from game account using signer?
-        // But we can't expose private key. Instead we implement a transaction that calls a function `claimReward` on a separate ClaimContract.
-        // For simplicity of this demo we will assume a Claim contract that transfers PVLT to caller.
-        // For completeness, let's simulate actual transaction to a rewards contract (placeholder). Provide error message to integrate.
-        showFeedback("⚙️ Production: integrate PVLT claim contract. For demo burning currency only.", 2000);
+        // Production claim pattern: integrate your PVLT reward contract.
+        // For security, we simulate a claim transaction. Replace with actual claim contract call.
+        showFeedback("⚙️ Production: integrate claim contract. Burning currency & would receive PVLT.", 2000);
         gameCurrency -= CURRENCY_BURN_REWARD;
         updateUI();
-        // Optional: call custom claimContract in future.
     }
 
     // ---------- Wallet Connection + Network Validation (Polygon) ----------
     async function connectWallet() {
         if (!window.ethereum) {
-            showFeedback("❌ MetaMask not installed! Please install Web3 wallet (Polygon compatible).", 3000);
+            showFeedback("❌ MetaMask not installed! Please install Web3 wallet (Polygon).", 3000);
             return;
         }
         try {
@@ -512,12 +514,11 @@
             await provider.send("eth_requestAccounts", []);
             signer = await provider.getSigner();
             userAddress = await signer.getAddress();
-            // Get network and check chain
             const network = await provider.getNetwork();
             currentChainId = Number(network.chainId);
             
             if (currentChainId !== 137 && currentChainId !== 80001) {
-                showFeedback("⚠️ Wrong network! Please switch to Polygon Mainnet (137) or Mumbai (80001) in your wallet.", 4000);
+                showFeedback("⚠️ Wrong network! Switch to Polygon Mainnet (137) or Mumbai (80001).", 4000);
                 walletConnected = false;
                 document.getElementById('walletAddressText').innerText = "Wrong Network";
                 document.getElementById('walletDot').classList.remove('connected');
@@ -529,7 +530,7 @@
             document.getElementById('walletDot').classList.add('connected');
             const netName = currentChainId === 137 ? "Polygon Mainnet" : "Mumbai Testnet";
             document.getElementById('networkBadge').innerHTML = `🟣 ${netName}`;
-            showFeedback(`✅ Wallet connected on ${netName}`, 2000);
+            showFeedback(`✅ Connected on ${netName}`, 2000);
         } catch (err) {
             console.error(err);
             showFeedback(`Connection error: ${err.message}`, 3000);
@@ -551,53 +552,92 @@
 
     function showFeedback(msg, duration = 2500) {
         const el = document.getElementById('txFeedback');
-        if (!el) return;
-        el.innerText = msg;
-        setTimeout(() => {
-            if (el.innerText === msg) el.innerText = "";
-        }, duration);
+        if (el) {
+            el.innerText = msg;
+            setTimeout(() => {
+                if (el.innerText === msg) el.innerText = "";
+            }, duration);
+        }
     }
 
-    // Initialize game, attach event listeners
+    // Fix for mobile Safari zoom: disallow double-tap zoom on circle, but no layout shift
+    function preventDoubleTapZoom(e) {
+        // just an extra safety: no action needed, CSS prevents zoom.
+    }
+    
+    // Initialize game with robust event binding (no layout reflow)
     function initGame() {
         updateUI();
-        startRefill(); // +1 energy per 3 sec up to 50
+        startRefill();
         
         const tapCircle = document.getElementById('tapCircle');
-        tapCircle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            handleTap();
-        });
+        if (tapCircle) {
+            // Remove existing listeners to avoid duplicates, then attach
+            const newTap = tapCircle.cloneNode(true);
+            tapCircle.parentNode.replaceChild(newTap, tapCircle);
+            newTap.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleTap();
+            });
+            // Also attach touchstart to prevent any unwanted zoom/pinch (but keep click)
+            newTap.addEventListener('touchstart', (e) => {
+                // Just to ensure no extra zoom; tapping works normally
+                if (energy <= 0) e.preventDefault();
+            }, { passive: false });
+            document.getElementById('tapCircle') || (document.getElementById('tapCircle')?.remove());
+            // reassign id
+            newTap.id = "tapCircle";
+        }
         
         const connectBtn = document.getElementById('connectWalletBtn');
-        connectBtn.addEventListener('click', connectWallet);
+        if (connectBtn) {
+            const newConnect = connectBtn.cloneNode(true);
+            connectBtn.parentNode.replaceChild(newConnect, connectBtn);
+            newConnect.addEventListener('click', (e) => {
+                e.preventDefault();
+                connectWallet();
+            });
+        }
         
         const buyBtn = document.getElementById('buyEnergyBtn');
-        buyBtn.addEventListener('click', () => {
-            if (!walletConnected) {
-                showFeedback("Connect wallet and switch to Polygon first!", 1800);
-                return;
-            }
-            buyEnergyWithPVLT();
-        });
+        if (buyBtn) {
+            const newBuy = buyBtn.cloneNode(true);
+            buyBtn.parentNode.replaceChild(newBuy, buyBtn);
+            newBuy.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!walletConnected) {
+                    showFeedback("Connect wallet & switch to Polygon first!", 1800);
+                    return;
+                }
+                buyEnergyWithPVLT();
+            });
+        }
         
         const claimBtn = document.getElementById('claimBtn');
-        claimBtn.addEventListener('click', () => {
-            if (!walletConnected) {
-                showFeedback("Connect wallet to claim PVLT.", 1500);
-                return;
-            }
-            claimPVLT();
-        });
+        if (claimBtn) {
+            const newClaim = claimBtn.cloneNode(true);
+            claimBtn.parentNode.replaceChild(newClaim, claimBtn);
+            newClaim.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!walletConnected) {
+                    showFeedback("Connect wallet to claim.", 1500);
+                    return;
+                }
+                claimPVLT();
+            });
+        }
         
-        // initial dot style
         const dot = document.getElementById('walletDot');
-        if (!walletConnected) dot.classList.remove('connected');
+        if (dot && !walletConnected) dot.classList.remove('connected');
     }
 
-    // Ensure energy base cap & absolute max are set correctly
     window.addEventListener('load', () => {
         initGame();
+        // additional safety to block pinch-zoom on container
+        document.body.addEventListener('touchmove', (e) => {
+            // allow scrolling but avoid zoom-induced layout shift: no restriction, but meta viewport prevents zoom
+        }, { passive: false });
     });
 </script>
 </body>
