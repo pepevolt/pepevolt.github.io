@@ -271,7 +271,6 @@ body{
   let provider = null;
   let signer = null;
   let tokenContract = null;
-  let wcProvider = null;
 
   // ========== HELPER FUNCTIONS ==========
   function showFloating(x, y, text, color = '#00ffcc') {
@@ -392,6 +391,7 @@ body{
             <div class="balance-amount">${Math.floor(energy)}/10000</div>
           </div>
         </div>
+        <div style="font-size:10px; margin-top:4px;">🔗 Click "Connect Wallet" to start earning!</div>
       `;
     }
     
@@ -498,10 +498,10 @@ body{
     }
   }, 15000);
 
-  // ========== CONNECT WALLET (WalletConnect - Working Version) ==========
+  // ========== CONNECT WALLET (WalletConnect - Fixed UI Update) ==========
   async function connectWallet() {
     try {
-      wcProvider = await EthereumProvider.init({
+      const wcProvider = await EthereumProvider.init({
         projectId: "1731f99148b9cf6107dee70b6efb14b7",
         chains: [137],
         showQrModal: true,
@@ -517,47 +517,73 @@ body{
       });
 
       await wcProvider.connect();
+      
+      // Get accounts after connection
       const accounts = await wcProvider.request({ method: "eth_accounts" });
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No accounts found");
+      }
+      
       userAccount = accounts[0];
-      
       provider = wcProvider;
-      signer = new ethers.providers.Web3Provider(wcProvider).getSigner();
       
+      // Create ethers provider and signer
+      const ethersProvider = new ethers.providers.Web3Provider(wcProvider);
+      signer = ethersProvider.getSigner();
+      
+      // Initialize token contract
       tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       await fetchTokenInfo();
       await fetchRealWalletBalance();
       
+      // Update UI
       connectBtn.innerText = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-      updateUI();
+      await updateUI();
       
       console.log(`✅ Connected to: ${userAccount}`);
+      console.log(`✅ Real PVLT Balance: ${realWalletPvltBalance}`);
       
       // Listen for account changes
       wcProvider.on("accountsChanged", async (accs) => {
+        console.log("Accounts changed:", accs);
         if (accs.length === 0) {
           userAccount = null;
           tokenContract = null;
           realWalletPvltBalance = 0;
           connectBtn.innerText = "🔗 Connect Wallet (Polygon)";
-          updateUI();
+          await updateUI();
         } else {
           userAccount = accs[0];
           tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
           connectBtn.innerText = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
           await fetchRealWalletBalance();
-          updateUI();
+          await updateUI();
         }
       });
       
       wcProvider.on("chainChanged", (chainId) => {
+        console.log("Chain changed:", chainId);
         if (chainId !== "0x89") {
           alert("Please switch to Polygon Mainnet");
         }
       });
       
+      wcProvider.on("disconnect", () => {
+        console.log("Wallet disconnected");
+        userAccount = null;
+        tokenContract = null;
+        realWalletPvltBalance = 0;
+        connectBtn.innerText = "🔗 Connect Wallet (Polygon)";
+        updateUI();
+      });
+      
     } catch (err) {
-      console.error(err);
+      console.error("Connection error:", err);
       alert(`Connection failed: ${err.message}`);
+      userAccount = null;
+      tokenContract = null;
+      connectBtn.innerText = "🔗 Connect Wallet (Polygon)";
+      updateUI();
     }
   }
 
@@ -597,7 +623,7 @@ body{
   loadGame();
   updateUI();
   
-  console.log("✅ PepeVolt is ready! Use WalletConnect to connect your wallet.");
+  console.log("✅ PepeVolt is ready! Click Connect Wallet to start.");
   console.log(`📋 PVLT Token: ${PVLT_TOKEN_ADDRESS}`);
   console.log(`🏦 TreasuryVolt: ${TREASURY_VOLT}`);
   console.log(`🎮 PepeVoltGame: ${PEPEVOLT_GAME}`);
