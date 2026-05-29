@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>PVLT Tap Game — Next Gen Interface</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>PVLT TAP — Polygon Energy Game</title>
   <!-- Ethers + WalletConnect (same core libs) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
   <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.10.1/dist/index.umd.js"></script>
@@ -19,205 +19,200 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: radial-gradient(circle at 20% 30%, #030d1f, #01060f);
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: radial-gradient(circle at 30% 10%, #030e1c, #00040a);
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
       color: white;
       touch-action: none;
     }
 
-    /* glassmorphism + smooth scroll main container */
+    /* glassmorphic container */
     body {
       display: flex;
       flex-direction: column;
-      backdrop-filter: blur(0px);
     }
 
-    /* ===== NEW MODERN TOPBAR ===== */
+    /* TOP BAR — premium brand look */
     .topbar {
       width: 100%;
-      padding: 16px 22px;
-      background: rgba(8, 20, 40, 0.65);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(0, 255, 170, 0.2);
+      padding: 14px 20px;
+      background: rgba(5, 15, 30, 0.65);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(0, 255, 200, 0.35);
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-weight: 700;
-      letter-spacing: 0.3px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      z-index: 10;
     }
 
-    .stat-badge {
-      background: rgba(0, 0, 0, 0.55);
-      padding: 8px 18px;
+    .stat-card {
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(5px);
+      padding: 6px 16px;
       border-radius: 60px;
-      font-size: 15px;
       display: flex;
       align-items: center;
       gap: 8px;
-      backdrop-filter: blur(5px);
-      border: 1px solid rgba(0,255,180,0.3);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      font-size: 15px;
+      border: 1px solid rgba(0, 255, 180, 0.3);
+      letter-spacing: 0.3px;
     }
 
-    .stat-badge span:first-child {
+    .stat-card span:first-child {
       font-size: 18px;
     }
 
-    .stat-value {
+    .stat-number {
       font-weight: 800;
-      background: linear-gradient(135deg, #eef2ff, #a0f0e0);
+      background: linear-gradient(135deg, #eef5ff, #8effe0);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      text-shadow: 0 0 4px rgba(0,255,200,0.3);
     }
 
-    /* main area with improved spacing */
+    /* main game area */
     .main {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px 16px 30px;
+      padding: 18px 16px 28px;
       overflow-y: auto;
       scrollbar-width: thin;
     }
 
-    /* TAP BUTTON — 3D + ripple + glow */
-    .tap-btn-wrapper {
+    /* TAP BUTTON - Neon + press effect */
+    .tap-wrapper {
       position: relative;
-      margin: 12px 0 10px;
+      margin-bottom: 6px;
     }
 
     .tapBtn {
-      width: 270px;
-      height: 270px;
+      width: 280px;
+      height: 280px;
       border: none;
       border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, #00ffc3, #0099ff);
+      background: radial-gradient(circle at 35% 35%, #22ffc0, #0f6eff);
       cursor: pointer;
       touch-action: manipulation;
       user-select: none;
-      -webkit-user-select: none;
-      transition: all 0.08s linear;
+      transition: 0.06s linear;
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 20px 30px rgba(0, 200, 180, 0.4), 0 0 0 2px rgba(0,255,210,0.5) inset, 0 0 0 4px rgba(255,255,255,0.2) inset;
+      box-shadow: 0 18px 32px rgba(0, 220, 180, 0.5), 0 0 0 3px rgba(120, 255, 200, 0.6) inset, 0 0 0 6px rgba(255,255,210,0.2) inset;
     }
 
     .tapBtn:active {
-      transform: scale(0.93);
-      box-shadow: 0 8px 18px rgba(0,200,180,0.7), 0 0 0 2px #b0ffe0 inset;
+      transform: scale(0.94);
+      box-shadow: 0 8px 18px rgba(0, 230, 200, 0.8), 0 0 0 3px #d0ffe0 inset;
     }
 
     .tapBtn img {
-      width: 72%;
-      height: 72%;
+      width: 70%;
+      height: 70%;
       object-fit: contain;
       pointer-events: none;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.3));
     }
 
-    /* modern card panel with neumorphism */
-    .glass-card {
+    /* Modern Glassmorphism Card */
+    .glass-panel {
       width: 100%;
       max-width: 440px;
-      margin-top: 28px;
-      background: rgba(12, 25, 45, 0.55);
-      backdrop-filter: blur(12px);
-      border-radius: 42px;
-      border: 1px solid rgba(0, 255, 180, 0.25);
-      padding: 22px 20px;
+      margin-top: 32px;
+      background: rgba(12, 24, 42, 0.55);
+      backdrop-filter: blur(16px);
+      border-radius: 44px;
+      border: 1px solid rgba(0, 255, 180, 0.35);
+      padding: 24px 22px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      box-shadow: 0 18px 35px -10px rgba(0,0,0,0.4);
+      gap: 18px;
+      box-shadow: 0 20px 32px -12px black;
     }
 
     .input-fancy {
       width: 100%;
       padding: 16px 18px;
       border: none;
-      border-radius: 60px;
-      background: #07152b;
+      border-radius: 80px;
+      background: #07162f;
       color: white;
       font-size: 14px;
       font-weight: 500;
-      outline: none;
-      transition: all 0.2s;
-      border: 1px solid rgba(0,255,180,0.2);
       text-align: center;
-      letter-spacing: 0.3px;
+      outline: none;
+      border: 1px solid rgba(0, 255, 190, 0.3);
+      transition: 0.2s;
+      letter-spacing: 0.4px;
     }
 
     .input-fancy:focus {
-      border-color: #00ffaa;
-      box-shadow: 0 0 8px #00ffaa60;
+      border-color: #00ffcc;
+      box-shadow: 0 0 10px #00ffcc70;
     }
 
-    /* gradient buttons with micro-interactions */
     .actionBtn {
       width: 100%;
-      padding: 14px;
+      padding: 14px 12px;
       border: none;
-      border-radius: 60px;
+      border-radius: 80px;
       font-size: 16px;
-      font-weight: 700;
-      background: linear-gradient(95deg, #00ffb3, #0cb0ff);
-      color: #010a14;
+      font-weight: 800;
+      background: linear-gradient(105deg, #00ffba, #2b8eff);
+      color: #010f1c;
       cursor: pointer;
       transition: all 0.2s;
-      letter-spacing: 0.5px;
-      box-shadow: 0 5px 12px rgba(0,220,180,0.2);
+      letter-spacing: 0.6px;
+      box-shadow: 0 6px 14px rgba(0,220,160,0.25);
     }
 
     .actionBtn:active {
       transform: scale(0.97);
-      box-shadow: 0 2px 5px rgba(0,255,180,0.4);
+      box-shadow: 0 2px 8px #00ffb380;
     }
 
-    .status {
+    .status-badge {
       text-align: center;
       font-size: 12px;
-      opacity: 0.85;
-      background: #0c1b2e80;
-      border-radius: 50px;
-      padding: 6px;
+      background: #091d36b3;
+      border-radius: 40px;
+      padding: 8px;
       display: none;
+      backdrop-filter: blur(4px);
     }
 
-    .info {
-      margin-top: 18px;
+    .info-tip {
+      margin-top: 20px;
       font-size: 12px;
-      line-height: 1.6;
-      background: rgba(0,0,0,0.3);
-      padding: 12px 20px;
+      font-weight: 500;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 12px 22px;
       border-radius: 60px;
-      backdrop-filter: blur(4px);
       text-align: center;
       max-width: 440px;
-      font-weight: 500;
+      backdrop-filter: blur(4px);
+      border: 0.5px solid #2affc070;
     }
 
-    /* premium modal */
+    /* modal premium */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(3, 12, 27, 0.85);
-      backdrop-filter: blur(12px);
+      background: rgba(1, 8, 18, 0.9);
+      backdrop-filter: blur(16px);
       display: flex;
       justify-content: center;
       align-items: center;
       z-index: 9999;
       opacity: 0;
       pointer-events: none;
-      transition: 0.2s ease;
+      transition: 0.2s;
     }
 
     .modal-overlay.active {
@@ -227,15 +222,14 @@
 
     .modal-box {
       width: 90%;
-      max-width: 360px;
-      background: #0a1a2f;
-      border: 1px solid rgba(0, 255, 200, 0.5);
-      border-radius: 40px;
+      max-width: 340px;
+      background: #0c1b30e6;
+      border: 1px solid #00ffc080;
+      border-radius: 48px;
       padding: 28px 20px;
       text-align: center;
       transform: scale(0.92);
-      transition: 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-      box-shadow: 0 25px 40px black;
+      transition: 0.2s cubic-bezier(0.2, 0.95, 0.4, 1.1);
     }
 
     .modal-overlay.active .modal-box {
@@ -244,18 +238,17 @@
 
     .modal-box h3 {
       font-size: 26px;
-      margin-bottom: 12px;
-      background: linear-gradient(120deg, #aaffdd, #88ddff);
+      background: linear-gradient(135deg, #b0ffec, #6bc8ff);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
+      margin-bottom: 16px;
     }
 
     .modal-box p {
       font-size: 16px;
-      line-height: 1.5;
-      opacity: 0.9;
       margin-bottom: 28px;
+      opacity: 0.9;
     }
 
     .modal-buttons {
@@ -265,93 +258,74 @@
 
     .modal-btn {
       flex: 1;
-      padding: 14px 0;
-      border: none;
-      border-radius: 50px;
-      font-size: 16px;
+      padding: 13px 0;
+      border-radius: 60px;
       font-weight: bold;
+      border: none;
       cursor: pointer;
-      transition: 0.1s;
+      font-size: 15px;
     }
 
     .btn-confirm {
-      background: linear-gradient(95deg, #00ffc3, #1e90ff);
-      color: #0a0f1a;
+      background: linear-gradient(90deg, #2effc2, #2a82ff);
+      color: black;
     }
 
     .btn-cancel {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255,255,255,0.1);
       color: white;
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 0.5px solid #ffffff30;
     }
 
-    /* custom scroll */
-    ::-webkit-scrollbar {
-      width: 3px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #021020;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #00ffaa;
-      border-radius: 10px;
+    /* Polygon badge */
+    .polygon-tag {
+      position: fixed;
+      bottom: 12px;
+      right: 16px;
+      font-size: 9px;
+      background: #1e2a3a80;
+      padding: 4px 12px;
+      border-radius: 30px;
+      backdrop-filter: blur(5px);
+      pointer-events: none;
+      z-index: 5;
     }
   </style>
 </head>
 <body>
-
 <div class="topbar">
-  <div class="stat-badge">
-    <span>🔋</span> 
-    <span class="stat-value" id="energy">50</span>
-  </div>
-  <div class="stat-badge">
-    <span>⚡</span> 
-    <span class="stat-value" id="points">0</span>
-  </div>
-  <div class="stat-badge">
-    <span>💎</span> 
-    <span class="stat-value" id="pvltg">0.0000</span>
-  </div>
+  <div class="stat-card"><span>🔋</span> <span class="stat-number" id="energy">50</span></div>
+  <div class="stat-card"><span>⚡</span> <span class="stat-number" id="points">0</span></div>
+  <div class="stat-card"><span>💎</span> <span class="stat-number" id="pvltg">0.0000</span></div>
 </div>
 
 <div class="main">
-  <div class="tap-btn-wrapper">
+  <div class="tap-wrapper">
     <button class="tapBtn" onclick="tap()">
-      <img src="images/IMG_1850.png" alt="Tap Coin" onerror="this.src='https://placehold.co/200x200/0a2a3a/00ffaa?text=PVLT'">
+      <img src="images/IMG_1850.png" alt="Tap PVLT" onerror="this.src='https://placehold.co/300x300/0c2740/55ffcc?text=⚡TAP'">
     </button>
   </div>
 
-  <div class="glass-card">
-    <input id="walletInput" class="input-fancy" placeholder="🔗 Connect wallet (Polygon)" readonly>
-    <button class="actionBtn" id="walletBtn" onclick="connectWallet()">
-      🚀 CONNECT WALLET
-    </button>
-    <div class="status" id="walletStatus">
-      ✅ Wallet synced
-    </div>
-    <button class="actionBtn" onclick="openBuyModal()">
-      ⚡ BUY ENERGY (100k)
-    </button>
-    <button class="actionBtn" onclick="swapPoints()">
-      🔄 SWAP POINTS → PVLTG
-    </button>
-    <button class="actionBtn" onclick="claimPVLT()">
-      💰 CLAIM PVLT
-    </button>
+  <div class="glass-panel">
+    <input id="walletInput" class="input-fancy" placeholder="🔗 Polygon Wallet" readonly>
+    <button class="actionBtn" id="walletBtn" onclick="connectWallet()">🌐 CONNECT WALLET (POLYGON)</button>
+    <div class="status-badge" id="walletStatus">✅ Wallet connected & synced</div>
+    <button class="actionBtn" onclick="openBuyModal()">💎 BUY ENERGY (100k)</button>
+    <button class="actionBtn" onclick="swapPoints()">🔄 SWAP POINTS → PVLTG</button>
+    <button class="actionBtn" onclick="claimPVLT()">🏆 CLAIM PVLT</button>
   </div>
-
-  <div class="info">
-    ✨ 1 Tap = 1 Point &nbsp;&nbsp;|&nbsp;&nbsp; 10,000 Points = 1 PVLTG <br>
-    💎 100 PVLTG = 1 PVLT &nbsp;&nbsp;⚡ Energy restores +1 / 30 sec
+  <div class="info-tip">
+    🔹 1 Tap = 1 Point &nbsp;&nbsp;|&nbsp;&nbsp; 10,000 Points = 1 PVLTG <br>
+    🔸 100 PVLTG = 1 PVLT &nbsp;|&nbsp; ⚡ Energy +1 / 30 sec &nbsp;|&nbsp; 🌐 Polygon Mainnet
   </div>
 </div>
+<div class="polygon-tag">⚡ POLYGON NETWORK</div>
 
-<!-- buy energy modal -->
+<!-- buy modal -->
 <div class="modal-overlay" id="buyModal">
   <div class="modal-box">
-    <h3>💎 ENERGY PACK</h3>
-    <p>Buy <strong style="color:#aaffdd">100,000 Energy</strong><br>for <strong style="color:#ffdd88">100 PVLT</strong></p>
+    <h3>⚡ ENERGY REFILL</h3>
+    <p>Buy <strong style="color:#aaffdd">100,000 Energy</strong><br>for <strong style="color:#ffe0a0">100 PVLT</strong></p>
     <div class="modal-buttons">
       <button class="modal-btn btn-cancel" onclick="closeBuyModal()">Cancel</button>
       <button class="modal-btn btn-confirm" id="confirmPaymentBtn" onclick="executeEnergyPurchase()">Confirm</button>
@@ -360,13 +334,15 @@
 </div>
 
 <script>
-  /* ================= CONFIGURATION (SAME BACKEND) ================= */
+  /* ========== POLYGON CONFIGURATION (MAINNET) ========== */
   const API = "https://pvlt-server.onrender.com";
   const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
   const PVLT_TOKEN_ADDRESS = "0xC096dB70Fa05255b210Be58Ec2508Bed61e8dfD6";
   const PVLTG_TOKEN_ADDRESS = "0x3094Dc50cB01721eE6c0ECAf18bd0D15c154ba2d";
   const GAME_TREASURY_ADDRESS = "0xe2bb81bD8e36367F2C85c89F0B03570dFCaf5D57";
   const TOKEN_DECIMALS = 18;
+  const POLYGON_CHAIN_ID = 137;
+  const POLYGON_NETWORK_NAME = "Polygon Mainnet";
 
   let web3Provider = null;
   let wallet = "";
@@ -374,51 +350,100 @@
   let energy = 50;
   let pvltg = 0;
 
-  // Helper UI updates (smooth)
+  // Update UI
   function updateUI() {
-    const energyEl = document.getElementById("energy");
-    const pointsEl = document.getElementById("points");
-    const pvltgEl = document.getElementById("pvltg");
-    if (energyEl) energyEl.innerText = Math.floor(energy);
-    if (pointsEl) pointsEl.innerText = points;
-    if (pvltgEl) pvltgEl.innerText = Number(pvltg).toFixed(4);
+    document.getElementById("energy").innerText = Math.floor(energy);
+    document.getElementById("points").innerText = points;
+    document.getElementById("pvltg").innerText = Number(pvltg).toFixed(4);
   }
 
-  // modal controls
+  // MODAL helpers
   function openBuyModal() {
-    if (!wallet) {
-      alert("🔐 Connect wallet first to buy energy.");
-      return;
-    }
+    if (!wallet) { alert("🔐 Connect Polygon wallet first"); return; }
     document.getElementById("buyModal").classList.add("active");
   }
   function closeBuyModal() {
     document.getElementById("buyModal").classList.remove("active");
   }
 
-  // Connect wallet (works with both metamask & walletconnect)
+  // Ensure Polygon network helper
+  async function switchToPolygon(provider) {
+    try {
+      await provider.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x89" }], // 137 in hex
+      });
+      return true;
+    } catch (switchError) {
+      if (switchError.code === 4902) {
+        try {
+          await provider.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: "0x89",
+              chainName: "Polygon Mainnet",
+              nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
+              rpcUrls: ["https://polygon-rpc.com"],
+              blockExplorerUrls: ["https://polygonscan.com"]
+            }]
+          });
+          return true;
+        } catch (addError) {
+          console.error(addError);
+          return false;
+        }
+      }
+      console.error(switchError);
+      return false;
+    }
+  }
+
+  // CONNECT WALLET (MetaMask / WalletConnect) + force Polygon
   async function connectWallet() {
     try {
+      let providerRaw = null;
       if (window.ethereum) {
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-        web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+        providerRaw = window.ethereum;
+        await providerRaw.request({ method: "eth_requestAccounts" });
+        web3Provider = new ethers.providers.Web3Provider(providerRaw);
       } else {
         const WalletConnectProvider = window["@walletconnect/ethereum-provider"].EthereumProvider;
         const wcProvider = await WalletConnectProvider.init({
           projectId: PROJECT_ID,
-          chains: [137],
-          showQrModal: true
+          chains: [POLYGON_CHAIN_ID],
+          showQrModal: true,
+          optionalChains: [137],
+          rpcMap: { 137: "https://polygon-rpc.com" }
         });
         await wcProvider.connect();
         web3Provider = new ethers.providers.Web3Provider(wcProvider);
+        providerRaw = wcProvider;
       }
+
+      // CHECK & ENFORCE POLYGON NETWORK
+      const network = await web3Provider.getNetwork();
+      if (network.chainId !== POLYGON_CHAIN_ID) {
+        const switched = await switchToPolygon(providerRaw);
+        if (!switched) {
+          alert("⚠️ Please switch to Polygon Mainnet manually in your wallet.");
+          return;
+        }
+        // After switching, re-initialize provider
+        if (window.ethereum) web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+        const newNetwork = await web3Provider.getNetwork();
+        if (newNetwork.chainId !== POLYGON_CHAIN_ID) {
+          alert("❌ Wrong network. Must be Polygon Mainnet (chainId 137).");
+          return;
+        }
+      }
+
       const signer = web3Provider.getSigner();
       wallet = await signer.getAddress();
       document.getElementById("walletInput").value = wallet.slice(0,6) + "..." + wallet.slice(-4);
-      document.getElementById("walletBtn").innerHTML = "✅ CONNECTED";
+      document.getElementById("walletBtn").innerHTML = "✅ WALLET CONNECTED (POLYGON)";
       document.getElementById("walletStatus").style.display = "block";
-
-      // load user data from backend
+      
+      // fetch user data from backend
       const res = await fetch(API + "/user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -431,16 +456,13 @@
       updateUI();
     } catch (err) {
       console.error(err);
-      alert("⚠️ Connection failed: " + (err.message || "unknown error"));
+      alert("Connection failed: " + (err.message || "unknown"));
     }
   }
 
-  // TAP GAME action (energy system + points)
+  // TAP action (energy consumption logic via backend)
   async function tap() {
-    if (!wallet) {
-      alert("🔗 Please connect wallet before tapping");
-      return;
-    }
+    if (!wallet) { alert("Connect wallet (Polygon) to earn points"); return; }
     try {
       const res = await fetch(API + "/tap", {
         method: "POST",
@@ -448,54 +470,48 @@
         body: JSON.stringify({ wallet })
       });
       const data = await res.json();
-      if (data.error) {
-        alert(data.error);
-        return;
-      }
+      if (data.error) { alert(data.error); return; }
       points = data.points;
       energy = data.energy;
       updateUI();
-
-      // subtle haptic feedback (vibration if supported)
-      if (navigator.vibrate) navigator.vibrate(20);
-    } catch (err) {
-      console.error(err);
-      alert("Tap error, check network");
-    }
+      if (navigator.vibrate) navigator.vibrate(12);
+    } catch (err) { console.error(err); alert("Tap error, check connection"); }
   }
 
-  // BUY ENERGY (100 PVLT transaction)
+  // BUY ENERGY (100 PVLT -> 100k energy) | POLYGON TRANSACTION
   async function executeEnergyPurchase() {
     const confirmBtn = document.getElementById("confirmPaymentBtn");
     try {
       if (!wallet) throw new Error("Connect wallet first");
-      confirmBtn.innerText = "⏳ Processing...";
+      confirmBtn.innerText = "⏳ PROCESSING...";
       confirmBtn.disabled = true;
-
-      if (!web3Provider) throw new Error("No provider");
+      if (!web3Provider) throw new Error("Wallet provider missing");
       const network = await web3Provider.getNetwork();
-      if (network.chainId !== 137) {
-        alert("🌐 Switch to Polygon Mainnet (chainId 137)");
+      if (network.chainId !== POLYGON_CHAIN_ID) {
+        alert("🌐 Please set your wallet to Polygon Mainnet (chainId 137)");
         return;
       }
       const signer = web3Provider.getSigner();
       const tokenContract = new ethers.Contract(
         PVLT_TOKEN_ADDRESS,
-        ["function transfer(address to,uint256 amount) external returns(bool)", "function balanceOf(address owner) view returns(uint256)"],
+        [
+          "function transfer(address to, uint256 amount) external returns(bool)",
+          "function balanceOf(address owner) view returns(uint256)"
+        ],
         signer
       );
       const amount = ethers.utils.parseUnits("100", TOKEN_DECIMALS);
-      const rawBalance = await tokenContract.balanceOf(wallet);
-      if (rawBalance.lt(amount)) {
-        alert(`❌ Insufficient PVLT balance. Need 100 PVLT. Your balance: ${ethers.utils.formatUnits(rawBalance, TOKEN_DECIMALS)} PVLT`);
+      const balance = await tokenContract.balanceOf(wallet);
+      if (balance.lt(amount)) {
+        alert(`❌ Insufficient PVLT. Need 100 PVLT. Balance: ${ethers.utils.formatUnits(balance, TOKEN_DECIMALS)} PVLT`);
         return;
       }
-      const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, amount);
       closeBuyModal();
-      alert("📡 Transaction submitted, waiting confirmation...");
+      alert("📡 Confirm transaction in wallet (Polygon network)...");
+      const tx = await tokenContract.transfer(GAME_TREASURY_ADDRESS, amount);
       await tx.wait();
-
-      // call backend refill
+      
+      // Backend refill
       const refillRes = await fetch(API + "/refill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -505,11 +521,11 @@
       if (refillData.error) throw new Error(refillData.error);
       energy = refillData.energy;
       updateUI();
-      alert("✅ +100,000 ENERGY! Keep tapping!");
+      alert(`✅ +100,000 ENERGY! New energy: ${energy}`);
     } catch (err) {
       console.error(err);
       let msg = err.reason || err.data?.message || err.message || "Transaction failed";
-      alert("❌ Energy purchase failed:\n" + msg);
+      alert("❌ Energy purchase failed on Polygon:\n" + msg);
     } finally {
       confirmBtn.innerText = "Confirm";
       confirmBtn.disabled = false;
@@ -517,16 +533,10 @@
     }
   }
 
-  // SWAP POINTS -> PVLTG (backend handles conversion)
+  // SWAP POINTS -> PVLTG (server)
   async function swapPoints() {
-    if (!wallet) {
-      alert("Connect wallet first");
-      return;
-    }
-    if (points < 1) {
-      alert("No points to swap. Tap first!");
-      return;
-    }
+    if (!wallet) { alert("Connect wallet first"); return; }
+    if (points < 1) { alert("No points to swap. Tap more!"); return; }
     try {
       const res = await fetch(API + "/swap-points", {
         method: "POST",
@@ -534,42 +544,32 @@
         body: JSON.stringify({ wallet })
       });
       const data = await res.json();
-      if (data.error) {
-        alert(data.error);
-        return;
-      }
+      if (data.error) { alert(data.error); return; }
       points = 0;
       pvltg = data.pvltg;
       updateUI();
-      alert(`✨ Swapped! New PVLTG balance: ${pvltg.toFixed(4)}`);
-    } catch (err) {
-      console.error(err);
-      alert("Swap error, try again");
-    }
+      alert(`✨ Swapped! PVLTG balance: ${pvltg.toFixed(4)}`);
+    } catch (err) { alert("Swap failed"); console.error(err); }
   }
 
-  // CLAIM PVLT (needs min 100 PVLTG, uses approve + backend)
+  // CLAIM PVLT (requires 100 PVLTG + approve + Polygon claim call)
   async function claimPVLT() {
-    if (!wallet) {
-      alert("Connect wallet first");
-      return;
-    }
+    if (!wallet) { alert("Connect wallet"); return; }
     if (pvltg < 100) {
-      alert(`⚠️ Minimum 100 PVLTG required to claim PVLT. Current: ${pvltg.toFixed(4)} PVLTG`);
+      alert(`⚠️ Minimum 100 PVLTG required to claim PVLT. Current: ${pvltg.toFixed(4)}`);
       return;
     }
     try {
       const signer = web3Provider.getSigner();
       const pvltTokenContract = new ethers.Contract(
         PVLT_TOKEN_ADDRESS,
-        ["function approve(address spender,uint256 amount) external returns(bool)"],
+        ["function approve(address spender, uint256 amount) external returns(bool)"],
         signer
       );
       const amountToApprove = ethers.utils.parseUnits(pvltg.toString(), TOKEN_DECIMALS);
       const approveTx = await pvltTokenContract.approve(GAME_TREASURY_ADDRESS, amountToApprove);
       await approveTx.wait();
-
-      // call claim endpoint
+      
       const res = await fetch(API + "/claim-pvltg", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -579,64 +579,55 @@
       if (data.error) throw new Error(data.error);
       pvltg = 0;
       updateUI();
-      alert("🎉 PVLT successfully claimed to your wallet!");
+      alert("🎉 PVLT Claimed Successfully! Tokens transferred on Polygon.");
     } catch (err) {
       console.error(err);
       alert("Claim failed: " + (err.message || "unknown error"));
     }
   }
 
-  // auto energy refill (every 30 sec, max maybe uncapped but logic sync with backend)
-  // improved: energy restoration LOCAL simulation, but also syncs after each tap or refill.
-  // However to be consistent with backend, we only update UI locally.
-  setInterval(() => {
-    if (wallet && energy < 500) {
-      // mimic energy +1 but does not desync because actual tap/refill will override.
-      // but we also respect backend reality: only local display to feel reactive.
-      // worst case, next tap fetches fresh. To avoid UI desync, we push gentle increment.
-      if (energy < 9999) {
+  // auto energy regeneration (UI smooth increment + occasional server sync doesn't break)
+  // but to respect backend truth, only local increment if energy not above cap and wallet exists
+  let localRegenInterval = null;
+  function startLocalEnergyRegen() {
+    if (localRegenInterval) clearInterval(localRegenInterval);
+    localRegenInterval = setInterval(() => {
+      if (wallet && energy < 5000) {
         energy = Math.min(energy + 1, 9999);
         updateUI();
-        // optional: silently notify server to prevent out of sync? not needed, next tap corrects.
-        // This is pure UI positive feedback.
+        // optional: we don't spam backend; tap or refill will adjust on next server action
+      } else if (!wallet) {
+        // do nothing
       }
-    } else if (!wallet) {
-      // nothing
-    } else {
-      if (energy < 9999) {
-        energy = energy + 1;
-        updateUI();
-      }
-    }
-  }, 30000);
-
-  // also extra interval for background energy correction for players who keep page open? not mandatory but nice.
-  // plus network online sync if needed? keep original functional.
-
-  // add listener for network changes to refresh wallet metadata
+    }, 30000);
+  }
+  startLocalEnergyRegen();
+  
+  // also after each successful tap, points/energy are already accurate. ensure sync
+  // on network change, reload
   if (window.ethereum) {
     window.ethereum.on('accountsChanged', (accounts) => {
       if (accounts.length === 0) {
         wallet = "";
         document.getElementById("walletInput").value = "";
-        document.getElementById("walletBtn").innerHTML = "CONNECT WALLET";
+        document.getElementById("walletBtn").innerHTML = "🌐 CONNECT WALLET (POLYGON)";
         document.getElementById("walletStatus").style.display = "none";
         points = 0; energy = 50; pvltg = 0;
         updateUI();
       } else {
-        window.location.reload(); // simpler: reload to re-fetch data
+        window.location.reload();
       }
     });
-    window.ethereum.on('chainChanged', () => window.location.reload());
+    window.ethereum.on('chainChanged', (chainId) => {
+      if (chainId !== "0x89") {
+        alert("Please switch to Polygon Mainnet for gameplay.");
+      }
+      window.location.reload();
+    });
   }
 
   // init UI
   updateUI();
-  
-  // small fallback image if img missing
-  document.querySelectorAll('.tapBtn img').forEach(img => {
-    img.onerror = function() { this.src = "https://placehold.co/240x240/0b2a3a/00ffaa?text=PVLT"; };
-  });
 </script>
 </body>
 </html>
