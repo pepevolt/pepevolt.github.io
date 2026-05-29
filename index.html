@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Tap to Earn | Energy → Points → Token</title>
+  <title>Tap to Earn | Energy → Points → Token (Loop)</title>
   <style>
     * {
       margin: 0;
@@ -250,6 +250,11 @@
       text-shadow: 0 0 3px #4a1d6d;
     }
 
+    .milestone-feedback {
+      color: #4ade80;
+      text-shadow: 0 0 4px #14532d;
+    }
+
     /* glow background */
     .glow-orb {
       position: fixed;
@@ -326,7 +331,7 @@
       <div class="tap-emoji">👆</div>
     </div>
   </div>
-  <div class="hint-text">tap → -1 energy → +1 point | every 100 points = 1 token</div>
+  <div class="hint-text">tap → -1 energy → +1 point | 100 points → +1 token & points reset to 0</div>
   
   <!-- single connect wallet button -->
   <button id="mainConnectBtn" class="main-connect-btn">
@@ -338,12 +343,12 @@
 <div class="glow-orb"></div>
 
 <script>
-  // =========  ENERGY, POINTS & TOKEN SYSTEM =========
+  // =========  ENERGY, POINTS & TOKEN SYSTEM WITH LOOP =========
   // Total Energy: 10,000 (starting)
   // Each tap: Energy -1, Points +1
-  // Every 100 points earned (in total) gives +1 Token.
-  // Token calculation based on total points accumulated (floor(points / 100))
+  // When Points reaches 100: Award +1 Token, then Points reset to 0 (loop)
   // Energy regen: +1 every 15 seconds (max 10000)
+  // Important: Points loops to 0 after each 100-point milestone.
   
   (function() {
     // DOM elements
@@ -362,25 +367,13 @@
     
     // Stats
     let energy = 10000;      // starts at 10000
-    let points = 0;          // total points earned
-    let tokens = 0;          // tokens = floor(points / 100)
+    let points = 0;          // current points (0-99, resets at 100)
+    let tokens = 0;          // total tokens earned from milestones
     
-    // Helper: recalculate token based on points
-    function updateTokenFromPoints() {
-      const newTokens = Math.floor(points / 100);
-      if (newTokens !== tokens) {
-        const gained = newTokens - tokens;
-        tokens = newTokens;
-        // show floating token feedback if gained > 0
-        if (gained > 0 && window.lastTapPosition) {
-          showTokenFeedback(window.lastTapPosition.x, window.lastTapPosition.y, gained);
-        }
-      }
-      // update UI after token change
-      if (tokenSpan) tokenSpan.innerText = tokens;
-    }
+    // Store last tap coordinates for visual feedback
+    let lastTapPosition = { x: 0, y: 0 };
     
-    // Update all UI elements
+    // Helper: update all UI elements
     function updateStatsUI() {
       if (energySpan) energySpan.innerText = Math.floor(energy);
       if (pointsSpan) pointsSpan.innerText = Math.floor(points);
@@ -394,47 +387,67 @@
       }
     }
     
-    // Reset to initial state (if needed)
-    function resetToInitial() {
-      energy = 10000;
-      points = 0;
-      tokens = 0;
-      updateTokenFromPoints(); // syncs token = 0
-      updateStatsUI();
-    }
-    
-    // Show floating token notification
-    function showTokenFeedback(x, y, gained) {
+    // Show floating token notification when milestone reached
+    function showTokenFeedback(x, y, tokenGain) {
       const feedback = document.createElement('div');
       feedback.className = 'tap-feedback token-feedback';
-      feedback.innerHTML = `+${gained} 💎 TOKEN`;
-      feedback.style.left = `${x - 40}px`;
-      feedback.style.top = `${y - 50}px`;
+      feedback.innerHTML = `+${tokenGain} 💎 TOKEN!`;
+      feedback.style.left = `${x - 45}px`;
+      feedback.style.top = `${y - 55}px`;
       document.body.appendChild(feedback);
       setTimeout(() => {
         if (feedback && feedback.remove) feedback.remove();
       }, 700);
     }
     
-    // Store last tap coordinates for token feedback
-    let lastTapPosition = { x: 0, y: 0 };
+    // Show milestone completed feedback
+    function showMilestoneFeedback(x, y) {
+      const feedback = document.createElement('div');
+      feedback.className = 'tap-feedback milestone-feedback';
+      feedback.innerHTML = `✨ 100 POINTS! +1 TOKEN ✨`;
+      feedback.style.left = `${x - 70}px`;
+      feedback.style.top = `${y - 70}px`;
+      document.body.appendChild(feedback);
+      setTimeout(() => {
+        if (feedback && feedback.remove) feedback.remove();
+      }, 800);
+    }
     
-    // Process tap: -1 energy, +1 point, then recalc tokens
+    // Process tap: -1 energy, +1 point, check milestone (points == 100 -> token +1, points = 0)
+    // Returns: { success: bool, milestone: bool }
     function processTap() {
       if (energy <= 0) {
-        return false;
+        return { success: false, milestone: false };
       }
       
-      // Consume 1 energy, gain 1 point
+      // Consume 1 energy
       energy -= 1;
+      
+      // Add 1 point
       points += 1;
       
-      // Update token based on new points total
-      updateTokenFromPoints();
+      let milestoneReached = false;
+      
+      // Check if points reached exactly 100 (milestone)
+      if (points >= 100) {
+        // Award token for each 100 points completed
+        // Since points can't exceed 100 in normal flow (we reset), but safe guard: award token for each full 100
+        const tokensEarned = Math.floor(points / 100);
+        tokens += tokensEarned;
+        // Reset points to remainder after removing full hundreds
+        points = points % 100;
+        milestoneReached = true;
+        
+        // Show milestone + token feedback if we have coordinates
+        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
+          showMilestoneFeedback(lastTapPosition.x, lastTapPosition.y);
+          showTokenFeedback(lastTapPosition.x, lastTapPosition.y, tokensEarned);
+        }
+      }
       
       // Update UI
       updateStatsUI();
-      return true;
+      return { success: true, milestone: milestoneReached };
     }
     
     // Create floating feedback for tap (+1 point, -1 energy)
@@ -454,7 +467,7 @@
     function onTapCircle(e) {
       e.stopPropagation();
       
-      // Check energy
+      // Check energy first
       if (energy <= 0) {
         const rect = tapCircle.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
@@ -476,14 +489,7 @@
         tapCircle.classList.remove('ripple-effect');
       }, 200);
       
-      // Process tap (energy -1, points +1, token recalc)
-      const success = processTap();
-      if (!success) return;
-      
-      // Haptic feedback
-      if (navigator.vibrate) navigator.vibrate(15);
-      
-      // Get tap coordinates
+      // Get tap coordinates (for feedback)
       let clientX, clientY;
       if (e.touches) {
         clientX = e.touches[0].clientX;
@@ -494,16 +500,29 @@
       }
       if (clientX && clientY) {
         lastTapPosition = { x: clientX, y: clientY };
-        createFloatingFeedback(clientX, clientY);
       } else {
         const rect = tapCircle.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         lastTapPosition = { x: centerX, y: centerY };
-        createFloatingFeedback(centerX, centerY);
       }
       
-      console.log(`Tap! Energy: ${energy} | Points: ${points} | Tokens: ${tokens}`);
+      // Process the tap (energy -1, points +1, possible milestone)
+      const result = processTap();
+      
+      if (result.success) {
+        // Haptic feedback
+        if (navigator.vibrate) navigator.vibrate(15);
+        
+        // Show floating tap feedback (only if not a milestone? we already show milestone feedback separately)
+        // But we still show the basic +1/-1 feedback for clarity, but position it slightly above
+        createFloatingFeedback(lastTapPosition.x, lastTapPosition.y);
+        
+        console.log(`Tap! Energy: ${energy} | Points: ${points} | Tokens: ${tokens}`);
+        if (result.milestone) {
+          console.log(`🎉 MILESTONE! Points reset to ${points}, Token +1 (total: ${tokens})`);
+        }
+      }
     }
     
     // ---------- Wallet Integration (optional, no effect on game stats) ----------
@@ -629,7 +648,6 @@
       if (energy < 10000) {
         energy = Math.min(energy + 1, 10000);
         updateStatsUI();
-        // optional subtle regen indicator? no extra text needed
       }
     }, 15000);
     
@@ -639,10 +657,16 @@
     });
     
     // Initialize game
-    resetToInitial();
+    function resetGame() {
+      energy = 10000;
+      points = 0;
+      tokens = 0;
+      updateStatsUI();
+    }
+    resetGame();
     checkInitialConnection();
     
-    console.log("Ready: Energy 10000 | Tap: -1 energy, +1 point | Every 100 points = 1 Token");
+    console.log("Ready: Energy 10000 | Tap: -1 energy, +1 point | Every 100 points → +1 token & points reset to 0");
   })();
 </script>
 </body>
