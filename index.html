@@ -201,6 +201,7 @@ body {
   border-top-color: white;
   animation: spin 0.8s linear infinite;
   margin-right: 8px;
+  vertical-align: middle;
 }
 
 @keyframes spin {
@@ -416,14 +417,6 @@ body {
         projectId: "1731f99148b9cf6107dee70b6efb14b7",
         chains: [137],
         showQrModal: true,
-        qrModalOptions: {
-          themeMode: 'dark',
-          enableExplorer: true,
-          explorerRecommendedWalletIds: [
-            "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96", // MetaMask
-            "971e689d0a5be527bac79629b4ee9b925e8227e516ff6ef140da2e3d968afbda" // Trust Wallet
-          ]
-        },
         methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData", "eth_accounts", "eth_requestAccounts"],
         rpcMap: { 137: "https://polygon-rpc.com" },
         metadata: {
@@ -434,13 +427,43 @@ body {
         }
       });
       
+      // Listen for connection events
+      wcProvider.on("connect", async () => {
+        console.log("WalletConnect connected event");
+      });
+      
+      wcProvider.on("session_event", async (event) => {
+        console.log("Session event:", event);
+      });
+      
       await wcProvider.connect();
       
-      // Get session and accounts
-      const accounts = await wcProvider.request({ method: "eth_requestAccounts" });
+      // Try to get accounts - if it fails, wait a bit and try again
+      let accounts = null;
+      let retries = 0;
+      
+      while (!accounts && retries < 5) {
+        try {
+          accounts = await wcProvider.request({ method: "eth_accounts" });
+          if (!accounts || accounts.length === 0) {
+            accounts = await wcProvider.request({ method: "eth_requestAccounts" });
+          }
+        } catch(e) {
+          console.log("Retry attempt", retries + 1);
+        }
+        if (!accounts || accounts.length === 0) {
+          await new Promise(r => setTimeout(r, 500));
+          retries++;
+        }
+      }
       
       if (!accounts || accounts.length === 0) {
-        throw new Error("No accounts found");
+        // Try one more time directly
+        accounts = await wcProvider.request({ method: "eth_requestAccounts" });
+      }
+      
+      if (!accounts || accounts.length === 0) {
+        throw new Error("Could not get accounts after multiple attempts");
       }
       
       userAccount = accounts[0];
