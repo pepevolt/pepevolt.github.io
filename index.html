@@ -1,950 +1,507 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Tap to Earn | Energy · Points · Burned PVLT · Real PVLT</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      user-select: none;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>TAPVERSE | PVLT</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+}
+body{
+    background:#000;
+    color:#fff;
+    font-family:Inter,system-ui,sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+}
+/* TOP NAV */
+.top-nav{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    padding:14px;
+    background:rgba(0,0,0,.85);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid rgba(255,255,255,.08);
+    z-index:999;
+}
+.nav-brand{
+    text-align:center;
+    font-size:1.1rem;
+    font-weight:700;
+    margin-bottom:12px;
+}
+.nav-stats{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:10px;
+}
+.stat-item{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:40px;
+    padding:8px 12px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:.85rem;
+}
+.stat-value{
+    background:rgba(255,255,255,.08);
+    padding:3px 8px;
+    border-radius:20px;
+    font-family:monospace;
+    min-width:45px;
+    text-align:center;
+}
+/* MAIN */
+.hero{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:170px 20px 40px;
+    text-align:center;
+}
+.tap-circle{
+    width:180px;
+    height:180px;
+    border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, #292929, #0d0d0d);
+    border:1px solid rgba(255,255,255,.08);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition:.08s;
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.5),
+        inset 0 1px 0 rgba(255,255,255,.05);
+}
+.tap-circle:active{
+    transform:scale(.94);
+}
+.tap-circle.disabled{
+    opacity:.45;
+    cursor:not-allowed;
+}
+.tap-emoji{
+    font-size:4rem;
+}
+.hint{
+    margin-top:18px;
+    opacity:.5;
+    font-size:.8rem;
+    line-height:1.5;
+    max-width:320px;
+}
+/* BUTTONS */
+.button-group{
+    width:100%;
+    max-width:320px;
+    margin-top:28px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+.btn{
+    border:none;
+    border-radius:50px;
+    padding:14px;
+    font-size:1rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:.2s;
+    color:#fff;
+}
+.btn:active{
+    transform:scale(.98);
+}
+.connect-btn{
+    background:#1d1d1d;
+    border:1px solid rgba(255,255,255,.08);
+}
+.connect-btn:hover{
+    background:#2b2b2b;
+}
+.buy-btn{
+    background:#101828;
+    border:1px solid rgba(255,255,255,.08);
+}
+.claim-box{
+    margin-top:8px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    padding:16px;
+    border-radius:24px;
+}
+.claim-title{
+    font-size:.8rem;
+    opacity:.7;
+    margin-bottom:12px;
+}
+.claim-display{
+    font-size:1.3rem;
+    font-weight:700;
+    margin-top:10px;
+    margin-bottom:14px;
+}
+.claim-btn{
+    background:linear-gradient(135deg,#7c3aed,#a855f7);
+}
+input[type=range]{
+    width:100%;
+}
+/* FEEDBACK */
+.feedback{
+    position:fixed;
+    pointer-events:none;
+    z-index:99999;
+    animation:floatUp .7s ease forwards;
+    font-weight:700;
+    text-shadow:0 0 8px #000;
+}
+@keyframes floatUp{
+    0%{
+        opacity:1;
+        transform:translateY(0) scale(.9);
     }
-
-    body {
-      background: #000000;
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      color: #ffffff;
+    100%{
+        opacity:0;
+        transform:translateY(-50px) scale(1.25);
     }
-
-    /* ========= TOP NAVIGATION ========= */
-    .top-nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 0.9rem 1.8rem;
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1rem;
+}
+.wallet-info{
+    margin-top:18px;
+    opacity:.6;
+    font-size:.75rem;
+    word-break:break-all;
+}
+@media(max-width:600px){
+    .tap-circle{
+        width:150px;
+        height:150px;
     }
-
-    .nav-brand {
-      font-weight: 600;
-      font-size: 1.2rem;
-      letter-spacing: -0.2px;
-      background: linear-gradient(120deg, #f0f0f0, #c0c0c0);
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
+    .tap-emoji{
+        font-size:3.2rem;
     }
-
-    .nav-stats {
-      display: flex;
-      align-items: center;
-      gap: 2rem;
-      background: rgba(20, 20, 20, 0.6);
-      padding: 0.45rem 1.5rem;
-      border-radius: 60px;
-      backdrop-filter: blur(4px);
-      border: 0.5px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .stat-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      letter-spacing: 0.2px;
-      color: #f1f1f1;
-      transition: all 0.2s ease;
-    }
-
-    .stat-emoji {
-      font-size: 1.2rem;
-      filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
-    }
-
-    .stat-value {
-      font-weight: 600;
-      background: rgba(255,255,255,0.1);
-      padding: 0.2rem 0.6rem;
-      border-radius: 32px;
-      font-size: 0.85rem;
-      font-family: monospace;
-      letter-spacing: 0.3px;
-      min-width: 55px;
-      text-align: center;
-    }
-
-    .burned-value {
-      background: rgba(255, 70, 70, 0.2);
-      border: 0.5px solid rgba(255, 100, 100, 0.3);
-      color: #ffaaaa;
-    }
-
-    .premium-badge {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      font-size: 0.65rem;
-      padding: 0.15rem 0.5rem;
-      border-radius: 20px;
-      margin-left: 0.5rem;
-      font-weight: 600;
-    }
-
-    .nav-spacer {
-      width: 80px;
-    }
-
-    /* main content */
-    .hero-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 6rem 1.5rem 2rem 1.5rem;
-      text-align: center;
-      gap: 2rem;
-    }
-
-    /* ========= TAPPING CIRCLE ========= */
-    .tap-circle-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 0.25rem;
-    }
-
-    .tap-circle {
-      width: 180px;
-      height: 180px;
-      background: radial-gradient(circle at 30% 30%, #2a2a2a, #0f0f0f);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.08s linear;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      backdrop-filter: blur(2px);
-      will-change: transform;
-    }
-
-    .tap-circle:active {
-      transform: scale(0.92);
-      transition: transform 0.03s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-    }
-
-    .tap-circle.ripple-effect {
-      animation: rippleFlash 0.2s ease-out;
-    }
-
-    @keyframes rippleFlash {
-      0% {
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5), 0 0 0 0 rgba(255, 215, 0, 0.3);
-        transform: scale(1);
-      }
-      50% {
-        box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.2), 0 0 0 26px rgba(255, 215, 0, 0.1);
-        transform: scale(0.96);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0), 0 0 0 0 rgba(255, 215, 0, 0);
-        transform: scale(1);
-      }
-    }
-
-    .tap-emoji {
-      font-size: 4rem;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-      transition: transform 0.05s ease;
-    }
-
-    .tap-circle:active .tap-emoji {
-      transform: scale(0.9);
-    }
-
-    .tap-circle.disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
-      filter: grayscale(0.2);
-    }
-    .tap-circle.disabled:active {
-      transform: scale(1);
-    }
-
-    .hint-text {
-      margin-top: 0.5rem;
-      font-size: 0.75rem;
-      opacity: 0.45;
-      letter-spacing: 0.3px;
-      font-weight: 400;
-    }
-
-    /* ========= BUTTON GROUP ========= */
-    .button-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      width: 100%;
-      max-width: 300px;
-      margin-top: 0.5rem;
-    }
-
-    .main-connect-btn {
-      background: #1a1a1a;
-      border: none;
-      padding: 0.9rem 2rem;
-      border-radius: 60px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      font-family: inherit;
-      color: #ffffff;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-      border: 0.5px solid rgba(255,255,255,0.1);
-      backdrop-filter: blur(4px);
-      letter-spacing: 0.3px;
-    }
-
-    .main-connect-btn:hover {
-      background: #2c2c2c;
-      transform: scale(1.02);
-      border-color: rgba(255,255,255,0.25);
-    }
-
-    .main-connect-btn:active {
-      transform: scale(0.98);
-    }
-
-    .main-icon {
-      width: 20px;
-      height: 20px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='5' width='20' height='14' rx='2'%3E%3C/rect%3E%3Cline x1='16' y1='12' x2='18' y2='12'%3E%3C/line%3E%3C/svg%3E");
-      background-size: contain;
-      background-repeat: no-repeat;
-    }
-
-    .resource-buttons {
-      display: flex;
-      gap: 1rem;
-      width: 100%;
-      justify-content: center;
-    }
-
-    .action-btn {
-      background: rgba(20, 20, 30, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 0.7rem 1rem;
-      border-radius: 48px;
-      font-size: 0.9rem;
-      font-weight: 500;
-      font-family: inherit;
-      color: #ffffff;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      flex: 1;
-      backdrop-filter: blur(4px);
-    }
-
-    .action-btn:hover {
-      background: rgba(40, 40, 55, 0.9);
-      transform: translateY(-2px);
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    .action-btn:active {
-      transform: translateY(1px);
-    }
-
-    .action-btn.disabled-action {
-      opacity: 0.5;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
-    .btn-emoji {
-      font-size: 1.1rem;
-    }
-
-    /* claim slider container */
-    .claim-slider-container {
-      width: 100%;
-      margin-top: 0.5rem;
-      background: rgba(10, 10, 20, 0.6);
-      border-radius: 48px;
-      padding: 0.8rem 1rem;
-      backdrop-filter: blur(4px);
-      border: 0.5px solid rgba(255,255,255,0.1);
-    }
-
-    .claim-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      opacity: 0.7;
-      margin-bottom: 0.5rem;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      height: 4px;
-      -webkit-appearance: none;
-      background: rgba(255,255,255,0.2);
-      border-radius: 10px;
-      outline: none;
-      margin: 0.5rem 0;
-    }
-
-    input[type="range"]:focus {
-      outline: none;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #c084fc;
-      cursor: pointer;
-      box-shadow: 0 0 6px #c084fc;
-      border: none;
-    }
-
-    .claim-amount-display {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #c084fc;
-      margin: 0.5rem 0;
-    }
-
-    .claim-submit-btn {
-      background: linear-gradient(135deg, #7c3aed, #a855f7);
-      border: none;
-      width: 100%;
-      padding: 0.6rem;
-      border-radius: 40px;
-      font-weight: 600;
-      font-size: 0.85rem;
-      color: white;
-      cursor: pointer;
-      transition: 0.2s;
-      margin-top: 0.3rem;
-    }
-
-    .claim-submit-btn:hover {
-      transform: scale(1.02);
-      opacity: 0.9;
-    }
-
-    .claim-submit-btn.disabled-claim {
-      opacity: 0.4;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-
-    .daily-limit-text {
-      font-size: 0.65rem;
-      opacity: 0.5;
-      margin-top: 0.3rem;
-    }
-
-    /* floating feedback */
-    @keyframes floatUp {
-      0% {
-        opacity: 0.9;
-        transform: translateY(0px) scale(0.8);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(-42px) scale(1.3);
-      }
-    }
-
-    .tap-feedback {
-      position: fixed;
-      pointer-events: none;
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: #FFD966;
-      text-shadow: 0 0 5px #000;
-      z-index: 2000;
-      animation: floatUp 0.6s ease-out forwards;
-      font-family: monospace;
-      white-space: nowrap;
-    }
-
-    .pvl-feedback {
-      color: #c084fc;
-      text-shadow: 0 0 3px #4a1d6d;
-    }
-
-    .milestone-feedback {
-      color: #4ade80;
-      text-shadow: 0 0 4px #14532d;
-    }
-
-    .energy-feedback {
-      color: #60a5fa;
-    }
-
-    .glow-orb {
-      position: fixed;
-      width: 50vw;
-      height: 50vw;
-      background: radial-gradient(circle, rgba(50,50,80,0.2) 0%, rgba(0,0,0,0) 70%);
-      top: 20%;
-      left: 25%;
-      z-index: -1;
-      pointer-events: none;
-      filter: blur(60px);
-    }
-
-    .wallet-balance {
-      margin-top: 0.5rem;
-      font-size: 0.75rem;
-      background: rgba(0,0,0,0.5);
-      padding: 0.3rem 1rem;
-      border-radius: 60px;
-      backdrop-filter: blur(4px);
-      border: 0.5px solid rgba(255,255,255,0.1);
-    }
-
-    @media (max-width: 700px) {
-      .top-nav {
-        padding: 0.7rem 1rem;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.6rem;
-      }
-      .nav-stats {
-        gap: 1rem;
-        padding: 0.35rem 1.2rem;
-      }
-      .stat-item {
-        font-size: 0.8rem;
-      }
-      .tap-circle {
-        width: 140px;
-        height: 140px;
-      }
-      .tap-emoji {
-        font-size: 3rem;
-      }
-      .resource-buttons {
-        gap: 0.8rem;
-      }
-      .action-btn {
-        padding: 0.6rem 0.8rem;
-        font-size: 0.8rem;
-      }
-      .nav-spacer {
-        display: none;
-      }
-    }
-  </style>
+}
+</style>
 </head>
 <body>
-
-<!-- TOP NAVIGATION: Energy · Points · Burned PVLT · Real PVLT -->
 <div class="top-nav">
-  <div class="nav-brand">✦ TAPVERSE <span id="userTypeBadge" class="premium-badge" style="display: none;">FREE</span></div>
-  <div class="nav-stats">
-    <div class="stat-item">
-      <span class="stat-emoji">⚡</span>
-      <span>Energy</span>
-      <span class="stat-value" id="energyValue">50</span>
+    <div class="nav-brand">
+        ✦ TAPVERSE
     </div>
-    <div class="stat-item">
-      <span class="stat-emoji">⭐</span>
-      <span>Points</span>
-      <span class="stat-value" id="pointsValue">0</span>
+    <div class="nav-stats">
+        <div class="stat-item">
+            ⚡ Energy
+            <div class="stat-value" id="energyValue">50</div>
+        </div>
+        <div class="stat-item">
+            ⭐ Points
+            <div class="stat-value" id="pointsValue">0</div>
+        </div>
+        <div class="stat-item">
+            🔥 Burned
+            <div class="stat-value" id="burnedValue">0</div>
+        </div>
+        <div class="stat-item">
+            💎 Real PVLT
+            <div class="stat-value" id="realValue">0</div>
+        </div>
     </div>
-    <div class="stat-item">
-      <span class="stat-emoji">🔥</span>
-      <span>Burned PVLT</span>
-      <span class="stat-value burned-value" id="burnedPvltValue">0</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-emoji">💎</span>
-      <span>Real PVLT</span>
-      <span class="stat-value" id="realPvltValue">0</span>
-    </div>
-  </div>
-  <div class="nav-spacer"></div>
 </div>
-
-<!-- main content -->
-<div class="hero-section">
-  <div class="tap-circle-container">
+<div class="hero">
     <div id="tapCircle" class="tap-circle">
-      <div class="tap-emoji">👆</div>
+        <div class="tap-emoji">👆</div>
     </div>
-  </div>
-  <div class="hint-text" id="energyHint">tap → -1 energy → +1 point | 100 points → +1 Burned PVLT</div>
-  
-  <div class="button-group">
-    <button id="mainConnectBtn" class="main-connect-btn">
-      <span class="main-icon"></span>
-      <span id="mainBtnText">Connect Wallet (Free: 50 Energy)</span>
-    </button>
-    
-    <div class="resource-buttons">
-      <button id="buyEnergyBtn" class="action-btn">
-        <span class="btn-emoji">⚡</span>
-        <span>Buy Energy</span>
-      </button>
+    <div class="hint">
+        1 Tap = 1 Point • 100 Points = 1 Burned PVLT
     </div>
-    
-    <!-- Claim Burned PVLT to get Real PVLT -->
-    <div class="claim-slider-container">
-      <div class="claim-label">
-        <span>🔥 Claim Burned PVLT → Real PVLT</span>
-        <span>Daily: 1 - 500</span>
-      </div>
-      <input type="range" id="claimSlider" min="1" max="500" value="1" step="1">
-      <div class="claim-amount-display" id="claimAmountDisplay">1 Real PVLT</div>
-      <button id="submitClaimBtn" class="claim-submit-btn">CLAIM REAL PVLT</button>
-      <div class="daily-limit-text" id="dailyLimitStatus">✅ Convert Burned PVLT to Real PVLT (1-500/day)</div>
+    <div class="button-group">
+        <button id="connectBtn" class="btn connect-btn">
+            Connect Wallet
+        </button>
+        <button id="buyBtn" class="btn buy-btn">
+            Buy 10,000 Energy (100 PVLT)
+        </button>
+        <div class="claim-box">
+            <div class="claim-title">
+                Claim Burned PVLT → Real PVLT
+            </div>
+            <input type="range"
+                   id="claimSlider"
+                   min="1"
+                   max="500"
+                   value="1">
+            <div class="claim-display" id="claimDisplay">
+                1 PVLT
+            </div>
+            <button id="claimBtn" class="btn claim-btn">
+                Claim PVLT
+            </button>
+        </div>
     </div>
-  </div>
-  
-  <div class="wallet-balance">
-    💎 Real PVLT Balance: <span id="walletPvltBalance">0</span>
-  </div>
+    <div class="wallet-info" id="walletInfo">
+        Wallet Not Connected
+    </div>
 </div>
-
-<div class="glow-orb"></div>
-
 <script>
-  // =========  DUAL ENERGY SYSTEM =========
-  // Free user: 50 Energy max, no regeneration
-  // Paid user (connected wallet): 10000 Energy max, with regeneration
-  // Tap: -1 Energy, +1 Point
-  // 100 Points → +1 Burned PVLT, Points reset to 0
-  // BUY ENERGY: Spend 100 REAL PVLT → gain +10000 Energy (caps at max energy for user type)
-  // CLAIM: Convert Burned PVLT to Real PVLT (1-500 per day)
-  
-  (function() {
-    // DOM elements
-    const tapCircle = document.getElementById('tapCircle');
-    const mainConnectBtn = document.getElementById('mainConnectBtn');
-    const mainBtnText = document.getElementById('mainBtnText');
-    const buyEnergyBtn = document.getElementById('buyEnergyBtn');
-    const claimSlider = document.getElementById('claimSlider');
-    const claimAmountDisplay = document.getElementById('claimAmountDisplay');
-    const submitClaimBtn = document.getElementById('submitClaimBtn');
-    const dailyLimitStatus = document.getElementById('dailyLimitStatus');
-    const userTypeBadge = document.getElementById('userTypeBadge');
-    const energyHint = document.getElementById('energyHint');
-    
-    const energySpan = document.getElementById('energyValue');
-    const pointsSpan = document.getElementById('pointsValue');
-    const burnedPvltSpan = document.getElementById('burnedPvltValue');
-    const realPvltSpan = document.getElementById('realPvltValue');
-    const walletPvltBalanceSpan = document.getElementById('walletPvltBalance');
-    
-    // Wallet state
-    let isConnected = false;
-    let currentAccount = null;
-    let isPaidUser = false;  // Paid user = connected wallet
-    
-    // Game Stats
-    let energy = 50;           // Starts at 50 for free users
-    let points = 0;
-    let burnedPvlt = 0;
-    let realPvlt = 0;
-    
-    // Daily claim tracking
-    let lastClaimDate = null;
-    let dailyClaimUsed = false;
-    
-    // Energy regeneration interval (only for paid users)
-    let regenInterval = null;
-    
-    let lastTapPosition = { x: 0, y: 0 };
-    
-    // Get max energy based on user type
-    function getMaxEnergy() {
-      return isPaidUser ? 10000 : 50;
-    }
-    
-    // Update UI based on user type
-    function updateUserTypeUI() {
-      const maxEnergy = getMaxEnergy();
-      if (isPaidUser) {
-        userTypeBadge.style.display = 'inline-block';
-        userTypeBadge.textContent = '⭐ PAID';
-        userTypeBadge.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
-        energyHint.innerHTML = 'tap → -1 energy → +1 point | 100 points → +1 Burned PVLT | ⭐ PAID: 10,000 Energy + Regen';
-        if (energy < maxEnergy && energy < maxEnergy) {
-          // Ensure energy doesn't exceed max
-          if (energy > maxEnergy) energy = maxEnergy;
-          updateStatsUI();
+(() => {
+const tapCircle = document.getElementById("tapCircle");
+const connectBtn = document.getElementById("connectBtn");
+const buyBtn = document.getElementById("buyBtn");
+const claimBtn = document.getElementById("claimBtn");
+const claimSlider = document.getElementById("claimSlider");
+const claimDisplay = document.getElementById("claimDisplay");
+const walletInfo = document.getElementById("walletInfo");
+const energyValue = document.getElementById("energyValue");
+const pointsValue = document.getElementById("pointsValue");
+const burnedValue = document.getElementById("burnedValue");
+const realValue = document.getElementById("realValue");
+let isConnected = false;
+let currentAccount = null;
+let energy = 50;
+let points = 0;
+let burned = 0;
+let real = 0;
+let dailyClaimUsed = false;
+let lastClaimDay = null;
+const MAX_FREE_ENERGY = 50;
+const MAX_PAID_ENERGY = 10000;
+/* ---------- LOAD ---------- */
+function loadGame(){
+    const saved = localStorage.getItem("tapverse_secure_v1");
+    if(saved){
+        try{
+            const data = JSON.parse(saved);
+            energy = Number(data.energy) || 50;
+            points = Number(data.points) || 0;
+            burned = Number(data.burned) || 0;
+            real = Number(data.real) || 0;
+            lastClaimDay = data.lastClaimDay || null;
+            dailyClaimUsed = data.dailyClaimUsed || false;
+        }catch(e){
+            console.log(e);
         }
-      } else {
-        userTypeBadge.style.display = 'inline-block';
-        userTypeBadge.textContent = '🆓 FREE';
-        userTypeBadge.style.background = 'linear-gradient(135deg, #6b7280, #4b5563)';
-        energyHint.innerHTML = 'tap → -1 energy → +1 point | 100 points → +1 Burned PVLT | 🆓 FREE: 50 Energy (No Regen)';
-        if (energy > 50) energy = 50;
-        updateStatsUI();
-      }
-      updateStatsUI();
     }
-    
-    function updateStatsUI() {
-      const maxEnergy = getMaxEnergy();
-      if (energySpan) energySpan.innerText = Math.floor(Math.min(energy, maxEnergy));
-      if (pointsSpan) pointsSpan.innerText = Math.floor(points);
-      if (burnedPvltSpan) burnedPvltSpan.innerText = burnedPvlt;
-      if (realPvltSpan) realPvltSpan.innerText = realPvlt;
-      if (walletPvltBalanceSpan) walletPvltBalanceSpan.innerText = realPvlt;
-      
-      // Cap energy at max
-      if (energy > maxEnergy) {
+    resetDailyClaim();
+    updateUI();
+}
+function saveGame(){
+    localStorage.setItem("tapverse_secure_v1", JSON.stringify({
+        energy,
+        points,
+        burned,
+        real,
+        lastClaimDay,
+        dailyClaimUsed
+    }));
+}
+/* ---------- UI ---------- */
+function updateUI(){
+    const maxEnergy = isConnected
+        ? MAX_PAID_ENERGY
+        : MAX_FREE_ENERGY;
+    if(energy > maxEnergy){
         energy = maxEnergy;
-      }
-      
-      if (energy <= 0) {
-        tapCircle.classList.add('disabled');
-      } else {
-        tapCircle.classList.remove('disabled');
-      }
-      
-      // Buy Energy: needs 100 REAL PVLT and user must be paid? Actually anyone can buy energy if they have real PVLT
-      if (buyEnergyBtn) {
-        if (realPvlt >= 100) {
-          buyEnergyBtn.classList.remove('disabled-action');
-        } else {
-          buyEnergyBtn.classList.add('disabled-action');
-        }
-      }
-      saveData();
     }
-    
-    function updateDailyClaimUI() {
-      if (dailyClaimUsed) {
-        submitClaimBtn.classList.add('disabled-claim');
-        submitClaimBtn.textContent = 'ALREADY CLAIMED TODAY';
-        dailyLimitStatus.innerHTML = '⏳ Already claimed today. Come back tomorrow!';
-        claimSlider.disabled = true;
-      } else {
-        submitClaimBtn.classList.remove('disabled-claim');
-        submitClaimBtn.textContent = 'CLAIM REAL PVLT';
-        dailyLimitStatus.innerHTML = '✅ Convert Burned PVLT to Real PVLT (1-500/day)';
-        claimSlider.disabled = false;
-      }
+    energyValue.textContent = Math.floor(energy);
+    pointsValue.textContent = points;
+    burnedValue.textContent = burned;
+    realValue.textContent = real;
+    if(energy <= 0){
+        tapCircle.classList.add("disabled");
+    }else{
+        tapCircle.classList.remove("disabled");
     }
-    
-    function startRegeneration() {
-      if (regenInterval) clearInterval(regenInterval);
-      if (isPaidUser) {
-        regenInterval = setInterval(() => {
-          const maxEnergy = getMaxEnergy();
-          if (energy < maxEnergy) {
-            energy = Math.min(energy + 1, maxEnergy);
-            updateStatsUI();
-          }
-        }, 15000);
-      }
+    connectBtn.textContent = isConnected
+        ? "Wallet Connected ✓"
+        : "Connect Wallet";
+    saveGame();
+}
+/* ---------- FLOATING FEEDBACK ---------- */
+function feedback(x,y,text,color="#fff"){
+    const div = document.createElement("div");
+    div.className = "feedback";
+    div.textContent = text;
+    div.style.left = x + "px";
+    div.style.top = y + "px";
+    div.style.color = color;
+    document.body.appendChild(div);
+    setTimeout(()=>{
+        div.remove();
+    },700);
+}
+/* ---------- TAP ---------- */
+function tap(e){
+    if(energy <= 0){
+        feedback(
+            window.innerWidth/2,
+            window.innerHeight/2,
+            "No Energy",
+            "#ff5555"
+        );
+        return;
     }
-    
-    function stopRegeneration() {
-      if (regenInterval) {
-        clearInterval(regenInterval);
-        regenInterval = null;
-      }
-    }
-    
-    function setPaidStatus(paid) {
-      isPaidUser = paid;
-      if (isPaidUser) {
-        // Upgrade to 10000 energy (or keep current if higher)
-        if (energy < 10000) energy = 10000;
-        startRegeneration();
-      } else {
-        // Downgrade to 50 energy max
-        if (energy > 50) energy = 50;
-        stopRegeneration();
-      }
-      updateUserTypeUI();
-      updateStatsUI();
-    }
-    
-    function showFloatingFeedback(x, y, text, colorClass = '') {
-      const feedback = document.createElement('div');
-      feedback.className = `tap-feedback ${colorClass}`;
-      feedback.innerHTML = text;
-      feedback.style.left = `${x - 50}px`;
-      feedback.style.top = `${y - 40}px`;
-      document.body.appendChild(feedback);
-      setTimeout(() => {
-        if (feedback && feedback.remove) feedback.remove();
-      }, 600);
-    }
-    
-    function showMilestoneFeedback(x, y) {
-      const feedback = document.createElement('div');
-      feedback.className = 'tap-feedback milestone-feedback';
-      feedback.innerHTML = `✨ 100 POINTS! +1 BURNED PVLT ✨`;
-      feedback.style.left = `${x - 85}px`;
-      feedback.style.top = `${y - 70}px`;
-      document.body.appendChild(feedback);
-      setTimeout(() => {
-        if (feedback && feedback.remove) feedback.remove();
-      }, 800);
-    }
-    
-    // Process tap
-    function processTap() {
-      if (energy <= 0) return false;
-      
-      energy -= 1;
-      points += 1;
-      
-      if (points >= 100) {
-        const burnedEarned = Math.floor(points / 100);
-        burnedPvlt += burnedEarned;
+    energy--;
+    points++;
+    let x = e.clientX || window.innerWidth/2;
+    let y = e.clientY || window.innerHeight/2;
+    feedback(x,y,"+1 ⭐","#FFD966");
+    if(points >= 100){
+        const earned = Math.floor(points / 100);
+        burned += earned;
         points = points % 100;
-        
-        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showMilestoneFeedback(lastTapPosition.x, lastTapPosition.y);
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+${burnedEarned} 🔥 BURNED PVLT`, 'pvl-feedback');
-        }
-      }
-      
-      updateStatsUI();
-      return true;
+        feedback(x,y,"+1 🔥 Burned","#c084fc");
     }
-    
-    // BUY ENERGY: Spend 100 REAL PVLT → +Energy (caps at user's max)
-    function buyEnergy() {
-      if (realPvlt >= 100) {
-        realPvlt -= 100;
-        const maxEnergy = getMaxEnergy();
-        energy = Math.min(energy + 10000, maxEnergy);
-        updateStatsUI();
-        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+10,000 ⚡ ENERGY`, 'energy-feedback');
-        }
-        console.log(`Bought Energy: +10000 | Real PVLT left: ${realPvlt} | Energy: ${energy}`);
-        return true;
-      } else {
-        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Need 100 REAL PVLT`, '');
-        }
-        return false;
-      }
+    if(navigator.vibrate){
+        navigator.vibrate(10);
     }
-    
-    // CLAIM: Convert Burned PVLT to Real PVLT (Daily: 1-500)
-    function claimRealPvlt(amount) {
-      if (dailyClaimUsed) {
-        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Already claimed today!`, '');
-        }
-        return false;
-      }
-      
-      if (amount < 1 || amount > 500) {
-        showFloatingFeedback(lastTapPosition.x || window.innerWidth/2, lastTapPosition.y || window.innerHeight/2, `❌ Amount must be 1-500`, '');
-        return false;
-      }
-      
-      if (burnedPvlt < amount) {
-        if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `❌ Not enough Burned PVLT! You have ${burnedPvlt}`, '');
-        }
-        return false;
-      }
-      
-      burnedPvlt -= amount;
-      realPvlt += amount;
-      dailyClaimUsed = true;
-      lastClaimDate = new Date();
-      
-      updateStatsUI();
-      updateDailyClaimUI();
-      saveData();
-      
-      if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-        showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+${amount} 💎 REAL PVLT (Claimed)`, 'pvl-feedback');
-      }
-      console.log(`Claimed: -${amount} Burned PVLT, +${amount} Real PVLT | Total Real: ${realPvlt}`);
-      return true;
-    }
-    
-    // Tap handler
-    function onTapCircle(e) {
-      e.stopPropagation();
-      
-      if (energy <= 0) {
-        const rect = tapCircle.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        showFloatingFeedback(centerX, centerY, `❌ No Energy`, '');
+    updateUI();
+}
+/* ---------- BUY ENERGY ---------- */
+function buyEnergy(){
+    if(!isConnected){
+        alert("Connect wallet first.");
         return;
-      }
-      
-      tapCircle.classList.add('ripple-effect');
-      setTimeout(() => {
-        tapCircle.classList.remove('ripple-effect');
-      }, 200);
-      
-      let clientX, clientY;
-      if (e.touches) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-      } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      }
-      if (clientX && clientY) {
-        lastTapPosition = { x: clientX, y: clientY };
-      } else {
-        const rect = tapCircle.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        lastTapPosition = { x: centerX, y: centerY };
-      }
-      
-      const success = processTap();
-      if (success) {
-        if (navigator.vibrate) navigator.vibrate(15);
-        showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 ⭐ &nbsp; -1 ⚡`, '');
-        console.log(`Tap! Energy: ${energy} | Points: ${points} | Burned: ${burnedPvlt} | Real: ${realPvlt}`);
-      }
     }
-    
-    // Save/Load
-    function saveData() {
-      const data = {
-        energy, points, burnedPvlt, realPvlt,
-        lastClaimDate: lastClaimDate ? lastClaimDate.toISOString() : null,
-        dailyClaimUsed,
-        isPaidUser
-      };
-      localStorage.setItem('tapverse_data_v3', JSON.stringify(data));
-    }
-    
-    function loadSavedData() {
-      const saved = localStorage.getItem('tapverse_data_v3');
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          energy = data.energy ?? 50;
-          points = data.points ?? 0;
-          burnedPvlt = data.burnedPvlt ?? 0;
-          realPvlt = data.realPvlt ?? 0;
-          lastClaimDate = data.lastClaimDate ? new Date(data.lastClaimDate) : null;
-          dailyClaimUsed = data.dailyClaimUsed ?? false;
-          
-          const today = new Date().toDateString();
-          if (lastClaimDate && new Date(lastClaimDate).toDateString() !== today) {
-            dailyClaimUsed = false;
-            lastClaimDate = null;
-          }
-          if (!lastClaimDate) dailyClaimUsed = false;
-          
-          // If saved as paid user, restore that status (but wallet connection overrides)
-          if (data.isPaidUser && isConnected) {
-            setPaidStatus(true);
-          } else if (!isConnected) {
-            setPaidStatus(false);
-          }
-        } catch(e) { console.warn(e); }
-      }
-      updateStatsUI();
-      updateDailyClaimUI();
-      updateUserTypeUI();
-    }
-    
-    // ---------- Wallet Integration ----------
-    async function connectWallet() {
-      if (!window.ethereum) {
-        console.warn('No Web3 wallet detected.');
-        showFloatingFeedback(window.innerWidth/2, window.innerHeight/2, `⚠️ No wallet detected`, '');
+    if(real < 100){
+        alert("Need 100 Real PVLT.");
         return;
-      }
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        if (accounts && accounts.length > 0) {
-          currentAccount = accounts[0];
-          isConnected = true;
-          setPaidStatus(true);  // Connected wallet = paid user (10000 energy)
-          setButtonConnectedState(true);
-          setupEventListeners();
-          console.log(`Wallet connected: ${currentAccount}`);
-          showFloatingFeedback(lastTapPosition.x || window.innerWidth/2, lastTapPosition.y || window.innerHeight/2, `✅ PAID USER: 10,000 ENERGY`, 'energy-feedback');
-        } else {
-          isConnected = false;
-          setPaidStatus(false);
-          setButtonConnectedState(false);
+    }
+    real -= 100;
+    energy = Math.min(
+        energy + 10000,
+        MAX_PAID_ENERGY
+    );
+    updateUI();
+    feedback(
+        window.innerWidth/2,
+        window.innerHeight/2,
+        "+10,000 ⚡",
+        "#60a5fa"
+    );
+}
+/* ---------- DAILY CLAIM ---------- */
+function resetDailyClaim(){
+    const today = new Date().toDateString();
+    if(lastClaimDay !== today){
+        dailyClaimUsed = false;
+        lastClaimDay = today;
+    }
+}
+function claimPVLT(){
+    resetDailyClaim();
+    if(dailyClaimUsed){
+        alert("Already claimed today.");
+        return;
+    }
+    const amount = Number(claimSlider.value);
+    if(amount < 1 || amount > 500){
+        alert("Claim must be 1-500.");
+        return;
+    }
+    if(burned < amount){
+        alert("Not enough Burned PVLT.");
+        return;
+    }
+    burned -= amount;
+    real += amount;
+    dailyClaimUsed = true;
+    updateUI();
+    feedback(
+        window.innerWidth/2,
+        window.innerHeight/2,
+        "+" + amount + " 💎",
+        "#a855f7"
+    );
+}
+/* ---------- WALLET ---------- */
+async function connectWallet(){
+    if(!window.ethereum){
+        alert("No wallet detected.");
+        return;
+    }
+    try{
+        const chainId = await ethereum.request({
+            method:"eth_chainId"
+        });
+        if(chainId !== "0x89"){
+            alert("Switch to Polygon Mainnet.");
+            return;
         }
-      } catch (err) {
-        console.error('Connection error:', err);
-        if (!isConnected) {
-          setPaidStatus(false);
-          setButtonConnectedState(false);
-        }
-      }
-    }
-    
-    function disconnectWallet() {
-      isConnected = false;
-      currentAccount = null;
-      setPaidStatus(false);
-      setButtonConnectedState(false);
-      showFloatingFeedback(lastTapPosition.x || window.innerWidth/2, lastTapPosition.y || window.innerHeight/2, `🆓 FREE USER: 50 ENERGY`, '');
-    }
-    
-    function setButtonConnectedState(connected) {
-      if (mainBtnText) {
-        mainBtnText.innerText = connected ? 'Wallet Connected ✓ (10,000 Energy)' : 'Connect Wallet (Free: 50 Energy)';
-      }
-    }
-    
-    function setupEventListeners() {
-      if (!window.ethereum) return;
-      if (window._accountsChangedHandler) {
-        window.ethereum.removeListener('accountsChanged', window._accountsChangedHandler);
-      }
-      const accountsChangedHandler = (accounts) => {
-        if (accounts && accounts.length > 0) {
-          currentAccount = accounts[0];
-          if (!isConnected) {
+        const accounts = await ethereum.request({
+            method:"eth_requestAccounts"
+        });
+        if(accounts.length){
+            currentAccount = accounts[0];
             isConnected = true;
-            setPaidStatus(true);
-            setButtonConnectedState(true);
-          }
-        } else {
-          disconnectWallet();
+            walletInfo.textContent =
+                "Connected: " +
+                currentAccount.slice(0,6) +
+                "..." +
+                currentAccount.slice(-4);
+            /* FIXED:
+               no free 10k refill exploit
+            */
+            if(energy < 50){
+                energy = 50;
+            }
+            updateUI();
         }
-      };
-      window.ethereum
+    }catch(err){
+        console.log(err);
+    }
+}
+/* ---------- AUTO RECONNECT ---------- */
+async function autoReconnect(){
+    if(!window.ethereum) return;
+    try{
+        const accounts = await ethereum.request({
+            method:"eth_accounts"
+        });
+        if(accounts.length){
+            const chainId = await ethereum.request({
+                method:"eth_chainId"
+            });
+            if(chainId === "0x89"){
+                isConnected = true;
+                currentAccount = accounts[0];
+                walletInfo.textContent =
+                    "Connected: " +
+                    currentAccount.slice(0,6) +
+                    "..." +
+                    currentAccount.slice(-4);
+                updateUI();
+            }
+        }
+    }catch(err){
+        console.log(err);
+    }
+}
+/* ---------- EVENTS ---------- */
+claimSlider.addEventListener("input",()=>{
+    claimDisplay.textContent =
+        claimSlider.value + " PVLT";
+});
+tapCircle.addEventListener("pointerdown",tap);
+connectBtn.addEventListener("click",connectWallet);
+buyBtn.addEventListener("click",buyEnergy);
+claimBtn.addEventListener("click",claimPVLT);
+/* ---------- INIT ---------- */
+loadGame();
+autoReconnect();
+})();
+</script>
+</body>
+</html>
