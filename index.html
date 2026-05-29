@@ -232,7 +232,7 @@
       background-repeat: no-repeat;
     }
 
-    /* energy and token action buttons row */
+    /* resource action buttons row */
     .resource-buttons {
       display: flex;
       gap: 1rem;
@@ -400,7 +400,7 @@
   </div>
   <div class="hint-text">tap → -1 energy → +1 point | 100 points → +1 token & points reset</div>
   
-  <!-- Button Group: Connect Wallet + Energy/Token Buttons -->
+  <!-- Button Group: Connect Wallet + Buy/Claim Buttons -->
   <div class="button-group">
     <!-- Connect Wallet Button -->
     <button id="mainConnectBtn" class="main-connect-btn">
@@ -408,31 +408,31 @@
       <span id="mainBtnText">Connect Wallet</span>
     </button>
     
-    <!-- Energy and Token Action Buttons -->
+    <!-- Buy Claim Buttons (Energy and Token) -->
     <div class="resource-buttons">
       <button id="buyEnergyBtn" class="action-btn">
         <span class="btn-emoji">⚡</span>
-        <span>+ Energy</span>
+        <span>Buy Claim</span>
       </button>
       <button id="buyTokenBtn" class="action-btn">
         <span class="btn-emoji">💎</span>
-        <span>+ Token</span>
+        <span>Buy Claim</span>
       </button>
     </div>
-    <div class="hint-text" style="margin-top: -0.25rem; font-size: 0.7rem;">spend points to boost resources</div>
+    <div class="hint-text" style="margin-top: -0.25rem; font-size: 0.7rem;">spend points to claim resources</div>
   </div>
 </div>
 
 <div class="glow-orb"></div>
 
 <script>
-  // =========  ENERGY, POINTS & TOKEN SYSTEM WITH LOOP & RESOURCE BUTTONS =========
+  // =========  ENERGY, POINTS & TOKEN SYSTEM WITH LOOP & BUY CLAIM BUTTONS =========
   // Total Energy: 10,000 (starting)
   // Each tap: Energy -1, Points +1
   // When Points reaches 100: Award +1 Token, then Points reset to 0 (loop)
   // Energy regen: +1 every 15 seconds (max 10000)
-  // NEW: Energy Button: Spend 50 Points to gain +20 Energy
-  //      Token Button: Spend 200 Points to gain +1 Token
+  // BUY CLAIM (Energy): Spend 50 Points to gain +20 Energy
+  // BUY CLAIM (Token):  Spend 200 Points to gain +1 Token
   // Points cannot go negative, buttons disable when insufficient points.
   
   (function() {
@@ -473,7 +473,7 @@
         tapCircle.classList.remove('disabled');
       }
       
-      // Update action buttons state based on points
+      // Update Buy Claim buttons state based on points
       if (buyEnergyBtn) {
         if (points >= 50) {
           buyEnergyBtn.classList.remove('disabled-action');
@@ -546,17 +546,17 @@
       return true;
     }
     
-    // Buy Energy: Spend 50 points to gain 20 energy
-    function buyEnergy() {
+    // Buy Claim Energy: Spend 50 points to gain 20 energy
+    function buyClaimEnergy() {
       if (points >= 50) {
         points -= 50;
         energy += 20;
         if (energy > 10000) energy = 10000;
         updateStatsUI();
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+20 ⚡ ENERGY`, 'energy-feedback');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+20 ⚡ ENERGY (Claimed)`, 'energy-feedback');
         }
-        console.log(`Bought Energy: +20 | Points left: ${points} | Energy: ${energy}`);
+        console.log(`Buy Claim Energy: +20 | Points left: ${points} | Energy: ${energy}`);
         return true;
       } else {
         // show insufficient points feedback
@@ -567,16 +567,16 @@
       }
     }
     
-    // Buy Token: Spend 200 points to gain 1 token
-    function buyToken() {
+    // Buy Claim Token: Spend 200 points to gain 1 token
+    function buyClaimToken() {
       if (points >= 200) {
         points -= 200;
         tokens += 1;
         updateStatsUI();
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
-          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 💎 TOKEN`, 'token-feedback');
+          showFloatingFeedback(lastTapPosition.x, lastTapPosition.y, `+1 💎 TOKEN (Claimed)`, 'token-feedback');
         }
-        console.log(`Bought Token: +1 | Points left: ${points} | Tokens: ${tokens}`);
+        console.log(`Buy Claim Token: +1 | Points left: ${points} | Tokens: ${tokens}`);
         return true;
       } else {
         if (lastTapPosition.x !== 0 || lastTapPosition.y !== 0) {
@@ -749,14 +749,14 @@
     if (buyEnergyBtn) {
       buyEnergyBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        buyEnergy();
+        buyClaimEnergy();
       });
     }
     
     if (buyTokenBtn) {
       buyTokenBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        buyToken();
+        buyClaimToken();
       });
     }
     
@@ -782,7 +782,7 @@
     initGame();
     checkInitialConnection();
     
-    console.log("Ready: Tap to earn | Energy/Token buttons below connect wallet");
+    console.log("Ready: Tap to earn | Buy Claim buttons below connect wallet");
   })();
 </script>
 </body>
