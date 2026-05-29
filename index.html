@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>PepeVolt | PVLT Token on Polygon</title>
+<title>PepeVolt | PVLT Token Game</title>
 
 <style>
 *{
@@ -236,58 +236,68 @@ body{
 <script type="module">
   import { EthereumProvider } from "@walletconnect/ethereum-provider";
 
-  // ========== YOUR PVLT TOKEN CONFIGURATION ==========
-  // Your PVLT token address on Polygon
+  // ========== YOUR CONTRACT ADDRESSES ==========
   const PVLT_TOKEN_ADDRESS = "0x5f7df6862f439b691507dc20069f4f73a37cb08b";
+  const TREASURY_VOLT = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
+  const PEPEVOLT_GAME = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
   
-  // Your wallet address (for verification)
-  const YOUR_WALLET = "0x4251Ef24D10bf637494C173621F5f84262e9Bda5";
-  
-  // Game wallet where PVLT is sent when buying energy (burn address for now)
-  const GAME_WALLET = "0x41A90E82d8B06819B84277f74fB51bdd5DaE03Ff";
-  
+  // ERC20 ABI (standard token functions)
   const PVLT_ABI = [
     "function balanceOf(address owner) view returns (uint256)",
     "function transfer(address to, uint256 amount) returns (bool)",
+    "function transferFrom(address from, address to, uint256 amount) returns (bool)",
+    "function approve(address spender, uint256 amount) returns (bool)",
     "function decimals() view returns (uint8)",
     "function symbol() view returns (string)"
   ];
   
   let tokenContract = null;
-
+  let userAccount = null;
+  let provider = null;
+  let signer = null;
+  
   // ========== GAME STATE ==========
   let energy = 50;
   let points = 0;
   let inGamePvlt = 0;
-  let userAccount = null;
-  let provider = null;
-  let signer = null;
   let realWalletPvltBalance = 0;
   let tokenDecimals = 18;
 
-  // ========== FETCH TOKEN INFO & REAL WALLET PVLT BALANCE ==========
-  async function fetchTokenInfo() {
-    if (!tokenContract) return;
-    try {
-      const decimals = await tokenContract.decimals();
-      tokenDecimals = decimals;
-      const symbol = await tokenContract.symbol();
-      console.log(`✅ PVLT Token: ${symbol} (${tokenDecimals} decimals)`);
-    } catch(e) {
-      console.warn("Token info fetch error:", e);
-    }
-  }
-  
+  // ========== DOM ELEMENTS ==========
+  const connectBtn = document.getElementById('connectBtn');
+  const walletStatusDiv = document.getElementById('walletStatus');
+  const energySpan = document.getElementById('energy');
+  const pointsSpan = document.getElementById('points');
+  const pvltSpan = document.getElementById('pvlt');
+  const tapCircle = document.getElementById('tapBtn');
+  const buyEnergyBtn = document.getElementById('buyEnergyBtn');
+  const claimPvltBtn = document.getElementById('claimPvltBtn');
+
+  // ========== FETCH REAL WALLET PVLT BALANCE ==========
   async function fetchRealWalletBalance() {
     if (!userAccount) return 0;
     if (!tokenContract) return 0;
     try {
       const balance = await tokenContract.balanceOf(userAccount);
       realWalletPvltBalance = parseFloat(ethers.utils.formatUnits(balance, tokenDecimals));
+      console.log(`💰 Real wallet PVLT balance: ${realWalletPvltBalance}`);
       return realWalletPvltBalance;
     } catch(e) {
       console.warn("Balance fetch error:", e);
       return 0;
+    }
+  }
+
+  // ========== FETCH TOKEN INFO ==========
+  async function fetchTokenInfo() {
+    if (!tokenContract) return;
+    try {
+      const decimals = await tokenContract.decimals();
+      tokenDecimals = decimals;
+      const symbol = await tokenContract.symbol();
+      console.log(`✅ PVLT Token: ${symbol} (${tokenDecimals} decimals) at ${PVLT_TOKEN_ADDRESS}`);
+    } catch(e) {
+      console.warn("Token info fetch error:", e);
     }
   }
 
@@ -323,14 +333,15 @@ body{
             <div class="balance-amount">${Math.floor(inGamePvlt)}</div>
           </div>
           <div class="balance-item">
-            <div class="balance-label">💎 Real Wallet PVLT</div>
-            <div class="balance-amount">${realWalletPvltBalance.toFixed(2)}</div>
+            <div class="balance-label">💎 Wallet PVLT</div>
+            <div class="balance-amount">${realWalletPvltBalance.toFixed(4)}</div>
           </div>
           <div class="balance-item">
             <div class="balance-label">⚡ Energy</div>
             <div class="balance-amount">${Math.floor(energy)}/10000</div>
           </div>
         </div>
+        <div style="font-size:9px; margin-top:4px;">🏦 Treasury: ${TREASURY_VOLT.slice(0,6)}...${TREASURY_VOLT.slice(-4)}</div>
       `;
     } else {
       walletStatusDiv.innerHTML = `⚡ Free mode: ${Math.floor(energy)}/10000 Energy (connect wallet to earn & claim PVLT)`;
@@ -338,16 +349,6 @@ body{
     
     saveGame();
   }
-
-  // ========== DOM ELEMENTS ==========
-  const connectBtn = document.getElementById('connectBtn');
-  const walletStatusDiv = document.getElementById('walletStatus');
-  const energySpan = document.getElementById('energy');
-  const pointsSpan = document.getElementById('points');
-  const pvltSpan = document.getElementById('pvlt');
-  const tapCircle = document.getElementById('tapBtn');
-  const buyEnergyBtn = document.getElementById('buyEnergyBtn');
-  const claimPvltBtn = document.getElementById('claimPvltBtn');
 
   function saveGame() {
     const data = { energy, points, inGamePvlt };
@@ -403,7 +404,7 @@ body{
     if (navigator.vibrate) navigator.vibrate(20);
   }
 
-  // ========== BUY ENERGY: Spend 100 REAL PVLT from wallet ==========
+  // ========== BUY ENERGY: Spend 100 REAL PVLT → Send to Treasury ==========
   async function buyEnergy() {
     if (!userAccount) {
       alert('🔗 Please connect wallet first');
@@ -416,7 +417,7 @@ body{
     
     await fetchRealWalletBalance();
     if (realWalletPvltBalance < 100) {
-      alert(`❌ Need 100 PVLT in your wallet to buy 10,000 Energy.\nYour wallet has: ${realWalletPvltBalance.toFixed(2)} PVLT`);
+      alert(`❌ Need 100 PVLT in your wallet to buy 10,000 Energy.\nYour wallet has: ${realWalletPvltBalance.toFixed(4)} PVLT`);
       return;
     }
 
@@ -424,7 +425,8 @@ body{
 
     try {
       showFloating(window.innerWidth/2, window.innerHeight/2, '⏳ Processing purchase...', '#ffaa44');
-      const tx = await tokenContract.transfer(GAME_WALLET, amountInWei);
+      // Transfer PVLT to Treasury address
+      const tx = await tokenContract.transfer(TREASURY_VOLT, amountInWei);
       alert(`⏳ Buy Energy transaction submitted!\nHash: ${tx.hash}\nWaiting for confirmation...`);
       await tx.wait(1);
       await fetchRealWalletBalance();
@@ -458,6 +460,8 @@ body{
 
     try {
       showFloating(window.innerWidth/2, window.innerHeight/2, '⏳ Claiming PVLT to wallet...', '#c084fc');
+      // Transfer from Treasury/Game wallet to user (requires approval or mint)
+      // For this to work, the Treasury needs to approve or you need a claim function
       const tx = await tokenContract.transfer(userAccount, amountInWei);
       alert(`⏳ Claim transaction submitted!\nHash: ${tx.hash}\nWaiting for confirmation...`);
       await tx.wait(1);
@@ -514,7 +518,10 @@ body{
       
       console.log(`✅ Connected to: ${userAccount}`);
       console.log(`✅ PVLT Token: ${PVLT_TOKEN_ADDRESS}`);
+      console.log(`✅ Treasury: ${TREASURY_VOLT}`);
+      console.log(`✅ Game Wallet: ${PEPEVOLT_GAME}`);
       
+      // Listen for account changes
       wcProvider.on("accountsChanged", async (accs) => {
         if (accs.length === 0) {
           userAccount = null;
@@ -571,8 +578,9 @@ body{
   loadGame();
   
   console.log("✅ PepeVolt is ready!");
-  console.log(`📋 PVLT Token Address: ${PVLT_TOKEN_ADDRESS}`);
-  console.log(`👛 Your Wallet: ${YOUR_WALLET}`);
+  console.log(`📋 PVLT Token: ${PVLT_TOKEN_ADDRESS}`);
+  console.log(`🏦 TreasuryVolt: ${TREASURY_VOLT}`);
+  console.log(`🎮 PepeVoltGame: ${PEPEVOLT_GAME}`);
 </script>
 </body>
 </html>
