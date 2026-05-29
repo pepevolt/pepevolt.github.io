@@ -3,7 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>PepeVolt ⚡ | Energy Tap Game</title>
+<title>PepeVolt ⚡ | Web3 WalletConnect</title>
+<!-- WalletConnect SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/modal-sign-react@2.0.0/dist/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3wallet@1.10.0/dist/index.umd.js"></script>
+<!-- Ethers for blockchain interactions -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <style>
   * {
     margin: 0;
@@ -31,7 +36,7 @@
     backdrop-filter: blur(2px);
   }
 
-  /* ----- GLASS TOP NAVIGATION ----- */
+  /* GLASS TOP NAVIGATION */
   .top-nav {
     width: 100%;
     padding: 18px 20px 12px 20px;
@@ -100,13 +105,30 @@
     transition: all 0.2s;
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(250, 204, 21, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   #connectBtn:active {
     transform: scale(0.96);
   }
 
-  /* ----- CENTER TAP ZONE (ENERGY CORE) ----- */
+  /* wallet address badge */
+  .wallet-badge {
+    background: #22c55e20;
+    border-radius: 60px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid #22c55e50;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* CENTER TAP ZONE */
   .center {
     flex: 1;
     display: flex;
@@ -176,7 +198,6 @@
     }
   }
 
-  /* PVLT pop effect */
   .float-pvlt {
     color: #c084fc;
     text-shadow: 0 0 6px #a855f7;
@@ -184,7 +205,7 @@
     font-weight: bold;
   }
 
-  /* BOTTOM FIXED PANEL (MODERN) */
+  /* BOTTOM FIXED PANEL */
   .bottom-fixed {
     position: fixed;
     bottom: 0;
@@ -245,7 +266,6 @@
     border: 0.5px solid #22c55e60;
   }
 
-  /* ACTION BUTTONS (premium style) */
   .action-buttons {
     width: 100%;
     display: flex;
@@ -283,7 +303,6 @@
     border-bottom: 2px solid #d8b4fe;
   }
 
-  /* NOTIFICATION TOAST */
   .toast-msg {
     position: fixed;
     bottom: 180px;
@@ -322,7 +341,6 @@
     }
   }
 
-  /* adjustments for mobile */
   @media (max-width: 560px) {
     .tap-area {
       width: 220px;
@@ -338,13 +356,10 @@
     }
     #connectBtn {
       width: 100%;
-      text-align: center;
+      justify-content: center;
     }
     .value {
       font-size: 20px;
-    }
-    .card {
-      padding: 10px 6px;
     }
     .action-buttons button {
       height: 50px;
@@ -359,7 +374,6 @@
 <body>
 
 <div class="app">
-  <!-- TOP SECTION with glassmorphism -->
   <div class="top-nav">
     <div class="stats">
       <div class="card">
@@ -381,12 +395,11 @@
         </div>
       </div>
     </div>
-    <button id="connectBtn" class="glow-on-hover">
+    <button id="connectBtn">
       🔌 CONNECT WALLET
     </button>
   </div>
 
-  <!-- CENTER TAP ZONE (Energy Core) -->
   <div class="center">
     <div class="tap-area tap-disabled" id="tapButton">
       ⚡ TAP ⚡
@@ -394,7 +407,6 @@
   </div>
 </div>
 
-<!-- BOTTOM FIXED PANEL (modern) -->
 <div class="bottom-fixed">
   <div class="energy-section">
     <div class="energy-bar">
@@ -407,22 +419,21 @@
     </div>
   </div>
   <div class="action-buttons">
-    <button class="buy-btn" id="buyEnergyBtn">
-      💰 BUY 10K ENERGY
-    </button>
-    <button class="claim-btn" id="claimPvltBtn">
-      🎁 CLAIM PVLT
-    </button>
+    <button class="buy-btn" id="buyEnergyBtn">💰 BUY 10K ENERGY</button>
+    <button class="claim-btn" id="claimPvltBtn">🎁 CLAIM PVLT</button>
   </div>
 </div>
 
 <script>
-  // ----- GAME STATE -----
+  // -------------------- GAME STATE --------------------
   let connected = false;
   let maxEnergy = 50;
   let energy = 50;
   let points = 0;
   let pvlt = 0;
+  let userWalletAddress = null;
+  let web3Provider = null;
+  let signer = null;
 
   // DOM Elements
   const energySpan = document.getElementById("energy");
@@ -436,21 +447,32 @@
   const claimBtn = document.getElementById("claimPvltBtn");
   const maxEnergyLabelSpan = document.getElementById("maxEnergyLabel");
 
-  // Helper: update all UI
+  // Helper: update UI
   function updateUI() {
     energySpan.innerText = Math.floor(energy);
     maxEnergySpan.innerText = Math.floor(maxEnergy);
     pointsSpan.innerText = Math.floor(points);
     pvltSpan.innerText = Math.floor(pvlt);
     maxEnergyLabelSpan.innerText = Math.floor(maxEnergy);
-
     let percent = (energy / maxEnergy) * 100;
     if (percent < 0) percent = 0;
     if (percent > 100) percent = 100;
     energyFillDiv.style.width = percent + "%";
   }
 
-  // Show floating animation (custom +1 or reward)
+  // Show toast notifications
+  function showToast(message, isError = false) {
+    const toast = document.createElement("div");
+    toast.className = "toast-msg";
+    toast.innerText = message;
+    if (isError) toast.style.color = "#ffb347";
+    toast.style.background = "#0f172ae6";
+    toast.style.border = isError ? "1px solid #f97316" : "1px solid #facc15";
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  }
+
+  // Floating animation
   function showFloatingText(text, x, y, isPVLT = false) {
     const floatEl = document.createElement("div");
     floatEl.className = "float";
@@ -462,33 +484,251 @@
     setTimeout(() => floatEl.remove(), 850);
   }
 
-  // Show toast message (alert replacement)
-  function showToast(message, isError = false) {
-    const toast = document.createElement("div");
-    toast.className = "toast-msg";
-    toast.innerText = message;
-    if (isError) toast.style.color = "#ffb347";
-    toast.style.background = "#0f172ae6";
-    toast.style.border = isError ? "1px solid #f97316" : "1px solid #facc15";
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 1800);
+  // -------------------- WALLETCONNECT INTEGRATION --------------------
+  let web3wallet = null;
+  let session = null;
+  let walletConnectInitialized = false;
+
+  async function initWalletConnect() {
+    if (walletConnectInitialized) return;
+    try {
+      // Project ID from user
+      const projectId = "1731f99148b9cf6107dee70b6efb14b7";
+      
+      // Create Web3Wallet client
+      const { Web3Wallet } = window;
+      if (!Web3Wallet) {
+        console.warn("Web3Wallet not loaded, fallback to ethers modal?");
+        showToast("Loading WalletConnect... retry", true);
+        return;
+      }
+      
+      web3wallet = await Web3Wallet.init({
+        projectId: projectId,
+        metadata: {
+          name: "PepeVolt",
+          description: "Tap to earn PVLT tokens",
+          url: window.location.origin,
+          icons: ["https://walletconnect.com/walletconnect-logo.png"]
+        }
+      });
+      
+      walletConnectInitialized = true;
+      console.log("WalletConnect client ready");
+      
+      // Check for existing session
+      const sessions = web3wallet.getActiveSessions();
+      const sessionValues = Object.values(sessions);
+      if (sessionValues.length > 0) {
+        session = sessionValues[0];
+        await onWalletConnected(session);
+      }
+    } catch (err) {
+      console.error("WalletConnect init error:", err);
+      showToast("Failed to init WalletConnect SDK", true);
+    }
   }
 
-  // ----- Connect Wallet logic -----
-  connectBtn.onclick = () => {
-    if (!connected) {
+  async function onWalletConnected(wcSession) {
+    try {
+      const accounts = wcSession.namespaces.eip155?.accounts;
+      if (!accounts || accounts.length === 0) throw new Error("No accounts");
+      const address = accounts[0].split(":")[2];
+      userWalletAddress = address;
       connected = true;
-      connectBtn.innerHTML = "✅ CONNECTED";
+      
+      // Update UI
+      connectBtn.innerHTML = `🟢 ${address.slice(0,6)}...${address.slice(-4)}`;
       connectBtn.style.background = "linear-gradient(105deg, #2b5a3a, #166534)";
       tapButton.classList.remove("tap-disabled");
-      showToast("⚡ Wallet connected! Start tapping!", false);
-    } else {
-      showToast("Already connected ⚡", false);
+      
+      // Setup ethers provider for potential future transactions
+      if (window.ethereum) {
+        web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = web3Provider.getSigner();
+      }
+      
+      showToast(`Wallet connected: ${address.slice(0,6)}...${address.slice(-4)}`, false);
+      updateUI();
+    } catch (err) {
+      console.error("Connection error:", err);
+      showToast("Connection failed", true);
     }
-  };
+  }
 
-  // ----- TAP MECHANICS (improved + floating feedback) -----
-  const getTapCoords = (e) => {
+  async function connectWithWalletConnect() {
+    if (!walletConnectInitialized) {
+      await initWalletConnect();
+      if (!web3wallet) {
+        showToast("WalletConnect SDK still loading, try again", true);
+        return;
+      }
+    }
+    
+    try {
+      // Required chains: Ethereum mainnet, Polygon, BSC etc.
+      const requiredNamespaces = {
+        eip155: {
+          methods: ["eth_sendTransaction", "eth_sign", "personal_sign"],
+          chains: ["eip155:1", "eip155:137", "eip155:56"],
+          events: ["chainChanged", "accountsChanged"]
+        }
+      };
+      
+      const { uri, approval } = await web3wallet.connect({
+        requiredNamespaces
+      });
+      
+      if (uri) {
+        // Open WalletConnect modal (Web3Modal style with QR code)
+        // We'll create a simple floating modal since we are not using external lib.
+        showWalletConnectModal(uri);
+      }
+      
+      // Wait for session approval
+      session = await approval();
+      await onWalletConnected(session);
+      closeWalletConnectModal();
+    } catch (err) {
+      console.error("Connection rejected or error:", err);
+      closeWalletConnectModal();
+      showToast("Connection cancelled or error", true);
+    }
+  }
+
+  // Modal for QR code (WalletConnect style)
+  let modalOverlay = null;
+  function showWalletConnectModal(uri) {
+    if (modalOverlay) closeWalletConnectModal();
+    modalOverlay = document.createElement("div");
+    modalOverlay.style.position = "fixed";
+    modalOverlay.style.top = "0";
+    modalOverlay.style.left = "0";
+    modalOverlay.style.width = "100%";
+    modalOverlay.style.height = "100%";
+    modalOverlay.style.backgroundColor = "rgba(0,0,0,0.85)";
+    modalOverlay.style.backdropFilter = "blur(8px)";
+    modalOverlay.style.zIndex = "10000";
+    modalOverlay.style.display = "flex";
+    modalOverlay.style.flexDirection = "column";
+    modalOverlay.style.alignItems = "center";
+    modalOverlay.style.justifyContent = "center";
+    modalOverlay.style.fontFamily = "sans-serif";
+    
+    const modalCard = document.createElement("div");
+    modalCard.style.backgroundColor = "#111827";
+    modalCard.style.borderRadius = "32px";
+    modalCard.style.padding = "24px";
+    modalCard.style.maxWidth = "340px";
+    modalCard.style.width = "90%";
+    modalCard.style.textAlign = "center";
+    modalCard.style.border = "1px solid #facc15";
+    modalCard.style.boxShadow = "0 25px 40px black";
+    
+    const title = document.createElement("h3");
+    title.innerText = "WalletConnect";
+    title.style.color = "#facc15";
+    title.style.marginBottom = "16px";
+    modalCard.appendChild(title);
+    
+    const qrContainer = document.createElement("div");
+    qrContainer.id = "walletconnect-qr";
+    qrContainer.style.display = "flex";
+    qrContainer.style.justifyContent = "center";
+    qrContainer.style.margin = "16px 0";
+    modalCard.appendChild(qrContainer);
+    
+    // Generate QR code using embedded library or fallback
+    // We'll use a simple QR code lib via CDN
+    if (window.QRCode) {
+      new QRCode(qrContainer, {
+        text: uri,
+        width: 220,
+        height: 220,
+        colorDark: "#facc15",
+        colorLight: "#1f2937",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      const qrText = document.createElement("p");
+      qrText.innerText = "Scan with WalletConnect app:";
+      qrText.style.color = "white";
+      qrContainer.appendChild(qrText);
+      const uriSpan = document.createElement("span");
+      uriSpan.innerText = uri.slice(0, 40) + "...";
+      uriSpan.style.fontSize = "12px";
+      uriSpan.style.wordBreak = "break-all";
+      uriSpan.style.color = "#aaa";
+      qrContainer.appendChild(uriSpan);
+    }
+    
+    const instruction = document.createElement("p");
+    instruction.innerText = "Open WalletConnect compatible wallet & scan QR";
+    instruction.style.fontSize = "13px";
+    instruction.style.marginTop = "12px";
+    instruction.style.color = "#cbd5e1";
+    modalCard.appendChild(instruction);
+    
+    const closeBtn = document.createElement("button");
+    closeBtn.innerText = "Cancel";
+    closeBtn.style.marginTop = "20px";
+    closeBtn.style.background = "#ef4444";
+    closeBtn.style.border = "none";
+    closeBtn.style.padding = "10px 20px";
+    closeBtn.style.borderRadius = "40px";
+    closeBtn.style.fontWeight = "bold";
+    closeBtn.style.color = "white";
+    closeBtn.style.cursor = "pointer";
+    closeBtn.onclick = () => {
+      closeWalletConnectModal();
+      if (web3wallet) web3wallet.disconnectSession?.();
+    };
+    modalCard.appendChild(closeBtn);
+    
+    modalOverlay.appendChild(modalCard);
+    document.body.appendChild(modalOverlay);
+    
+    // Dynamically load QRCode if not present
+    if (typeof QRCode === "undefined") {
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js";
+      script.onload = () => {
+        if (modalOverlay && uri) {
+          const container = document.getElementById("walletconnect-qr");
+          if (container) {
+            container.innerHTML = "";
+            new QRCode(container, {
+              text: uri,
+              width: 220,
+              height: 220,
+              colorDark: "#facc15",
+              colorLight: "#1f2937"
+            });
+          }
+        }
+      };
+      document.head.appendChild(script);
+    }
+  }
+  
+  function closeWalletConnectModal() {
+    if (modalOverlay) {
+      modalOverlay.remove();
+      modalOverlay = null;
+    }
+  }
+  
+  // Connect button handler: open WalletConnect modal
+  connectBtn.onclick = async () => {
+    if (connected) {
+      showToast(`Already connected: ${userWalletAddress?.slice(0,6)}...`, false);
+      return;
+    }
+    await connectWithWalletConnect();
+  };
+  
+  // -------------------- TAP MECHANICS --------------------
+  function getTapCoords(e) {
     let clientX, clientY;
     if (e.touches) {
       clientX = e.touches[0].clientX;
@@ -498,165 +738,86 @@
       clientY = e.clientY;
     }
     return { x: clientX, y: clientY };
-  };
-
+  }
+  
   function handleTap(e) {
     if (!connected) {
-      showToast("🔌 Connect wallet first to earn", true);
+      showToast("🔌 Connect wallet first to earn PVLT", true);
       return;
     }
     if (energy <= 0) {
-      showToast("💔 No Energy! Wait for recharge or buy more.", true);
+      showToast("💔 No Energy! Wait or buy more.", true);
       return;
     }
-
-    // consume energy & gain point
     energy--;
-    let gainedPoints = 1;
-    points += gainedPoints;
-
-    // PVLT conversion: every 100 points = 1 PVLT
+    points++;
     let pvltEarned = 0;
     if (points >= 100) {
-      let earned = Math.floor(points / 100);
-      pvltEarned = earned;
-      pvlt += earned;
+      pvltEarned = Math.floor(points / 100);
+      pvlt += pvltEarned;
       points = points % 100;
     }
-
     updateUI();
-
-    // Get coordinates and show floating number
     const coords = getTapCoords(e);
     showFloatingText("+1 ⚡", coords.x, coords.y, false);
-
-    // If PVLT earned, show extra indicator
     if (pvltEarned > 0) {
       showFloatingText(`+${pvltEarned} 🐸 PVLT`, coords.x - 20, coords.y - 35, true);
     }
-
-    // Visual micro shake effect on tap area
     tapButton.style.transform = "scale(0.93)";
-    setTimeout(() => {
-      if (tapButton) tapButton.style.transform = "";
-    }, 80);
+    setTimeout(() => { if (tapButton) tapButton.style.transform = ""; }, 80);
   }
-
-  // Event listeners for tap (mouse + touch)
+  
   tapButton.addEventListener("click", handleTap);
-  tapButton.addEventListener("touchstart", (e) => {
-    e.preventDefault();
-    handleTap(e);
-  });
-
-  // ----- Energy Regeneration (every 3 sec) -----
+  tapButton.addEventListener("touchstart", (e) => { e.preventDefault(); handleTap(e); });
+  
+  // Energy regen
   setInterval(() => {
-    if (!connected) return;
-    if (energy < maxEnergy) {
+    if (connected && energy < maxEnergy) {
       energy = Math.min(energy + 1, maxEnergy);
       updateUI();
     }
   }, 3000);
-
-  // ----- BUY ENERGY FUNCTION (improved UX)-----
+  
+  // Buy energy
   function buyEnergy() {
-    if (!connected) {
-      showToast("🔌 Connect your wallet first!", true);
-      return;
-    }
-    if (pvlt < 100) {
-      showToast(`❌ Not enough PVLT! Need 100 PVLT (you have ${Math.floor(pvlt)})`, true);
-      return;
-    }
-    // cost 100 PVLT
+    if (!connected) { showToast("Connect wallet first", true); return; }
+    if (pvlt < 100) { showToast(`Need 100 PVLT (you have ${Math.floor(pvlt)})`, true); return; }
     pvlt -= 100;
-    const energyBoost = 10000;
-    energy += energyBoost;
-    maxEnergy += energyBoost;
+    energy += 10000;
+    maxEnergy += 10000;
     updateUI();
-    showToast(`✨ +10,000 ENERGY! Max energy increased!`, false);
-    // special effect
-    const tapRect = tapButton.getBoundingClientRect();
-    const centerX = tapRect.left + tapRect.width / 2;
-    const centerY = tapRect.top + tapRect.height / 2;
-    showFloatingText("💥 +10k ENERGY", centerX, centerY, false);
+    showToast(`✨ +10,000 ENERGY! Max increased!`, false);
+    const rect = tapButton.getBoundingClientRect();
+    showFloatingText("💥 +10k ENERGY", rect.left + rect.width/2, rect.top + rect.height/2, false);
   }
-
-  // ----- CLAIM PVLT (simulate reward claim)-----
+  
   function claimPvlt() {
-    if (!connected) {
-      showToast("Connect wallet to claim tokens", true);
-      return;
-    }
-    if (pvlt < 10) {
-      showToast(`🐸 Need at least 10 PVLT to claim. Current: ${Math.floor(pvlt)}`, true);
-      return;
-    }
+    if (!connected) { showToast("Connect wallet to claim", true); return; }
+    if (pvlt < 10) { showToast(`Need at least 10 PVLT. Current: ${Math.floor(pvlt)}`, true); return; }
     const claimedAmount = Math.floor(pvlt);
-    showToast(`🎉 Successfully claimed ${claimedAmount} PVLT tokens! 🎉`, false);
-    // Simulate sending to wallet / reset balance
+    showToast(`🎉 Claimed ${claimedAmount} PVLT tokens to wallet! 🎉`, false);
     pvlt = 0;
     updateUI();
-    // Extra celebration floating text on button
-    const claimRect = claimBtn.getBoundingClientRect();
-    const x = claimRect.left + claimRect.width / 2;
-    const y = claimRect.top - 10;
-    showFloatingText(`🎁 +${claimedAmount} PVLT claimed!`, x, y, true);
+    const rect = claimBtn.getBoundingClientRect();
+    showFloatingText(`🎁 +${claimedAmount} PVLT`, rect.left + rect.width/2, rect.top - 10, true);
   }
-
-  // Attach button listeners with modern prevention
-  buyBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    buyEnergy();
-  });
-  claimBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    claimPvlt();
-  });
-
-  // initial sync
-  updateUI();
-
-  // block context menu on tap area to avoid interference
-  tapButton.addEventListener("contextmenu", (e) => e.preventDefault());
-
-  // Add smooth mobile style touches without zoom side effect
-  window.addEventListener(
-    "touchmove",
-    function (e) {
-      // passive fine
-    },
-    { passive: false }
-  );
-
-  // Additional visual: pulse effect after connection
-  const style = document.createElement("style");
-  style.textContent = `
-    .glow-on-hover:hover {
-      box-shadow: 0 0 12px #facc15aa;
-      border-color: #ffd966;
-    }
-    .tap-area {
-      transition: transform 0.05s cubic-bezier(0.1, 1.2, 0.5, 1), box-shadow 0.1s;
-    }
-    button {
-      transition: all 0.2s;
-    }
-  `;
-  document.head.appendChild(style);
   
-  // initial disabled message if not connected
-  if (!connected) {
-    // Ensure tap button remains disabled style until connect
-    tapButton.classList.add("tap-disabled");
-  } else {
-    tapButton.classList.remove("tap-disabled");
-  }
-
-  // small dynamic update for energy display accessibility
-  setInterval(() => {
-    if (connected && energy < maxEnergy && energy > 0) updateUI();
-  }, 500);
+  buyBtn.addEventListener("click", buyEnergy);
+  claimBtn.addEventListener("click", claimPvlt);
+  
+  // Initialize WalletConnect on page load
+  initWalletConnect();
+  updateUI();
+  tapButton.classList.add("tap-disabled");
+  
+  // Disable context menu on tap area
+  tapButton.addEventListener("contextmenu", (e) => e.preventDefault());
+  
+  // Final CSS additional
+  const style = document.createElement("style");
+  style.textContent = `.tap-area { transition: transform 0.05s cubic-bezier(0.1, 1.2, 0.5, 1), box-shadow 0.1s; }`;
+  document.head.appendChild(style);
 </script>
+<!-- QRCode library fallback -->
 </body>
 </html>
