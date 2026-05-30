@@ -314,52 +314,14 @@ body {
   text-align: center;
 }
 </style>
-<!-- Ethers -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<!-- WalletConnect Modal v2 -->
-<script src="https://cdn.jsdelivr.net/npm/@walletconnect/modal@2.6.2/dist/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.11.0/dist/index.min.js"></script>
-</head>
-
-<body>
-<div class="app">
-  <div class="top-stats">
-    <div class="stat-card"><div class="stat-label">⚡ ENERGY</div><div class="stat-value large" id="energyDisplay">100</div><div class="energy-text" id="energyTimer"></div></div>
-    <div class="stat-card"><div class="stat-label">🔄 POINTS</div><div class="stat-value small" id="pointsDisplay">0/100</div></div>
-    <div class="stat-card"><div class="stat-label">💎 GAME PVLT</div><div class="stat-value" id="gamePvltDisplay">0</div></div>
-    <div class="stat-card"><div class="stat-label">💼 WALLET</div><div class="stat-value small" id="walletPvltDisplay">0</div></div>
-  </div>
-
-  <div class="energy-bar-container"><div class="energy-bar-fill" id="energyBarFill"></div></div>
-
-  <div class="progress-container">
-    <div class="progress-label">🎯 PROGRESS TO NEXT PVLT</div>
-    <div class="progress-bar"><div class="progress-fill" id="tapProgressFill"></div></div>
-    <div class="tap-count" id="tapCountText">0/100 points = 0 GAME PVLT</div>
-  </div>
-
-  <button class="action-btn" id="connectWalletBtn">🔗 CONNECT WALLET</button>
-
-  <div class="status-bar" id="statusBar">🔒 Connect wallet to start earning PVLT</div>
-
-  <div class="tap-arena"><div class="pepe-core disabled" id="tapButton"><img src="images/IMG_1850.png" alt="PEPE" onerror="this.src='https://placekitten.com/120/120'"><div class="tap-counter">💰 TAP FOR FREE! 💰</div></div></div>
-
-  <div class="action-stack">
-    <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 1000 ENERGY (100 PVLT)</button>
-    <button class="action-btn" id="claimPvltAction" disabled>💎 CLAIM GAME PVLT → WALLET</button>
-  </div>
+<script type="module">
+  import { EthereumProvider } from "https://esm.sh/@walletconnect/ethereum-provider@2.11.0"
   
-  <div class="success-badge">✅ BUY ENERGY: Spends 100 PVLT | 💎 CLAIM: Gets REAL PVLT from treasury</div>
-  <div class="debug-panel" id="debugPanel">🔧 Ready. Connect wallet to start.</div>
-  <div class="treasury-note" id="treasuryNote">🏆 100 points = 1 GAME PVLT | Tap to earn | Claim sends REAL PVLT to your wallet</div>
-</div>
-
-<script>
   // ============ CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
   const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
-  const PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
   
   const GAME_ABI = [
     "function buyEnergy(uint256 pvltAmount) external",
@@ -391,14 +353,13 @@ body {
   const tapProgressFill = document.getElementById("tapProgressFill");
   const debugPanel = document.getElementById("debugPanel");
 
-  let userAccount = null;
   let provider = null;
+  let ethersProvider = null;
   let signer = null;
+  let userAccount = null;
   let tokenContract = null;
   let gameContract = null;
   let decimals = 18;
-  let web3Modal = null;
-  let walletConnectProvider = null;
   
   let maxEnergy = 100;
   let energy = 100;
@@ -457,14 +418,6 @@ body {
       debugLog(`Wallet: ${walletBalance.toFixed(4)} PVLT`);
       updateUI();
     } catch(e) { walletBalance = 0; }
-  }
-
-  async function checkTreasuryBalance() {
-    if (!gameContract) return;
-    try {
-      const balance = await gameContract.getTreasuryBalance();
-      return parseFloat(ethers.utils.formatUnits(balance, decimals));
-    } catch(e) { return 0; }
   }
 
   async function initContracts(_signer) {
@@ -545,101 +498,78 @@ body {
     updateUI();
   }
 
-  // ============ WALLETCONNECT MODAL ============
-  async function initWeb3Modal() {
-    try {
-      if (typeof Web3Modal === 'undefined') {
-        debugLog("Waiting for Web3Modal to load...");
-        setTimeout(initWeb3Modal, 500);
-        return;
-      }
-      
-      const modalConfig = {
-        projectId: PROJECT_ID,
-        chains: [137],
-        defaultChain: 137,
-        metadata: {
-          name: "PepeVolt Game",
-          description: "Tap to Earn PVLT",
-          url: window.location.origin,
-          icons: ["https://avatars.githubusercontent.com/u/37784886"]
-        },
-        enableExplorer: true,
-        enableInjected: true,
-        enableNetworkView: true,
-        enableAccountView: true,
-        themeMode: 'dark',
-        themeVariables: {
-          '--w3m-accent-color': '#00ffcc',
-          '--w3m-background-color': '#0a1520',
-          '--w3m-font-family': 'Inter, sans-serif'
-        }
-      };
-      
-      web3Modal = new Web3Modal(modalConfig);
-      debugLog("✅ Web3Modal initialized");
-    } catch(e) {
-      debugLog(`Web3Modal init error: ${e.message}`);
-    }
-  }
-
-  async function connectWithWeb3Modal() {
+  // ============ WALLET CONNECT ============
+  async function connectWallet() {
     try {
       debugLog("Opening WalletConnect modal...");
+      connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
+      connectBtn.disabled = true;
       
-      const web3Provider = await web3Modal.connect();
-      walletConnectProvider = new ethers.providers.Web3Provider(web3Provider);
-      signer = walletConnectProvider.getSigner();
-      
-      const accounts = await walletConnectProvider.listAccounts();
+      provider = await EthereumProvider.init({
+        projectId: "1731f99148b9cf6107dee70b6efb14b7",
+        chains: [137],
+        showQrModal: true,
+        methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData"],
+        optionalMethods: ["eth_accounts", "eth_requestAccounts", "eth_chainId"],
+        rpcMap: {
+          137: "https://polygon-rpc.com"
+        },
+        metadata: {
+          name: "PepeVolt",
+          description: "PepeVolt Game",
+          url: window.location.origin,
+          icons: ["https://cdn-icons-png.flaticon.com/512/825/825508.png"]
+        }
+      });
+
+      await provider.connect();
+      const accounts = await provider.request({ method: "eth_accounts" });
       userAccount = accounts[0];
-      provider = walletConnectProvider;
       
-      debugLog(`Connected: ${userAccount}`);
+      ethersProvider = new ethers.providers.Web3Provider(provider);
+      signer = ethersProvider.getSigner();
+      
       await initContracts(signer);
-      
-      const network = await provider.getNetwork();
-      if (network.chainId !== 137) {
-        statusBar.innerHTML = "⚠️ Please switch to Polygon Mainnet";
-      }
-      
       loadData();
       await updateWalletBalance();
       updateUI();
       tapCircle.classList.remove("disabled");
+      
+      connectBtn.innerHTML = `🔴 ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
       statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | Tap to earn!`;
-      debugLog("✅ Ready to play!");
+      debugLog(`✅ Connected: ${userAccount}`);
       
       if (refreshInterval) clearInterval(refreshInterval);
       refreshInterval = setInterval(() => { if (userAccount) { regenEnergy(); updateWalletBalance(); } }, 1000);
       
-      // Handle disconnect/account change
-      web3Provider.on('accountsChanged', (accounts) => {
+      // Handle disconnect
+      provider.on("disconnect", () => {
+        debugLog("Wallet disconnected");
+        disconnect();
+      });
+      
+      provider.on("accountsChanged", (accounts) => {
         if (accounts.length === 0) disconnect();
         else if (accounts[0] !== userAccount) window.location.reload();
       });
-      web3Provider.on('chainChanged', () => window.location.reload());
-      web3Provider.on('disconnect', () => disconnect());
       
-    } catch(e) {
-      debugLog(`Connection error: ${e.message}`);
-      if (!e.message.includes("User closed")) {
-        alert(`Connection failed: ${e.message.slice(0,100)}`);
-      }
+    } catch(err) {
+      debugLog(`Connection error: ${err.message}`);
+      alert("Wallet connection failed: " + err.message);
+      connectBtn.innerHTML = "🔗 CONNECT WALLET";
+      connectBtn.disabled = false;
     }
   }
 
   async function disconnect() {
     if (refreshInterval) clearInterval(refreshInterval);
-    if (walletConnectProvider && walletConnectProvider.provider && walletConnectProvider.provider.disconnect) {
-      await walletConnectProvider.provider.disconnect();
-    }
-    if (web3Modal && web3Modal.clearCachedProvider) {
-      web3Modal.clearCachedProvider();
+    if (provider && provider.disconnect) {
+      await provider.disconnect();
     }
     saveData();
     userAccount = null;
     provider = null;
+    ethersProvider = null;
     signer = null;
     tokenContract = null;
     gameContract = null;
@@ -647,6 +577,8 @@ body {
     updateUI();
     statusBar.innerHTML = "🔒 Disconnected";
     debugLog("Disconnected");
+    connectBtn.innerHTML = "🔗 CONNECT WALLET";
+    connectBtn.disabled = false;
   }
 
   // ============ BUY & CLAIM ============
@@ -681,11 +613,11 @@ body {
     if (gamePvltBalance < 1) { alert(`❌ No GAME PVLT! You have ${gamePvltBalance.toFixed(4)}`); return; }
     const amountToClaim = Math.floor(gamePvltBalance);
     const amountInWei = ethers.utils.parseUnits(amountToClaim.toString(), decimals);
-    const treasuryBalance = await gameContract.getTreasuryBalance();
-    if (parseFloat(ethers.utils.formatUnits(treasuryBalance, decimals)) < amountToClaim) {
-      alert(`❌ Treasury low!`); return;
-    }
     try {
+      const treasuryBalance = await gameContract.getTreasuryBalance();
+      if (parseFloat(ethers.utils.formatUnits(treasuryBalance, decimals)) < amountToClaim) {
+        alert(`❌ Treasury low!`); return;
+      }
       statusBar.innerHTML = `⏳ Claiming ${amountToClaim} PVLT...`;
       const tx = await gameContract.claimRewards(amountInWei);
       statusBar.innerHTML = "⏳ Confirming...";
@@ -699,14 +631,12 @@ body {
     } catch(e) { alert(`❌ Claim failed: ${e.message.slice(0,150)}`); statusBar.innerHTML = "❌ Claim failed"; }
   }
 
-  // Initialize and Event Listeners
-  initWeb3Modal();
-  
+  // Event Listeners
   connectBtn.onclick = () => {
     if (userAccount) {
       disconnect();
     } else {
-      connectWithWeb3Modal();
+      connectWallet();
     }
   };
   
@@ -719,7 +649,7 @@ body {
   updateUI();
   debugLog("🎮 Game Ready!");
   debugLog(`Buy: 100 PVLT → 1000 Energy | Claim: Get REAL PVLT from treasury`);
-  debugLog(`Click CONNECT WALLET - the modal will appear with all wallet options!`);
+  debugLog(`Click CONNECT WALLET - the WalletConnect modal will appear!`);
 </script>
 </body>
 </html>
