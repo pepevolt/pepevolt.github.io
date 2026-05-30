@@ -315,9 +315,42 @@ body {
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<script type="module">
-  import { EthereumProvider } from "https://esm.sh/@walletconnect/ethereum-provider@2.11.0"
+</head>
+
+<body>
+<div class="app">
+  <div class="top-stats">
+    <div class="stat-card"><div class="stat-label">⚡ ENERGY</div><div class="stat-value large" id="energyDisplay">100</div><div class="energy-text" id="energyTimer"></div></div>
+    <div class="stat-card"><div class="stat-label">🔄 POINTS</div><div class="stat-value small" id="pointsDisplay">0/100</div></div>
+    <div class="stat-card"><div class="stat-label">💎 GAME PVLT</div><div class="stat-value" id="gamePvltDisplay">0</div></div>
+    <div class="stat-card"><div class="stat-label">💼 WALLET</div><div class="stat-value small" id="walletPvltDisplay">0</div></div>
+  </div>
+
+  <div class="energy-bar-container"><div class="energy-bar-fill" id="energyBarFill"></div></div>
+
+  <div class="progress-container">
+    <div class="progress-label">🎯 PROGRESS TO NEXT PVLT</div>
+    <div class="progress-bar"><div class="progress-fill" id="tapProgressFill"></div></div>
+    <div class="tap-count" id="tapCountText">0/100 points = 0 GAME PVLT</div>
+  </div>
+
+  <button class="action-btn" id="connectWalletBtn">🔗 CONNECT WALLET</button>
+
+  <div class="status-bar" id="statusBar">🔒 Connect wallet to start earning PVLT</div>
+
+  <div class="tap-arena"><div class="pepe-core disabled" id="tapButton"><img src="images/IMG_1850.png" alt="PEPE" onerror="this.src='https://placekitten.com/120/120'"><div class="tap-counter">💰 TAP FOR FREE! 💰</div></div></div>
+
+  <div class="action-stack">
+    <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 1000 ENERGY (100 PVLT)</button>
+    <button class="action-btn" id="claimPvltAction" disabled>💎 CLAIM GAME PVLT → WALLET</button>
+  </div>
   
+  <div class="success-badge">✅ BUY ENERGY: Spends 100 PVLT | 💎 CLAIM: Gets REAL PVLT from treasury</div>
+  <div class="debug-panel" id="debugPanel">🔧 Ready. Connect wallet to start.</div>
+  <div class="treasury-note" id="treasuryNote">🏆 100 points = 1 GAME PVLT | Tap to earn | Claim sends REAL PVLT to your wallet</div>
+</div>
+
+<script>
   // ============ CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
@@ -353,10 +386,9 @@ body {
   const tapProgressFill = document.getElementById("tapProgressFill");
   const debugPanel = document.getElementById("debugPanel");
 
-  let provider = null;
-  let ethersProvider = null;
-  let signer = null;
   let userAccount = null;
+  let provider = null;
+  let signer = null;
   let tokenContract = null;
   let gameContract = null;
   let decimals = 18;
@@ -498,78 +530,68 @@ body {
     updateUI();
   }
 
-  // ============ WALLET CONNECT ============
+  // ============ SIMPLE WALLET CONNECT (MetaMask Only - Works on GitHub Pages) ============
+  async function connectMetaMask() {
+    if (!window.ethereum) {
+      alert("Please install MetaMask!");
+      return false;
+    }
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      userAccount = accounts[0];
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      await initContracts(signer);
+      
+      const network = await provider.getNetwork();
+      if (network.chainId !== 137) {
+        try {
+          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
+        } catch(e) { alert("Please switch to Polygon Mainnet"); }
+      }
+      
+      window.ethereum.on('accountsChanged', (accounts) => { 
+        if (accounts.length === 0) disconnect(); 
+        else if (accounts[0] !== userAccount) location.reload(); 
+      });
+      return true;
+    } catch(e) { debugLog(`MetaMask error: ${e.message}`); return false; }
+  }
+
   async function connectWallet() {
     try {
-      debugLog("Opening WalletConnect modal...");
       connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
       connectBtn.disabled = true;
       
-      provider = await EthereumProvider.init({
-        projectId: "1731f99148b9cf6107dee70b6efb14b7",
-        chains: [137],
-        showQrModal: true,
-        methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData"],
-        optionalMethods: ["eth_accounts", "eth_requestAccounts", "eth_chainId"],
-        rpcMap: {
-          137: "https://polygon-rpc.com"
-        },
-        metadata: {
-          name: "PepeVolt",
-          description: "PepeVolt Game",
-          url: window.location.origin,
-          icons: ["https://cdn-icons-png.flaticon.com/512/825/825508.png"]
-        }
-      });
-
-      await provider.connect();
-      const accounts = await provider.request({ method: "eth_accounts" });
-      userAccount = accounts[0];
+      const success = await connectMetaMask();
       
-      ethersProvider = new ethers.providers.Web3Provider(provider);
-      signer = ethersProvider.getSigner();
-      
-      await initContracts(signer);
-      loadData();
-      await updateWalletBalance();
-      updateUI();
-      tapCircle.classList.remove("disabled");
-      
-      connectBtn.innerHTML = `🔴 ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-      statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | Tap to earn!`;
-      debugLog(`✅ Connected: ${userAccount}`);
-      
-      if (refreshInterval) clearInterval(refreshInterval);
-      refreshInterval = setInterval(() => { if (userAccount) { regenEnergy(); updateWalletBalance(); } }, 1000);
-      
-      // Handle disconnect
-      provider.on("disconnect", () => {
-        debugLog("Wallet disconnected");
-        disconnect();
-      });
-      
-      provider.on("accountsChanged", (accounts) => {
-        if (accounts.length === 0) disconnect();
-        else if (accounts[0] !== userAccount) window.location.reload();
-      });
-      
+      if (success && userAccount) {
+        loadData();
+        await updateWalletBalance();
+        updateUI();
+        tapCircle.classList.remove("disabled");
+        statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | Tap to earn!`;
+        debugLog(`✅ Connected: ${userAccount}`);
+        
+        if (refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => { if (userAccount) { regenEnergy(); updateWalletBalance(); } }, 1000);
+      } else {
+        connectBtn.innerHTML = "🔗 CONNECT WALLET";
+        connectBtn.disabled = false;
+      }
     } catch(err) {
       debugLog(`Connection error: ${err.message}`);
-      alert("Wallet connection failed: " + err.message);
+      alert("Connection failed: " + err.message);
       connectBtn.innerHTML = "🔗 CONNECT WALLET";
       connectBtn.disabled = false;
     }
   }
 
-  async function disconnect() {
+  function disconnect() {
     if (refreshInterval) clearInterval(refreshInterval);
-    if (provider && provider.disconnect) {
-      await provider.disconnect();
-    }
     saveData();
     userAccount = null;
     provider = null;
-    ethersProvider = null;
     signer = null;
     tokenContract = null;
     gameContract = null;
@@ -649,7 +671,7 @@ body {
   updateUI();
   debugLog("🎮 Game Ready!");
   debugLog(`Buy: 100 PVLT → 1000 Energy | Claim: Get REAL PVLT from treasury`);
-  debugLog(`Click CONNECT WALLET - the WalletConnect modal will appear!`);
+  debugLog(`Click CONNECT WALLET to connect MetaMask`);
 </script>
 </body>
 </html>
