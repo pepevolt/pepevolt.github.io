@@ -7,8 +7,7 @@
   <link rel="icon" href="images/logo.PNG">
   <meta name="theme-color" content="#090912">
   
-  <!-- Essential libs only -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Ethers library -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   
   <style>
@@ -127,7 +126,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.9);
+      background: rgba(0,0,0,.95);
       align-items: center;
       justify-content: center;
       z-index: 100;
@@ -153,9 +152,18 @@
       cursor: pointer;
       width: 100%;
       margin-bottom: 10px;
+      transition: all 0.2s;
     }
+    .wallet-option:hover { background: rgba(0,255,204,.15); border-color: var(--primary); }
     .wallet-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; background: rgba(255,255,255,.1); }
     .modal-close { float: right; cursor: pointer; font-size: 20px; color: var(--muted); }
+    .wallet-badge {
+      background: rgba(0,255,204,0.2);
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-size: 10px;
+      margin-left: 8px;
+    }
     @keyframes floatUp {
       0% { opacity: 1; transform: translateY(0); }
       100% { opacity: 0; transform: translateY(-80px); }
@@ -168,6 +176,14 @@
       font-weight: 800;
       font-size: 22px;
       animation: floatUp 1s forwards;
+    }
+    .network-badge {
+      background: rgba(0,0,0,0.5);
+      border-radius: 12px;
+      padding: 4px 8px;
+      font-size: 10px;
+      text-align: center;
+      margin-top: 6px;
     }
   </style>
 </head>
@@ -220,13 +236,24 @@
 <div id="walletModal" class="modal-overlay">
   <div class="modal-sheet">
     <div style="text-align:right"><span class="modal-close" id="closeModal">✕</span></div>
-    <div class="modal-title">Connect</div>
+    <div class="modal-title">Connect Wallet</div>
     <button class="wallet-option" id="metaMaskOption">
-      <div class="wallet-icon">🏦</div>
-      <div>MetaMask</div>
+      <div class="wallet-icon">🦊</div>
+      <div>MetaMask <span class="wallet-badge">Popular</span></div>
     </button>
+    <button class="wallet-option" id="walletConnectOption">
+      <div class="wallet-icon">🔗</div>
+      <div>WalletConnect <span class="wallet-badge">Mobile</span></div>
+    </button>
+    <button class="wallet-option" id="telegramOption">
+      <div class="wallet-icon">📱</div>
+      <div>Telegram / In-App Browser</div>
+    </button>
+    <div class="network-badge">
+      🌐 Network: Polygon Mainnet required
+    </div>
     <div style="text-align:center; font-size:11px; color:var(--muted); margin-top:12px">
-      Make sure you're on <span style="color:var(--primary)">Polygon Mainnet</span>
+      Works on Chrome, Telegram, Trust Wallet, Rabby, and any Web3 browser
     </div>
   </div>
 </div>
@@ -235,7 +262,6 @@
   // ==================== CONTRACT DETAILS ====================
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
-  const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
 
   const GAME_ABI = [
     "function buyEnergy(uint256 pvltAmount) external",
@@ -258,7 +284,9 @@
     tapBtn: $('tapBtn'), statusTxt: $('statusTxt'), connectBtn: $('connectBtn'),
     stateDisc: $('stateDisconnected'), stateConn: $('stateConnected'),
     buyBtn: $('buyBtn'), claimBtn: $('claimBtn'), claimSub: $('claimSub'),
-    walletModal: $('walletModal'), closeModal: $('closeModal'), metaMaskOption: $('metaMaskOption')
+    walletModal: $('walletModal'), closeModal: $('closeModal'),
+    metaMaskOption: $('metaMaskOption'), walletConnectOption: $('walletConnectOption'),
+    telegramOption: $('telegramOption')
   };
 
   // Game state
@@ -334,7 +362,6 @@
     }
   }
 
-  // regen tick & UI
   function regenTick() {
     if(account && energy < maxEnergy) {
       const secs = Math.floor((Date.now() - lastRegen) / 1000);
@@ -383,45 +410,108 @@
     renderUI();
   }
 
-  // ---------- blockchain interactions ----------
-  async function connectMetaMask() {
-    if(!window.ethereum) { alert("Please install MetaMask!"); return false; }
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      account = accounts[0];
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner();
-      const network = await provider.getNetwork();
-      if(network.chainId !== 137) {
-        setStatus("⚠️ Switching to Polygon...");
-        try {
-          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-        } catch(e) {
-          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
-            chainId: '0x89', chainName: 'Polygon Mainnet',
-            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-            rpcUrls: ['https://polygon-rpc.com/']
-          }]});
-        }
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer = provider.getSigner();
+  // ---------- Universal wallet connection ----------
+  async function checkAndSwitchToPolygon(providerObj) {
+    const network = await providerObj.getNetwork();
+    if(network.chainId !== 137) {
+      setStatus("⚠️ Switching to Polygon Mainnet...");
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x89' }]
+        });
+      } catch(e) {
+        if(e.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x89',
+              chainName: 'Polygon Mainnet',
+              nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+              rpcUrls: ['https://polygon-rpc.com/'],
+              blockExplorerUrls: ['https://polygonscan.com/']
+            }]
+          });
+        } else throw e;
       }
-      tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
-      gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-      decimals = await tokenC.decimals();
+      return true;
+    }
+    return true;
+  }
+
+  async function initContracts(signerObj) {
+    tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signerObj);
+    gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signerObj);
+    decimals = await tokenC.decimals();
+  }
+
+  async function connectWithProvider(ethereumProvider, walletName) {
+    try {
+      const providerObj = new ethers.providers.Web3Provider(ethereumProvider);
+      await checkAndSwitchToPolygon(providerObj);
+      const accounts = await ethereumProvider.request({ method: 'eth_requestAccounts' });
+      account = accounts[0];
+      provider = providerObj;
+      signer = provider.getSigner();
+      await initContracts(signer);
       loadLocal();
       await refreshBalances();
-      setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
+      setStatus(`✅ Connected with ${walletName}: ${account.slice(0,6)}...${account.slice(-4)}`);
       renderUI();
       if(regenTimer) clearInterval(regenTimer);
       regenTimer = setInterval(async () => { regenTick(); await refreshBalances(); }, 1000);
-      window.ethereum.on('accountsChanged', (accs) => { if(!accs.length) disconnect(); else if(accs[0] !== account) location.reload(); });
+      
+      // Handle account changes
+      if(ethereumProvider.on) {
+        ethereumProvider.on('accountsChanged', (accs) => {
+          if(!accs.length) disconnect();
+          else if(accs[0] !== account) location.reload();
+        });
+        ethereumProvider.on('chainChanged', () => location.reload());
+      }
       return true;
     } catch(e) {
       console.error(e);
-      setStatus(`❌ ${e.message?.slice(0,50) || 'Connection failed'}`);
+      setStatus(`❌ ${walletName}: ${e.message?.slice(0,60) || 'Connection failed'}`);
       return false;
     }
+  }
+
+  // Detect available wallets
+  function detectWalletProviders() {
+    const providers = [];
+    if(window.ethereum) {
+      providers.push({ name: 'MetaMask', type: 'metamask', provider: window.ethereum });
+    }
+    // For Telegram / native web3 browsers (Trust, Rabby, Coinbase)
+    if(window.ethereum) {
+      const isTelegram = window.TelegramWebApp || navigator.userAgent.includes('Telegram');
+      if(isTelegram && !providers.find(p => p.name === 'Telegram')) {
+        providers.push({ name: 'Telegram Browser', type: 'telegram', provider: window.ethereum });
+      }
+      if(!providers.find(p => p.name === 'In-App Browser')) {
+        providers.push({ name: 'Web3 Wallet', type: 'web3', provider: window.ethereum });
+      }
+    }
+    return providers;
+  }
+
+  async function connectMetaMask() {
+    if(!window.ethereum) { alert("No wallet detected! Please install MetaMask or use a Web3 browser."); return false; }
+    return await connectWithProvider(window.ethereum, 'MetaMask');
+  }
+
+  async function connectTelegramBrowser() {
+    if(!window.ethereum) { 
+      alert("No Web3 provider found in this browser.\n\nIn Telegram: Open menu → Settings → Advanced → Experimental → Enable Web3 Wallet.\n\nOr use MetaMask mobile browser.");
+      return false;
+    }
+    return await connectWithProvider(window.ethereum, 'Telegram Wallet');
+  }
+
+  async function connectWalletConnect() {
+    alert("📱 WalletConnect is being prepared!\nFor now, please use:\n• MetaMask Mobile Browser\n• Trust Wallet Browser\n• Telegram with Web3 enabled\n\nThese all work seamlessly with our dApp.");
+    return false;
   }
 
   async function disconnect() {
@@ -515,6 +605,7 @@
   elements.connectBtn.onclick = () => { if(account) disconnect(); else openModal(); };
   elements.closeModal.onclick = closeModalFn;
   elements.walletModal.onclick = (e) => { if(e.target === elements.walletModal) closeModalFn(); };
+  
   elements.metaMaskOption.onclick = async () => {
     closeModalFn();
     elements.connectBtn.innerHTML = '<span class="spinner"></span> CONNECTING...';
@@ -524,13 +615,43 @@
     elements.connectBtn.disabled = false;
     if(!ok) setStatus("Connection failed");
   };
+  
+  elements.telegramOption.onclick = async () => {
+    closeModalFn();
+    elements.connectBtn.innerHTML = '<span class="spinner"></span> CONNECTING...';
+    elements.connectBtn.disabled = true;
+    const ok = await connectTelegramBrowser();
+    elements.connectBtn.innerHTML = '💼 CONNECT WALLET';
+    elements.connectBtn.disabled = false;
+    if(!ok) setStatus("No Web3 wallet detected in this browser");
+  };
+  
+  elements.walletConnectOption.onclick = async () => {
+    closeModalFn();
+    await connectWalletConnect();
+  };
+  
   elements.buyBtn.onclick = buyEnergy;
   elements.claimBtn.onclick = claimRewards;
 
-  // initial tick loop and UI
+  // Auto-detect wallet on load for Telegram/Web3 browsers
+  window.addEventListener('load', async () => {
+    if(window.ethereum && (window.TelegramWebApp || navigator.userAgent.includes('Telegram'))) {
+      setStatus("🔄 Auto-detecting wallet...");
+      setTimeout(async () => {
+        const shouldAutoConnect = localStorage.getItem('pv_autoconnect') !== 'false';
+        if(shouldAutoConnect && !account) {
+          const conn = await connectTelegramBrowser();
+          if(conn) localStorage.setItem('pv_autoconnect', 'true');
+        }
+      }, 500);
+    }
+    renderUI();
+  });
+  
   setInterval(regenTick, 1000);
   renderUI();
-  setStatus('🔒 Click CONNECT WALLET to start');
+  setStatus('🔒 Choose wallet to start earning');
 </script>
 </body>
 </html>
