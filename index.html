@@ -314,8 +314,8 @@ body {
   text-align: center;
 }
 
-/* Wallet Modal Styles */
-.wallet-modal {
+/* Modal Styles */
+.modal-overlay {
   display: none;
   position: fixed;
   top: 0;
@@ -328,7 +328,7 @@ body {
   align-items: center;
 }
 
-.wallet-modal-content {
+.modal-container {
   background: linear-gradient(135deg, #1a2a3a, #0a1520);
   border-radius: 28px;
   width: 90%;
@@ -339,7 +339,7 @@ body {
   border: 1px solid rgba(0,255,200,0.3);
 }
 
-.wallet-modal-header {
+.modal-header {
   text-align: center;
   margin-bottom: 20px;
   color: white;
@@ -348,7 +348,7 @@ body {
   position: relative;
 }
 
-.close-modal {
+.modal-close {
   position: absolute;
   right: 0;
   top: -5px;
@@ -357,11 +357,11 @@ body {
   color: #888;
 }
 
-.close-modal:hover {
+.modal-close:hover {
   color: #00ffcc;
 }
 
-.wallet-option {
+.wallet-item {
   display: flex;
   align-items: center;
   gap: 15px;
@@ -374,7 +374,7 @@ body {
   color: white;
 }
 
-.wallet-option:hover {
+.wallet-item:hover {
   background: rgba(0,255,200,0.15);
   transform: translateX(5px);
 }
@@ -431,51 +431,38 @@ body {
   <div class="treasury-note" id="treasuryNote">🏆 100 points = 1 GAME PVLT | Tap to earn | Claim sends REAL PVLT to your wallet</div>
 </div>
 
-<!-- Wallet Modal -->
-<div id="walletModal" class="wallet-modal">
-  <div class="wallet-modal-content">
-    <div class="wallet-modal-header">
+<!-- Modal -->
+<div id="modalOverlay" class="modal-overlay">
+  <div class="modal-container">
+    <div class="modal-header">
       Connect your wallet
-      <span class="close-modal" id="closeModal">&times;</span>
+      <span class="modal-close" id="modalClose">&times;</span>
     </div>
-    <div class="wallet-option" data-wallet="metamask">
+    <div class="wallet-item" data-wallet="metamask">
       <div class="wallet-icon">🦊</div>
       <div class="wallet-name">MetaMask</div>
     </div>
-    <div class="wallet-option" data-wallet="trust">
+    <div class="wallet-item" data-wallet="trust">
       <div class="wallet-icon">🔵</div>
       <div class="wallet-name">Trust Wallet</div>
     </div>
-    <div class="wallet-option" data-wallet="coinbase">
+    <div class="wallet-item" data-wallet="coinbase">
       <div class="wallet-icon">💙</div>
       <div class="wallet-name">Coinbase Wallet</div>
     </div>
-    <div class="wallet-option" data-wallet="walletconnect">
-      <div class="wallet-icon">🌐</div>
-      <div class="wallet-name">WalletConnect</div>
-    </div>
-    <div class="wallet-option" data-wallet="okx">
+    <div class="wallet-item" data-wallet="okx">
       <div class="wallet-icon">🟠</div>
       <div class="wallet-name">OKX Wallet</div>
-    </div>
-    <div class="wallet-option" data-wallet="safepal">
-      <div class="wallet-icon">🛡️</div>
-      <div class="wallet-name">SafePal</div>
-    </div>
-    <div class="wallet-option" data-wallet="tp">
-      <div class="wallet-icon">🟣</div>
-      <div class="wallet-name">TokenPocket</div>
     </div>
   </div>
 </div>
 
 <script>
-  // ============ YOUR ADDRESSES ============
+  // ============ CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
   const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
   
-  // Contract ABIs
   const GAME_ABI = [
     "function buyEnergy(uint256 pvltAmount) external",
     "function claimRewards(uint256 pvltAmount) external",
@@ -505,8 +492,8 @@ body {
   const statusBar = document.getElementById("statusBar");
   const tapProgressFill = document.getElementById("tapProgressFill");
   const debugPanel = document.getElementById("debugPanel");
-  const walletModal = document.getElementById("walletModal");
-  const closeModal = document.getElementById("closeModal");
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalClose = document.getElementById("modalClose");
 
   let userAccount = null;
   let provider = null;
@@ -660,8 +647,8 @@ body {
     updateUI();
   }
 
-  // Wallet Connection Functions
-  async function connectWithMetaMask() {
+  // ============ WALLET CONNECTIONS ============
+  async function connectMetaMask() {
     if (!window.ethereum) { alert("Please install MetaMask!"); return false; }
     try {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -669,116 +656,110 @@ body {
       provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
       await initContracts(signer);
+      
       const network = await provider.getNetwork();
       if (network.chainId !== 137) {
         try {
           await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
         } catch(e) { alert("Please switch to Polygon Mainnet"); }
       }
-      window.ethereum.on('accountsChanged', (accounts) => { if (accounts.length === 0) disconnect(); else if (accounts[0] !== userAccount) location.reload(); });
+      
+      window.ethereum.on('accountsChanged', (accounts) => { 
+        if (accounts.length === 0) disconnect(); 
+        else if (accounts[0] !== userAccount) location.reload(); 
+      });
       return true;
     } catch(e) { debugLog(`MetaMask error: ${e.message}`); return false; }
   }
 
-  async function connectWithWalletConnect() {
-    try {
-      const WalletConnectProvider = window.WalletConnectProvider?.default || window.WalletConnectProvider;
-      if (!WalletConnectProvider) {
-        alert("Loading WalletConnect... Please refresh and try again.");
-        return false;
-      }
-      const provider = new WalletConnectProvider({
-        projectId: "1731f99148b9cf6107dee70b6efb14b7",
-        chains: [137],
-        showQrModal: true,
-        metadata: { name: "PepeVolt Game", description: "Tap to Earn PVLT", url: location.origin }
-      });
-      await provider.enable();
-      const web3Provider = new ethers.providers.Web3Provider(provider);
-      const accounts = await web3Provider.listAccounts();
-      userAccount = accounts[0];
-      signer = web3Provider.getSigner();
-      await initContracts(signer);
-      provider.on("accountsChanged", (accounts) => { if (accounts.length === 0) disconnect(); else if (accounts[0] !== userAccount) location.reload(); });
-      return true;
-    } catch(e) { debugLog(`WC error: ${e.message}`); return false; }
+  async function connectTrustWallet() {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        userAccount = accounts[0];
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        await initContracts(signer);
+        return true;
+      } catch(e) { return false; }
+    }
+    alert("Please install Trust Wallet app and use WalletConnect, or install Trust Wallet extension");
+    return false;
   }
 
-  async function connectWithTrust() { return connectWithMetaMask(); }
-  async function connectWithCoinbase() { return connectWithMetaMask(); }
-  async function connectWithOKX() {
+  async function connectCoinbase() {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        userAccount = accounts[0];
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        await initContracts(signer);
+        return true;
+      } catch(e) { return false; }
+    }
+    alert("Please install Coinbase Wallet extension");
+    return false;
+  }
+
+  async function connectOKX() {
     if (window.okxwallet) {
-      const accounts = await window.okxwallet.request({ method: 'eth_requestAccounts' });
-      userAccount = accounts[0];
-      provider = new ethers.providers.Web3Provider(window.okxwallet);
-      signer = provider.getSigner();
-      await initContracts(signer);
-      return true;
+      try {
+        const accounts = await window.okxwallet.request({ method: 'eth_requestAccounts' });
+        userAccount = accounts[0];
+        provider = new ethers.providers.Web3Provider(window.okxwallet);
+        signer = provider.getSigner();
+        await initContracts(signer);
+        return true;
+      } catch(e) { return false; }
     }
-    alert("Please install OKX Wallet");
-    return false;
-  }
-  async function connectWithSafePal() {
-    if (window.safepal) {
-      const accounts = await window.safepal.request({ method: 'eth_requestAccounts' });
-      userAccount = accounts[0];
-      provider = new ethers.providers.Web3Provider(window.safepal);
-      signer = provider.getSigner();
-      await initContracts(signer);
-      return true;
-    }
-    alert("Please install SafePal");
-    return false;
-  }
-  async function connectWithTokenPocket() {
-    if (window.tp) {
-      const accounts = await window.tp.request({ method: 'eth_requestAccounts' });
-      userAccount = accounts[0];
-      provider = new ethers.providers.Web3Provider(window.tp);
-      signer = provider.getSigner();
-      await initContracts(signer);
-      return true;
-    }
-    alert("Please install TokenPocket");
+    alert("Please install OKX Wallet extension");
     return false;
   }
 
-  async function handleWalletConnect(walletType) {
+  async function handleWalletConnect(type) {
     let success = false;
-    switch(walletType) {
-      case 'metamask': success = await connectWithMetaMask(); break;
-      case 'trust': success = await connectWithTrust(); break;
-      case 'coinbase': success = await connectWithCoinbase(); break;
-      case 'walletconnect': success = await connectWithWalletConnect(); break;
-      case 'okx': success = await connectWithOKX(); break;
-      case 'safepal': success = await connectWithSafePal(); break;
-      case 'tp': success = await connectWithTokenPocket(); break;
-      default: success = await connectWithMetaMask();
+    switch(type) {
+      case 'metamask': success = await connectMetaMask(); break;
+      case 'trust': success = await connectTrustWallet(); break;
+      case 'coinbase': success = await connectCoinbase(); break;
+      case 'okx': success = await connectOKX(); break;
+      default: success = await connectMetaMask();
     }
+    
     if (success && userAccount) {
       loadData();
       updateUI();
       tapCircle.classList.remove("disabled");
       statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | Tap to earn!`;
-      debugLog(`✅ Connected with ${walletType}`);
+      debugLog(`✅ Connected with ${type}`);
+      
       if (refreshInterval) clearInterval(refreshInterval);
       refreshInterval = setInterval(() => { if (userAccount) { regenEnergy(); updateWalletBalance(); } }, 1000);
-    } else { statusBar.innerHTML = "❌ Connection failed"; }
-    walletModal.style.display = "none";
+    } else {
+      statusBar.innerHTML = "❌ Connection failed";
+    }
+    modalOverlay.style.display = "none";
   }
 
-  function showWalletModal() { walletModal.style.display = "flex"; }
+  function showModal() { modalOverlay.style.display = "flex"; }
+  function hideModal() { modalOverlay.style.display = "none"; }
+
   function disconnect() {
     if (refreshInterval) clearInterval(refreshInterval);
     saveData();
     userAccount = null;
+    provider = null;
+    signer = null;
+    tokenContract = null;
+    gameContract = null;
     energy = 100; maxEnergy = 100; points = 0; gamePvltBalance = 0;
     updateUI();
     statusBar.innerHTML = "🔒 Disconnected";
     debugLog("Disconnected");
   }
 
-  // Buy Energy & Claim
+  // ============ BUY & CLAIM ============
   async function buyEnergy() {
     if (!userAccount) { alert("Connect wallet first"); return; }
     if (walletBalance < 100) { alert(`❌ Need 100 PVLT. You have ${walletBalance.toFixed(4)} PVLT`); return; }
@@ -802,7 +783,7 @@ body {
       updateUI();
       statusBar.innerHTML = `✅ +1000 Energy! Max: ${maxEnergy}`;
       showFloat(window.innerWidth/2, window.innerHeight/2, `⚡ +1000 ENERGY ⚡`, "#ffd966");
-    } catch(e) { alert(`❌ Buy failed: ${e.message.slice(0,100)}`); }
+    } catch(e) { alert(`❌ Buy failed: ${e.message.slice(0,100)}`); statusBar.innerHTML = "❌ Failed"; }
   }
 
   async function claimRewards() {
@@ -825,25 +806,27 @@ body {
       updateUI();
       statusBar.innerHTML = `✅ Claimed ${amountToClaim} REAL PVLT!`;
       showFloat(window.innerWidth/2, window.innerHeight/2, `💎 +${amountToClaim} PVLT! 💎`, "#46c9b0");
-    } catch(e) { alert(`❌ Claim failed: ${e.message.slice(0,150)}`); }
+    } catch(e) { alert(`❌ Claim failed: ${e.message.slice(0,150)}`); statusBar.innerHTML = "❌ Claim failed"; }
   }
 
   // Event Listeners
-  connectBtn.onclick = () => userAccount ? disconnect() : showWalletModal();
-  closeModal.onclick = () => walletModal.style.display = "none";
-  window.onclick = (e) => { if (e.target === walletModal) walletModal.style.display = "none"; };
-  document.querySelectorAll('.wallet-option').forEach(opt => { opt.onclick = () => handleWalletConnect(opt.dataset.wallet); });
+  connectBtn.onclick = () => userAccount ? disconnect() : showModal();
+  modalClose.onclick = hideModal;
+  window.onclick = (e) => { if (e.target === modalOverlay) hideModal(); };
+  
+  document.querySelectorAll('.wallet-item').forEach(item => {
+    item.onclick = () => handleWalletConnect(item.dataset.wallet);
+  });
   
   tapCircle.onclick = (e) => { const rect = tapCircle.getBoundingClientRect(); handleTap(rect.left + rect.width/2, rect.top + rect.height/2); };
   tapCircle.ontouchstart = (e) => { e.preventDefault(); const touch = e.touches[0]; handleTap(touch.clientX, touch.clientY); };
-  buyBtn.onclick = () => buyEnergy();
-  claimBtn.onclick = () => claimRewards();
+  buyBtn.onclick = buyEnergy;
+  claimBtn.onclick = claimRewards;
   document.getElementById("treasuryNote").onclick = () => { navigator.clipboard.writeText(TREASURY_ADDRESS); statusBar.innerHTML = "📋 Treasury address copied!"; };
   
   updateUI();
   debugLog("🎮 Game Ready!");
   debugLog(`Buy: 100 PVLT → 1000 Energy | Claim: Get REAL PVLT from treasury`);
-  debugLog(`Click CONNECT WALLET to see wallet options!`);
 </script>
 </body>
 </html>
