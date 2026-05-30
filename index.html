@@ -54,9 +54,9 @@ button:disabled{opacity:0.5;cursor:not-allowed;}
 </div>
 <script>
   // ============ UPDATE THESE 3 ADDRESSES AFTER DEPLOYMENT ============
-  const PVLT_ADDR = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
-  const GAME_ADDR = "0xGAME...";        // <-- Your Game.sol address
-  const TREASURY_ADDR = "0xTREASURY..."; // <-- Your Treasury.sol address
+  const PVLT_ADDR = "0x80E6f64635E4627bA54E1939624E6111A3d8917c";
+  const GAME_ADDR = "0x6FA81DC0eA8545216D923D994C92f511cd9cfBbA";        // <-- Your Game.sol address
+  const TREASURY_ADDR = "0x0760aA32F1DfC7B82252deD7d5A9D39c13F76668"; // <-- Your Treasury.sol address
   
   const PVLT_ABI = ["function balanceOf(address) view returns (uint256)","function approve(address,uint256) returns (bool)","function allowance(address,address) view returns (uint256)","function decimals() view returns (uint8)","function transfer(address,uint256) returns (bool)"];
   const GAME_ABI = ["function buyEnergy() external","function claimRewards() external","function getPlayer(address) view returns (uint256,uint256,uint256,uint256)"];
