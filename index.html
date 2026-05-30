@@ -637,7 +637,7 @@ body {
     updateUI();
   }
 
-  // BUY ENERGY - FIXED with proper WEI conversion
+  // ============ FIXED BUY ENERGY FUNCTION ============
   async function buyEnergy() {
     if (!userAccount) {
       alert("Connect wallet first");
@@ -651,29 +651,22 @@ body {
     
     try {
       debugLog(`Buying energy - Wallet balance: ${walletBalance} PVLT`);
-      statusBar.innerHTML = "⏳ Checking allowance...";
+      
+      statusBar.innerHTML = "⏳ Approving 100 PVLT...";
       
       // Convert 100 PVLT to WEI (18 decimals)
       const amountInWei = ethers.utils.parseUnits("100", decimals);
       debugLog(`Amount in wei: ${amountInWei.toString()}`);
       
-      // Check current allowance
-      const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
-      debugLog(`Current allowance: ${allowance.toString()}`);
-      
-      // If allowance is less than needed, approve
-      if (allowance.lt(amountInWei)) {
-        statusBar.innerHTML = "⏳ Approving PVLT spending...";
-        debugLog("Approving PVLT...");
-        const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amountInWei);
-        await approveTx.wait();
-        debugLog("Approved!");
-      }
+      // First, approve the amount
+      const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amountInWei);
+      await approveTx.wait();
+      debugLog("Approved!");
       
       statusBar.innerHTML = "⏳ Buying 1000 energy (cost: 100 PVLT)...";
-      debugLog("Calling buyEnergy with amount in wei...");
+      debugLog("Calling buyEnergy...");
       
-      // Pass the amount in WEI, not as a number
+      // Call buyEnergy with the amount in WEI
       const tx = await gameContract.buyEnergy(amountInWei);
       debugLog(`Transaction sent: ${tx.hash}`);
       
@@ -695,17 +688,13 @@ body {
       
       let errorMsg = e.message;
       if (errorMsg.includes("execution reverted")) {
-        if (errorMsg.includes("insufficient balance")) {
-          errorMsg = "Insufficient PVLT balance! You need 100 PVLT.";
-        } else if (errorMsg.includes("allowance")) {
-          errorMsg = "Approval failed. Please try again.";
-        } else {
-          errorMsg = "Transaction failed. Make sure you have MATIC for gas.";
-        }
+        errorMsg = "Transaction failed. Make sure you have enough PVLT and MATIC for gas.";
       } else if (errorMsg.includes("insufficient funds")) {
         errorMsg = "Insufficient MATIC for gas! Get some MATIC first.";
       } else if (errorMsg.includes("user rejected")) {
         errorMsg = "Transaction rejected in wallet.";
+      } else {
+        errorMsg = errorMsg.slice(0, 100);
       }
       
       alert(`❌ Failed: ${errorMsg}`);
@@ -713,7 +702,7 @@ body {
     }
   }
 
-  // CLAIM REWARDS - FIXED with proper WEI conversion
+  // ============ WORKING CLAIM REWARDS FUNCTION ============
   async function claimRewards() {
     if (!userAccount) {
       alert("Connect wallet");
