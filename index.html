@@ -637,7 +637,7 @@ body {
     updateUI();
   }
 
-  // BUY ENERGY - requires blockchain transaction
+  // BUY ENERGY - FIXED with proper WEI conversion
   async function buyEnergy() {
     if (!userAccount) {
       alert("Connect wallet first");
@@ -652,29 +652,36 @@ body {
     try {
       debugLog(`Buying energy - Wallet balance: ${walletBalance} PVLT`);
       statusBar.innerHTML = "⏳ Checking allowance...";
-      const amount = ethers.utils.parseUnits("100", decimals);
       
+      // Convert 100 PVLT to WEI (18 decimals)
+      const amountInWei = ethers.utils.parseUnits("100", decimals);
+      debugLog(`Amount in wei: ${amountInWei.toString()}`);
+      
+      // Check current allowance
       const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
-      debugLog(`Allowance: ${allowance.toString()}`);
+      debugLog(`Current allowance: ${allowance.toString()}`);
       
-      if (allowance.lt(amount)) {
+      // If allowance is less than needed, approve
+      if (allowance.lt(amountInWei)) {
         statusBar.innerHTML = "⏳ Approving PVLT spending...";
         debugLog("Approving PVLT...");
-        const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amount);
+        const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amountInWei);
         await approveTx.wait();
         debugLog("Approved!");
       }
       
       statusBar.innerHTML = "⏳ Buying 1000 energy (cost: 100 PVLT)...";
-      debugLog("Calling buyEnergy...");
+      debugLog("Calling buyEnergy with amount in wei...");
       
-      // FIX: Convert 100 to WEI (18 decimals)
-      const amountInWei = ethers.utils.parseUnits("100", decimals);
+      // Pass the amount in WEI, not as a number
       const tx = await gameContract.buyEnergy(amountInWei);
+      debugLog(`Transaction sent: ${tx.hash}`);
+      
+      statusBar.innerHTML = "⏳ Waiting for confirmation...";
       await tx.wait();
       debugLog("Energy purchased!");
       
-      // After buying, update local energy
+      // After buying, update local energy (add 1000 energy)
       energy = Math.min(energy + 1000, maxEnergy);
       saveData();
       await updateWalletBalance();
@@ -685,8 +692,24 @@ body {
       
     } catch(e) {
       debugLog(`Buy error: ${e.message}`);
-      alert(`❌ Failed: ${e.message.slice(0,100)}`);
-      statusBar.innerHTML = "❌ Purchase failed";
+      
+      let errorMsg = e.message;
+      if (errorMsg.includes("execution reverted")) {
+        if (errorMsg.includes("insufficient balance")) {
+          errorMsg = "Insufficient PVLT balance! You need 100 PVLT.";
+        } else if (errorMsg.includes("allowance")) {
+          errorMsg = "Approval failed. Please try again.";
+        } else {
+          errorMsg = "Transaction failed. Make sure you have MATIC for gas.";
+        }
+      } else if (errorMsg.includes("insufficient funds")) {
+        errorMsg = "Insufficient MATIC for gas! Get some MATIC first.";
+      } else if (errorMsg.includes("user rejected")) {
+        errorMsg = "Transaction rejected in wallet.";
+      }
+      
+      alert(`❌ Failed: ${errorMsg}`);
+      statusBar.innerHTML = `❌ ${errorMsg.slice(0,60)}`;
     }
   }
 
@@ -708,7 +731,7 @@ body {
       return;
     }
     
-    // FIX: Convert to WEI with 18 decimals
+    // Convert to WEI with 18 decimals
     const amountInWei = ethers.utils.parseUnits(amountToClaim.toString(), decimals);
     
     debugLog(`Attempting to claim ${amountToClaim} GAME PVLT (${amountInWei.toString()} wei)`);
@@ -717,7 +740,7 @@ body {
       statusBar.innerHTML = `⏳ Claiming ${amountToClaim} GAME PVLT to your wallet...`;
       debugLog("Calling claimRewards() on game contract...");
       
-      // FIX: Pass the amount in WEI, not as a number
+      // Pass the amount in WEI
       const tx = await gameContract.claimRewards(amountInWei);
       debugLog(`Transaction sent: ${tx.hash}`);
       
