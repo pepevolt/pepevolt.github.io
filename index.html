@@ -15,6 +15,10 @@
 <meta property="og:image" content="https://pepevolt.github.io/pepe-icon.png">
 <meta name="theme-color" content="#03060c">
 
+<!-- WalletConnect v2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/modal@2.6.2/dist/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.11.0/dist/index.min.js"></script>
+
 <style>
 * {
   margin: 0;
@@ -377,6 +381,9 @@ body {
 </div>
 
 <script>
+  // ============ WALLETCONNECT PROJECT ID ============
+  const WALLETCONNECT_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
+  
   // ============ CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
@@ -413,6 +420,8 @@ body {
   const tapProgressFill = document.getElementById("tapProgressFill");
   const debugPanel = document.getElementById("debugPanel");
 
+  // WalletConnect variables
+  let walletConnectProvider = null;
   let userAccount = null;
   let provider = null;
   let signer = null;
@@ -573,28 +582,38 @@ body {
     updateUI();
   }
 
-  // ============ WALLET CONNECT ============
+  // ============ WALLETCONNECT V2 ============
   async function connectWallet() {
-    if (!window.ethereum) {
-      alert("Please install MetaMask!");
-      return;
-    }
     try {
+      debugLog("Opening WalletConnect modal...");
       connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
       connectBtn.disabled = true;
       
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      // Initialize WalletConnect provider
+      walletConnectProvider = await EthereumProvider.init({
+        projectId: WALLETCONNECT_PROJECT_ID,
+        chains: [137], // Polygon Mainnet
+        showQrModal: true,
+        methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData"],
+        optionalMethods: ["eth_accounts", "eth_requestAccounts", "eth_chainId"],
+        rpcMap: {
+          137: "https://polygon-rpc.com"
+        },
+        metadata: {
+          name: "PepeVolt",
+          description: "Tap to Earn PVLT - Play to Earn Game",
+          url: window.location.origin,
+          icons: ["https://pepevolt.github.io/logo.PNG"]
+        }
+      });
+
+      await walletConnectProvider.connect();
+      const accounts = await walletConnectProvider.request({ method: "eth_accounts" });
       userAccount = accounts[0];
-      provider = new ethers.providers.Web3Provider(window.ethereum);
+      
+      provider = new ethers.providers.Web3Provider(walletConnectProvider);
       signer = provider.getSigner();
       await initContracts(signer);
-      
-      const network = await provider.getNetwork();
-      if (network.chainId !== 137) {
-        try {
-          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-        } catch(e) { alert("Please switch to Polygon Mainnet"); }
-      }
       
       loadData();
       await updateWalletBalance();
@@ -602,7 +621,7 @@ body {
       updateUI();
       tapCircle.classList.remove("disabled");
       statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | Tap to earn!`;
-      debugLog(`✅ Connected: ${userAccount}`);
+      debugLog(`✅ Connected via WalletConnect: ${userAccount}`);
       
       if (refreshInterval) clearInterval(refreshInterval);
       refreshInterval = setInterval(() => { 
@@ -613,14 +632,28 @@ body {
         } 
       }, 1000);
       
-      window.ethereum.on('accountsChanged', (accounts) => { 
-        if (accounts.length === 0) disconnect(); 
-        else if (accounts[0] !== userAccount) location.reload(); 
+      // Handle disconnect events
+      walletConnectProvider.on("disconnect", () => {
+        debugLog("Wallet disconnected");
+        disconnect();
+      });
+      
+      walletConnectProvider.on("accountsChanged", (accounts) => {
+        if (accounts.length === 0) disconnect();
+        else if (accounts[0] !== userAccount) window.location.reload();
+      });
+      
+      walletConnectProvider.on("chainChanged", (chainId) => {
+        if (chainId !== "0x89") {
+          alert("Please switch to Polygon Mainnet");
+        }
       });
       
     } catch(err) {
       debugLog(`Connection error: ${err.message}`);
-      alert("Connection failed: " + err.message);
+      if (!err.message.includes("User closed")) {
+        alert("Connection failed: " + err.message);
+      }
       connectBtn.innerHTML = "🔗 CONNECT WALLET";
       connectBtn.disabled = false;
     }
@@ -628,8 +661,12 @@ body {
 
   function disconnect() {
     if (refreshInterval) clearInterval(refreshInterval);
+    if (walletConnectProvider && walletConnectProvider.disconnect) {
+      walletConnectProvider.disconnect();
+    }
     saveData();
     userAccount = null;
+    walletConnectProvider = null;
     provider = null;
     signer = null;
     tokenContract = null;
@@ -713,6 +750,7 @@ body {
   debugLog("🎮 Game Ready!");
   debugLog(`Buy: 100 PVLT → 1000 Energy | Claim: Get REAL PVLT from treasury`);
   debugLog(`🏦 Treasury address: ${TREASURY_ADDRESS}`);
+  debugLog(`🌐 WalletConnect Project ID: ${WALLETCONNECT_PROJECT_ID}`);
 </script>
 </body>
 </html>
