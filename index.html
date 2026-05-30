@@ -127,7 +127,6 @@ footer {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: var(--primary); color: #000; }
 .btn-secondary { background: var(--secondary); color: #000; }
-.btn-outline { background: transparent; border: 1px solid rgba(255,255,255,.2); color: #fff; }
 .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .btn-small { padding: 10px; font-size: 13px; }
 .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(0,0,0,.3); border-radius: 50%; border-top-color: #000; animation: spin .7s linear infinite; }
@@ -197,10 +196,9 @@ footer {
 </div>
 
 <script type="module">
-  // Import WalletConnect provider (same as working HTML)
   import { EthereumProvider } from "https://esm.sh/@walletconnect/ethereum-provider@2.11.0"
 
-  // ============ CONTRACT ADDRESSES ============
+  // Contract Addresses
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
   const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
@@ -219,44 +217,21 @@ footer {
 
   // DOM Elements
   const $ = id => document.getElementById(id);
-  const energyValEl = $('energyVal');
-  const energyBarEl = $('energyBar');
-  const regenLblEl = $('regenLbl');
-  const pointsValEl = $('pointsVal');
-  const gamePvltValEl = $('gamePvltVal');
-  const walletValEl = $('walletVal');
-  const treasuryValEl = $('treasuryVal');
-  const tapBtnEl = $('tapBtn');
-  const statusTxtEl = $('statusTxt');
-  const connectBtnEl = $('connectBtn');
-  const stateDisc = $('stateDisconnected');
-  const stateConn = $('stateConnected');
-  const disconnBtnEl = $('disconnectBtn');
-  const actionGridEl = $('actionGrid');
-  const buyBtnEl = $('buyBtn');
-  const claimBtnEl = $('claimBtn');
-  const claimSubEl = $('claimSub');
+  const elements = {
+    energyVal: $('energyVal'), energyBar: $('energyBar'), regenLbl: $('regenLbl'),
+    pointsVal: $('pointsVal'), gamePvltVal: $('gamePvltVal'),
+    walletVal: $('walletVal'), treasuryVal: $('treasuryVal'),
+    tapBtn: $('tapBtn'), statusTxt: $('statusTxt'), connectBtn: $('connectBtn'),
+    stateDisc: $('stateDisconnected'), stateConn: $('stateConnected'),
+    disconnectBtn: $('disconnectBtn'), actionGrid: $('actionGrid'),
+    buyBtn: $('buyBtn'), claimBtn: $('claimBtn'), claimSub: $('claimSub')
+  };
 
-  // State
-  let provider = null;
-  let account = null;
-  let tokenC = null;
-  let gameC = null;
-  let decimals = 18;
-
-  let maxEnergy = 100;
-  let energy = 100;
-  let points = 0;
-  let gamePvlt = 0;
-  let walletBal = 0;
-  let treasuryBal = 0;
-  let lastRegen = Date.now();
+  let provider = null, account = null, tokenC = null, gameC = null, decimals = 18;
+  let maxEnergy = 100, energy = 100, points = 0, gamePvlt = 0, walletBal = 0, treasuryBal = 0, lastRegen = Date.now();
   let regenTimer = null;
 
-  function save() {
-    if (!account) return;
-    localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy }));
-  }
+  function save() { if (account) localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy })); }
   function load() {
     if (!account) return;
     try {
@@ -273,27 +248,27 @@ footer {
   }
 
   function render() {
-    energyValEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
-    energyBarEl.style.width = Math.min((energy / maxEnergy) * 100, 100) + '%';
-    pointsValEl.textContent = points;
-    gamePvltValEl.textContent = gamePvlt.toFixed(0);
-    walletValEl.textContent = walletBal.toFixed(2);
-    treasuryValEl.textContent = treasuryBal.toFixed(0);
-    claimSubEl.textContent = gamePvlt >= 1 ? `${Math.floor(gamePvlt)} PVLT` : 'TO WALLET';
+    elements.energyVal.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
+    elements.energyBar.style.width = Math.min((energy / maxEnergy) * 100, 100) + '%';
+    elements.pointsVal.textContent = points;
+    elements.gamePvltVal.textContent = gamePvlt.toFixed(0);
+    elements.walletVal.textContent = walletBal.toFixed(2);
+    elements.treasuryVal.textContent = treasuryBal.toFixed(0);
+    elements.claimSub.textContent = gamePvlt >= 1 ? `${Math.floor(gamePvlt)} PVLT` : 'TO WALLET';
 
     if (account) {
-      tapBtnEl.classList.remove('no-energy');
-      stateDisc.style.display = 'none';
-      stateConn.style.display = 'block';
-      disconnBtnEl.style.display = 'block';
-      actionGridEl.style.display = 'grid';
-      disconnBtnEl.textContent = `🔴 ${account.slice(0,6)}...${account.slice(-4)}`;
-      buyBtnEl.disabled = walletBal < 100;
-      claimBtnEl.disabled = gamePvlt < 1;
+      elements.tapBtn.classList.remove('no-energy');
+      elements.stateDisc.style.display = 'none';
+      elements.stateConn.style.display = 'block';
+      elements.disconnectBtn.style.display = 'block';
+      elements.actionGrid.style.display = 'grid';
+      elements.disconnectBtn.textContent = `🔴 ${account.slice(0,6)}...${account.slice(-4)}`;
+      elements.buyBtn.disabled = walletBal < 100;
+      elements.claimBtn.disabled = gamePvlt < 1;
     } else {
-      tapBtnEl.classList.add('no-energy');
-      stateDisc.style.display = 'block';
-      stateConn.style.display = 'none';
+      elements.tapBtn.classList.add('no-energy');
+      elements.stateDisc.style.display = 'block';
+      elements.stateConn.style.display = 'none';
     }
   }
 
@@ -307,9 +282,9 @@ footer {
         save();
       }
       const rem = 15 - (Math.floor((Date.now() - lastRegen) / 1000) % 15);
-      regenLblEl.textContent = `⚡ +1 in ${rem}s`;
+      elements.regenLbl.textContent = `⚡ +1 in ${rem}s`;
     } else {
-      regenLblEl.textContent = '';
+      elements.regenLbl.textContent = '';
     }
     render();
   }
@@ -327,7 +302,7 @@ footer {
     } catch(e) { console.error('Balance error', e); }
   }
 
-  function showFloat(x, y, text, color = '#fff') {
+  function showFloat(x, y, text, color) {
     const el = document.createElement('div');
     el.className = 'float-text';
     el.textContent = text;
@@ -350,51 +325,47 @@ footer {
     save(); render();
   }
 
-  tapBtnEl.addEventListener('click', (e) => {
-    const rect = tapBtnEl.getBoundingClientRect();
+  elements.tapBtn.addEventListener('click', (e) => {
+    const rect = elements.tapBtn.getBoundingClientRect();
     doTap(rect.left + rect.width/2, rect.top + rect.height/2);
   });
-  tapBtnEl.addEventListener('touchstart', (e) => {
+  elements.tapBtn.addEventListener('touchstart', (e) => {
     e.preventDefault();
     const touch = e.touches[0];
     doTap(touch.clientX, touch.clientY);
   }, { passive: false });
 
-  // ========== WALLETCONNECT (SAME AS WORKING HTML) ==========
-  connectBtnEl.onclick = async () => {
+  // WalletConnect
+  elements.connectBtn.onclick = async () => {
     if (account) {
-      // Disconnect
       if (regenTimer) clearInterval(regenTimer);
       save();
       if (provider?.disconnect) await provider.disconnect();
       account = null;
       provider = null;
-      tokenC = null;
-      gameC = null;
-      walletBal = 0;
-      treasuryBal = 0;
-      energy = 100; maxEnergy = 100; points = 0; gamePvlt = 0;
-      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-      connectBtnEl.disabled = false;
-      setStatus('🔒 Disconnected');
+      tokenC = gameC = null;
+      walletBal = treasuryBal = 0;
+      energy = maxEnergy = 100;
+      points = gamePvlt = 0;
+      elements.connectBtn.innerHTML = '💼 CONNECT WALLET';
+      elements.connectBtn.disabled = false;
+      elements.statusTxt.textContent = '🔒 Disconnected';
       render();
       return;
     }
 
     try {
-      connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
-      connectBtnEl.disabled = true;
-      setStatus('⏳ Opening WalletConnect...');
+      elements.connectBtn.innerHTML = '<span class="spinner"></span> CONNECTING...';
+      elements.connectBtn.disabled = true;
+      elements.statusTxt.textContent = '⏳ Opening WalletConnect...';
 
       provider = await EthereumProvider.init({
         projectId: "1731f99148b9cf6107dee70b6efb14b7",
-        chains: [137], // Polygon Mainnet
+        chains: [137],
         showQrModal: true,
         methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData"],
         optionalMethods: ["eth_accounts", "eth_requestAccounts", "eth_chainId"],
-        rpcMap: {
-          137: "https://polygon-rpc.com"
-        },
+        rpcMap: { 137: "https://polygon-rpc.com" },
         metadata: {
           name: "PepeVolt",
           description: "PepeVolt Game",
@@ -417,8 +388,8 @@ footer {
       load();
       await refreshBalances();
       
-      connectBtnEl.innerHTML = `🔴 ${account.slice(0,6)}...${account.slice(-4)}`;
-      setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
+      elements.connectBtn.innerHTML = `🔴 ${account.slice(0,6)}...${account.slice(-4)}`;
+      elements.statusTxt.textContent = `✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`;
       render();
 
       if (regenTimer) clearInterval(regenTimer);
@@ -427,122 +398,102 @@ footer {
       provider.on("disconnect", () => {
         if (regenTimer) clearInterval(regenTimer);
         account = null;
-        connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-        connectBtnEl.disabled = false;
-        setStatus('🔒 Disconnected');
+        elements.connectBtn.innerHTML = '💼 CONNECT WALLET';
+        elements.connectBtn.disabled = false;
+        elements.statusTxt.textContent = '🔒 Disconnected';
         render();
-      });
-
-      provider.on("accountsChanged", (accs) => {
-        if (accs.length === 0) {
-          if (regenTimer) clearInterval(regenTimer);
-          account = null;
-          connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-          setStatus('🔒 Disconnected');
-          render();
-        } else if (accs[0] !== account) {
-          window.location.reload();
-        }
       });
 
     } catch(err) {
       console.log(err);
-      setStatus(err.message.includes("closed") ? '🔒 Connect to start' : '❌ Wallet connection failed');
-      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-      connectBtnEl.disabled = false;
+      elements.statusTxt.textContent = err.message.includes("closed") ? '🔒 Connect to start' : '❌ Wallet connection failed';
+      elements.connectBtn.innerHTML = '💼 CONNECT WALLET';
+      elements.connectBtn.disabled = false;
     }
   };
 
-  disconnBtnEl.onclick = () => {
-    connectBtnEl.click(); // Reuse the disconnect logic
-  };
+  elements.disconnectBtn.onclick = () => elements.connectBtn.click();
 
-  // ========== BUY ENERGY ==========
+  // Buy Energy
   async function buyEnergy() {
-    if (!account) { setStatus("Connect wallet first"); return; }
-    if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
+    if (!account) { elements.statusTxt.textContent = "Connect wallet first"; return; }
+    if (walletBal < 100) { elements.statusTxt.textContent = `❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`; return; }
 
-    buyBtnEl.disabled = true;
-    setStatus("⏳ Checking allowance...");
+    elements.buyBtn.disabled = true;
+    elements.statusTxt.textContent = "⏳ Checking allowance...";
 
     try {
       const amount = ethers.utils.parseUnits("100", decimals);
-      
       const allowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
-      console.log("Allowance:", allowance.toString());
 
       if (allowance.lt(amount)) {
-        setStatus("⏳ Approving 100 PVLT...");
+        elements.statusTxt.textContent = "⏳ Approving 100 PVLT...";
         const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amount);
-        setStatus("⏳ Approving - waiting...");
         await approveTx.wait();
-        setStatus("✅ Approval confirmed! Buying energy...");
+        elements.statusTxt.textContent = "✅ Approval confirmed!";
         await new Promise(r => setTimeout(r, 1500));
       }
 
-      setStatus("⏳ Buying 1000 Energy...");
+      elements.statusTxt.textContent = "⏳ Buying 1000 Energy...";
       const gasEstimate = await gameC.estimateGas.buyEnergy(amount);
       const tx = await gameC.buyEnergy(amount, { gasLimit: gasEstimate.mul(12).div(10) });
-      setStatus("⏳ Transaction sent. Confirming...");
+      elements.statusTxt.textContent = "⏳ Confirming...";
       await tx.wait();
       
       maxEnergy += 1000;
       energy += 1000;
       save();
       await refreshBalances();
-      setStatus(`✅ +1000 Energy! Max: ${maxEnergy}`);
+      elements.statusTxt.textContent = `✅ +1000 Energy! Max: ${maxEnergy}`;
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '⚡ +1000 ENERGY!', '#ffd700');
 
     } catch(e) {
-      console.error("Buy error:", e);
+      console.error(e);
       let errorMsg = e.message || "Transaction failed";
       if (errorMsg.includes("insufficient funds")) errorMsg = "Insufficient MATIC for gas!";
       else if (errorMsg.includes("user rejected")) errorMsg = "Transaction rejected";
-      else if (errorMsg.includes("execution reverted")) errorMsg = "Contract error - check if you have PVLT tokens";
-      setStatus(`❌ ${errorMsg.slice(0,80)}`);
+      elements.statusTxt.textContent = `❌ ${errorMsg.slice(0,80)}`;
     } finally {
-      buyBtnEl.disabled = walletBal < 100;
+      elements.buyBtn.disabled = walletBal < 100;
     }
   }
 
-  // ========== CLAIM REWARDS ==========
+  // Claim Rewards
   async function claimRewards() {
-    if (!account) { setStatus("Connect wallet first"); return; }
-    if (gamePvlt < 1) { setStatus(`❌ No GAME PVLT! You have ${gamePvlt}`); return; }
-    if (treasuryBal < gamePvlt) { setStatus(`❌ Treasury low! Has ${treasuryBal.toFixed(0)} PVLT`); return; }
+    if (!account) { elements.statusTxt.textContent = "Connect wallet first"; return; }
+    if (gamePvlt < 1) { elements.statusTxt.textContent = `❌ No GAME PVLT! You have ${gamePvlt}`; return; }
+    if (treasuryBal < gamePvlt) { elements.statusTxt.textContent = `❌ Treasury low! Has ${treasuryBal.toFixed(0)} PVLT`; return; }
 
     const amount = Math.floor(gamePvlt);
     const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
-    claimBtnEl.disabled = true;
-    setStatus(`⏳ Claiming ${amount} PVLT...`);
+    elements.claimBtn.disabled = true;
+    elements.statusTxt.textContent = `⏳ Claiming ${amount} PVLT...`;
 
     try {
       const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
       const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
-      setStatus("⏳ Confirming...");
+      elements.statusTxt.textContent = "⏳ Confirming...";
       await tx.wait();
       
       gamePvlt = 0; points = 0;
       save();
       await refreshBalances();
-      setStatus(`✅ Claimed ${amount} REAL PVLT!`);
+      elements.statusTxt.textContent = `✅ Claimed ${amount} REAL PVLT!`;
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
     } catch(e) {
-      console.error("Claim error:", e);
-      setStatus(`❌ ${e.message?.slice(0,80) || "Claim failed"}`);
+      console.error(e);
+      elements.statusTxt.textContent = `❌ ${e.message?.slice(0,80) || "Claim failed"}`;
     } finally {
-      claimBtnEl.disabled = gamePvlt < 1;
+      elements.claimBtn.disabled = gamePvlt < 1;
     }
   }
 
-  function setStatus(msg) { statusTxtEl.textContent = msg; }
-
-  buyBtnEl.onclick = buyEnergy;
-  claimBtnEl.onclick = claimRewards;
+  elements.buyBtn.onclick = buyEnergy;
+  elements.claimBtn.onclick = claimRewards;
   
   render();
   setInterval(tick, 1000);
-  setStatus('🔒 Click CONNECT WALLET to start');
+  elements.statusTxt.textContent = '🔒 Click CONNECT WALLET to start';
 </script>
 </body>
 </html>
