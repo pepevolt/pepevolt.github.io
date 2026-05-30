@@ -471,13 +471,14 @@ body {
     setTimeout(() => el.remove(), 750);
   }
 
-  function saveData() {
+function saveData() {
     if (userAccount) {
       localStorage.setItem(`pvlt_game_${userAccount}`, JSON.stringify({ 
         energy, 
         points,
         gamePvltBalance,
-        lastRegenTime
+        lastRegenTime,
+        maxEnergy  // ADD THIS LINE
       }));
     }
   }
