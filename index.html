@@ -399,8 +399,6 @@ body {
   const GAME_CONTRACT_ADDRESS = "0x53DE681882d9926EBD603dEFBc759582964a0703";
   const TREASURY_ADDRESS = "0xE1c7803BA2fc7E02cf80FAc67D8fc3537c3992cD";
   
-  
-  
   // ============ CONTRACT ABIs ============
   const PVLT_ABI = [
     "function balanceOf(address) view returns (uint256)",
@@ -412,13 +410,11 @@ body {
   
   const GAME_ABI = [
     "function buyEnergy(uint256 amount) external",
-    "function claimRewards(uint256 amount) external",
-    "function getGameInfo() view returns (address, address, uint256)"
+    "function claimRewards(uint256 amount) external"
   ];
 
   const TREASURY_ABI = [
-    "function getTreasuryBalance() view returns (uint256)",
-    "function gameContract() view returns (address)"
+    "function getTreasuryBalance() view returns (uint256)"
   ];
 
   // DOM Elements
@@ -533,19 +529,6 @@ body {
       return balanceFormatted;
     } catch(e) {
       debugLog(`Treasury check error: ${e.message}`);
-    }
-  }
-
-  async function checkGameContract() {
-    if (!treasuryContract) return;
-    try {
-      const gameAddr = await treasuryContract.gameContract();
-      debugLog(`Game contract in treasury: ${gameAddr}`);
-      if (gameAddr.toLowerCase() !== GAME_CONTRACT_ADDRESS.toLowerCase()) {
-        debugLog(`⚠️ WARNING: Game contract not set in Treasury!`);
-      }
-    } catch(e) {
-      debugLog(`Game check error: ${e.message}`);
     }
   }
 
@@ -684,7 +667,10 @@ body {
       
       statusBar.innerHTML = "⏳ Buying 1000 energy (cost: 100 PVLT)...";
       debugLog("Calling buyEnergy...");
-      const tx = await gameContract.buyEnergy(100);
+      
+      // FIX: Convert 100 to WEI (18 decimals)
+      const amountInWei = ethers.utils.parseUnits("100", decimals);
+      const tx = await gameContract.buyEnergy(amountInWei);
       await tx.wait();
       debugLog("Energy purchased!");
       
@@ -704,7 +690,7 @@ body {
     }
   }
 
-  // CLAIM REWARDS - requires blockchain transaction
+  // CLAIM REWARDS - FIXED with proper WEI conversion
   async function claimRewards() {
     if (!userAccount) {
       alert("Connect wallet");
@@ -722,13 +708,17 @@ body {
       return;
     }
     
-    debugLog(`Attempting to claim ${amountToClaim} GAME PVLT`);
+    // FIX: Convert to WEI with 18 decimals
+    const amountInWei = ethers.utils.parseUnits(amountToClaim.toString(), decimals);
+    
+    debugLog(`Attempting to claim ${amountToClaim} GAME PVLT (${amountInWei.toString()} wei)`);
     
     try {
       statusBar.innerHTML = `⏳ Claiming ${amountToClaim} GAME PVLT to your wallet...`;
       debugLog("Calling claimRewards() on game contract...");
       
-      const tx = await gameContract.claimRewards(amountToClaim);
+      // FIX: Pass the amount in WEI, not as a number
+      const tx = await gameContract.claimRewards(amountInWei);
       debugLog(`Transaction sent: ${tx.hash}`);
       
       statusBar.innerHTML = "⏳ Waiting for confirmation...";
@@ -745,7 +735,7 @@ body {
       await checkTreasuryBalance();
       
       statusBar.innerHTML = `✅ Claimed ${amountToClaim} PVLT to wallet!`;
-      showFloat(window.innerWidth/2, window.innerHeight/2, "💎 PVLT CLAIMED! 💎", "#46c9b0");
+      showFloat(window.innerWidth/2, window.innerHeight/2, `💎 +${amountToClaim} PVLT! 💎`, "#46c9b0");
       debugLog(`Successfully claimed ${amountToClaim} PVLT!`);
       
     } catch(e) {
@@ -809,16 +799,7 @@ body {
       decimals = await tokenContract.decimals();
       debugLog(`Decimals: ${decimals}`);
       
-      // Check contract info
-      try {
-        const gameInfo = await gameContract.getGameInfo();
-        debugLog(`Game owner: ${gameInfo[0]}, Treasury: ${gameInfo[1]}, Price: ${gameInfo[2]}`);
-      } catch(e) {
-        debugLog(`Game info error: ${e.message}`);
-      }
-      
       await checkTreasuryBalance();
-      await checkGameContract();
       
       loadData();
       await updateWalletBalance();
