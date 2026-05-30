@@ -626,68 +626,81 @@ function loadData() {
     updateUI();
   }
 
-// BUY ENERGY - requires blockchain transaction
-  async function buyEnergy() {
+// BUY ENERGY - 50 energy for 100 PVLT
+async function buyEnergy() {
     if (!userAccount) {
-      alert("Connect wallet first");
-      return;
+        alert("Connect wallet first");
+        return;
     }
     
     if (walletBalance < 100) {
-      alert(`❌ Need 100 PVLT. You have ${walletBalance.toFixed(4)} PVLT`);
-      return;
+        alert(`❌ Need 100 PVLT. You have ${walletBalance.toFixed(4)} PVLT`);
+        return;
     }
     
     try {
-      debugLog(`Buying energy - Wallet balance: ${walletBalance} PVLT`);
-      statusBar.innerHTML = "⏳ Checking allowance...";
-      
-      // Amount of PVLT to spend (100 tokens with 18 decimals)
-      const pvltAmount = ethers.utils.parseUnits("100", decimals);
-      
-      // Check and approve allowance
-      const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
-      debugLog(`Current allowance: ${ethers.utils.formatUnits(allowance, decimals)} PVLT`);
-      
-      if (allowance.lt(pvltAmount)) {
-        statusBar.innerHTML = "⏳ Approving PVLT spending...";
-        debugLog("Requesting approval for 100 PVLT...");
-        const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, pvltAmount);
-        await approveTx.wait();
-        debugLog("Approval confirmed!");
-      }
-      
-      statusBar.innerHTML = "⏳ Buying 1000 energy (cost: 100 PVLT)...";
-      debugLog("Calling buyEnergy with 100 PVLT...");
-      
-      const tx = await gameContract.buyEnergy(pvltAmount);
-      await tx.wait();
-      debugLog("Energy purchased successfully!");
-      
-      maxEnergy += 1000;
-      energy = Math.min(energy + 1000, maxEnergy);
-      
-      saveData();
-      await updateWalletBalance();
-      updateUI();
-      
-      statusBar.innerHTML = `✅ +1000 Energy! Max energy now: ${maxEnergy}`;
-      showFloat(window.innerWidth/2, window.innerHeight/2, "⚡ +1000 ENERGY ⚡", "#ffd966");
-      
+        debugLog(`Buying energy - Wallet balance: ${walletBalance} PVLT`);
+        statusBar.innerHTML = "⏳ Checking allowance...";
+        
+        // Amount of PVLT to spend (100 tokens with 18 decimals)
+        const pvltAmount = ethers.utils.parseUnits("100", decimals);
+        
+        // Check and approve allowance
+        const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
+        debugLog(`Current allowance: ${ethers.utils.formatUnits(allowance, decimals)} PVLT`);
+        
+        if (allowance.lt(pvltAmount)) {
+            statusBar.innerHTML = "⏳ Approving PVLT spending...";
+            debugLog("Requesting approval for 100 PVLT...");
+            const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, pvltAmount);
+            await approveTx.wait();
+            debugLog("Approval confirmed!");
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        statusBar.innerHTML = "⏳ Buying 50 energy (cost: 100 PVLT)...";
+        debugLog(`Calling buyEnergy with amount: ${pvltAmount.toString()} wei`);
+        
+        // Call the contract - it should give 50 energy for 100 PVLT
+        const tx = await gameContract.buyEnergy(pvltAmount);
+        debugLog(`Transaction sent: ${tx.hash}`);
+        
+        statusBar.innerHTML = "⏳ Waiting for confirmation...";
+        await tx.wait();
+        debugLog("Energy purchased successfully!");
+        
+        // Update game state - ADD 50 ENERGY (not 1000)
+        const energyGained = 50;
+        maxEnergy += energyGained;
+        energy = Math.min(energy + energyGained, maxEnergy);
+        
+        saveData();
+        await updateWalletBalance();
+        updateUI();
+        
+        statusBar.innerHTML = `✅ +${energyGained} Energy! Max energy now: ${maxEnergy}`;
+        showFloat(window.innerWidth/2, window.innerHeight/2, `⚡ +${energyGained} ENERGY ⚡`, "#ffd966");
+        
     } catch(e) {
-      debugLog(`Buy error: ${e.message}`);
-      
-      let errorMsg = e.message;
-      if (errorMsg.includes("execution reverted")) {
-        errorMsg = "Transaction reverted. Check contract or try different amount.";
-      } else if (errorMsg.includes("insufficient funds")) {
-        errorMsg = "Insufficient MATIC for gas!";
-      }
-      
-      alert(`❌ Buy failed: ${errorMsg.slice(0,100)}`);
-      statusBar.innerHTML = "❌ Purchase failed";
+        debugLog(`Buy error: ${e.message}`);
+        console.error("Full error:", e);
+        
+        let errorMsg = e.message;
+        
+        if (errorMsg.includes("invalid BigNumber")) {
+            errorMsg = "Contract parameter mismatch. Check contract function signature.";
+        } else if (errorMsg.includes("execution reverted")) {
+            errorMsg = "Transaction reverted. Check contract or try different amount.";
+        } else if (errorMsg.includes("insufficient funds")) {
+            errorMsg = "Insufficient MATIC for gas!";
+        } else if (errorMsg.includes("user rejected")) {
+            errorMsg = "Transaction rejected in wallet.";
+        }
+        
+        alert(`❌ Buy failed: ${errorMsg.slice(0,150)}`);
+        statusBar.innerHTML = "❌ Purchase failed";
     }
-  }
+}
 
   // CLAIM REWARDS
   async function claimRewards() {
