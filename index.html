@@ -53,13 +53,13 @@ button:disabled{opacity:0.5;cursor:not-allowed;}
   <div class="info">🏆 100 points = 1 GAME PVLT | Energy regens every 15s | Tapping is FREE!</div>
 </div>
 <script>
-  // ============ YOUR NEW CONTRACT ADDRESSES ============
+  // ============ UPDATE THESE WITH YOUR NEW CONTRACT ADDRESSES ============
   const PVLT_ADDR = "0x80E6f64635E4627bA54E1939624E6111A3d8917c";
-  const GAME_ADDR = "0x6FA81DC0eA8545216D923D994C92f511cd9cfBbA";
-  const TREASURY_ADDR = "0x0760aA32F1DfC7B82252deD7d5A9D39c13F76668";
+  const GAME_ADDR = "0xf02085048DBE7447F2c6Ed60a6904196e3615b59";      // <-- PASTE YOUR NEW GAME ADDRESS
+  const TREASURY_ADDR = "0x1ddD51aBed0C5EEc22f92f6b00f35C3eE69FA57B"; // <-- PASTE YOUR NEW TREASURY ADDRESS
   
   const PVLT_ABI = ["function balanceOf(address) view returns (uint256)","function approve(address,uint256) returns (bool)","function allowance(address,address) view returns (uint256)","function decimals() view returns (uint8)","function transfer(address,uint256) returns (bool)"];
-  const GAME_ABI = ["function buyEnergy() external","function claimRewards() external","function getPlayer(address) view returns (uint256,uint256,uint256,uint256)"];
+  const GAME_ABI = ["function buyEnergy() external","function claimRewards() external"];
   const TREASURY_ABI = ["function getBalance() view returns (uint256)"];
 
   const connectBtn = document.getElementById("connectBtn");
@@ -146,14 +146,11 @@ button:disabled{opacity:0.5;cursor:not-allowed;}
     if(!account) { alert("Connect first"); return; }
     if(gamePvlt < 1) { alert("❌ Need at least 1 GAME PVLT to claim!"); return; }
     
-    const toClaim = Math.floor(gamePvlt);
-    
     try {
-      log(`⏳ Claiming ${toClaim} GAME PVLT...`);
-      // claimRewards takes NO parameter in your Game.sol
+      log(`⏳ Claiming ${Math.floor(gamePvlt)} GAME PVLT...`);
       const tx = await gameContract.claimRewards();
       await tx.wait();
-      log(`✅ Claimed ${toClaim} PVLT!`);
+      log(`✅ Claimed ${Math.floor(gamePvlt)} PVLT!`);
       gamePvlt = 0;
       saveGame();
       await updateWallet();
