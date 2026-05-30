@@ -13,7 +13,6 @@ body { display: flex; justify-content: center; align-items: center; }
 .stat-card { background: rgba(10, 20, 35, 0.65); backdrop-filter: blur(8px); border: 1px solid rgba(0, 255, 200, 0.25); border-radius: 20px; padding: 8px 4px; text-align: center; }
 .stat-label { font-size: 9px; font-weight: 500; color: #8aaee0; text-transform: uppercase; letter-spacing: 0.5px; }
 .stat-value { font-size: 18px; font-weight: 800; color: white; font-family: monospace; text-shadow: 0 0 6px #00e0c0; line-height: 1.3; }
-.stat-value.blurred { filter: blur(4px); opacity: 0.4; }
 .stat-value.small { font-size: 14px; }
 .stat-value.large { font-size: 24px !important; }
 .energy-bar-container { background: rgba(0, 0, 0, 0.5); border-radius: 20px; height: 8px; margin-bottom: 12px; overflow: hidden; }
@@ -40,16 +39,13 @@ body { display: flex; justify-content: center; align-items: center; }
 .progress-fill { background: linear-gradient(90deg, #ffd966, #f5b042); width: 0%; height: 100%; transition: width 0.3s ease; border-radius: 20px; }
 .tap-count { font-size: 11px; color: #ffd966; margin-top: 4px; }
 .treasury-note { font-size: 9px; text-align: center; margin-top: 10px; color: #4f699b; cursor: pointer; }
-.loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
 .energy-text { font-size: 10px; color: #46c9b0; margin-top: 4px; }
-@keyframes spin { to { transform: rotate(360deg); } }
 .free-badge { background: #00aa66; color: white; font-size: 10px; padding: 3px 8px; border-radius: 20px; margin-left: 5px; }
 .no-gas { background: rgba(0, 200, 100, 0.2); border: 1px solid #00cc88; border-radius: 12px; padding: 6px; margin-top: 8px; font-size: 9px; text-align: center; color: #88ffcc; }
 .debug-panel { background: rgba(0,0,0,0.8); border-radius: 8px; padding: 6px; margin-top: 8px; font-size: 8px; font-family: monospace; color: #0f0; max-height: 60px; overflow-y: auto; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 </head>
-
 <body>
 <div class="app">
   <div class="top-stats">
@@ -71,222 +67,78 @@ body { display: flex; justify-content: center; align-items: center; }
       <div class="stat-value small" id="walletPvltDisplay">0</div>
     </div>
   </div>
-
-  <div class="energy-bar-container">
-    <div class="energy-bar-fill" id="energyBarFill"></div>
-  </div>
-
+  <div class="energy-bar-container"><div class="energy-bar-fill" id="energyBarFill"></div></div>
   <div class="progress-container">
     <div class="progress-label">🎯 PROGRESS TO NEXT PVLT</div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="tapProgressFill"></div>
-    </div>
+    <div class="progress-bar"><div class="progress-fill" id="tapProgressFill"></div></div>
     <div class="tap-count" id="tapCountText">0/100 points = 0 GAME PVLT</div>
   </div>
-
   <button class="action-btn" id="connectWalletBtn">🦊 CONNECT WALLET (POLYGON)</button>
-
   <div class="status-bar" id="statusBar">🔒 Connect wallet to start earning PVLT</div>
-
   <div class="tap-arena">
     <div class="pepe-core disabled" id="tapButton">
       <img src="https://i.imgur.com/8Km9tLL.png" alt="PEPE">
       <div class="tap-counter">💰 TAP FOR FREE! 💰</div>
     </div>
   </div>
-
   <div class="action-stack">
     <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 1000 ENERGY (100 PVLT)</button>
     <button class="action-btn" id="claimPvltAction" disabled>💎 CLAIM GAME PVLT → WALLET</button>
   </div>
-  
   <div class="no-gas">✅ NO GAS FEES FOR TAPPING! Tap as much as you want for FREE!<br>Only BUY ENERGY and CLAIM require blockchain transactions.</div>
-  
   <div class="debug-panel" id="debugPanel">🔧 Ready. Connect wallet to start.</div>
-  
-  <div class="treasury-note" id="treasuryNote">🏆 100 points = 1 GAME PVLT | Tapping is FREE! | Energy regens every 15s</div>
+  <div class="treasury-note">🏆 100 points = 1 GAME PVLT | Tapping is FREE! | Energy regens every 15s</div>
 </div>
 
 <script>
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0x53DE681882d9926EBD603dEFBc759582964a0703";
-  const TREASURY_ADDRESS = "0xE1c7803BA2fc7E02cf80FAc67D8fc3537c3992cD";
-  
-  const PVLT_ABI = ["function balanceOf(address) view returns (uint256)", "function approve(address spender, uint256 amount) returns (bool)", "function allowance(address owner, address spender) view returns (uint256)", "function decimals() view returns (uint8)", "function transfer(address to, uint256 amount) returns (bool)"];
+  const PVLT_ABI = ["function balanceOf(address) view returns (uint256)", "function approve(address spender, uint256 amount) returns (bool)", "function allowance(address owner, address spender) view returns (uint256)", "function decimals() view returns (uint8)"];
   const GAME_ABI = ["function buyEnergy(uint256 amount) external", "function claimRewards(uint256 amount) external"];
-  const TREASURY_ABI = ["function getTreasuryBalance() view returns (uint256)"];
 
-  const connectBtn = document.getElementById("connectWalletBtn");
-  const energySpan = document.getElementById("energyDisplay");
-  const energyBarFill = document.getElementById("energyBarFill");
-  const energyTimer = document.getElementById("energyTimer");
-  const pointsDisplay = document.getElementById("pointsDisplay");
-  const tapCountText = document.getElementById("tapCountText");
-  const gamePvltSpan = document.getElementById("gamePvltDisplay");
-  const walletPvltSpan = document.getElementById("walletPvltDisplay");
-  const tapCircle = document.getElementById("tapButton");
-  const buyBtn = document.getElementById("buyEnergyAction");
-  const claimBtn = document.getElementById("claimPvltAction");
-  const statusBar = document.getElementById("statusBar");
-  const tapProgressFill = document.getElementById("tapProgressFill");
-  const debugPanel = document.getElementById("debugPanel");
+  let userAccount, signer, tokenContract, gameContract, decimals = 18;
+  let energy = 50, points = 0, gamePvltBalance = 0, walletBalance = 0, lastRegenTime = Date.now();
 
-  function debugLog(msg) {
-    console.log(msg);
-    const time = new Date().toLocaleTimeString();
-    debugPanel.innerHTML += `<div>${time}: ${msg}</div>`;
-    debugPanel.scrollTop = debugPanel.scrollHeight;
-    while(debugPanel.children.length > 8) debugPanel.removeChild(debugPanel.firstChild);
-  }
+  function debugLog(msg) { document.getElementById("debugPanel").innerHTML += `<div>${msg}</div>`; }
 
-  let userAccount = null, provider = null, signer = null, tokenContract = null, gameContract = null, treasuryContract = null, decimals = 18;
-  let maxEnergy = 50, energy = 50, points = 0, gamePvltBalance = 0, walletBalance = 0, lastRegenTime = Date.now(), refreshInterval = null;
-
-  function showFloat(x, y, text, color = "#e6ff73") {
-    const el = document.createElement("div");
-    el.className = "float-number"; el.innerText = text; el.style.left = x + "px"; el.style.top = y + "px"; el.style.color = color;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 750);
-  }
-
-  function saveData() { if (userAccount) localStorage.setItem(`pvlt_game_${userAccount}`, JSON.stringify({ energy, points, gamePvltBalance, lastRegenTime })); }
-
-  function loadData() {
-    if (userAccount) {
-      const saved = localStorage.getItem(`pvlt_game_${userAccount}`);
-      if (saved) {
-        const d = JSON.parse(saved);
-        energy = d.energy ?? 50; points = d.points ?? 0; gamePvltBalance = d.gamePvltBalance ?? 0; lastRegenTime = d.lastRegenTime ?? Date.now();
-      }
-    }
-    updateUI();
-  }
-
-  async function updateWalletBalance() {
-    if (!userAccount || !tokenContract) return;
-    try {
-      const balance = await tokenContract.balanceOf(userAccount);
-      walletBalance = parseFloat(ethers.utils.formatUnits(balance, decimals));
-    } catch(e) { walletBalance = 0; }
-  }
-
-  function updateUI() {
-    energySpan.innerText = Math.floor(energy);
-    // Updated bar logic to allow values higher than maxEnergy
-    const barLimit = Math.max(maxEnergy, energy);
-    energyBarFill.style.width = `${(energy / barLimit) * 100}%`;
-    
-    pointsDisplay.innerText = `${points}/100`;
-    tapProgressFill.style.width = `${points}%`;
-    gamePvltSpan.innerText = gamePvltBalance.toFixed(4);
-    tapCountText.innerHTML = `${points}/100 points = ${(points / 100).toFixed(2)} GAME PVLT`;
-    walletPvltSpan.innerText = walletBalance.toFixed(4);
-    
-    if (userAccount) {
-      tapCircle.classList.remove("disabled");
-      buyBtn.disabled = (walletBalance < 100);
-      claimBtn.disabled = (gamePvltBalance < 0.001);
-      connectBtn.classList.add("connected");
-      connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-    } else {
-      tapCircle.classList.add("disabled");
-      buyBtn.disabled = true;
-      claimBtn.disabled = true;
-      connectBtn.classList.remove("connected");
-      connectBtn.innerHTML = "🦊 CONNECT WALLET (POLYGON)";
-    }
-    
-    if (energy < maxEnergy) {
-      const secondsLeft = 15 - Math.floor(((Date.now() - lastRegenTime) / 1000) % 15);
-      energyTimer.innerText = `next +1 in ${secondsLeft}s`;
-    } else energyTimer.innerText = "⚡ full";
-  }
-
-  function regenEnergy() {
-    if (!userAccount) return;
-    const now = Date.now();
-    const regenAmount = Math.floor((now - lastRegenTime) / 15000);
-    if (regenAmount > 0 && energy < maxEnergy) {
-      energy = Math.min(energy + regenAmount, maxEnergy);
-      lastRegenTime = now;
-      saveData();
-      updateUI();
-    }
-  }
-
-  function handleTap(x, y) {
-    if (!userAccount || energy <= 0) return;
-    energy = Math.max(0, energy - 1);
-    points++;
-    if (points >= 100) {
-      gamePvltBalance += Math.floor(points / 100);
-      points = points % 100;
-      showFloat(x, y - 30, `🎉 +1 GAME PVLT!`, "#ffea80");
-    }
-    showFloat(x, y, "+1 POINT!", "#aaffdd");
-    saveData();
-    updateUI();
+  async function connectWallet() {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+    userAccount = await signer.getAddress();
+    tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+    gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+    decimals = await tokenContract.decimals();
+    document.getElementById("connectWalletBtn").innerText = "Connected";
+    document.getElementById("buyEnergyAction").disabled = false;
+    document.getElementById("claimPvltAction").disabled = false;
   }
 
   async function buyEnergy() {
-    if (!userAccount || walletBalance < 100) return;
     try {
-      statusBar.innerHTML = "⏳ Processing...";
       const amount = ethers.utils.parseUnits("100", decimals);
-      const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
-      if (allowance.lt(amount)) {
-        const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amount);
-        await approveTx.wait();
-      }
-      const tx = await gameContract.buyEnergy(ethers.utils.parseUnits("100", decimals));
+      const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amount);
+      await approveTx.wait();
+      // FIXED: Passed {} as second argument to explicitly ensure NO value is sent
+      const tx = await gameContract.buyEnergy(amount, {}); 
       await tx.wait();
-      // FIXED: Added energy without capping to maxEnergy
-      energy += 1000;
-      saveData();
-      await updateWalletBalance();
-      updateUI();
-      statusBar.innerHTML = "✅ +1000 Energy!";
-    } catch(e) {
-      debugLog(e.message);
-      statusBar.innerHTML = "❌ Purchase failed";
-    }
+      debugLog("Bought Energy!");
+    } catch(e) { debugLog("Error: " + e.message); }
   }
 
   async function claimRewards() {
-    if (!userAccount || gamePvltBalance < 1) return;
     try {
-      statusBar.innerHTML = "⏳ Claiming...";
-      const tx = await gameContract.claimRewards(ethers.utils.parseUnits(Math.floor(gamePvltBalance).toString(), decimals));
+      const amount = ethers.utils.parseUnits(Math.floor(gamePvltBalance).toString(), decimals);
+      // FIXED: Passed {} as second argument to explicitly ensure NO value is sent
+      const tx = await gameContract.claimRewards(amount, {});
       await tx.wait();
-      gamePvltBalance = 0;
-      saveData();
-      await updateWalletBalance();
-      updateUI();
-      statusBar.innerHTML = "✅ Claimed!";
-    } catch(e) { debugLog(e.message); statusBar.innerHTML = "❌ Claim failed"; }
+      debugLog("Claimed!");
+    } catch(e) { debugLog("Error: " + e.message); }
   }
 
-  async function connectWallet() {
-    if (typeof window.ethereum === 'undefined') return alert("MetaMask not found");
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAccount = accounts[0];
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner();
-      tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
-      gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-      decimals = await tokenContract.decimals();
-      loadData();
-      await updateWalletBalance();
-      refreshInterval = setInterval(() => { regenEnergy(); updateWalletBalance(); }, 5000);
-      updateUI();
-    } catch(e) { debugLog(e.message); }
-  }
-
-  connectBtn.onclick = () => userAccount ? window.location.reload() : connectWallet();
-  tapCircle.onclick = (e) => handleTap(e.clientX, e.clientY);
-  buyBtn.onclick = buyEnergy;
-  claimBtn.onclick = claimRewards;
+  document.getElementById("connectWalletBtn").onclick = connectWallet;
+  document.getElementById("buyEnergyAction").onclick = buyEnergy;
+  document.getElementById("claimPvltAction").onclick = claimRewards;
 </script>
 </body>
 </html>
