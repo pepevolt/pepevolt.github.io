@@ -637,7 +637,7 @@ body {
     updateUI();
   }
 
-  // BUY ENERGY - requires blockchain transaction
+// BUY ENERGY - requires blockchain transaction (FIXED)
   async function buyEnergy() {
     if (!userAccount) {
       alert("Connect wallet first");
@@ -652,40 +652,53 @@ body {
     try {
       debugLog(`Buying energy - Wallet balance: ${walletBalance} PVLT`);
       statusBar.innerHTML = "⏳ Checking allowance...";
-      const amount = ethers.utils.parseUnits("100", decimals);
       
+      // Amount of PVLT to spend (100 tokens with 18 decimals)
+      const pvltAmount = ethers.utils.parseUnits("100", decimals);
+      
+      // Check and approve allowance
       const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
-      debugLog(`Allowance: ${allowance.toString()}`);
+      debugLog(`Current allowance: ${ethers.utils.formatUnits(allowance, decimals)} PVLT`);
       
-      if (allowance.lt(amount)) {
+      if (allowance.lt(pvltAmount)) {
         statusBar.innerHTML = "⏳ Approving PVLT spending...";
-        debugLog("Approving PVLT...");
-        const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amount);
+        debugLog("Requesting approval for 100 PVLT...");
+        const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, pvltAmount);
         await approveTx.wait();
-        debugLog("Approved!");
+        debugLog("Approval confirmed!");
       }
       
       statusBar.innerHTML = "⏳ Buying 1000 energy (cost: 100 PVLT)...";
-      debugLog("Calling buyEnergy...");
+      debugLog("Calling buyEnergy with 100 PVLT...");
       
-      // FIX: Convert 100 to WEI (18 decimals)
-      const amountInWei = ethers.utils.parseUnits("100", decimals);
-      const tx = await gameContract.buyEnergy(amountInWei);
+      // CRITICAL FIX: Send PVLT amount to contract
+      const tx = await gameContract.buyEnergy(pvltAmount);
       await tx.wait();
-      debugLog("Energy purchased!");
+      debugLog("Energy purchased successfully!");
       
-      // After buying, update local energy
+      // FIX: Increase maxEnergy to actually allow the purchased energy
+      maxEnergy += 1000;  // Increase the cap so energy isn't wasted
       energy = Math.min(energy + 1000, maxEnergy);
+      
       saveData();
       await updateWalletBalance();
       updateUI();
       
-      statusBar.innerHTML = "✅ +1000 Energy!";
+      statusBar.innerHTML = `✅ +1000 Energy! Max energy now: ${maxEnergy}`;
       showFloat(window.innerWidth/2, window.innerHeight/2, "⚡ +1000 ENERGY ⚡", "#ffd966");
       
     } catch(e) {
       debugLog(`Buy error: ${e.message}`);
-      alert(`❌ Failed: ${e.message.slice(0,100)}`);
+      
+      // Better error handling
+      let errorMsg = e.message;
+      if (errorMsg.includes("execution reverted")) {
+        errorMsg = "Transaction reverted. Check contract or try different amount.";
+      } else if (errorMsg.includes("insufficient funds")) {
+        errorMsg = "Insufficient MATIC for gas!";
+      }
+      
+      alert(`❌ Buy failed: ${errorMsg.slice(0,100)}`);
       statusBar.innerHTML = "❌ Purchase failed";
     }
   }
