@@ -335,7 +335,7 @@ footer {
     doTap(touch.clientX, touch.clientY);
   }, { passive: false });
 
-  // WalletConnect
+  // ========== WALLETCONNECT (Fixed - No new tab) ==========
   elements.connectBtn.onclick = async () => {
     if (account) {
       if (regenTimer) clearInterval(regenTimer);
@@ -357,12 +357,20 @@ footer {
     try {
       elements.connectBtn.innerHTML = '<span class="spinner"></span> CONNECTING...';
       elements.connectBtn.disabled = true;
-      elements.statusTxt.textContent = '⏳ Opening WalletConnect...';
+      elements.statusTxt.textContent = '⏳ Opening Wallet...';
 
       provider = await EthereumProvider.init({
         projectId: "1731f99148b9cf6107dee70b6efb14b7",
         chains: [137],
         showQrModal: true,
+        qrModalOptions: {
+          themeMode: 'dark',
+          enableExplorer: true,
+          explorerRecommendedWalletIds: [
+            "c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96", // MetaMask
+            "fd20dc426fb37566d803205b19bbc1e409f4e1c9cea235a9f4c3c0f5c5c6e6d7"  // Trust Wallet
+          ]
+        },
         methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData"],
         optionalMethods: ["eth_accounts", "eth_requestAccounts", "eth_chainId"],
         rpcMap: { 137: "https://polygon-rpc.com" },
@@ -406,7 +414,9 @@ footer {
 
     } catch(err) {
       console.log(err);
-      elements.statusTxt.textContent = err.message.includes("closed") ? '🔒 Connect to start' : '❌ Wallet connection failed';
+      elements.statusTxt.textContent = err.message?.includes("closed") || err.message?.includes("rejected") 
+        ? '🔒 Connect to start' 
+        : '❌ Connection failed. Try again.';
       elements.connectBtn.innerHTML = '💼 CONNECT WALLET';
       elements.connectBtn.disabled = false;
     }
