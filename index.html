@@ -358,17 +358,15 @@ body {
 
   <div class="tap-arena">
     <div class="pepe-core disabled" id="tapButton">
-      <img src="images/IMG_1850.png" alt="PEPE">
+      <img src="images/IMG_1850.png" alt="PEPE" onerror="this.src='https://placekitten.com/120/120'">
       <div class="tap-counter">💰 TAP FOR FREE! 💰</div>
     </div>
   </div>
 
   <div class="action-stack">
-   <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 50 ENERGY (100 PVLT)</button>
+   <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 100 ENERGY (100 PVLT)</button>
     <button class="action-btn" id="claimPvltAction" disabled>💎 CLAIM GAME PVLT → WALLET</button>
   </div>
-  
-  <!-- REMOVED: the highlighted "INVOICE FEES FOR TAPPING..." message box -->
   
   <div class="debug-panel" id="debugPanel">
     🔧 Ready. Connect wallet to start.
@@ -380,8 +378,9 @@ body {
 </div>
 
 <script>
-  // ============ YOUR DEPLOYED CONTRACT ADDRESSES ============
+  // ============ DEPLOYED CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
+  // GAME CONTRACT ADDRESS - Must contain buyEnergy(uint256 amount) and claimRewards(uint256 amount)
   const GAME_CONTRACT_ADDRESS = "0x53DE681882d9926EBD603dEFBc759582964a0703";
   const TREASURY_ADDRESS = "0xE1c7803BA2fc7E02cf80FAc67D8fc3537c3992cD";
   
@@ -394,9 +393,12 @@ body {
     "function transfer(address to, uint256 amount) returns (bool)"
   ];
   
+  // GAME ABI: REQUIRED functions buyEnergy and claimRewards
+  // buyEnergy(uint256 amount) - amount is PVLT tokens to spend, contract gives 1000 Energy internally
+  // claimRewards(uint256 amount) - amount in PVLT decimals, transfers real PVLT from treasury to user
   const GAME_ABI = [
-    "function buyEnergy(uint256 amount) external",
-    "function claimRewards(uint256 amount) external"
+    "function buyEnergy(uint256 pvltAmount) external",
+    "function claimRewards(uint256 pvltAmount) external"
   ];
 
   const TREASURY_ABI = [
@@ -429,7 +431,7 @@ body {
     }
   }
 
-  // Game State (ALL LOCAL - NO BLOCKCHAIN FOR TAPPING!)
+  // Game State
   let userAccount = null;
   let provider = null;
   let signer = null;
@@ -438,8 +440,8 @@ body {
   let treasuryContract = null;
   let decimals = 18;
   
-  let maxEnergy = 50;
-  let energy = 50;
+  let maxEnergy = 100;        // Starting max energy = 100
+  let energy = 100;           // Starting energy = 100
   let points = 0;
   let gamePvltBalance = 0;
   let walletBalance = 0;
@@ -457,7 +459,7 @@ body {
     setTimeout(() => el.remove(), 750);
   }
 
-function saveData() {
+  function saveData() {
     if (userAccount) {
       localStorage.setItem(`pvlt_game_${userAccount}`, JSON.stringify({ 
         energy, 
@@ -469,22 +471,22 @@ function saveData() {
     }
   }
 
-function loadData() {
+  function loadData() {
     if (userAccount) {
       const saved = localStorage.getItem(`pvlt_game_${userAccount}`);
       if (saved) {
         const d = JSON.parse(saved);
-        energy = d.energy ?? 50;
+        energy = d.energy ?? 100;
         points = d.points ?? 0;
         gamePvltBalance = d.gamePvltBalance ?? 0;
         lastRegenTime = d.lastRegenTime ?? Date.now();
-        maxEnergy = d.maxEnergy ?? 50;
+        maxEnergy = d.maxEnergy ?? 100;
       } else {
-        energy = 50;
+        energy = 100;
         points = 0;
         gamePvltBalance = 0;
         lastRegenTime = Date.now();
-        maxEnergy = 50;
+        maxEnergy = 100;
       }
       if (energy > maxEnergy) energy = maxEnergy;
     }
@@ -499,7 +501,8 @@ function loadData() {
     try {
       const balance = await tokenContract.balanceOf(userAccount);
       walletBalance = parseFloat(ethers.utils.formatUnits(balance, decimals));
-      debugLog(`Wallet balance: ${walletBalance} PVLT`);
+      debugLog(`Wallet balance: ${walletBalance.toFixed(4)} PVLT`);
+      updateUI();
     } catch(e) {
       debugLog(`Balance error: ${e.message}`);
       walletBalance = 0;
@@ -511,8 +514,8 @@ function loadData() {
     try {
       const balance = await treasuryContract.getTreasuryBalance();
       const balanceFormatted = parseFloat(ethers.utils.formatUnits(balance, decimals));
-      debugLog(`💰 Treasury balance: ${balanceFormatted} PVLT`);
-      if (balanceFormatted < 1) {
+      debugLog(`💰 Treasury balance: ${balanceFormatted.toFixed(2)} PVLT`);
+      if (balanceFormatted < 10) {
         debugLog(`⚠️ WARNING: Treasury has low balance! Send PVLT to ${TREASURY_ADDRESS}`);
       }
       return balanceFormatted;
@@ -522,22 +525,19 @@ function loadData() {
   }
 
   function updateUI() {
-    // Energy display
+    if(!energySpan) return;
     energySpan.innerText = Math.floor(energy);
     let percent = (energy / maxEnergy) * 100;
     if (percent > 100) percent = 100;
     energyBarFill.style.width = `${percent}%`;
     
-    // Points display
     pointsDisplay.innerText = `${points}/100`;
     const pointsPercent = (points / 100) * 100;
     tapProgressFill.style.width = `${pointsPercent}%`;
     
-    // Game PVLT display
     gamePvltSpan.innerText = gamePvltBalance.toFixed(4);
     tapCountText.innerHTML = `${points}/100 points = ${(points / 100).toFixed(2)} GAME PVLT`;
     
-    // Wallet balance
     walletPvltSpan.innerText = walletBalance.toFixed(4);
     
     if (userAccount) {
@@ -551,7 +551,7 @@ function loadData() {
       
       connectBtn.classList.add("connected");
       connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-      statusBar.innerHTML = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | ⚡ ${Math.floor(energy)} energy | 💎 ${gamePvltBalance.toFixed(2)} GAME PVLT | 💼 ${walletBalance.toFixed(2)} PVLT`;
+      statusBar.innerHTML = `✅ ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | ⚡ ${Math.floor(energy)}/${maxEnergy} energy | 💎 ${gamePvltBalance.toFixed(2)} GAME PVLT | 💼 ${walletBalance.toFixed(2)} PVLT`;
     } else {
       energySpan.classList.add("blurred");
       pointsDisplay.classList.add("blurred");
@@ -565,8 +565,7 @@ function loadData() {
       statusBar.innerHTML = "🔒 Connect wallet to start earning PVLT";
     }
     
-    // Energy timer
-    if (energy < maxEnergy) {
+    if (energy < maxEnergy && userAccount) {
       const now = Date.now();
       const secondsSinceLast = Math.floor((now - lastRegenTime) / 1000);
       const secondsLeft = 15 - (secondsSinceLast % 15);
@@ -578,10 +577,8 @@ function loadData() {
 
   function regenEnergy() {
     if (!userAccount) return;
-    
     const now = Date.now();
     const secondsSinceLastRegen = Math.floor((now - lastRegenTime) / 1000);
-    
     if (secondsSinceLastRegen >= 15 && energy < maxEnergy) {
       const regenAmount = Math.min(Math.floor(secondsSinceLastRegen / 15), maxEnergy - energy);
       if (regenAmount > 0) {
@@ -594,23 +591,20 @@ function loadData() {
     updateUI();
   }
 
-  // TAP IS COMPLETELY FREE! NO BLOCKCHAIN TRANSACTION!
+  // FREE TAP: consumes 1 energy, gives 1 point, auto-convert at 100 points => 1 GAME PVLT
   function handleTap(x, y) {
     if (!userAccount) {
       showFloat(x, y, "🔒 Connect first!", "#ff8888");
       return;
     }
-    
     if (energy <= 0) {
       showFloat(x, y, "❌ No energy! Wait or buy more!", "#ff8888");
       return;
     }
     
-    // FREE TAP - no gas, no blockchain
     energy = Math.max(0, energy - 1);
     points++;
     
-    // Auto convert: Every 100 points = 1 GAME PVLT
     if (points >= 100) {
       const earnedPvlt = Math.floor(points / 100);
       gamePvltBalance += earnedPvlt;
@@ -626,106 +620,96 @@ function loadData() {
     updateUI();
   }
 
-// BUY ENERGY - 50 energy for 100 PVLT
-async function buyEnergy() {
+  // BUY ENERGY: Costs 100 real PVLT from user wallet, contract gives 1000 ENERGY
+  // (Matches requirement: "Buy Energy It Cost 100 PVLT Real Token from User Wallet which gives 1000 Energy")
+  async function buyEnergy() {
     if (!userAccount) {
-        alert("Connect wallet first");
-        return;
+      alert("Connect wallet first");
+      return;
     }
-    
     if (walletBalance < 100) {
-        alert(`❌ Need 100 PVLT. You have ${walletBalance.toFixed(4)} PVLT`);
-        return;
+      alert(`❌ Need 100 PVLT. You have ${walletBalance.toFixed(4)} PVLT`);
+      return;
     }
     
     try {
-        debugLog(`Buying energy - Wallet balance: ${walletBalance} PVLT`);
-        statusBar.innerHTML = "⏳ Checking allowance...";
-        
-        // Amount of PVLT to spend (100 tokens with 18 decimals)
-        const pvltAmount = ethers.utils.parseUnits("100", decimals);
-        
-        // Check and approve allowance
-        const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
-        debugLog(`Current allowance: ${ethers.utils.formatUnits(allowance, decimals)} PVLT`);
-        
-        if (allowance.lt(pvltAmount)) {
-            statusBar.innerHTML = "⏳ Approving PVLT spending...";
-            debugLog("Requesting approval for 100 PVLT...");
-            const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, pvltAmount);
-            await approveTx.wait();
-            debugLog("Approval confirmed!");
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-        
-        statusBar.innerHTML = "⏳ Buying 50 energy (cost: 100 PVLT)...";
-        debugLog(`Calling buyEnergy with amount: ${pvltAmount.toString()} wei`);
-        
-        // Call the contract - it should give 50 energy for 100 PVLT
-        const tx = await gameContract.buyEnergy(pvltAmount);
-        debugLog(`Transaction sent: ${tx.hash}`);
-        
-        statusBar.innerHTML = "⏳ Waiting for confirmation...";
-        await tx.wait();
-        debugLog("Energy purchased successfully!");
-        
-        // Update game state - ADD 50 ENERGY (not 1000)
-        const energyGained = 50;
-        maxEnergy += energyGained;
-        energy = Math.min(energy + energyGained, maxEnergy);
-        
-        saveData();
-        await updateWalletBalance();
-        updateUI();
-        
-        statusBar.innerHTML = `✅ +${energyGained} Energy! Max energy now: ${maxEnergy}`;
-        showFloat(window.innerWidth/2, window.innerHeight/2, `⚡ +${energyGained} ENERGY ⚡`, "#ffd966");
-        
+      debugLog(`Buying energy - Wallet balance: ${walletBalance.toFixed(4)} PVLT`);
+      statusBar.innerHTML = "⏳ Checking allowance...";
+      
+      const pvltAmount = ethers.utils.parseUnits("100", decimals);
+      
+      const allowance = await tokenContract.allowance(userAccount, GAME_CONTRACT_ADDRESS);
+      debugLog(`Current allowance: ${ethers.utils.formatUnits(allowance, decimals)} PVLT`);
+      
+      if (allowance.lt(pvltAmount)) {
+        statusBar.innerHTML = "⏳ Approving PVLT spending...";
+        debugLog("Requesting approval for 100 PVLT...");
+        const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, pvltAmount);
+        await approveTx.wait();
+        debugLog("Approval confirmed!");
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
+      statusBar.innerHTML = "⏳ Buying 1000 Energy (cost: 100 PVLT)...";
+      debugLog(`Calling buyEnergy with amount: ${pvltAmount.toString()} wei`);
+      
+      // Contract will take 100 PVLT and give 1000 ENERGY to user (in-game storage on chain)
+      const tx = await gameContract.buyEnergy(pvltAmount);
+      debugLog(`Transaction sent: ${tx.hash}`);
+      
+      statusBar.innerHTML = "⏳ Waiting for confirmation...";
+      await tx.wait();
+      debugLog("Energy purchase confirmed on chain!");
+      
+      // Add 1000 energy locally to reflect instant boost
+      const energyGained = 1000;
+      maxEnergy = maxEnergy + energyGained;   // increase max energy cap as reward
+      energy = Math.min(energy + energyGained, maxEnergy);
+      
+      saveData();
+      await updateWalletBalance();
+      updateUI();
+      
+      statusBar.innerHTML = `✅ +${energyGained} Energy! Max energy now: ${maxEnergy}`;
+      showFloat(window.innerWidth/2, window.innerHeight/2, `⚡ +1000 ENERGY ⚡`, "#ffd966");
+      debugLog(`Buy successful: +1000 energy, new max=${maxEnergy}, current energy=${energy}`);
+      
     } catch(e) {
-        debugLog(`Buy error: ${e.message}`);
-        console.error("Full error:", e);
-        
-        let errorMsg = e.message;
-        
-        if (errorMsg.includes("invalid BigNumber")) {
-            errorMsg = "Contract parameter mismatch. Check contract function signature.";
-        } else if (errorMsg.includes("execution reverted")) {
-            errorMsg = "Transaction reverted. Check contract or try different amount.";
-        } else if (errorMsg.includes("insufficient funds")) {
-            errorMsg = "Insufficient MATIC for gas!";
-        } else if (errorMsg.includes("user rejected")) {
-            errorMsg = "Transaction rejected in wallet.";
-        }
-        
-        alert(`❌ Buy failed: ${errorMsg.slice(0,150)}`);
-        statusBar.innerHTML = "❌ Purchase failed";
+      debugLog(`Buy error: ${e.message}`);
+      console.error("Full error:", e);
+      let errorMsg = e.message;
+      if (errorMsg.includes("invalid BigNumber")) {
+        errorMsg = "Contract parameter mismatch. Check contract function signature.";
+      } else if (errorMsg.includes("execution reverted")) {
+        errorMsg = "Transaction reverted. Ensure contract has buyEnergy(uint256).";
+      } else if (errorMsg.includes("insufficient funds")) {
+        errorMsg = "Insufficient MATIC for gas!";
+      } else if (errorMsg.includes("user rejected")) {
+        errorMsg = "Transaction rejected in wallet.";
+      }
+      alert(`❌ Buy failed: ${errorMsg.slice(0,150)}`);
+      statusBar.innerHTML = "❌ Purchase failed";
     }
-}
+  }
 
-  // CLAIM REWARDS
+  // CLAIM REWARDS: Transfers real PVLT from treasury to user wallet based on GAME PVLT balance
   async function claimRewards() {
     if (!userAccount) {
       alert("Connect wallet");
       return;
     }
-    
-    if (gamePvltBalance < 0.001) {
-      alert("❌ No GAME PVLT to claim! Keep tapping!");
+    if (gamePvltBalance < 1) {
+      alert("❌ Need at least 1 GAME PVLT to claim! Keep tapping!");
       return;
     }
     
     const amountToClaim = Math.floor(gamePvltBalance);
-    if (amountToClaim < 1) {
-      alert("❌ Need at least 1 GAME PVLT to claim!");
-      return;
-    }
-    
     const amountInWei = ethers.utils.parseUnits(amountToClaim.toString(), decimals);
     
     debugLog(`Attempting to claim ${amountToClaim} GAME PVLT (${amountInWei.toString()} wei)`);
     
     try {
-      statusBar.innerHTML = `⏳ Claiming ${amountToClaim} GAME PVLT to your wallet...`;
+      statusBar.innerHTML = `⏳ Claiming ${amountToClaim} PVLT to your wallet...`;
       debugLog("Calling claimRewards() on game contract...");
       
       const tx = await gameContract.claimRewards(amountInWei);
@@ -733,8 +717,9 @@ async function buyEnergy() {
       
       statusBar.innerHTML = "⏳ Waiting for confirmation...";
       await tx.wait();
-      debugLog("Transaction confirmed!");
+      debugLog("Claim transaction confirmed!");
       
+      // After successful claim, reset game PVLT balance (contract should have emitted event, we sync)
       gamePvltBalance = 0;
       saveData();
       await updateWalletBalance();
@@ -748,19 +733,17 @@ async function buyEnergy() {
       
     } catch(e) {
       debugLog(`Claim error: ${e.message}`);
-      
       let errorMsg = e.message;
       if (errorMsg.includes("execution reverted")) {
         if (errorMsg.includes("Treasury insufficient balance")) {
           errorMsg = "Treasury has no PVLT! Contact admin to fund treasury.";
           await checkTreasuryBalance();
         } else {
-          errorMsg = "Transaction failed. Make sure you have MATIC for gas.";
+          errorMsg = "Transaction failed. Ensure claimRewards(uint256) is implemented on contract.";
         }
       } else if (errorMsg.includes("insufficient funds")) {
         errorMsg = "Insufficient MATIC for gas! Get some MATIC first.";
       }
-      
       alert(`❌ Claim failed: ${errorMsg}`);
       statusBar.innerHTML = `❌ ${errorMsg.slice(0,60)}`;
     }
@@ -808,7 +791,6 @@ async function buyEnergy() {
       debugLog(`Decimals: ${decimals}`);
       
       await checkTreasuryBalance();
-      
       loadData();
       await updateWalletBalance();
       updateUI();
@@ -816,7 +798,7 @@ async function buyEnergy() {
       connectBtn.classList.add("connected");
       connectBtn.innerHTML = `🔴 DISCONNECT ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
       tapCircle.classList.remove("disabled");
-      statusBar.innerHTML = "✅ Connected! TAP FOR FREE!";
+      statusBar.innerHTML = "✅ Connected! TAP FOR FREE! Get points -> convert to GAME PVLT -> claim real PVLT";
       debugLog("Connected successfully!");
       
       if (refreshInterval) clearInterval(refreshInterval);
@@ -846,15 +828,15 @@ async function buyEnergy() {
     }
   }
   
-async function disconnect() {
+  async function disconnect() {
     if (refreshInterval) clearInterval(refreshInterval);
     saveData();
     userAccount = null;
     tokenContract = null;
     gameContract = null;
     treasuryContract = null;
-    energy = 50;
-    maxEnergy = 50;
+    energy = 100;
+    maxEnergy = 100;
     points = 0;
     gamePvltBalance = 0;
     lastRegenTime = Date.now();
@@ -892,8 +874,9 @@ async function disconnect() {
   updateUI();
   debugLog("🎮 PepeVolt Ready - TAPPING IS FREE!");
   debugLog(`PVLT Token: ${PVLT_TOKEN_ADDRESS}`);
-  debugLog(`Game Contract: ${GAME_CONTRACT_ADDRESS}`);
+  debugLog(`Game Contract: ${GAME_CONTRACT_ADDRESS} (must have buyEnergy and claimRewards)`);
   debugLog(`Treasury: ${TREASURY_ADDRESS}`);
+  debugLog(`💡 Buy Energy: costs 100 PVLT → gives 1000 Energy. Claim Rewards: sends real PVLT to wallet.`);
 </script>
 </body>
 </html>
