@@ -4,7 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>PepeVolt | Tap to Earn REAL PVLT</title>
+
+<!-- Website Icon - Shows Pepe Frog emoji in browser tab -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐸</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐸</text></svg>">
+
+<!-- Meta tags for better display on social media -->
+<meta property="og:title" content="PepeVolt">
+<meta property="og:description" content="Tap to Earn PVLT - Play to Earn Game">
+<meta property="og:image" content="https://pepevolt.github.io/pepe-icon.png">
+<meta name="theme-color" content="#03060c">
+
 <style>
+/* Your existing styles here... */
 * {
   margin: 0;
   padding: 0;
@@ -338,7 +350,7 @@ body {
 
   <div class="status-bar" id="statusBar">🔒 Connect wallet to start earning PVLT</div>
 
-  <div class="tap-arena"><div class="pepe-core disabled" id="tapButton"><img src="images/IMG_1850.png" alt="PEPE" onerror="this.src='https://placekitten.com/120/120'"><div class="tap-counter">💰 TAP FOR FREE! 💰</div></div></div>
+  <div class="tap-arena"><div class="pepe-core disabled" id="tapButton"><img src="https://placekitten.com/120/120" alt="PEPE"><div class="tap-counter">💰 TAP FOR FREE! 💰</div></div></div>
 
   <div class="action-stack">
     <button class="action-btn buy-energy-btn" id="buyEnergyAction" disabled>⚡ BUY 1000 ENERGY (100 PVLT)</button>
@@ -530,13 +542,16 @@ body {
     updateUI();
   }
 
-  // ============ SIMPLE WALLET CONNECT (MetaMask Only - Works on GitHub Pages) ============
-  async function connectMetaMask() {
+  // ============ WALLET CONNECT ============
+  async function connectWallet() {
     if (!window.ethereum) {
       alert("Please install MetaMask!");
-      return false;
+      return;
     }
     try {
+      connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
+      connectBtn.disabled = true;
+      
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAccount = accounts[0];
       provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -550,35 +565,21 @@ body {
         } catch(e) { alert("Please switch to Polygon Mainnet"); }
       }
       
+      loadData();
+      await updateWalletBalance();
+      updateUI();
+      tapCircle.classList.remove("disabled");
+      statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | Tap to earn!`;
+      debugLog(`✅ Connected: ${userAccount}`);
+      
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(() => { if (userAccount) { regenEnergy(); updateWalletBalance(); } }, 1000);
+      
       window.ethereum.on('accountsChanged', (accounts) => { 
         if (accounts.length === 0) disconnect(); 
         else if (accounts[0] !== userAccount) location.reload(); 
       });
-      return true;
-    } catch(e) { debugLog(`MetaMask error: ${e.message}`); return false; }
-  }
-
-  async function connectWallet() {
-    try {
-      connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
-      connectBtn.disabled = true;
       
-      const success = await connectMetaMask();
-      
-      if (success && userAccount) {
-        loadData();
-        await updateWalletBalance();
-        updateUI();
-        tapCircle.classList.remove("disabled");
-        statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | Tap to earn!`;
-        debugLog(`✅ Connected: ${userAccount}`);
-        
-        if (refreshInterval) clearInterval(refreshInterval);
-        refreshInterval = setInterval(() => { if (userAccount) { regenEnergy(); updateWalletBalance(); } }, 1000);
-      } else {
-        connectBtn.innerHTML = "🔗 CONNECT WALLET";
-        connectBtn.disabled = false;
-      }
     } catch(err) {
       debugLog(`Connection error: ${err.message}`);
       alert("Connection failed: " + err.message);
@@ -671,7 +672,6 @@ body {
   updateUI();
   debugLog("🎮 Game Ready!");
   debugLog(`Buy: 100 PVLT → 1000 Energy | Claim: Get REAL PVLT from treasury`);
-  debugLog(`Click CONNECT WALLET to connect MetaMask`);
 </script>
 </body>
 </html>
