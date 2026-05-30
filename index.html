@@ -12,28 +12,33 @@
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<!-- WalletConnect v2 -->
 <script src="https://cdn.jsdelivr.net/npm/@walletconnect/modal@2.6.2/dist/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
 
 <style>
-/* ── RESET & BASE ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
 
 :root {
-  --bg:        #090912;
-  --card:      #0e0f1a;
-  --primary:   #00ffcc;
+  --bg: #090912;
+  --card: #0e0f1a;
+  --primary: #00ffcc;
   --secondary: #ffd700;
-  --muted:     #9ba3c2;
-  --border:    rgba(0,255,204,0.2);
-  --border-s:  rgba(255,215,0,0.2);
-  --radius:    16px;
+  --muted: #9ba3c2;
+  --border: rgba(0,255,204,0.2);
+  --border-s: rgba(255,215,0,0.2);
+  --radius: 16px;
   --font: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 html, body {
-  height: 100%; width: 100%;
+  height: 100%;
+  width: 100%;
   background: var(--bg);
   color: #fff;
   font-family: var(--font);
@@ -41,23 +46,29 @@ html, body {
 }
 
 .app {
-  display: flex; flex-direction: column;
-  height: 100dvh; max-width: 440px; margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-width: 440px;
+  margin: 0 auto;
   padding: max(env(safe-area-inset-top,0px),16px) 16px max(env(safe-area-inset-bottom,0px),16px);
   overflow: hidden;
 }
 
-/* HEADER */
 header { display: flex; flex-direction: column; gap: 10px; }
 
 .energy-row {
-  display: flex; justify-content: space-between; align-items: center;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
   box-shadow: 0 0 15px 2px rgba(0,255,204,0.15);
 }
-.energy-left .lbl { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; gap: 4px; }
-.energy-left .val { font-family: monospace; font-weight: 800; font-size: 20px; color: var(--primary); text-shadow: 0 0 8px rgba(0,255,204,.6); margin-top: 2px; }
+.energy-left .lbl { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.energy-left .val { font-family: monospace; font-weight: 800; font-size: 20px; color: var(--primary); text-shadow: 0 0 8px rgba(0,255,204,.6); }
 .energy-right { width: 52%; display: flex; flex-direction: column; gap: 4px; }
 .prog-bar { height: 8px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; }
 .prog-bar-fill { height: 100%; border-radius: 99px; background: var(--primary); transition: width .4s ease; }
@@ -65,12 +76,16 @@ header { display: flex; flex-direction: column; gap: 10px; }
 
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .stat-card {
-  background: var(--card); border-radius: var(--radius);
-  padding: 10px 12px; display: flex; flex-direction: column; align-items: center;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .stat-card.primary-card { border: 1px solid var(--border); }
 .stat-card.secondary-card { border: 1px solid var(--border-s); box-shadow: 0 0 15px 2px rgba(255,215,0,.15); }
-.stat-card .lbl { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; gap: 3px; margin-bottom: 2px; }
+.stat-card .lbl { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
 .stat-card .val { font-family: monospace; font-weight: 800; font-size: 22px; }
 .stat-card.primary-card .val { color: #fff; }
 .stat-card.secondary-card .val { color: var(--secondary); text-shadow: 0 0 8px rgba(255,215,0,.6); }
@@ -80,80 +95,117 @@ header { display: flex; flex-direction: column; gap: 10px; }
 
 .wallet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .wallet-card {
-  background: var(--card); border: 1px solid rgba(255,255,255,.1);
-  border-radius: var(--radius); padding: 8px 12px;
-  display: flex; justify-content: space-between; align-items: center;
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-.wallet-card .lbl { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; display: flex; align-items: center; gap: 3px; }
+.wallet-card .lbl { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
 .wallet-card .val { font-family: monospace; font-size: 13px; color: #fff; }
 
-/* TAP AREA */
 main {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  position: relative; overflow: hidden; touch-action: none;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
 }
 
 .pepe-btn {
-  position: relative; width: 256px; height: 256px;
-  border-radius: 50%; background: none; border: none; cursor: pointer;
-  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-  transition: transform .08s; outline: none;
+  position: relative;
+  width: 256px;
+  height: 256px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform .08s;
+  outline: none;
 }
 .pepe-btn:active { transform: scale(.95); }
 .pepe-btn.no-energy { opacity: .5; cursor: not-allowed; }
 .pepe-btn.no-energy:active { transform: none; }
 
 .glow1 {
-  position: absolute; inset: 0; border-radius: 50%;
-  background: rgba(0,255,204,.35); filter: blur(28px);
-  transition: opacity .3s;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0,255,204,.35);
+  filter: blur(28px);
 }
 .glow2 {
-  position: absolute; inset: 16px; border-radius: 50%;
-  background: rgba(255,215,0,.2); filter: blur(20px);
-  transition: opacity .3s;
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  background: rgba(255,215,0,.2);
+  filter: blur(20px);
 }
 .pepe-btn.no-energy .glow1 { background: rgba(100,100,120,.3); }
 .pepe-btn.no-energy .glow2 { opacity: 0; }
 
 .pepe-inner {
-  position: absolute; inset: 8px; border-radius: 50%;
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
   border: 4px solid rgba(0,255,204,.45);
-  background: var(--card); overflow: hidden;
-  display: flex; align-items: center; justify-content: center; z-index: 1;
-  transition: border-color .3s;
+  background: var(--card);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
 }
 .pepe-btn.no-energy .pepe-inner { border-color: rgba(120,120,140,.4); }
 .pepe-inner img { width: 80%; height: 80%; object-fit: contain; pointer-events: none; }
 
 .float-text {
-  position: fixed; pointer-events: none; z-index: 999;
-  font-family: monospace; font-weight: 800; font-size: 22px;
+  position: fixed;
+  pointer-events: none;
+  z-index: 999;
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 22px;
   animation: floatUp 1s cubic-bezier(.2,.8,.2,1) forwards;
 }
 @keyframes floatUp {
-  0%   { opacity:1; transform:translateY(0) scale(1); }
-  100% { opacity:0; transform:translateY(-80px) scale(1.4); }
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-80px) scale(1.4); }
 }
 
-/* FOOTER */
 footer {
-  display: flex; flex-direction: column; gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   border-top: 1px solid rgba(255,255,255,.08);
-  padding-top: 12px; background: rgba(9,9,18,.8);
+  padding-top: 12px;
+  background: rgba(9,9,18,.8);
   backdrop-filter: blur(12px);
 }
 
 .status-txt { text-align: center; font-size: 11px; font-family: monospace; color: var(--muted); min-height: 16px; }
 
 .btn {
-  width: 100%; border: none; border-radius: 44px;
-  padding: 14px; font-family: var(--font); font-size: 15px; font-weight: 800;
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: opacity .15s, transform .1s; outline: none;
+  width: 100%;
+  border: none;
+  border-radius: 44px;
+  padding: 14px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity .15s, transform .1s;
 }
 .btn:active { transform: scale(.97); }
-.btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
 .btn-primary { background: var(--primary); color: #000; box-shadow: 0 0 18px rgba(0,255,204,.4); }
 .btn-secondary { background: var(--secondary); color: #000; box-shadow: 0 0 18px rgba(255,215,0,.4); }
@@ -163,14 +215,50 @@ footer {
 .btn-small { flex-direction: column; gap: 2px; padding: 12px 8px; font-size: 13px; border-radius: 16px; }
 .btn-small span { font-size: 9px; opacity: .75; font-weight: 500; }
 
-.spinner { display:inline-block; width:13px; height:13px; border:2px solid rgba(0,0,0,.3); border-radius:50%; border-top-color:rgba(0,0,0,.8); animation:spin .7s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
+.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(0,0,0,.3); border-radius: 50%; border-top-color: rgba(0,0,0,.8); animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-sheet {
+  width: 90%;
+  max-width: 340px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 20px;
+}
+.modal-title { font-size: 18px; font-weight: 700; color: var(--primary); text-align: center; margin-bottom: 16px; }
+.wallet-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.03);
+  cursor: pointer;
+  margin-bottom: 10px;
+  width: 100%;
+}
+.wallet-option:hover { background: rgba(0,255,204,.1); border-color: var(--border); }
+.wallet-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; background: rgba(255,255,255,.1); }
+.wallet-name { font-weight: 600; font-size: 15px; color: #fff; }
+.modal-close { float: right; cursor: pointer; font-size: 20px; color: var(--muted); }
 </style>
 </head>
 <body>
 
 <div class="app">
-
   <header>
     <div class="energy-row">
       <div class="energy-left">
@@ -232,15 +320,32 @@ footer {
   </footer>
 </div>
 
+<!-- Custom Wallet Modal -->
+<div id="walletModal" class="modal-overlay">
+  <div class="modal-sheet">
+    <div style="text-align:right"><span class="modal-close" id="closeModal">✕</span></div>
+    <div class="modal-title">Connect Wallet</div>
+    <button class="wallet-option" id="metaMaskOption">
+      <div class="wallet-icon">🦊</div>
+      <div class="wallet-name">MetaMask</div>
+    </button>
+    <button class="wallet-option" id="wcOption">
+      <div class="wallet-icon">🌐</div>
+      <div class="wallet-name">WalletConnect</div>
+    </button>
+    <div style="text-align:center; font-size:11px; color:var(--muted); margin-top:12px">
+      Make sure you're on <span style="color:var(--primary)">Polygon Mainnet</span>
+    </div>
+  </div>
+</div>
+
 <script>
-  // ═══════════════════════════════════════════
-  // CONFIG
-  // ═══════════════════════════════════════════
-  const WC_PROJECT_ID         = "1731f99148b9cf6107dee70b6efb14b7";
-  const PVLT_TOKEN_ADDRESS    = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
+  // ============ CONFIG ============
+  const WC_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
+  const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
-  const TREASURY_ADDRESS      = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
-  const CHAIN_ID              = 137;
+  const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
+  const CHAIN_ID = 137;
 
   const GAME_ABI = [
     "function buyEnergy(uint256 pvltAmount) external",
@@ -261,24 +366,28 @@ footer {
 
   // DOM
   const $ = id => document.getElementById(id);
-  const energyValEl   = $('energyVal');
-  const energyBarEl   = $('energyBar');
-  const regenLblEl    = $('regenLbl');
-  const pointsValEl   = $('pointsVal');
-  const pointsBarEl   = $('pointsBar');
+  const energyValEl = $('energyVal');
+  const energyBarEl = $('energyBar');
+  const regenLblEl = $('regenLbl');
+  const pointsValEl = $('pointsVal');
+  const pointsBarEl = $('pointsBar');
   const gamePvltValEl = $('gamePvltVal');
-  const walletValEl   = $('walletVal');
+  const walletValEl = $('walletVal');
   const treasuryValEl = $('treasuryVal');
-  const tapBtnEl      = $('tapBtn');
-  const statusTxtEl   = $('statusTxt');
-  const connectBtnEl  = $('connectBtn');
-  const stateDisc     = $('stateDisconnected');
-  const stateConn     = $('stateConnected');
-  const disconnBtnEl  = $('disconnectBtn');
-  const actionGridEl  = $('actionGrid');
-  const buyBtnEl      = $('buyBtn');
-  const claimBtnEl    = $('claimBtn');
-  const claimSubEl    = $('claimSub');
+  const tapBtnEl = $('tapBtn');
+  const statusTxtEl = $('statusTxt');
+  const connectBtnEl = $('connectBtn');
+  const stateDisc = $('stateDisconnected');
+  const stateConn = $('stateConnected');
+  const disconnBtnEl = $('disconnectBtn');
+  const actionGridEl = $('actionGrid');
+  const buyBtnEl = $('buyBtn');
+  const claimBtnEl = $('claimBtn');
+  const claimSubEl = $('claimSub');
+  const walletModal = $('walletModal');
+  const closeModal = $('closeModal');
+  const metaMaskOption = $('metaMaskOption');
+  const wcOption = $('wcOption');
 
   // State
   let account = null;
@@ -287,7 +396,6 @@ footer {
   let tokenC = null;
   let gameC = null;
   let decimals = 18;
-  let modal = null;
   let wcProvider = null;
 
   let maxEnergy = 100;
@@ -299,7 +407,6 @@ footer {
   let lastRegen = Date.now();
   let regenTimer = null;
 
-  // Persist
   function save() {
     if (!account) return;
     localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy }));
@@ -409,59 +516,31 @@ footer {
   }, { passive: false });
   tapBtnEl.addEventListener('mousedown', e => doTap(e.clientX, e.clientY));
 
-  // ========== WALLETCONNECT MODAL ==========
-  async function initModal() {
-    if (typeof WalletConnectModal === 'undefined') {
-      setTimeout(initModal, 200);
-      return;
+  // ========== META MASK (Desktop Chrome) ==========
+  async function connectMetaMask() {
+    if (!window.ethereum) {
+      alert("Please install MetaMask extension for Chrome!");
+      return false;
     }
-    modal = new WalletConnectModal({
-      projectId: WC_PROJECT_ID,
-      chains: [CHAIN_ID],
-      themeMode: 'dark',
-      themeVariables: {
-        '--wcm-accent-color': '#00ffcc',
-        '--wcm-background-color': '#090912'
-      }
-    });
-    console.log('Modal ready');
-  }
-
-  async function connectWallet() {
     try {
-      connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
-      connectBtnEl.disabled = true;
-      setStatus('⏳ Opening wallet...');
-
-      // Use EthereumProvider directly
-      wcProvider = await window.EthereumProvider.init({
-        projectId: WC_PROJECT_ID,
-        chains: [CHAIN_ID],
-        showQrModal: true,
-        methods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData'],
-        optionalMethods: ['eth_accounts', 'eth_requestAccounts', 'eth_chainId'],
-        rpcMap: { 137: 'https://polygon-rpc.com' },
-        metadata: {
-          name: 'PepeVolt',
-          description: 'Tap to Earn PVLT on Polygon',
-          url: window.location.origin,
-          icons: ['https://pepevolt.github.io/images/logo.PNG']
-        }
-      });
-
-      await wcProvider.connect();
-      const accounts = await wcProvider.request({ method: 'eth_accounts' });
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       account = accounts[0];
-      
-      provider = new ethers.providers.Web3Provider(wcProvider);
+      provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
       
-      // Check network
       const network = await provider.getNetwork();
       if (network.chainId !== CHAIN_ID) {
         try {
-          await wcProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-        } catch(e) {}
+          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
+        } catch(e) {
+          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
+            chainId: '0x89', chainName: 'Polygon Mainnet',
+            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+            rpcUrls: ['https://polygon-rpc.com/']
+          }]});
+        }
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
       }
       
       tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
@@ -476,17 +555,63 @@ footer {
       if (regenTimer) clearInterval(regenTimer);
       regenTimer = setInterval(async () => { tick(); await refreshBalances(); }, 1000);
       
-      wcProvider.on('disconnect', () => disconnect());
-      wcProvider.on('accountsChanged', (accs) => {
+      window.ethereum.on('accountsChanged', (accs) => {
         if (!accs.length) disconnect();
         else if (accs[0].toLowerCase() !== account?.toLowerCase()) location.reload();
       });
       
+      return true;
+    } catch(e) {
+      console.error(e);
+      setStatus('❌ ' + (e?.message?.slice(0,50) || 'Connection failed'));
+      return false;
+    }
+  }
+
+  // ========== WALLETCONNECT (Mobile) ==========
+  async function connectWalletConnect() {
+    try {
+      setStatus('⏳ Opening WalletConnect...');
+      
+      wcProvider = await window.EthereumProvider.init({
+        projectId: WC_PROJECT_ID,
+        chains: [CHAIN_ID],
+        showQrModal: true,
+        methods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData'],
+        rpcMap: { 137: 'https://polygon-rpc.com' },
+        metadata: {
+          name: 'PepeVolt',
+          description: 'Tap to Earn PVLT',
+          url: window.location.origin,
+          icons: ['https://pepevolt.github.io/images/logo.PNG']
+        }
+      });
+
+      await wcProvider.connect();
+      const accounts = await wcProvider.request({ method: 'eth_accounts' });
+      account = accounts[0];
+      
+      provider = new ethers.providers.Web3Provider(wcProvider);
+      signer = provider.getSigner();
+      
+      tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+      gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+      decimals = await tokenC.decimals();
+      
+      load();
+      await refreshBalances();
+      setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
+      render();
+      
+      if (regenTimer) clearInterval(regenTimer);
+      regenTimer = setInterval(async () => { tick(); await refreshBalances(); }, 1000);
+      
+      wcProvider.on('disconnect', () => disconnect());
+      return true;
     } catch(e) {
       console.error(e);
       setStatus(e.message.includes('closed') ? '🔒 Connect to start earning' : '❌ Connection failed');
-      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-      connectBtnEl.disabled = false;
+      return false;
     }
   }
 
@@ -557,19 +682,46 @@ footer {
 
   function setStatus(msg) { statusTxtEl.textContent = msg; }
 
-  // Events
+  // Modal handling
+  function openModal() { walletModal.classList.add('open'); }
+  function closeModalFn() { walletModal.classList.remove('open'); }
+  
   connectBtnEl.onclick = () => {
     if (account) disconnect();
-    else connectWallet();
+    else openModal();
   };
+  closeModal.onclick = closeModalFn;
+  walletModal.onclick = (e) => { if (e.target === walletModal) closeModalFn(); };
+  
+  metaMaskOption.onclick = async () => {
+    closeModalFn();
+    connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
+    connectBtnEl.disabled = true;
+    const success = await connectMetaMask();
+    if (!success) {
+      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
+      connectBtnEl.disabled = false;
+    }
+  };
+  
+  wcOption.onclick = async () => {
+    closeModalFn();
+    connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
+    connectBtnEl.disabled = true;
+    const success = await connectWalletConnect();
+    if (!success) {
+      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
+      connectBtnEl.disabled = false;
+    }
+  };
+  
   disconnBtnEl.onclick = () => disconnect();
   buyBtnEl.onclick = buyEnergy;
   claimBtnEl.onclick = claimRewards;
   
-  initModal();
   render();
   setInterval(tick, 1000);
-  setStatus('🔒 Connect wallet to start earning');
+  setStatus('🔒 Select wallet to start');
 </script>
 </body>
 </html>
