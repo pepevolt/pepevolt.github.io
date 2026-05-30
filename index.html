@@ -9,6 +9,8 @@
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/modal@2.6.2/dist/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.11.0/dist/index.umd.js"></script>
 
 <style>
 * {
@@ -16,7 +18,6 @@
   padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-  user-select: none;
 }
 
 :root {
@@ -137,7 +138,7 @@ footer {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.9);
+  background: rgba(0,0,0,.95);
   align-items: center;
   justify-content: center;
   z-index: 100;
@@ -225,6 +226,10 @@ footer {
       <div class="wallet-icon">🦊</div>
       <div>MetaMask</div>
     </button>
+    <button class="wallet-option" id="wcOption">
+      <div class="wallet-icon">🌐</div>
+      <div>WalletConnect</div>
+    </button>
     <div style="text-align:center; font-size:11px; color:var(--muted); margin-top:12px">
       Make sure you're on <span style="color:var(--primary)">Polygon Mainnet</span>
     </div>
@@ -236,6 +241,7 @@ footer {
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
   const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
+  const WC_PROJECT_ID = "1731f99148b9cf6107dee70b6efb14b7";
 
   const GAME_ABI = [
     "function buyEnergy(uint256 pvltAmount) external",
@@ -271,6 +277,7 @@ footer {
   const walletModal = $('walletModal');
   const closeModal = $('closeModal');
   const metaMaskOption = $('metaMaskOption');
+  const wcOption = $('wcOption');
 
   // State
   let account = null;
@@ -279,6 +286,7 @@ footer {
   let tokenC = null;
   let gameC = null;
   let decimals = 18;
+  let wcProvider = null;
 
   let maxEnergy = 100;
   let energy = 100;
@@ -372,9 +380,9 @@ footer {
     setTimeout(() => el.remove(), 1000);
   }
 
-  const style = document.createElement('style');
-  style.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
-  document.head.appendChild(style);
+  const floatStyle = document.createElement('style');
+  floatStyle.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
+  document.head.appendChild(floatStyle);
 
   let tapLock = false;
   function doTap(x, y) {
@@ -400,7 +408,7 @@ footer {
     doTap(touch.clientX, touch.clientY);
   }, { passive: false });
 
-  // ========== META MASK CONNECTION ==========
+  // ========== META MASK (Desktop) ==========
   async function connectMetaMask() {
     if (!window.ethereum) {
       alert("Please install MetaMask extension!");
@@ -452,10 +460,66 @@ footer {
     }
   }
 
+  // ========== WALLETCONNECT (Mobile with redirect) ==========
+  async function connectWalletConnect() {
+    try {
+      setStatus('⏳ Opening WalletConnect...');
+      
+      wcProvider = await window.EthereumProvider.init({
+        projectId: WC_PROJECT_ID,
+        chains: [137],
+        showQrModal: true,
+        methods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData'],
+        rpcMap: { 137: 'https://polygon-rpc.com' },
+        metadata: {
+          name: 'PepeVolt',
+          description: 'Tap to Earn PVLT on Polygon',
+          url: window.location.origin,
+          icons: ['https://pepevolt.github.io/images/logo.PNG']
+        }
+      });
+
+      await wcProvider.connect();
+      const accounts = await wcProvider.request({ method: 'eth_accounts' });
+      account = accounts[0];
+      
+      provider = new ethers.providers.Web3Provider(wcProvider);
+      signer = provider.getSigner();
+      
+      tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+      gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+      decimals = await tokenC.decimals();
+      
+      load();
+      await refreshBalances();
+      setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
+      render();
+      
+      if (regenTimer) clearInterval(regenTimer);
+      regenTimer = setInterval(async () => { tick(); await refreshBalances(); }, 1000);
+      
+      wcProvider.on('disconnect', () => disconnect());
+      wcProvider.on('accountsChanged', (accs) => {
+        if (!accs.length) disconnect();
+        else if (accs[0] !== account) location.reload();
+      });
+      return true;
+      
+    } catch(e) {
+      console.error(e);
+      setStatus(e.message.includes('closed') || e.message.includes('rejected') 
+        ? '🔒 Connect to start earning' 
+        : '❌ Connection failed - Try MetaMask on desktop');
+      return false;
+    }
+  }
+
   async function disconnect() {
     if (regenTimer) clearInterval(regenTimer);
     save();
+    try { if (wcProvider?.disconnect) await wcProvider.disconnect(); } catch(_) {}
     account = null;
+    wcProvider = null;
     walletBal = 0;
     treasuryBal = 0;
     energy = 100; maxEnergy = 100; points = 0; gamePvlt = 0;
@@ -465,7 +529,7 @@ footer {
     render();
   }
 
-  // ========== BUY ENERGY (FIXED) ==========
+  // ========== BUY ENERGY ==========
   async function buyEnergy() {
     if (!account) { setStatus("Connect wallet first"); return; }
     if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
@@ -476,34 +540,23 @@ footer {
     try {
       const amount = ethers.utils.parseUnits("100", decimals);
       
-      // Check allowance
       const allowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
       console.log("Allowance:", allowance.toString());
-      console.log("Need:", amount.toString());
 
       if (allowance.lt(amount)) {
         setStatus("⏳ Approving 100 PVLT...");
         const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amount);
-        setStatus("⏳ Approving - waiting for confirmation...");
+        setStatus("⏳ Approving - waiting...");
         await approveTx.wait();
-        console.log("Approval confirmed");
-        setStatus("✅ Approval confirmed! Now buying energy...");
-        await new Promise(r => setTimeout(r, 2000));
+        setStatus("✅ Approval confirmed! Buying energy...");
+        await new Promise(r => setTimeout(r, 1500));
       }
 
       setStatus("⏳ Buying 1000 Energy...");
-      console.log("Calling buyEnergy with amount:", amount.toString());
-      
-      // Estimate gas first to catch errors
       const gasEstimate = await gameC.estimateGas.buyEnergy(amount);
-      console.log("Gas estimate:", gasEstimate.toString());
-      
       const tx = await gameC.buyEnergy(amount, { gasLimit: gasEstimate.mul(12).div(10) });
-      setStatus("⏳ Transaction sent. Waiting for confirmation...");
-      console.log("Transaction hash:", tx.hash);
-      
+      setStatus("⏳ Transaction sent. Confirming...");
       await tx.wait();
-      console.log("Transaction confirmed!");
       
       maxEnergy += 1000;
       energy += 1000;
@@ -515,18 +568,9 @@ footer {
     } catch(e) {
       console.error("Buy error:", e);
       let errorMsg = e.message || "Transaction failed";
-      
-      // Check for specific error messages
-      if (errorMsg.includes("Must send exactly")) {
-        errorMsg = "Contract expects exactly 100 PVLT. Check contract configuration.";
-      } else if (errorMsg.includes("insufficient funds")) {
-        errorMsg = "Insufficient MATIC for gas fees!";
-      } else if (errorMsg.includes("user rejected")) {
-        errorMsg = "Transaction rejected in wallet";
-      } else if (errorMsg.includes("execution reverted")) {
-        errorMsg = "Contract execution failed. Make sure Game contract is correct.";
-      }
-      
+      if (errorMsg.includes("insufficient funds")) errorMsg = "Insufficient MATIC for gas!";
+      else if (errorMsg.includes("user rejected")) errorMsg = "Transaction rejected";
+      else if (errorMsg.includes("execution reverted")) errorMsg = "Contract error - check if you have PVLT tokens";
       setStatus(`❌ ${errorMsg.slice(0,80)}`);
     } finally {
       buyBtnEl.disabled = walletBal < 100;
@@ -547,11 +591,10 @@ footer {
     try {
       const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
       const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
-      setStatus("⏳ Waiting for confirmation...");
+      setStatus("⏳ Confirming...");
       await tx.wait();
       
-      gamePvlt = 0;
-      points = 0;
+      gamePvlt = 0; points = 0;
       save();
       await refreshBalances();
       setStatus(`✅ Claimed ${amount} REAL PVLT!`);
@@ -585,8 +628,17 @@ footer {
     if (!success) {
       connectBtnEl.innerHTML = '💼 CONNECT WALLET';
       connectBtnEl.disabled = false;
-    } else {
+    }
+  };
+  
+  wcOption.onclick = async () => {
+    closeModalFn();
+    connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
+    connectBtnEl.disabled = true;
+    const success = await connectWalletConnect();
+    if (!success) {
       connectBtnEl.innerHTML = '💼 CONNECT WALLET';
+      connectBtnEl.disabled = false;
     }
   };
   
