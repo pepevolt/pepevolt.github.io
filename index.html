@@ -301,17 +301,6 @@ body {
   margin-left: 5px;
 }
 
-.no-gas {
-  background: rgba(0, 200, 100, 0.2);
-  border: 1px solid #00cc88;
-  border-radius: 12px;
-  padding: 6px;
-  margin-top: 8px;
-  font-size: 9px;
-  text-align: center;
-  color: #88ffcc;
-}
-
 .debug-panel {
   background: rgba(0,0,0,0.8);
   border-radius: 8px;
@@ -379,10 +368,7 @@ body {
     <button class="action-btn" id="claimPvltAction" disabled>💎 CLAIM GAME PVLT → WALLET</button>
   </div>
   
-  <div class="no-gas">
-    ✅ NO GAS FEES FOR TAPPING! Tap as much as you want for FREE!<br>
-    Only BUY ENERGY and CLAIM require blockchain transactions.
-  </div>
+  <!-- REMOVED: the highlighted "INVOICE FEES FOR TAPPING..." message box -->
   
   <div class="debug-panel" id="debugPanel">
     🔧 Ready. Connect wallet to start.
@@ -478,7 +464,7 @@ function saveData() {
         points,
         gamePvltBalance,
         lastRegenTime,
-        maxEnergy  // ADD THIS LINE
+        maxEnergy
       }));
     }
   }
@@ -492,13 +478,13 @@ function loadData() {
         points = d.points ?? 0;
         gamePvltBalance = d.gamePvltBalance ?? 0;
         lastRegenTime = d.lastRegenTime ?? Date.now();
-        maxEnergy = d.maxEnergy ?? 50;  // ADD THIS LINE
+        maxEnergy = d.maxEnergy ?? 50;
       } else {
         energy = 50;
         points = 0;
         gamePvltBalance = 0;
         lastRegenTime = Date.now();
-        maxEnergy = 50;  // ADD THIS LINE
+        maxEnergy = 50;
       }
       if (energy > maxEnergy) energy = maxEnergy;
     }
@@ -640,7 +626,7 @@ function loadData() {
     updateUI();
   }
 
-// BUY ENERGY - requires blockchain transaction (FIXED)
+// BUY ENERGY - requires blockchain transaction
   async function buyEnergy() {
     if (!userAccount) {
       alert("Connect wallet first");
@@ -674,13 +660,11 @@ function loadData() {
       statusBar.innerHTML = "⏳ Buying 1000 energy (cost: 100 PVLT)...";
       debugLog("Calling buyEnergy with 100 PVLT...");
       
-      // CRITICAL FIX: Send PVLT amount to contract
       const tx = await gameContract.buyEnergy(pvltAmount);
       await tx.wait();
       debugLog("Energy purchased successfully!");
       
-      // FIX: Increase maxEnergy to actually allow the purchased energy
-      maxEnergy += 1000;  // Increase the cap so energy isn't wasted
+      maxEnergy += 1000;
       energy = Math.min(energy + 1000, maxEnergy);
       
       saveData();
@@ -693,7 +677,6 @@ function loadData() {
     } catch(e) {
       debugLog(`Buy error: ${e.message}`);
       
-      // Better error handling
       let errorMsg = e.message;
       if (errorMsg.includes("execution reverted")) {
         errorMsg = "Transaction reverted. Check contract or try different amount.";
@@ -706,7 +689,7 @@ function loadData() {
     }
   }
 
-  // CLAIM REWARDS - FIXED with proper WEI conversion
+  // CLAIM REWARDS
   async function claimRewards() {
     if (!userAccount) {
       alert("Connect wallet");
@@ -724,7 +707,6 @@ function loadData() {
       return;
     }
     
-    // FIX: Convert to WEI with 18 decimals
     const amountInWei = ethers.utils.parseUnits(amountToClaim.toString(), decimals);
     
     debugLog(`Attempting to claim ${amountToClaim} GAME PVLT (${amountInWei.toString()} wei)`);
@@ -733,7 +715,6 @@ function loadData() {
       statusBar.innerHTML = `⏳ Claiming ${amountToClaim} GAME PVLT to your wallet...`;
       debugLog("Calling claimRewards() on game contract...");
       
-      // FIX: Pass the amount in WEI, not as a number
       const tx = await gameContract.claimRewards(amountInWei);
       debugLog(`Transaction sent: ${tx.hash}`);
       
@@ -741,13 +722,11 @@ function loadData() {
       await tx.wait();
       debugLog("Transaction confirmed!");
       
-      // Reset game PVLT after successful claim
       gamePvltBalance = 0;
       saveData();
       await updateWalletBalance();
       updateUI();
       
-      // Check treasury balance after claim
       await checkTreasuryBalance();
       
       statusBar.innerHTML = `✅ Claimed ${amountToClaim} PVLT to wallet!`;
@@ -862,7 +841,7 @@ async function disconnect() {
     gameContract = null;
     treasuryContract = null;
     energy = 50;
-    maxEnergy = 50;  // ADD THIS LINE
+    maxEnergy = 50;
     points = 0;
     gamePvltBalance = 0;
     lastRegenTime = Date.now();
