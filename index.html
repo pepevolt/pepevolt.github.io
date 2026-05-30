@@ -482,7 +482,7 @@ body {
     }
   }
 
-  function loadData() {
+function loadData() {
     if (userAccount) {
       const saved = localStorage.getItem(`pvlt_game_${userAccount}`);
       if (saved) {
@@ -491,11 +491,13 @@ body {
         points = d.points ?? 0;
         gamePvltBalance = d.gamePvltBalance ?? 0;
         lastRegenTime = d.lastRegenTime ?? Date.now();
+        maxEnergy = d.maxEnergy ?? 50;  // ADD THIS LINE
       } else {
         energy = 50;
         points = 0;
         gamePvltBalance = 0;
         lastRegenTime = Date.now();
+        maxEnergy = 50;  // ADD THIS LINE
       }
       if (energy > maxEnergy) energy = maxEnergy;
     }
