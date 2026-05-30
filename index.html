@@ -408,8 +408,11 @@ body {
     "function transfer(address to, uint256 amount) returns (bool)"
   ];
   
+  // Try to include all possible buy function names
   const GAME_ABI = [
     "function buyEnergy(uint256 amount) external",
+    "function refillEnergy() external",
+    "function refillEnergy(uint256 amount) external",
     "function claimRewards(uint256 amount) external"
   ];
 
@@ -533,22 +536,18 @@ body {
   }
 
   function updateUI() {
-    // Energy display
     energySpan.innerText = Math.floor(energy);
     let percent = (energy / maxEnergy) * 100;
     if (percent > 100) percent = 100;
     energyBarFill.style.width = `${percent}%`;
     
-    // Points display
     pointsDisplay.innerText = `${points}/100`;
     const pointsPercent = (points / 100) * 100;
     tapProgressFill.style.width = `${pointsPercent}%`;
     
-    // Game PVLT display
     gamePvltSpan.innerText = gamePvltBalance.toFixed(4);
     tapCountText.innerHTML = `${points}/100 points = ${(points / 100).toFixed(2)} GAME PVLT`;
     
-    // Wallet balance
     walletPvltSpan.innerText = walletBalance.toFixed(4);
     
     if (userAccount) {
@@ -576,7 +575,6 @@ body {
       statusBar.innerHTML = "🔒 Connect wallet to start earning PVLT";
     }
     
-    // Energy timer
     if (energy < maxEnergy) {
       const now = Date.now();
       const secondsSinceLast = Math.floor((now - lastRegenTime) / 1000);
@@ -605,7 +603,6 @@ body {
     updateUI();
   }
 
-  // TAP IS COMPLETELY FREE! NO BLOCKCHAIN TRANSACTION!
   function handleTap(x, y) {
     if (!userAccount) {
       showFloat(x, y, "🔒 Connect first!", "#ff8888");
@@ -617,11 +614,9 @@ body {
       return;
     }
     
-    // FREE TAP - no gas, no blockchain
     energy = Math.max(0, energy - 1);
     points++;
     
-    // Auto convert: Every 100 points = 1 GAME PVLT
     if (points >= 100) {
       const earnedPvlt = Math.floor(points / 100);
       gamePvltBalance += earnedPvlt;
@@ -650,37 +645,55 @@ body {
     }
     
     try {
-      debugLog(`Buying energy - Wallet balance: ${walletBalance} PVLT`);
-      
-      statusBar.innerHTML = "⏳ Approving 100 PVLT...";
-      
-      // Convert 100 PVLT to WEI (18 decimals)
       const amountInWei = ethers.utils.parseUnits("100", decimals);
       debugLog(`Amount in wei: ${amountInWei.toString()}`);
       
-      // First, approve the amount
+      // Step 1: Approve
+      statusBar.innerHTML = "Step 1/2: Approving 100 PVLT...";
+      debugLog("Approving...");
       const approveTx = await tokenContract.approve(GAME_CONTRACT_ADDRESS, amountInWei);
       await approveTx.wait();
       debugLog("Approved!");
       
-      statusBar.innerHTML = "⏳ Buying 1000 energy (cost: 100 PVLT)...";
-      debugLog("Calling buyEnergy...");
+      // Step 2: Buy energy - try different function names
+      statusBar.innerHTML = "Step 2/2: Buying 1000 energy...";
+      debugLog("Attempting to call buy function...");
       
-      // Call buyEnergy with the amount in WEI
-      const tx = await gameContract.buyEnergy(amountInWei);
+      let tx;
+      
+      // Try buyEnergy with amount
+      if (gameContract.buyEnergy) {
+        debugLog("Trying buyEnergy(amountInWei)...");
+        tx = await gameContract.buyEnergy(amountInWei);
+      }
+      // Try refillEnergy with amount
+      else if (gameContract.refillEnergy) {
+        debugLog("Trying refillEnergy(amountInWei)...");
+        tx = await gameContract.refillEnergy(amountInWei);
+      }
+      // Try refillEnergy without amount
+      else if (typeof gameContract.refillEnergy === 'function') {
+        debugLog("Trying refillEnergy()...");
+        tx = await gameContract.refillEnergy();
+      }
+      else {
+        throw new Error("No buy function found in contract");
+      }
+      
       debugLog(`Transaction sent: ${tx.hash}`);
-      
-      statusBar.innerHTML = "⏳ Waiting for confirmation...";
       await tx.wait();
       debugLog("Energy purchased!");
       
-      // After buying, update local energy (add 1000 energy)
+      // Update local energy
       energy = Math.min(energy + 1000, maxEnergy);
       saveData();
+      
+      // Wait a moment then refresh balance
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await updateWalletBalance();
       updateUI();
       
-      statusBar.innerHTML = "✅ +1000 Energy!";
+      statusBar.innerHTML = "✅ +1000 Energy! 100 PVLT deducted from wallet";
       showFloat(window.innerWidth/2, window.innerHeight/2, "⚡ +1000 ENERGY ⚡", "#ffd966");
       
     } catch(e) {
@@ -688,13 +701,11 @@ body {
       
       let errorMsg = e.message;
       if (errorMsg.includes("execution reverted")) {
-        errorMsg = "Transaction failed. Make sure you have enough PVLT and MATIC for gas.";
+        errorMsg = "Contract execution failed. Check if the function name is correct.";
       } else if (errorMsg.includes("insufficient funds")) {
-        errorMsg = "Insufficient MATIC for gas! Get some MATIC first.";
+        errorMsg = "Insufficient MATIC for gas!";
       } else if (errorMsg.includes("user rejected")) {
-        errorMsg = "Transaction rejected in wallet.";
-      } else {
-        errorMsg = errorMsg.slice(0, 100);
+        errorMsg = "Transaction rejected.";
       }
       
       alert(`❌ Failed: ${errorMsg}`);
@@ -702,7 +713,7 @@ body {
     }
   }
 
-  // ============ WORKING CLAIM REWARDS FUNCTION ============
+  // ============ CLAIM REWARDS FUNCTION ============
   async function claimRewards() {
     if (!userAccount) {
       alert("Connect wallet");
@@ -720,53 +731,28 @@ body {
       return;
     }
     
-    // Convert to WEI with 18 decimals
     const amountInWei = ethers.utils.parseUnits(amountToClaim.toString(), decimals);
-    
-    debugLog(`Attempting to claim ${amountToClaim} GAME PVLT (${amountInWei.toString()} wei)`);
+    debugLog(`Claiming ${amountToClaim} GAME PVLT (${amountInWei.toString()} wei)`);
     
     try {
-      statusBar.innerHTML = `⏳ Claiming ${amountToClaim} GAME PVLT to your wallet...`;
-      debugLog("Calling claimRewards() on game contract...");
-      
-      // Pass the amount in WEI
+      statusBar.innerHTML = `⏳ Claiming ${amountToClaim} GAME PVLT...`;
       const tx = await gameContract.claimRewards(amountInWei);
-      debugLog(`Transaction sent: ${tx.hash}`);
-      
-      statusBar.innerHTML = "⏳ Waiting for confirmation...";
       await tx.wait();
-      debugLog("Transaction confirmed!");
       
-      // Reset game PVLT after successful claim
       gamePvltBalance = 0;
       saveData();
       await updateWalletBalance();
       updateUI();
-      
-      // Check treasury balance after claim
       await checkTreasuryBalance();
       
-      statusBar.innerHTML = `✅ Claimed ${amountToClaim} PVLT to wallet!`;
+      statusBar.innerHTML = `✅ Claimed ${amountToClaim} PVLT!`;
       showFloat(window.innerWidth/2, window.innerHeight/2, `💎 +${amountToClaim} PVLT! 💎`, "#46c9b0");
       debugLog(`Successfully claimed ${amountToClaim} PVLT!`);
       
     } catch(e) {
       debugLog(`Claim error: ${e.message}`);
-      
-      let errorMsg = e.message;
-      if (errorMsg.includes("execution reverted")) {
-        if (errorMsg.includes("Treasury insufficient balance")) {
-          errorMsg = "Treasury has no PVLT! Contact admin to fund treasury.";
-          await checkTreasuryBalance();
-        } else {
-          errorMsg = "Transaction failed. Make sure you have MATIC for gas.";
-        }
-      } else if (errorMsg.includes("insufficient funds")) {
-        errorMsg = "Insufficient MATIC for gas! Get some MATIC first.";
-      }
-      
-      alert(`❌ Claim failed: ${errorMsg}`);
-      statusBar.innerHTML = `❌ ${errorMsg.slice(0,60)}`;
+      alert(`❌ Claim failed: ${e.message.slice(0,100)}`);
+      statusBar.innerHTML = `❌ ${e.message.slice(0,60)}`;
     }
   }
 
@@ -869,7 +855,6 @@ body {
     debugLog("Disconnected");
   }
   
-  // Event Listeners
   connectBtn.onclick = () => userAccount ? disconnect() : connectWallet();
   
   tapCircle.onclick = (e) => {
@@ -888,7 +873,7 @@ body {
   
   document.getElementById("treasuryNote").onclick = () => {
     navigator.clipboard.writeText(TREASURY_ADDRESS);
-    statusBar.innerHTML = "📋 Treasury address copied! Send PVLT here for rewards";
+    statusBar.innerHTML = "📋 Treasury address copied!";
     debugLog(`Treasury address: ${TREASURY_ADDRESS}`);
   };
   
