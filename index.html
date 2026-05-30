@@ -53,10 +53,10 @@ button:disabled{opacity:0.5;cursor:not-allowed;}
   <div class="info">🏆 100 points = 1 GAME PVLT | Energy regens every 15s | Tapping is FREE!</div>
 </div>
 <script>
-  // ============ UPDATE THESE 3 ADDRESSES AFTER DEPLOYMENT ============
+  // ============ YOUR NEW CONTRACT ADDRESSES ============
   const PVLT_ADDR = "0x80E6f64635E4627bA54E1939624E6111A3d8917c";
-  const GAME_ADDR = "0x6FA81DC0eA8545216D923D994C92f511cd9cfBbA";        // <-- Your Game.sol address
-  const TREASURY_ADDR = "0x0760aA32F1DfC7B82252deD7d5A9D39c13F76668"; // <-- Your Treasury.sol address
+  const GAME_ADDR = "0x6FA81DC0eA8545216D923D994C92f511cd9cfBbA";
+  const TREASURY_ADDR = "0x0760aA32F1DfC7B82252deD7d5A9D39c13F76668";
   
   const PVLT_ABI = ["function balanceOf(address) view returns (uint256)","function approve(address,uint256) returns (bool)","function allowance(address,address) view returns (uint256)","function decimals() view returns (uint8)","function transfer(address,uint256) returns (bool)"];
   const GAME_ABI = ["function buyEnergy() external","function claimRewards() external","function getPlayer(address) view returns (uint256,uint256,uint256,uint256)"];
@@ -145,17 +145,24 @@ button:disabled{opacity:0.5;cursor:not-allowed;}
   async function claimRewards() {
     if(!account) { alert("Connect first"); return; }
     if(gamePvlt < 1) { alert("❌ Need at least 1 GAME PVLT to claim!"); return; }
+    
+    const toClaim = Math.floor(gamePvlt);
+    
     try {
-      log(`⏳ Claiming ${Math.floor(gamePvlt)} GAME PVLT...`);
+      log(`⏳ Claiming ${toClaim} GAME PVLT...`);
+      // claimRewards takes NO parameter in your Game.sol
       const tx = await gameContract.claimRewards();
       await tx.wait();
-      log(`✅ Claimed ${Math.floor(gamePvlt)} PVLT!`);
+      log(`✅ Claimed ${toClaim} PVLT!`);
       gamePvlt = 0;
       saveGame();
       await updateWallet();
       updateUI();
       await checkTreasury();
-    } catch(e) { log(`❌ Claim error: ${e.message.slice(0,80)}`); alert("Claim failed: " + e.message.slice(0,100)); }
+    } catch(e) {
+      log(`❌ Claim error: ${e.message.slice(0,80)}`);
+      alert("Claim failed: " + e.message.slice(0,100));
+    }
   }
   async function connectWallet() {
     if(!window.ethereum) { alert("❌ Install MetaMask!"); return; }
