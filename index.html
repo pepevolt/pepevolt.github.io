@@ -313,8 +313,89 @@ body {
   color: #88ffaa;
   text-align: center;
 }
+
+/* Wallet Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #1a2a3a, #0a1520);
+  border-radius: 24px;
+  width: 90%;
+  max-width: 340px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid rgba(0,255,200,0.3);
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 20px;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.wallet-option {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  margin: 8px 0;
+  background: rgba(255,255,255,0.08);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+}
+
+.wallet-option:hover {
+  background: rgba(0,255,200,0.15);
+  transform: translateX(5px);
+}
+
+.wallet-icon {
+  width: 40px;
+  height: 40px;
+  background: #2a3a4a;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.wallet-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.close-modal {
+  float: right;
+  cursor: pointer;
+  font-size: 24px;
+  color: #888;
+}
+
+.close-modal:hover {
+  color: white;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<!-- WalletConnect v2 SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/modal@2.6.2/dist/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.11.0/dist/index.min.js"></script>
 </head>
 
 <body>
@@ -351,7 +432,7 @@ body {
     <div class="tap-count" id="tapCountText">0/100 points = 0 GAME PVLT</div>
   </div>
 
-  <button class="action-btn" id="connectWalletBtn">🦊 CONNECT WALLET (POLYGON)</button>
+  <button class="action-btn" id="connectWalletBtn">🔗 CONNECT WALLET</button>
 
   <div class="status-bar" id="statusBar">
     🔒 Connect wallet to start earning PVLT
@@ -379,6 +460,40 @@ body {
   
   <div class="treasury-note" id="treasuryNote">
     🏆 100 points = 1 GAME PVLT | Tap to earn | Claim sends REAL PVLT to your wallet
+  </div>
+</div>
+
+<!-- Wallet Modal -->
+<div id="walletModal" class="modal">
+  <div class="modal-content">
+    <span class="close-modal" id="closeModal">&times;</span>
+    <div class="modal-header">Connect your wallet</div>
+    <div id="walletList">
+      <div class="wallet-option" data-wallet="metamask">
+        <div class="wallet-icon">🦊</div>
+        <div class="wallet-name">MetaMask</div>
+      </div>
+      <div class="wallet-option" data-wallet="trust">
+        <div class="wallet-icon">🔵</div>
+        <div class="wallet-name">Trust Wallet</div>
+      </div>
+      <div class="wallet-option" data-wallet="coinbase">
+        <div class="wallet-icon">💙</div>
+        <div class="wallet-name">Coinbase Wallet</div>
+      </div>
+      <div class="wallet-option" data-wallet="walletconnect">
+        <div class="wallet-icon">🌐</div>
+        <div class="wallet-name">WalletConnect</div>
+      </div>
+      <div class="wallet-option" data-wallet="okx">
+        <div class="wallet-icon">🟠</div>
+        <div class="wallet-name">OKX Wallet</div>
+      </div>
+      <div class="wallet-option" data-wallet="safePal">
+        <div class="wallet-icon">🛡️</div>
+        <div class="wallet-name">SafePal</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -418,7 +533,12 @@ body {
   const statusBar = document.getElementById("statusBar");
   const tapProgressFill = document.getElementById("tapProgressFill");
   const debugPanel = document.getElementById("debugPanel");
+  const walletModal = document.getElementById("walletModal");
+  const closeModal = document.getElementById("closeModal");
 
+  // WalletConnect Provider
+  let walletConnectProvider = null;
+  
   function debugLog(msg) {
     console.log(msg);
     const time = new Date().toLocaleTimeString();
@@ -508,6 +628,172 @@ body {
     }
   }
 
+  async function initContracts(_provider) {
+    try {
+      tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, _provider);
+      gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, _provider);
+      decimals = await tokenContract.decimals();
+      debugLog(`Decimals: ${decimals}`);
+      await checkTreasuryBalance();
+      await updateWalletBalance();
+    } catch(e) {
+      debugLog(`Init error: ${e.message}`);
+    }
+  }
+
+  async function connectWithMetaMask() {
+    if (typeof window.ethereum === 'undefined') {
+      alert("❌ MetaMask not detected! Please install MetaMask.");
+      return false;
+    }
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      userAccount = accounts[0];
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      await initContracts(signer);
+      
+      const network = await provider.getNetwork();
+      if (network.chainId !== 137) {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x89' }],
+        });
+      }
+      return true;
+    } catch(e) {
+      debugLog(`MetaMask error: ${e.message}`);
+      return false;
+    }
+  }
+
+  async function connectWithWalletConnect() {
+    try {
+      if (typeof EthereumProvider === 'undefined') {
+        alert("Loading WalletConnect... Please refresh and try again.");
+        return false;
+      }
+      
+      walletConnectProvider = await EthereumProvider.init({
+        projectId: 'YOUR_PROJECT_ID', // Get from https://cloud.walletconnect.com
+        chains: [137], // Polygon Mainnet
+        showQrModal: true,
+        methods: ['eth_sendTransaction', 'eth_sign', 'personal_sign'],
+        events: ['chainChanged', 'accountsChanged'],
+      });
+      
+      await walletConnectProvider.connect();
+      const web3Provider = new ethers.providers.Web3Provider(walletConnectProvider);
+      const accounts = await web3Provider.listAccounts();
+      userAccount = accounts[0];
+      provider = web3Provider;
+      signer = provider.getSigner();
+      await initContracts(signer);
+      
+      walletConnectProvider.on('accountsChanged', (accounts) => {
+        if (accounts.length === 0) disconnect();
+        else if (accounts[0] !== userAccount) window.location.reload();
+      });
+      
+      return true;
+    } catch(e) {
+      debugLog(`WalletConnect error: ${e.message}`);
+      return false;
+    }
+  }
+
+  async function connectWithTrustWallet() {
+    if (typeof window.ethereum !== 'undefined') {
+      return await connectWithMetaMask();
+    }
+    alert("Please install Trust Wallet or use WalletConnect option");
+    return false;
+  }
+
+  async function connectWithCoinbase() {
+    if (typeof window.ethereum !== 'undefined') {
+      return await connectWithMetaMask();
+    }
+    alert("Please install Coinbase Wallet or use WalletConnect option");
+    return false;
+  }
+
+  async function connectWithOKX() {
+    if (typeof window.okxwallet !== 'undefined') {
+      const accounts = await window.okxwallet.request({ method: 'eth_requestAccounts' });
+      userAccount = accounts[0];
+      provider = new ethers.providers.Web3Provider(window.okxwallet);
+      signer = provider.getSigner();
+      await initContracts(signer);
+      return true;
+    }
+    alert("Please install OKX Wallet extension");
+    return false;
+  }
+
+  async function connectWithSafePal() {
+    if (typeof window.safepal !== 'undefined') {
+      const accounts = await window.safepal.request({ method: 'eth_requestAccounts' });
+      userAccount = accounts[0];
+      provider = new ethers.providers.Web3Provider(window.safepal);
+      signer = provider.getSigner();
+      await initContracts(signer);
+      return true;
+    }
+    alert("Please install SafePal extension");
+    return false;
+  }
+
+  async function handleWalletConnect(walletType) {
+    let success = false;
+    switch(walletType) {
+      case 'metamask':
+        success = await connectWithMetaMask();
+        break;
+      case 'trust':
+        success = await connectWithTrustWallet();
+        break;
+      case 'coinbase':
+        success = await connectWithCoinbase();
+        break;
+      case 'walletconnect':
+        success = await connectWithWalletConnect();
+        break;
+      case 'okx':
+        success = await connectWithOKX();
+        break;
+      case 'safePal':
+        success = await connectWithSafePal();
+        break;
+      default:
+        success = await connectWithMetaMask();
+    }
+    
+    if (success && userAccount) {
+      loadData();
+      updateUI();
+      tapCircle.classList.remove("disabled");
+      statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | Tap to earn!`;
+      debugLog(`Connected with ${walletType}: ${userAccount}`);
+      
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(() => {
+        if (userAccount) {
+          regenEnergy();
+          updateWalletBalance();
+        }
+      }, 1000);
+    } else if (!success) {
+      statusBar.innerHTML = "❌ Connection failed. Please try again.";
+    }
+    
+    walletModal.style.display = "none";
+  }
+
+  function showWalletModal() {
+    walletModal.style.display = "flex";
+  }
+
   function updateUI() {
     if(!energySpan) return;
     energySpan.innerText = Math.floor(energy);
@@ -545,7 +831,7 @@ body {
       buyBtn.disabled = true;
       claimBtn.disabled = true;
       connectBtn.classList.remove("connected");
-      connectBtn.innerHTML = "🦊 CONNECT WALLET (POLYGON)";
+      connectBtn.innerHTML = "🔗 CONNECT WALLET";
       statusBar.innerHTML = "🔒 Connect wallet to start";
     }
     
@@ -705,77 +991,17 @@ body {
     }
   }
 
-  async function connectWallet() {
-    if (typeof window.ethereum === 'undefined') {
-      alert("❌ MetaMask not detected!");
-      return;
-    }
-    
-    try {
-      connectBtn.innerHTML = `<span class="loading-spinner"></span> CONNECTING...`;
-      connectBtn.disabled = true;
-      
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAccount = accounts[0];
-      debugLog(`Account: ${userAccount}`);
-      
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner();
-      
-      const network = await provider.getNetwork();
-      
-      if (network.chainId !== 137) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x89' }],
-          });
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } catch(e) {
-          alert("Please switch to Polygon Mainnet");
-          throw new Error("Wrong network");
-        }
-      }
-      
-      tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
-      gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-      
-      decimals = await tokenContract.decimals();
-      debugLog(`Decimals: ${decimals}`);
-      
-      await checkTreasuryBalance();
-      loadData();
-      await updateWalletBalance();
-      updateUI();
-      
-      tapCircle.classList.remove("disabled");
-      statusBar.innerHTML = "✅ Connected! Tap to earn!";
-      debugLog("✅ READY!");
-      
-      if (refreshInterval) clearInterval(refreshInterval);
-      refreshInterval = setInterval(() => {
-        if (userAccount) {
-          regenEnergy();
-          updateWalletBalance();
-        }
-      }, 1000);
-      
-    } catch(error) {
-      debugLog(`Error: ${error.message}`);
-      alert("❌ " + error.message.slice(0,100));
-      userAccount = null;
-    } finally {
-      connectBtn.disabled = false;
-      if (!userAccount) {
-        connectBtn.innerHTML = "🦊 CONNECT WALLET (POLYGON)";
-      }
-    }
-  }
-  
   async function disconnect() {
     if (refreshInterval) clearInterval(refreshInterval);
+    if (walletConnectProvider) {
+      await walletConnectProvider.disconnect();
+    }
     saveData();
     userAccount = null;
+    provider = null;
+    signer = null;
+    tokenContract = null;
+    gameContract = null;
     energy = 100;
     maxEnergy = 100;
     points = 0;
@@ -784,33 +1010,28 @@ body {
     statusBar.innerHTML = "🔒 Disconnected";
     debugLog("Disconnected");
   }
-  
+
   // Event Listeners
-  connectBtn.onclick = () => userAccount ? disconnect() : connectWallet();
+  connectBtn.onclick = () => {
+    if (userAccount) {
+      disconnect();
+    } else {
+      showWalletModal();
+    }
+  };
+  
+  // Close modal when clicking X or outside
+  closeModal.onclick = () => walletModal.style.display = "none";
+  window.onclick = (e) => {
+    if (e.target === walletModal) walletModal.style.display = "none";
+  };
+  
+  // Add click handlers to wallet options
+  document.querySelectorAll('.wallet-option').forEach(option => {
+    option.onclick = () => handleWalletConnect(option.dataset.wallet);
+  });
   
   tapCircle.onclick = (e) => {
     const rect = tapCircle.getBoundingClientRect();
     handleTap(rect.left + rect.width/2, rect.top + rect.height/2);
   };
-  
-  tapCircle.ontouchstart = (e) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    handleTap(touch.clientX, touch.clientY);
-  };
-  
-  buyBtn.onclick = () => buyEnergy();
-  claimBtn.onclick = () => claimRewards();
-  
-  document.getElementById("treasuryNote").onclick = () => {
-    navigator.clipboard.writeText(TREASURY_ADDRESS);
-    statusBar.innerHTML = "📋 Treasury address copied!";
-  };
-  
-  updateUI();
-  debugLog("🎮 Game Ready!");
-  debugLog(`Buy: 100 PVLT → 1000 Energy`);
-  debugLog(`Claim: Get REAL PVLT from treasury`);
-</script>
-</body>
-</html>
