@@ -5,18 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>PepeVolt | Tap to Earn REAL PVLT</title>
 
-<!-- Website Icon - Shows Pepe Frog emoji in browser tab -->
+<!-- Website Icon -->
 <link rel="icon" href="images/logo.PNG">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐸</text></svg>">
 
-<!-- Meta tags for better display on social media -->
+<!-- Meta tags -->
 <meta property="og:title" content="PepeVolt">
 <meta property="og:description" content="Tap to Earn PVLT - Play to Earn Game">
 <meta property="og:image" content="https://pepevolt.github.io/pepe-icon.png">
 <meta name="theme-color" content="#03060c">
 
 <style>
-/* Your existing styles here... */
 * {
   margin: 0;
   padding: 0;
@@ -53,8 +52,8 @@ body {
 
 .top-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
   margin-bottom: 14px;
 }
 
@@ -62,21 +61,21 @@ body {
   background: rgba(10, 20, 35, 0.65);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(0, 255, 200, 0.25);
-  border-radius: 20px;
-  padding: 8px 4px;
+  border-radius: 16px;
+  padding: 6px 3px;
   text-align: center;
 }
 
 .stat-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 500;
   color: #8aaee0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 800;
   color: white;
   font-family: monospace;
@@ -90,11 +89,25 @@ body {
 }
 
 .stat-value.small {
-  font-size: 14px;
+  font-size: 11px;
 }
 
 .stat-value.large {
-  font-size: 24px !important;
+  font-size: 20px !important;
+}
+
+.treasury-card {
+  border: 1px solid rgba(255, 200, 0, 0.4);
+  background: rgba(255, 200, 0, 0.1);
+}
+
+.treasury-card .stat-label {
+  color: #ffd966;
+}
+
+.treasury-card .stat-value {
+  color: #ffd966;
+  text-shadow: 0 0 6px #ffaa00;
 }
 
 .energy-bar-container {
@@ -336,6 +349,7 @@ body {
     <div class="stat-card"><div class="stat-label">🔄 POINTS</div><div class="stat-value small" id="pointsDisplay">0/100</div></div>
     <div class="stat-card"><div class="stat-label">💎 GAME PVLT</div><div class="stat-value" id="gamePvltDisplay">0</div></div>
     <div class="stat-card"><div class="stat-label">💼 WALLET</div><div class="stat-value small" id="walletPvltDisplay">0</div></div>
+    <div class="stat-card treasury-card"><div class="stat-label">🏦 TREASURY</div><div class="stat-value small" id="treasuryDisplay">0</div></div>
   </div>
 
   <div class="energy-bar-container"><div class="energy-bar-fill" id="energyBarFill"></div></div>
@@ -391,6 +405,7 @@ body {
   const tapCountText = document.getElementById("tapCountText");
   const gamePvltSpan = document.getElementById("gamePvltDisplay");
   const walletPvltSpan = document.getElementById("walletPvltDisplay");
+  const treasurySpan = document.getElementById("treasuryDisplay");
   const tapCircle = document.getElementById("tapButton");
   const buyBtn = document.getElementById("buyEnergyAction");
   const claimBtn = document.getElementById("claimPvltAction");
@@ -410,6 +425,7 @@ body {
   let points = 0;
   let gamePvltBalance = 0;
   let walletBalance = 0;
+  let treasuryBalance = 0;
   let lastRegenTime = Date.now();
   let refreshInterval = null;
 
@@ -464,12 +480,26 @@ body {
     } catch(e) { walletBalance = 0; }
   }
 
+  async function updateTreasuryBalance() {
+    if (!gameContract) { treasuryBalance = 0; return; }
+    try {
+      const balance = await gameContract.getTreasuryBalance();
+      treasuryBalance = parseFloat(ethers.utils.formatUnits(balance, decimals));
+      debugLog(`🏦 Treasury: ${treasuryBalance.toFixed(2)} PVLT`);
+      updateUI();
+    } catch(e) { 
+      debugLog(`Treasury check error: ${e.message}`);
+      treasuryBalance = 0; 
+    }
+  }
+
   async function initContracts(_signer) {
     tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, _signer);
     gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, _signer);
     decimals = await tokenContract.decimals();
     debugLog(`Decimals: ${decimals}`);
     await updateWalletBalance();
+    await updateTreasuryBalance();
   }
 
   function updateUI() {
@@ -482,6 +512,7 @@ body {
     gamePvltSpan.innerText = gamePvltBalance.toFixed(4);
     tapCountText.innerHTML = `${points}/100 points = ${(points/100).toFixed(2)} GAME PVLT`;
     walletPvltSpan.innerText = walletBalance.toFixed(4);
+    treasurySpan.innerText = treasuryBalance.toFixed(2);
     
     if (userAccount) {
       document.querySelectorAll('.stat-value').forEach(el => el.classList.remove('blurred'));
@@ -490,7 +521,7 @@ body {
       claimBtn.disabled = (gamePvltBalance < 1);
       connectBtn.classList.add('connected');
       connectBtn.innerHTML = `🔴 ${userAccount.slice(0,6)}...${userAccount.slice(-4)}`;
-      statusBar.innerHTML = `✅ Connected | ⚡ ${Math.floor(energy)}/${maxEnergy} | 💎 ${gamePvltBalance.toFixed(2)}`;
+      statusBar.innerHTML = `✅ Connected | ⚡ ${Math.floor(energy)}/${maxEnergy} | 💎 ${gamePvltBalance.toFixed(2)} | 🏦 ${treasuryBalance.toFixed(0)} PVLT`;
     } else {
       document.querySelectorAll('.stat-value').forEach(el => el.classList.add('blurred'));
       tapCircle.classList.add('disabled');
@@ -567,13 +598,20 @@ body {
       
       loadData();
       await updateWalletBalance();
+      await updateTreasuryBalance();
       updateUI();
       tapCircle.classList.remove("disabled");
       statusBar.innerHTML = `✅ Connected: ${userAccount.slice(0,6)}...${userAccount.slice(-4)} | Tap to earn!`;
       debugLog(`✅ Connected: ${userAccount}`);
       
       if (refreshInterval) clearInterval(refreshInterval);
-      refreshInterval = setInterval(() => { if (userAccount) { regenEnergy(); updateWalletBalance(); } }, 1000);
+      refreshInterval = setInterval(() => { 
+        if (userAccount) { 
+          regenEnergy(); 
+          updateWalletBalance();
+          updateTreasuryBalance();
+        } 
+      }, 1000);
       
       window.ethereum.on('accountsChanged', (accounts) => { 
         if (accounts.length === 0) disconnect(); 
@@ -596,7 +634,7 @@ body {
     signer = null;
     tokenContract = null;
     gameContract = null;
-    energy = 100; maxEnergy = 100; points = 0; gamePvltBalance = 0;
+    energy = 100; maxEnergy = 100; points = 0; gamePvltBalance = 0; treasuryBalance = 0;
     updateUI();
     statusBar.innerHTML = "🔒 Disconnected";
     debugLog("Disconnected");
@@ -625,6 +663,7 @@ body {
       maxEnergy += 1000; energy += 1000;
       saveData();
       await updateWalletBalance();
+      await updateTreasuryBalance();
       updateUI();
       statusBar.innerHTML = `✅ +1000 Energy! Max: ${maxEnergy}`;
       showFloat(window.innerWidth/2, window.innerHeight/2, `⚡ +1000 ENERGY ⚡`, "#ffd966");
@@ -637,9 +676,9 @@ body {
     const amountToClaim = Math.floor(gamePvltBalance);
     const amountInWei = ethers.utils.parseUnits(amountToClaim.toString(), decimals);
     try {
-      const treasuryBalance = await gameContract.getTreasuryBalance();
-      if (parseFloat(ethers.utils.formatUnits(treasuryBalance, decimals)) < amountToClaim) {
-        alert(`❌ Treasury low!`); return;
+      if (treasuryBalance < amountToClaim) {
+        alert(`❌ Treasury low! Has ${treasuryBalance.toFixed(2)} PVLT`);
+        return;
       }
       statusBar.innerHTML = `⏳ Claiming ${amountToClaim} PVLT...`;
       const tx = await gameContract.claimRewards(amountInWei);
@@ -648,6 +687,7 @@ body {
       gamePvltBalance = 0; points = 0;
       saveData();
       await updateWalletBalance();
+      await updateTreasuryBalance();
       updateUI();
       statusBar.innerHTML = `✅ Claimed ${amountToClaim} REAL PVLT!`;
       showFloat(window.innerWidth/2, window.innerHeight/2, `💎 +${amountToClaim} PVLT! 💎`, "#46c9b0");
@@ -672,6 +712,7 @@ body {
   updateUI();
   debugLog("🎮 Game Ready!");
   debugLog(`Buy: 100 PVLT → 1000 Energy | Claim: Get REAL PVLT from treasury`);
+  debugLog(`🏦 Treasury address: ${TREASURY_ADDRESS}`);
 </script>
 </body>
 </html>
