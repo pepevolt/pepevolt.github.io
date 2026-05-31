@@ -232,371 +232,657 @@ footer {
 </div>
 
 <script>
-  // ============ CONTRACT ADDRESSES ============
-  const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
-  const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
-  const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
-
-  const GAME_ABI = [
-    "function buyEnergy(uint256 pvltAmount) external",
-    "function claimRewards(uint256 pvltAmount) external",
-    "function getTreasuryBalance() view returns (uint256)"
-  ];
-  const PVLT_ABI = [
-    "function balanceOf(address) view returns (uint256)",
-    "function approve(address,uint256) returns (bool)",
-    "function allowance(address,address) view returns (uint256)",
-    "function decimals() view returns (uint8)"
-  ];
-
-  // DOM Elements
-  const $ = id => document.getElementById(id);
-  const energyValEl = $('energyVal');
-  const energyBarEl = $('energyBar');
-  const regenLblEl = $('regenLbl');
-  const pointsValEl = $('pointsVal');
-  const gamePvltValEl = $('gamePvltVal');
-  const walletValEl = $('walletVal');
-  const treasuryValEl = $('treasuryVal');
-  const tapBtnEl = $('tapBtn');
-  const statusTxtEl = $('statusTxt');
-  const connectBtnEl = $('connectBtn');
-  const stateDisc = $('stateDisconnected');
-  const stateConn = $('stateConnected');
-  const disconnBtnEl = $('disconnectBtn');
-  const actionGridEl = $('actionGrid');
-  const buyBtnEl = $('buyBtn');
-  const claimBtnEl = $('claimBtn');
-  const claimSubEl = $('claimSub');
-  const walletModal = $('walletModal');
-  const closeModal = $('closeModal');
-  const metaMaskOption = $('metaMaskOption');
-
-  // State
-  let account = null;
-  let provider = null;
-  let signer = null;
-  let tokenC = null;
-  let gameC = null;
-  let decimals = 18;
-
-  let maxEnergy = 100;
-  let energy = 100;
-  let points = 0;
-  let gamePvlt = 0;
-  let walletBal = 0;
-  let treasuryBal = 0;
-  let lastRegen = Date.now();
-  let regenTimer = null;
-
-  function save() {
-    if (!account) return;
-    localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy }));
-  }
-  function load() {
-    if (!account) return;
-    try {
-      const d = JSON.parse(localStorage.getItem('pv_' + account) || '{}');
-      maxEnergy = d.maxEnergy ?? 100;
-      points = d.points ?? 0;
-      gamePvlt = d.gamePvlt ?? 0;
-      lastRegen = d.lastRegen ?? Date.now();
-      const offSecs = Math.floor((Date.now() - lastRegen) / 1000);
-      const offRegen = Math.floor(offSecs / 15);
-      energy = Math.min((d.energy ?? 100) + offRegen, maxEnergy);
-      if (offRegen > 0) lastRegen = Date.now();
-    } catch(e) {}
+// ============ WALLET CONNECTION MODULE ============
+class WalletManager {
+  constructor() {
+    this.provider = null;
+    this.signer = null;
+    this.account = null;
+    this.chainId = null;
+    this.onAccountChange = null;
+    this.onChainChange = null;
   }
 
-  function render() {
-    energyValEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
-    energyBarEl.style.width = Math.min((energy / maxEnergy) * 100, 100) + '%';
-    pointsValEl.textContent = points;
-    gamePvltValEl.textContent = gamePvlt.toFixed(0);
-    walletValEl.textContent = walletBal.toFixed(2);
-    treasuryValEl.textContent = treasuryBal.toFixed(0);
-    claimSubEl.textContent = gamePvlt >= 1 ? `${Math.floor(gamePvlt)} PVLT` : 'TO WALLET';
-
-    if (account) {
-      tapBtnEl.classList.remove('no-energy');
-      stateDisc.style.display = 'none';
-      stateConn.style.display = 'block';
-      disconnBtnEl.style.display = 'block';
-      actionGridEl.style.display = 'grid';
-      disconnBtnEl.textContent = `🔴 ${account.slice(0,6)}...${account.slice(-4)}`;
-      buyBtnEl.disabled = walletBal < 100;
-      claimBtnEl.disabled = gamePvlt < 1;
-    } else {
-      tapBtnEl.classList.add('no-energy');
-      stateDisc.style.display = 'block';
-      stateConn.style.display = 'none';
-    }
-  }
-
-  function tick() {
-    if (account && energy < maxEnergy) {
-      const secs = Math.floor((Date.now() - lastRegen) / 1000);
-      const gained = Math.floor(secs / 15);
-      if (gained > 0) {
-        energy = Math.min(energy + gained, maxEnergy);
-        lastRegen = Date.now();
-        save();
-      }
-      const rem = 15 - (Math.floor((Date.now() - lastRegen) / 1000) % 15);
-      regenLblEl.textContent = `⚡ +1 in ${rem}s`;
-    } else {
-      regenLblEl.textContent = '';
-    }
-    render();
-  }
-
-  async function refreshBalances() {
-    if (!account || !tokenC) return;
-    try {
-      const [b, t] = await Promise.all([
-        tokenC.balanceOf(account),
-        gameC.getTreasuryBalance().catch(() => ethers.BigNumber.from(0))
-      ]);
-      walletBal = parseFloat(ethers.utils.formatUnits(b, decimals));
-      treasuryBal = parseFloat(ethers.utils.formatUnits(t, decimals));
-      render();
-    } catch(e) { console.error('Balance error', e); }
-  }
-
-  function showFloat(x, y, text, color = '#fff') {
-    const el = document.createElement('div');
-    el.className = 'float-text';
-    el.textContent = text;
-    el.style.cssText = `position:fixed;left:${x-20}px;top:${y-20}px;color:${color};font-family:monospace;font-weight:800;font-size:22px;pointer-events:none;z-index:999;animation:floatUp 1s forwards;`;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1000);
-  }
-
-  const style = document.createElement('style');
-  style.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
-  document.head.appendChild(style);
-
-  let tapLock = false;
-  function doTap(x, y) {
-    if (!account || energy <= 0 || tapLock) return;
-    tapLock = true; setTimeout(() => tapLock = false, 80);
-    energy--; points++;
-    if (points >= 100) {
-      const earned = Math.floor(points / 100);
-      gamePvlt += earned; points %= 100;
-      showFloat(x, y-40, `+${earned} PVLT! 🎉`, '#ffd700');
-    }
-    showFloat(x, y, '+1 ⚡', '#00ffcc');
-    save(); render();
-  }
-
-  tapBtnEl.addEventListener('click', (e) => {
-    const rect = tapBtnEl.getBoundingClientRect();
-    doTap(rect.left + rect.width/2, rect.top + rect.height/2);
-  });
-  tapBtnEl.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    doTap(touch.clientX, touch.clientY);
-  }, { passive: false });
-
-  // ========== META MASK CONNECTION ==========
-  async function connectMetaMask() {
+  async connect() {
     if (!window.ethereum) {
-      alert("Please install MetaMask extension!");
-      return false;
+      throw new Error("Please install MetaMask!");
     }
+
     try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      account = accounts[0];
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner();
+      // Request account access
+      const accounts = await window.ethereum.request({ 
+        method: 'eth_requestAccounts' 
+      });
+      this.account = accounts[0];
+      
+      // Setup provider
+      this.provider = new ethers.providers.Web3Provider(window.ethereum);
+      this.signer = this.provider.getSigner();
+      
+      // Get network info
+      const network = await this.provider.getNetwork();
+      this.chainId = network.chainId;
+      
+      // Setup event listeners
+      this._setupEventListeners();
+      
+      return this.account;
+    } catch (error) {
+      console.error("Connection error:", error);
+      throw error;
+    }
+  }
 
-      const network = await provider.getNetwork();
-      if (network.chainId !== 137) {
-        setStatus('⚠️ Switching to Polygon...');
-        try {
-          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-        } catch(e) {
-          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
-            chainId: '0x89', chainName: 'Polygon Mainnet',
-            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-            rpcUrls: ['https://polygon-rpc.com/']
-          }]});
-        }
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer = provider.getSigner();
-      }
-
-      tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
-      gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-      decimals = await tokenC.decimals();
-
-      load();
-      await refreshBalances();
-      setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
-      render();
-
-      if (regenTimer) clearInterval(regenTimer);
-      regenTimer = setInterval(async () => { tick(); await refreshBalances(); }, 1000);
-
-      window.ethereum.on('accountsChanged', (accs) => {
-        if (!accs.length) disconnect();
-        else if (accs[0] !== account) location.reload();
+  async switchToPolygon() {
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x89' }] // Polygon Mainnet
       });
       return true;
-    } catch(e) {
-      console.error(e);
-      setStatus('❌ ' + (e.message?.slice(0,50) || 'Connection failed'));
-      return false;
+    } catch (switchError) {
+      // If chain not added, add it
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x89',
+              chainName: 'Polygon Mainnet',
+              nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+              rpcUrls: ['https://polygon-rpc.com/'],
+              blockExplorerUrls: ['https://polygonscan.com/']
+            }]
+          });
+          return true;
+        } catch (addError) {
+          throw new Error("Failed to add Polygon network");
+        }
+      }
+      throw switchError;
     }
   }
 
-  async function disconnect() {
-    if (regenTimer) clearInterval(regenTimer);
-    save();
-    account = null;
-    walletBal = 0;
-    treasuryBal = 0;
-    energy = 100; maxEnergy = 100; points = 0; gamePvlt = 0;
+  _setupEventListeners() {
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length === 0) {
+          this.account = null;
+          if (this.onAccountChange) this.onAccountChange(null);
+        } else if (accounts[0] !== this.account) {
+          this.account = accounts[0];
+          if (this.onAccountChange) this.onAccountChange(this.account);
+        }
+      });
+
+      window.ethereum.on('chainChanged', (chainId) => {
+        this.chainId = parseInt(chainId, 16);
+        if (this.onChainChange) this.onChainChange(this.chainId);
+        window.location.reload(); // Recommended by MetaMask
+      });
+    }
+  }
+
+  disconnect() {
+    this.provider = null;
+    this.signer = null;
+    this.account = null;
+    this.chainId = null;
+  }
+
+  getShortAccount() {
+    if (!this.account) return "";
+    return this.account.slice(0, 6) + "..." + this.account.slice(-4);
+  }
+
+  isConnected() {
+    return this.account !== null;
+  }
+
+  async getBalance(contractAddress, abi) {
+    if (!this.provider || !contractAddress) return null;
+    try {
+      const contract = new ethers.Contract(contractAddress, abi, this.provider);
+      const balance = await contract.balanceOf(this.account);
+      return balance;
+    } catch (error) {
+      console.error("Balance fetch error:", error);
+      return null;
+    }
+  }
+
+  async sendTransaction(to, data, value = 0) {
+    if (!this.signer) throw new Error("Wallet not connected");
+    
+    const tx = {
+      from: this.account,
+      to: to,
+      data: data,
+      value: value
+    };
+    
+    return await this.signer.sendTransaction(tx);
+  }
+}
+
+// ============ GAME STATE MANAGER ============
+class GameStateManager {
+  constructor() {
+    this.maxEnergy = 100;
+    this.energy = 100;
+    this.points = 0;
+    this.gamePvlt = 0;
+    this.lastRegen = Date.now();
+    this.onStateChange = null;
+  }
+
+  load(accountId) {
+    if (!accountId) return;
+    try {
+      const data = JSON.parse(localStorage.getItem(`pv_${accountId}`) || '{}');
+      this.maxEnergy = data.maxEnergy ?? 100;
+      this.points = data.points ?? 0;
+      this.gamePvlt = data.gamePvlt ?? 0;
+      this.lastRegen = data.lastRegen ?? Date.now();
+      
+      // Calculate offline energy regeneration
+      const secondsOffline = Math.floor((Date.now() - this.lastRegen) / 1000);
+      const regenerated = Math.floor(secondsOffline / 15);
+      this.energy = Math.min((data.energy ?? 100) + regenerated, this.maxEnergy);
+      
+      if (regenerated > 0) this.lastRegen = Date.now();
+    } catch(e) {
+      console.error("Load error:", e);
+    }
+  }
+
+  save(accountId) {
+    if (!accountId) return;
+    localStorage.setItem(`pv_${accountId}`, JSON.stringify({
+      energy: this.energy,
+      maxEnergy: this.maxEnergy,
+      points: this.points,
+      gamePvlt: this.gamePvlt,
+      lastRegen: this.lastRegen
+    }));
+  }
+
+  tap() {
+    if (this.energy <= 0) {
+      return { success: false, reason: "No energy" };
+    }
+    
+    this.energy--;
+    this.points++;
+    
+    let earnedPvlt = 0;
+    if (this.points >= 100) {
+      earnedPvlt = Math.floor(this.points / 100);
+      this.gamePvlt += earnedPvlt;
+      this.points = this.points % 100;
+    }
+    
+    if (this.onStateChange) {
+      this.onStateChange(this.getState());
+    }
+    
+    return { success: true, earnedPvlt, points: 1 };
+  }
+  
+  regenEnergy() {
+    if (this.energy < this.maxEnergy) {
+      const secondsPassed = Math.floor((Date.now() - this.lastRegen) / 1000);
+      const gained = Math.floor(secondsPassed / 15);
+      
+      if (gained > 0) {
+        this.energy = Math.min(this.energy + gained, this.maxEnergy);
+        this.lastRegen = Date.now();
+        
+        if (this.onStateChange) {
+          this.onStateChange(this.getState());
+        }
+      }
+      
+      const remainingSeconds = 15 - (secondsPassed % 15);
+      return remainingSeconds;
+    }
+    return 0;
+  }
+  
+  addEnergy(amount) {
+    this.maxEnergy += amount;
+    this.energy += amount;
+    if (this.onStateChange) {
+      this.onStateChange(this.getState());
+    }
+  }
+  
+  claimGamePvlt() {
+    const claimed = this.gamePvlt;
+    this.gamePvlt = 0;
+    this.points = 0;
+    if (this.onStateChange) {
+      this.onStateChange(this.getState());
+    }
+    return claimed;
+  }
+  
+  getState() {
+    return {
+      energy: this.energy,
+      maxEnergy: this.maxEnergy,
+      points: this.points,
+      gamePvlt: this.gamePvlt
+    };
+  }
+  
+  reset() {
+    this.maxEnergy = 100;
+    this.energy = 100;
+    this.points = 0;
+    this.gamePvlt = 0;
+    this.lastRegen = Date.now();
+    if (this.onStateChange) {
+      this.onStateChange(this.getState());
+    }
+  }
+}
+
+// ============ CONTRACT MANAGER ============
+class ContractManager {
+  constructor() {
+    this.PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
+    this.GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
+    this.TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
+    
+    this.GAME_ABI = [
+      "function buyEnergy(uint256 pvltAmount) external",
+      "function claimRewards(uint256 pvltAmount) external",
+      "function getTreasuryBalance() view returns (uint256)"
+    ];
+    this.PVLT_ABI = [
+      "function balanceOf(address) view returns (uint256)",
+      "function approve(address,uint256) returns (bool)",
+      "function allowance(address,address) view returns (uint256)",
+      "function decimals() view returns (uint8)"
+    ];
+    
+    this.tokenContract = null;
+    this.gameContract = null;
+    this.decimals = 18;
+    this.signer = null;
+  }
+  
+  setSigner(signer) {
+    this.signer = signer;
+    if (signer) {
+      this.tokenContract = new ethers.Contract(this.PVLT_TOKEN_ADDRESS, this.PVLT_ABI, signer);
+      this.gameContract = new ethers.Contract(this.GAME_CONTRACT_ADDRESS, this.GAME_ABI, signer);
+    }
+  }
+  
+  async initDecimals() {
+    if (this.tokenContract) {
+      this.decimals = await this.tokenContract.decimals();
+    }
+  }
+  
+  async getWalletBalance(address) {
+    if (!this.tokenContract) return 0;
+    try {
+      const balance = await this.tokenContract.balanceOf(address);
+      return parseFloat(ethers.utils.formatUnits(balance, this.decimals));
+    } catch(e) {
+      console.error("Wallet balance error:", e);
+      return 0;
+    }
+  }
+  
+  async getTreasuryBalance() {
+    if (!this.gameContract) return 0;
+    try {
+      const balance = await this.gameContract.getTreasuryBalance();
+      return parseFloat(ethers.utils.formatUnits(balance, this.decimals));
+    } catch(e) {
+      console.error("Treasury balance error:", e);
+      return 0;
+    }
+  }
+  
+  async buyEnergy(amount, onStatus) {
+    if (!this.gameContract || !this.tokenContract) throw new Error("Contract not initialized");
+    
+    const amountWei = ethers.utils.parseUnits(amount.toString(), this.decimals);
+    
+    // Check allowance
+    if (onStatus) onStatus("⏳ Checking allowance...");
+    const allowance = await this.tokenContract.allowance(
+      await this.signer.getAddress(), 
+      this.GAME_CONTRACT_ADDRESS
+    );
+    
+    if (allowance.lt(amountWei)) {
+      if (onStatus) onStatus("⏳ Approving PVLT...");
+      const approveTx = await this.tokenContract.approve(this.GAME_CONTRACT_ADDRESS, amountWei);
+      if (onStatus) onStatus("⏳ Waiting for approval confirmation...");
+      await approveTx.wait();
+      if (onStatus) onStatus("✅ Approval confirmed! Buying energy...");
+    }
+    
+    // Buy energy
+    const gasEstimate = await this.gameContract.estimateGas.buyEnergy(amountWei);
+    const tx = await this.gameContract.buyEnergy(amountWei, { 
+      gasLimit: gasEstimate.mul(12).div(10) 
+    });
+    
+    if (onStatus) onStatus("⏳ Transaction sent. Waiting for confirmation...");
+    await tx.wait();
+    
+    return tx;
+  }
+  
+  async claimRewards(amount, onStatus) {
+    if (!this.gameContract) throw new Error("Contract not initialized");
+    
+    const amountWei = ethers.utils.parseUnits(amount.toString(), this.decimals);
+    const gasEstimate = await this.gameContract.estimateGas.claimRewards(amountWei);
+    const tx = await this.gameContract.claimRewards(amountWei, { 
+      gasLimit: gasEstimate.mul(12).div(10) 
+    });
+    
+    if (onStatus) onStatus("⏳ Waiting for confirmation...");
+    await tx.wait();
+    
+    return tx;
+  }
+}
+
+// ============ MAIN APP ============
+// Initialize managers
+const walletManager = new WalletManager();
+const gameManager = new GameStateManager();
+const contractManager = new ContractManager();
+
+// DOM Elements
+const $ = id => document.getElementById(id);
+const energyValEl = $('energyVal');
+const energyBarEl = $('energyBar');
+const regenLblEl = $('regenLbl');
+const pointsValEl = $('pointsVal');
+const gamePvltValEl = $('gamePvltVal');
+const walletValEl = $('walletVal');
+const treasuryValEl = $('treasuryVal');
+const tapBtnEl = $('tapBtn');
+const statusTxtEl = $('statusTxt');
+const connectBtnEl = $('connectBtn');
+const stateDisc = $('stateDisconnected');
+const stateConn = $('stateConnected');
+const disconnBtnEl = $('disconnectBtn');
+const actionGridEl = $('actionGrid');
+const buyBtnEl = $('buyBtn');
+const claimBtnEl = $('claimBtn');
+const claimSubEl = $('claimSub');
+const walletModal = $('walletModal');
+const closeModal = $('closeModal');
+const metaMaskOption = $('metaMaskOption');
+
+// UI Update Function
+function updateUI() {
+  const state = gameManager.getState();
+  energyValEl.textContent = `${Math.floor(state.energy)} / ${state.maxEnergy}`;
+  energyBarEl.style.width = `${(state.energy / state.maxEnergy) * 100}%`;
+  pointsValEl.textContent = state.points;
+  gamePvltValEl.textContent = state.gamePvlt.toFixed(0);
+  claimSubEl.textContent = state.gamePvlt >= 1 ? `${Math.floor(state.gamePvlt)} PVLT` : 'TO WALLET';
+  
+  if (walletManager.isConnected()) {
+    tapBtnEl.classList.remove('no-energy');
+    stateDisc.style.display = 'none';
+    stateConn.style.display = 'block';
+    disconnBtnEl.style.display = 'block';
+    actionGridEl.style.display = 'grid';
+    disconnBtnEl.textContent = `🔴 ${walletManager.getShortAccount()}`;
+    buyBtnEl.disabled = window.walletBalance < 100;
+    claimBtnEl.disabled = state.gamePvlt < 1;
+  } else {
+    tapBtnEl.classList.add('no-energy');
+    stateDisc.style.display = 'block';
+    stateConn.style.display = 'none';
+  }
+}
+
+// Game state change handler
+gameManager.onStateChange = (state) => {
+  updateUI();
+  if (walletManager.isConnected()) {
+    gameManager.save(walletManager.account);
+  }
+};
+
+// Regeneration timer
+let regenInterval;
+function startRegenTimer() {
+  if (regenInterval) clearInterval(regenInterval);
+  regenInterval = setInterval(() => {
+    if (walletManager.isConnected()) {
+      const remaining = gameManager.regenEnergy();
+      if (remaining > 0) {
+        regenLblEl.textContent = `⚡ +1 in ${remaining}s`;
+      } else {
+        regenLblEl.textContent = '';
+      }
+      updateUI();
+    }
+  }, 1000);
+}
+
+// Refresh blockchain balances
+let walletBalance = 0;
+let treasuryBalance = 0;
+
+async function refreshBalances() {
+  if (!walletManager.isConnected()) return;
+  
+  try {
+    walletBalance = await contractManager.getWalletBalance(walletManager.account);
+    treasuryBalance = await contractManager.getTreasuryBalance();
+    walletValEl.textContent = walletBalance.toFixed(2);
+    treasuryValEl.textContent = treasuryBalance.toFixed(0);
+    buyBtnEl.disabled = walletBalance < 100;
+    claimBtnEl.disabled = gameManager.getState().gamePvlt < 1;
+  } catch(e) {
+    console.error("Balance refresh error:", e);
+  }
+}
+
+// Tap handler
+let tapLock = false;
+function showFloat(x, y, text, color = '#fff') {
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.cssText = `position:fixed;left:${x-20}px;top:${y-20}px;color:${color};font-family:monospace;font-weight:800;font-size:22px;pointer-events:none;z-index:999;animation:floatUp 1s forwards;`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function handleTap(x, y) {
+  if (!walletManager.isConnected()) {
+    setStatus("🔒 Connect wallet first!");
+    return;
+  }
+  
+  if (tapLock) return;
+  tapLock = true;
+  setTimeout(() => tapLock = false, 80);
+  
+  const result = gameManager.tap();
+  if (!result.success) {
+    setStatus("❌ No energy! Wait for regen or buy more!");
+    tapLock = false;
+    return;
+  }
+  
+  showFloat(x, y, '+1 ⚡', '#00ffcc');
+  if (result.earnedPvlt > 0) {
+    showFloat(x, y-40, `+${result.earnedPvlt} PVLT! 🎉`, '#ffd700');
+  }
+  
+  gameManager.save(walletManager.account);
+  setStatus(`⚡ Tapped! +1 Point`);
+}
+
+// Event handlers
+async function connectWallet() {
+  setStatus("🦊 Connecting to MetaMask...");
+  connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
+  connectBtnEl.disabled = true;
+  
+  try {
+    const account = await walletManager.connect();
+    const network = await walletManager.provider.getNetwork();
+    
+    if (network.chainId !== 137) {
+      setStatus("⚠️ Switching to Polygon Mainnet...");
+      await walletManager.switchToPolygon();
+    }
+    
+    contractManager.setSigner(walletManager.signer);
+    await contractManager.initDecimals();
+    
+    gameManager.load(account);
+    await refreshBalances();
+    
+    setStatus(`✅ Connected: ${walletManager.getShortAccount()}`);
+    updateUI();
+    startRegenTimer();
+    
+    // Periodic balance refresh
+    setInterval(refreshBalances, 10000);
+    
+  } catch(error) {
+    console.error("Connection error:", error);
+    setStatus(`❌ ${error.message || "Connection failed"}`);
+    walletManager.disconnect();
+    updateUI();
+  } finally {
     connectBtnEl.innerHTML = '💼 CONNECT WALLET';
     connectBtnEl.disabled = false;
-    setStatus('🔒 Disconnected');
-    render();
   }
+}
 
-  // ========== BUY ENERGY (FIXED) ==========
-  async function buyEnergy() {
-    if (!account) { setStatus("Connect wallet first"); return; }
-    if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
+async function disconnectWallet() {
+  gameManager.save(walletManager.account);
+  walletManager.disconnect();
+  gameManager.reset();
+  updateUI();
+  setStatus("🔒 Disconnected");
+  if (regenInterval) clearInterval(regenInterval);
+}
 
-    buyBtnEl.disabled = true;
-    setStatus("⏳ Checking allowance...");
-
-    try {
-      const amount = ethers.utils.parseUnits("100", decimals);
-      
-      // Check allowance
-      const allowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
-      console.log("Allowance:", allowance.toString());
-      console.log("Need:", amount.toString());
-
-      if (allowance.lt(amount)) {
-        setStatus("⏳ Approving 100 PVLT...");
-        const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amount);
-        setStatus("⏳ Approving - waiting for confirmation...");
-        await approveTx.wait();
-        console.log("Approval confirmed");
-        setStatus("✅ Approval confirmed! Now buying energy...");
-        await new Promise(r => setTimeout(r, 2000));
-      }
-
-      setStatus("⏳ Buying 1000 Energy...");
-      console.log("Calling buyEnergy with amount:", amount.toString());
-      
-      // Estimate gas first to catch errors
-      const gasEstimate = await gameC.estimateGas.buyEnergy(amount);
-      console.log("Gas estimate:", gasEstimate.toString());
-      
-      const tx = await gameC.buyEnergy(amount, { gasLimit: gasEstimate.mul(12).div(10) });
-      setStatus("⏳ Transaction sent. Waiting for confirmation...");
-      console.log("Transaction hash:", tx.hash);
-      
-      await tx.wait();
-      console.log("Transaction confirmed!");
-      
-      maxEnergy += 1000;
-      energy += 1000;
-      save();
-      await refreshBalances();
-      setStatus(`✅ +1000 Energy! Max: ${maxEnergy}`);
-      showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '⚡ +1000 ENERGY!', '#ffd700');
-
-    } catch(e) {
-      console.error("Buy error:", e);
-      let errorMsg = e.message || "Transaction failed";
-      
-      // Check for specific error messages
-      if (errorMsg.includes("Must send exactly")) {
-        errorMsg = "Contract expects exactly 100 PVLT. Check contract configuration.";
-      } else if (errorMsg.includes("insufficient funds")) {
-        errorMsg = "Insufficient MATIC for gas fees!";
-      } else if (errorMsg.includes("user rejected")) {
-        errorMsg = "Transaction rejected in wallet";
-      } else if (errorMsg.includes("execution reverted")) {
-        errorMsg = "Contract execution failed. Make sure Game contract is correct.";
-      }
-      
-      setStatus(`❌ ${errorMsg.slice(0,80)}`);
-    } finally {
-      buyBtnEl.disabled = walletBal < 100;
-    }
+async function buyEnergy() {
+  if (!walletManager.isConnected()) {
+    setStatus("Connect wallet first!");
+    return;
   }
-
-  // ========== CLAIM REWARDS ==========
-  async function claimRewards() {
-    if (!account) { setStatus("Connect wallet first"); return; }
-    if (gamePvlt < 1) { setStatus(`❌ No GAME PVLT! You have ${gamePvlt}`); return; }
-    if (treasuryBal < gamePvlt) { setStatus(`❌ Treasury low! Has ${treasuryBal.toFixed(0)} PVLT`); return; }
-
-    const amount = Math.floor(gamePvlt);
-    const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
-    claimBtnEl.disabled = true;
-    setStatus(`⏳ Claiming ${amount} PVLT...`);
-
-    try {
-      const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
-      const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
-      setStatus("⏳ Waiting for confirmation...");
-      await tx.wait();
-      
-      gamePvlt = 0;
-      points = 0;
-      save();
-      await refreshBalances();
-      setStatus(`✅ Claimed ${amount} REAL PVLT!`);
-      showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
-    } catch(e) {
-      console.error("Claim error:", e);
-      setStatus(`❌ ${e.message?.slice(0,80) || "Claim failed"}`);
-    } finally {
-      claimBtnEl.disabled = gamePvlt < 1;
-    }
+  
+  if (walletBalance < 100) {
+    setStatus(`❌ Need 100 PVLT. You have ${walletBalance.toFixed(2)}`);
+    return;
   }
-
-  function setStatus(msg) { statusTxtEl.textContent = msg; }
-
-  // Modal handlers
-  function openModal() { walletModal.classList.add('open'); }
-  function closeModalFn() { walletModal.classList.remove('open'); }
-
-  connectBtnEl.onclick = () => {
-    if (account) disconnect();
-    else openModal();
-  };
-  closeModal.onclick = closeModalFn;
-  walletModal.onclick = (e) => { if (e.target === walletModal) closeModalFn(); };
   
-  metaMaskOption.onclick = async () => {
-    closeModalFn();
-    connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
-    connectBtnEl.disabled = true;
-    const success = await connectMetaMask();
-    if (!success) {
-      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-      connectBtnEl.disabled = false;
-    } else {
-      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-    }
-  };
+  buyBtnEl.disabled = true;
   
-  disconnBtnEl.onclick = () => disconnect();
-  buyBtnEl.onclick = buyEnergy;
-  claimBtnEl.onclick = claimRewards;
+  try {
+    await contractManager.buyEnergy(100, setStatus);
+    gameManager.addEnergy(1000);
+    gameManager.save(walletManager.account);
+    await refreshBalances();
+    setStatus(`✅ +1000 Energy! Max: ${gameManager.getState().maxEnergy}`);
+    showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '⚡ +1000 ENERGY!', '#ffd700');
+  } catch(error) {
+    console.error("Buy error:", error);
+    setStatus(`❌ ${error.message?.slice(0,80) || "Transaction failed"}`);
+  } finally {
+    buyBtnEl.disabled = walletBalance < 100;
+  }
+}
+
+async function claimRewards() {
+  const state = gameManager.getState();
+  if (!walletManager.isConnected()) {
+    setStatus("Connect wallet first!");
+    return;
+  }
   
-  render();
-  setInterval(tick, 1000);
-  setStatus('🔒 Click CONNECT WALLET to start');
+  if (state.gamePvlt < 1) {
+    setStatus(`❌ No GAME PVLT to claim!`);
+    return;
+  }
+  
+  if (treasuryBalance < state.gamePvlt) {
+    setStatus(`❌ Treasury low! Has ${treasuryBalance.toFixed(0)} PVLT`);
+    return;
+  }
+  
+  claimBtnEl.disabled = true;
+  const amount = Math.floor(state.gamePvlt);
+  
+  try {
+    await contractManager.claimRewards(amount, setStatus);
+    const claimed = gameManager.claimGamePvlt();
+    gameManager.save(walletManager.account);
+    await refreshBalances();
+    setStatus(`✅ Claimed ${claimed} REAL PVLT!`);
+    showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${claimed} PVLT!`, '#00ffcc');
+  } catch(error) {
+    console.error("Claim error:", error);
+    setStatus(`❌ ${error.message?.slice(0,80) || "Claim failed"}`);
+  } finally {
+    const newState = gameManager.getState();
+    claimBtnEl.disabled = newState.gamePvlt < 1;
+  }
+}
+
+function setStatus(msg) {
+  statusTxtEl.textContent = msg;
+}
+
+// Modal handlers
+function openModal() { walletModal.classList.add('open'); }
+function closeModalFn() { walletModal.classList.remove('open'); }
+
+// Event listeners
+tapBtnEl.addEventListener('click', (e) => {
+  const rect = tapBtnEl.getBoundingClientRect();
+  handleTap(rect.left + rect.width/2, rect.top + rect.height/2);
+});
+
+tapBtnEl.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  handleTap(touch.clientX, touch.clientY);
+}, { passive: false });
+
+connectBtnEl.onclick = openModal;
+closeModal.onclick = closeModalFn;
+walletModal.onclick = (e) => { if (e.target === walletModal) closeModalFn(); };
+metaMaskOption.onclick = async () => {
+  closeModalFn();
+  await connectWallet();
+};
+disconnBtnEl.onclick = disconnectWallet;
+buyBtnEl.onclick = buyEnergy;
+claimBtnEl.onclick = claimRewards;
+
+// Animation style
+const style = document.createElement('style');
+style.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
+document.head.appendChild(style);
+
+// Initialize
+updateUI();
+setStatus('🔒 Click CONNECT WALLET to start');
+window.walletBalance = 0;
 </script>
 </body>
 </html>
