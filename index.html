@@ -7,9 +7,7 @@
 <link rel="icon" href="images/logo.PNG">
 <meta name="theme-color" content="#090912">
 
-<!-- Mobile wallet detection libraries -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-<script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 
 <style>
 * {
@@ -101,27 +99,35 @@ footer {
 .action-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .btn-small { padding: 10px; font-size: 13px; }
 
-.wallet-options {
+.wallet-buttons {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   margin-top: 10px;
 }
-.wallet-option-btn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 44px;
-  padding: 12px;
-  font-size: 14px;
+.wallet-btn {
+  background: linear-gradient(135deg, #2a2a3e, #1a1a2e);
+  border: 1px solid rgba(0,255,204,0.3);
+  border-radius: 50px;
+  padding: 14px;
+  font-size: 16px;
   font-weight: bold;
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
+  transition: all 0.2s;
 }
-.wallet-option-btn:active { transform: scale(.97); }
+.wallet-btn:active {
+  transform: scale(0.97);
+  background: linear-gradient(135deg, #3a3a4e, #2a2a3e);
+}
+.wallet-btn img {
+  width: 28px;
+  height: 28px;
+}
 
 @keyframes floatUp {
   0%   { opacity:1; transform:translateY(0); }
@@ -165,12 +171,16 @@ footer {
   <footer>
     <div class="status-txt" id="statusTxt">🔒 Connect wallet to start</div>
     <div id="stateDisconnected">
-      <button class="btn btn-primary" id="connectBtn">💼 CONNECT WALLET</button>
-      <div id="walletOptions" style="display: none;" class="wallet-options">
-        <button class="wallet-option-btn" data-wallet="metamask">🦊 MetaMask</button>
-        <button class="wallet-option-btn" data-wallet="trust">📱 Trust Wallet</button>
-        <button class="wallet-option-btn" data-wallet="coinbase">💙 Coinbase Wallet</button>
-        <button class="wallet-option-btn" data-wallet="walletconnect">🔗 WalletConnect</button>
+      <div class="wallet-buttons">
+        <button class="wallet-btn" id="metamaskBtn">
+          🦊 MetaMask
+        </button>
+        <button class="wallet-btn" id="trustBtn">
+          📱 Trust Wallet
+        </button>
+        <button class="wallet-btn" id="coinbaseBtn">
+          💙 Coinbase
+        </button>
       </div>
     </div>
     <div id="stateConnected" style="display:none">
@@ -184,12 +194,11 @@ footer {
 </div>
 
 <script>
-  // MOBILE-FRIENDLY VERSION - Auto detects wallets on phone
+  // DEEP LINKING VERSION - Opens wallet apps directly
   
   // Contract config (Polygon)
   const PVLT_TOKEN_ADDRESS = '0x03741F950eaFD9CbAa217E2B0491a0F143492f0A';
   const GAME_CONTRACT_ADDRESS = '0xE522370EA3A22D9075bB446027c7E46b5D979806';
-  const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
   
   const GAME_ABI = [
     'function buyEnergy(uint256 pvltAmount) external',
@@ -213,8 +222,6 @@ footer {
   const treasuryValEl = document.getElementById('treasuryVal');
   const tapBtnEl = document.getElementById('tapBtn');
   const statusTxtEl = document.getElementById('statusTxt');
-  const connectBtnEl = document.getElementById('connectBtn');
-  const walletOptionsDiv = document.getElementById('walletOptions');
   const stateDisc = document.getElementById('stateDisconnected');
   const stateConn = document.getElementById('stateConnected');
   const disconnBtnEl = document.getElementById('disconnectBtn');
@@ -226,7 +233,6 @@ footer {
   // Game state
   let account = null;
   let signer = null;
-  let provider = null;
   let tokenC = null;
   let gameC = null;
   let decimals = 18;
@@ -238,6 +244,7 @@ footer {
   let treasuryBal = 0;
   let lastRegen = Date.now();
   let regenTimer = null;
+  let ethereumProvider = null;
   
   function save() {
     if (!account) return;
@@ -326,160 +333,97 @@ footer {
     statusTxtEl.textContent = msg;
   }
   
-  // DETECT MOBILE WALLETS
-  function detectMobileWallet() {
-    // Check for MetaMask mobile
-    if (window.ethereum && window.ethereum.isMetaMask) {
-      return 'metamask';
-    }
-    // Check for Trust Wallet
-    if (window.ethereum && window.ethereum.isTrust) {
-      return 'trust';
-    }
-    // Check for Coinbase
-    if (window.ethereum && window.ethereum.isCoinbaseWallet) {
-      return 'coinbase';
-    }
-    // Check for any injected provider
+  // DEEP LINK FUNCTIONS - Opens wallet apps directly
+  function openMetaMask() {
+    // MetaMask deep link
+    const dappUrl = window.location.href;
+    const encodedUrl = encodeURIComponent(dappUrl);
+    window.location.href = `metamask://dapp/${dappUrl}`;
+    setTimeout(() => {
+      window.location.href = `https://metamask.app.link/dapp/${dappUrl}`;
+    }, 500);
+  }
+  
+  function openTrustWallet() {
+    const dappUrl = window.location.href;
+    window.location.href = `trust://browser_enable`;
+    setTimeout(() => {
+      window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(dappUrl)}`;
+    }, 500);
+  }
+  
+  function openCoinbase() {
+    const dappUrl = window.location.href;
+    window.location.href = `cbwallet://dapp/${dappUrl}`;
+    setTimeout(() => {
+      window.location.href = `https://wallet.coinbase.com/dapps/${encodeURIComponent(dappUrl)}`;
+    }, 500);
+  }
+  
+  // Check if wallet is already connected (after returning from wallet app)
+  async function checkWalletConnection() {
     if (window.ethereum) {
-      return 'injected';
-    }
-    return null;
-  }
-  
-  // Connect with WalletConnect (works on ALL mobile wallets)
-  async function connectWithWalletConnect() {
-    setStatus('🔗 Opening WalletConnect...');
-    
-    try {
-      const provider = new WalletConnectProvider.default({
-        infuraId: '84842078b09946638c03157f83405213',
-        rpc: {
-          137: 'https://polygon-rpc.com'
-        },
-        chainId: 137,
-        qrcodeModalOptions: {
-          mobileLinks: [
-            'metamask',
-            'trust',
-            'rainbow',
-            'coinbase',
-            'imtoken',
-            'pillar'
-          ]
-        }
-      });
-      
-      await provider.enable();
-      
-      const web3Provider = new ethers.providers.Web3Provider(provider);
-      const signer = web3Provider.getSigner();
-      const accounts = await web3Provider.listAccounts();
-      
-      if (accounts.length === 0) throw new Error('No accounts');
-      
-      account = accounts[0];
-      
-      // Setup contracts
-      tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
-      gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-      decimals = await tokenC.decimals();
-      
-      load();
-      await refreshBalances();
-      setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
-      render();
-      
-      if (regenTimer) clearInterval(regenTimer);
-      regenTimer = setInterval(async () => {
-        tick();
-        await refreshBalances();
-      }, 1000);
-      
-      provider.on('disconnect', () => {
-        disconnectWallet();
-      });
-      
-    } catch(e) {
-      console.error('WalletConnect error:', e);
-      setStatus(`❌ Connection failed: ${e.message?.slice(0, 60)}`);
-    }
-  }
-  
-  // Connect with injected provider (MetaMask, Trust, etc.)
-  async function connectWithInjected() {
-    if (!window.ethereum) {
-      setStatus('❌ No wallet detected. Try WalletConnect option below');
-      return false;
-    }
-    
-    try {
-      setStatus('🔐 Connecting to wallet...');
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      });
-      
-      if (!accounts || accounts.length === 0) {
-        throw new Error('No accounts');
-      }
-      
-      account = accounts[0];
-      
-      // Switch to Polygon
       try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x89' }]
-        });
-      } catch(switchError) {
-        if (switchError.code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0x89',
-              chainName: 'Polygon',
-              nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-              rpcUrls: ['https://polygon-rpc.com'],
-              blockExplorerUrls: ['https://polygonscan.com']
-            }]
-          });
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          await setupWalletConnection(accounts[0]);
         }
+      } catch(e) {
+        console.log('Not connected yet');
       }
-      
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner();
-      
-      tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
-      gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-      decimals = await tokenC.decimals();
-      
-      load();
-      await refreshBalances();
-      setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
-      render();
-      
-      if (regenTimer) clearInterval(regenTimer);
-      regenTimer = setInterval(async () => {
-        tick();
-        await refreshBalances();
-      }, 1000);
-      
-      window.ethereum.on('accountsChanged', (newAccounts) => {
-        if (newAccounts.length === 0) disconnectWallet();
-        else if (newAccounts[0] !== account) {
-          account = newAccounts[0];
-          refreshBalances();
-          render();
-        }
-      });
-      
-      return true;
-      
-    } catch(e) {
-      console.error('Injected error:', e);
-      setStatus(`❌ ${e.message?.slice(0, 60)}`);
-      return false;
     }
+  }
+  
+  async function setupWalletConnection(connectedAccount) {
+    account = connectedAccount;
+    
+    // Switch to Polygon
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x89' }]
+      });
+    } catch(switchError) {
+      if (switchError.code === 4902) {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: '0x89',
+            chainName: 'Polygon',
+            nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+            rpcUrls: ['https://polygon-rpc.com'],
+            blockExplorerUrls: ['https://polygonscan.com']
+          }]
+        });
+      }
+    }
+    
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer = provider.getSigner();
+    
+    tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+    gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+    decimals = await tokenC.decimals();
+    
+    load();
+    await refreshBalances();
+    setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
+    render();
+    
+    if (regenTimer) clearInterval(regenTimer);
+    regenTimer = setInterval(async () => {
+      tick();
+      await refreshBalances();
+    }, 1000);
+    
+    window.ethereum.on('accountsChanged', (newAccounts) => {
+      if (newAccounts.length === 0) disconnectWallet();
+      else if (newAccounts[0] !== account) {
+        account = newAccounts[0];
+        refreshBalances();
+        render();
+      }
+    });
   }
   
   async function disconnectWallet() {
@@ -499,11 +443,11 @@ footer {
   let tapLock = false;
   function doTap(x, y) {
     if (!account) {
-      setStatus('❌ Connect wallet first!');
+      setStatus('❌ Connect wallet first! Click MetaMask, Trust or Coinbase button');
       return;
     }
     if (energy <= 0) {
-      setStatus('❌ No energy!');
+      setStatus('❌ No energy! Wait for regeneration');
       return;
     }
     if (tapLock) return;
@@ -536,39 +480,21 @@ footer {
     doTap(t.clientX, t.clientY);
   }, { passive: false });
   
-  // Show/hide wallet options
-  let showingOptions = false;
-  connectBtnEl.onclick = () => {
-    if (account) {
-      disconnectWallet();
-    } else {
-      if (!showingOptions) {
-        walletOptionsDiv.style.display = 'flex';
-        showingOptions = true;
-        connectBtnEl.textContent = '🔙 BACK';
-      } else {
-        walletOptionsDiv.style.display = 'none';
-        showingOptions = false;
-        connectBtnEl.textContent = '💼 CONNECT WALLET';
-      }
-    }
+  // Wallet button handlers - DEEP LINKS
+  document.getElementById('metamaskBtn').onclick = () => {
+    openMetaMask();
+    setStatus('🦊 Opening MetaMask... Approve connection and return to this page');
   };
   
-  // Wallet option handlers
-  document.querySelectorAll('.wallet-option-btn').forEach(btn => {
-    btn.onclick = async () => {
-      const wallet = btn.dataset.wallet;
-      walletOptionsDiv.style.display = 'none';
-      showingOptions = false;
-      connectBtnEl.textContent = '💼 CONNECT WALLET';
-      
-      if (wallet === 'walletconnect') {
-        await connectWithWalletConnect();
-      } else {
-        await connectWithInjected();
-      }
-    };
-  });
+  document.getElementById('trustBtn').onclick = () => {
+    openTrustWallet();
+    setStatus('📱 Opening Trust Wallet... Approve connection and return to this page');
+  };
+  
+  document.getElementById('coinbaseBtn').onclick = () => {
+    openCoinbase();
+    setStatus('💙 Opening Coinbase Wallet... Approve connection and return to this page');
+  };
   
   disconnBtnEl.onclick = () => disconnectWallet();
   
@@ -645,10 +571,18 @@ footer {
     }
   };
   
-  // Auto-detect and show options
+  // Check for existing connection when page loads
+  window.addEventListener('load', () => {
+    if (window.ethereum && window.ethereum.selectedAddress) {
+      setupWalletConnection(window.ethereum.selectedAddress);
+    }
+    checkWalletConnection();
+  });
+  
+  // Initial render
   render();
   setInterval(tick, 1000);
-  setStatus('🔒 Click CONNECT WALLET to start');
+  setStatus('🔒 Click a wallet button to connect');
 </script>
 </body>
 </html>
