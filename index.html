@@ -160,22 +160,12 @@ footer {
   </footer>
 </div>
 
-<!-- FIXED: Using Web3Modal with proper provider handling -->
+<!-- FIXED: Using Ethers v5 + WalletConnect v2 directly (no Web3Modal issues) -->
 <script type="module">
+  import WalletConnectProvider from 'https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.11.0/dist/index.min.js';
+  
   const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
   
-  // Dynamic import for Web3Modal
-  import { createWeb3Modal, defaultConfig } from 'https://cdn.jsdelivr.net/npm/@web3modal/ethers@5/dist/index.min.js';
-
-  // Polygon chain config
-  const polygon = {
-    chainId: 137,
-    name: 'Polygon',
-    currency: 'POL',
-    explorerUrl: 'https://polygonscan.com',
-    rpcUrl: 'https://polygon-rpc.com'
-  };
-
   // Contract config
   const PVLT_TOKEN_ADDRESS   = '0x03741F950eaFD9CbAa217E2B0491a0F143492f0A';
   const GAME_CONTRACT_ADDRESS = '0xE522370EA3A22D9075bB446027c7E46b5D979806';
@@ -191,27 +181,6 @@ footer {
     'function allowance(address,address) view returns (uint256)',
     'function decimals() view returns (uint8)'
   ];
-
-  // Web3Modal config
-  const web3Modal = createWeb3Modal({
-    ethersConfig: defaultConfig({
-      metadata: {
-        name: 'PepeVolt',
-        description: 'Tap to Earn PVLT on Polygon',
-        url: window.location.origin,
-        icons: ['https://pepevolt.github.io/images/logo.PNG']
-      },
-      defaultChainId: 137,
-      rpcUrl: 'https://polygon-rpc.com'
-    }),
-    chains: [polygon],
-    projectId: PROJECT_ID,
-    enableAnalytics: false,
-    themeMode: 'dark',
-    themeVariables: {
-      '--w3m-accent': '#00ffcc'
-    }
-  });
 
   // DOM refs
   const $ = id => document.getElementById(id);
@@ -237,6 +206,7 @@ footer {
   let account    = null;
   let signer     = null;
   let provider   = null;
+  let walletProvider = null;
   let tokenC     = null;
   let gameC      = null;
   let decimals   = 18;
@@ -328,22 +298,50 @@ footer {
 
   function setStatus(msg) { statusTxtEl.textContent = msg; }
 
-  // FIXED: Proper wallet connection handling with Web3Modal
-  async function initWalletConnection() {
+  // FIXED: Direct WalletConnect v2 connection - popup WILL appear
+  async function connectWallet() {
     try {
-      // Get provider from Web3Modal
-      const modalProvider = await web3Modal.getProvider();
-      provider = new ethers.providers.Web3Provider(modalProvider);
+      setStatus('🔐 Opening wallet connection...');
+      
+      // Initialize WalletConnect provider
+      walletProvider = await WalletConnectProvider.init({
+        projectId: PROJECT_ID,
+        chains: [137], // Polygon mainnet
+        showQrModal: true, // THIS ensures popup appears!
+        optionalChains: [137],
+        methods: ['eth_sendTransaction', 'personal_sign', 'eth_signTypedData'],
+        rpcMap: {
+          137: 'https://polygon-rpc.com'
+        },
+        metadata: {
+          name: 'PepeVolt',
+          description: 'Tap to Earn PVLT on Polygon',
+          url: window.location.origin,
+          icons: ['https://pepevolt.github.io/images/logo.PNG']
+        }
+      });
+      
+      // Connect - this triggers the QR modal popup
+      await walletProvider.connect();
+      
+      // Get accounts
+      const accounts = walletProvider.accounts;
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No accounts returned');
+      }
+      
+      account = accounts[0];
+      
+      // Setup ethers provider
+      provider = new ethers.providers.Web3Provider(walletProvider);
       signer = provider.getSigner();
-      account = await signer.getAddress();
       
       // Initialize contracts
       tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
       
       // Get decimals
-      const decimalsCall = await tokenC.decimals();
-      decimals = decimalsCall;
+      decimals = await tokenC.decimals();
       
       // Load saved game state
       load();
@@ -355,12 +353,16 @@ footer {
       if (regenTimer) clearInterval(regenTimer);
       regenTimer = setInterval(async () => { tick(); await refreshBalances(); }, 1000);
       
-      // Setup account change listener
-      modalProvider.on('accountsChanged', async (accounts) => {
-        if (accounts.length === 0) {
-          await disconnectWallet();
-        } else if (accounts[0] !== account) {
-          account = accounts[0];
+      // Setup disconnect listener
+      walletProvider.on('disconnect', () => {
+        disconnectWallet();
+      });
+      
+      walletProvider.on('accountsChanged', async (newAccounts) => {
+        if (newAccounts.length === 0) {
+          disconnectWallet();
+        } else if (newAccounts[0] !== account) {
+          account = newAccounts[0];
           signer = provider.getSigner();
           tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
           gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
@@ -371,32 +373,51 @@ footer {
         }
       });
       
-      modalProvider.on('chainChanged', () => {
-        window.location.reload();
+      walletProvider.on('chainChanged', (chainId) => {
+        if (parseInt(chainId) !== 137) {
+          setStatus('⚠️ Please switch to Polygon network');
+        } else {
+          window.location.reload();
+        }
       });
       
     } catch(e) {
       console.error('Connection error:', e);
-      setStatus('❌ ' + (e.message?.slice(0,60) || 'Connection failed'));
+      let errorMsg = e.message || 'Connection failed';
+      if (errorMsg.includes('User rejected')) {
+        errorMsg = 'Connection rejected';
+      } else if (errorMsg.includes('not supported')) {
+        errorMsg = 'Wallet not supported';
+      }
+      setStatus(`❌ ${errorMsg.slice(0, 60)}`);
       await disconnectWallet();
     }
   }
   
   async function disconnectWallet() {
     if (regenTimer) clearInterval(regenTimer);
+    
+    if (walletProvider) {
+      try {
+        await walletProvider.disconnect();
+      } catch(e) {}
+      walletProvider = null;
+    }
+    
     if (provider && provider.provider && typeof provider.provider.disconnect === 'function') {
       try { await provider.provider.disconnect(); } catch(e) {}
     }
+    
     save();
     account = null;
     signer = null;
     tokenC = null;
     gameC = null;
+    provider = null;
     walletBal = 0;
     treasuryBal = 0;
     setStatus('🔒 Disconnected');
     render();
-    await web3Modal.disconnect();
   }
 
   // Connect button handler
@@ -404,41 +425,7 @@ footer {
     if (account) {
       await disconnectWallet();
     } else {
-      try {
-        setStatus('🔐 Opening wallet...');
-        await web3Modal.open();
-        
-        // Wait for connection and setup
-        web3Modal.subscribeEvents((event) => {
-          if (event.data.event === 'MODAL_CLOSE') {
-            // Don't auto-connect on close
-          }
-        });
-        
-        // Check if already connected
-        if (web3Modal.getIsConnectedState()) {
-          await initWalletConnection();
-        } else {
-          // Set up one-time connection handler
-          const checkConnection = async () => {
-            if (web3Modal.getIsConnectedState()) {
-              await initWalletConnection();
-              web3Modal.unsubscribeEvents(checkConnection);
-            }
-          };
-          web3Modal.subscribeEvents(checkConnection);
-          
-          // Also handle after modal closes
-          setTimeout(async () => {
-            if (web3Modal.getIsConnectedState()) {
-              await initWalletConnection();
-            }
-          }, 500);
-        }
-      } catch(e) {
-        console.error('Modal error:', e);
-        setStatus('❌ Connection cancelled or failed');
-      }
+      await connectWallet();
     }
   };
   
