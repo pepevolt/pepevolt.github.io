@@ -7,7 +7,9 @@
 <link rel="icon" href="images/logo.PNG">
 <meta name="theme-color" content="#090912">
 
+<!-- Mobile wallet detection libraries -->
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script src="https://unpkg.com/@walletconnect/web3-provider@1.8.0/dist/umd/index.min.js"></script>
 
 <style>
 * {
@@ -99,6 +101,28 @@ footer {
 .action-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .btn-small { padding: 10px; font-size: 13px; }
 
+.wallet-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.wallet-option-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 44px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.wallet-option-btn:active { transform: scale(.97); }
+
 @keyframes floatUp {
   0%   { opacity:1; transform:translateY(0); }
   100% { opacity:0; transform:translateY(-80px); }
@@ -142,6 +166,12 @@ footer {
     <div class="status-txt" id="statusTxt">🔒 Connect wallet to start</div>
     <div id="stateDisconnected">
       <button class="btn btn-primary" id="connectBtn">💼 CONNECT WALLET</button>
+      <div id="walletOptions" style="display: none;" class="wallet-options">
+        <button class="wallet-option-btn" data-wallet="metamask">🦊 MetaMask</button>
+        <button class="wallet-option-btn" data-wallet="trust">📱 Trust Wallet</button>
+        <button class="wallet-option-btn" data-wallet="coinbase">💙 Coinbase Wallet</button>
+        <button class="wallet-option-btn" data-wallet="walletconnect">🔗 WalletConnect</button>
+      </div>
     </div>
     <div id="stateConnected" style="display:none">
       <button class="btn btn-outline" id="disconnectBtn" style="display:none"></button>
@@ -154,11 +184,12 @@ footer {
 </div>
 
 <script>
-  // SIMPLE VERSION - Uses injected wallet (MetaMask, Trust Wallet, Coinbase, etc.)
+  // MOBILE-FRIENDLY VERSION - Auto detects wallets on phone
   
   // Contract config (Polygon)
   const PVLT_TOKEN_ADDRESS = '0x03741F950eaFD9CbAa217E2B0491a0F143492f0A';
   const GAME_CONTRACT_ADDRESS = '0xE522370EA3A22D9075bB446027c7E46b5D979806';
+  const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
   
   const GAME_ABI = [
     'function buyEnergy(uint256 pvltAmount) external',
@@ -183,6 +214,7 @@ footer {
   const tapBtnEl = document.getElementById('tapBtn');
   const statusTxtEl = document.getElementById('statusTxt');
   const connectBtnEl = document.getElementById('connectBtn');
+  const walletOptionsDiv = document.getElementById('walletOptions');
   const stateDisc = document.getElementById('stateDisconnected');
   const stateConn = document.getElementById('stateConnected');
   const disconnBtnEl = document.getElementById('disconnectBtn');
@@ -194,6 +226,7 @@ footer {
   // Game state
   let account = null;
   let signer = null;
+  let provider = null;
   let tokenC = null;
   let gameC = null;
   let decimals = 18;
@@ -293,37 +326,112 @@ footer {
     statusTxtEl.textContent = msg;
   }
   
-  // SIMPLE CONNECT - Uses injected provider (MetaMask, Trust Wallet, etc.)
-  async function connectWallet() {
-    // Check if wallet is installed
+  // DETECT MOBILE WALLETS
+  function detectMobileWallet() {
+    // Check for MetaMask mobile
+    if (window.ethereum && window.ethereum.isMetaMask) {
+      return 'metamask';
+    }
+    // Check for Trust Wallet
+    if (window.ethereum && window.ethereum.isTrust) {
+      return 'trust';
+    }
+    // Check for Coinbase
+    if (window.ethereum && window.ethereum.isCoinbaseWallet) {
+      return 'coinbase';
+    }
+    // Check for any injected provider
+    if (window.ethereum) {
+      return 'injected';
+    }
+    return null;
+  }
+  
+  // Connect with WalletConnect (works on ALL mobile wallets)
+  async function connectWithWalletConnect() {
+    setStatus('🔗 Opening WalletConnect...');
+    
+    try {
+      const provider = new WalletConnectProvider.default({
+        infuraId: '84842078b09946638c03157f83405213',
+        rpc: {
+          137: 'https://polygon-rpc.com'
+        },
+        chainId: 137,
+        qrcodeModalOptions: {
+          mobileLinks: [
+            'metamask',
+            'trust',
+            'rainbow',
+            'coinbase',
+            'imtoken',
+            'pillar'
+          ]
+        }
+      });
+      
+      await provider.enable();
+      
+      const web3Provider = new ethers.providers.Web3Provider(provider);
+      const signer = web3Provider.getSigner();
+      const accounts = await web3Provider.listAccounts();
+      
+      if (accounts.length === 0) throw new Error('No accounts');
+      
+      account = accounts[0];
+      
+      // Setup contracts
+      tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+      gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+      decimals = await tokenC.decimals();
+      
+      load();
+      await refreshBalances();
+      setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
+      render();
+      
+      if (regenTimer) clearInterval(regenTimer);
+      regenTimer = setInterval(async () => {
+        tick();
+        await refreshBalances();
+      }, 1000);
+      
+      provider.on('disconnect', () => {
+        disconnectWallet();
+      });
+      
+    } catch(e) {
+      console.error('WalletConnect error:', e);
+      setStatus(`❌ Connection failed: ${e.message?.slice(0, 60)}`);
+    }
+  }
+  
+  // Connect with injected provider (MetaMask, Trust, etc.)
+  async function connectWithInjected() {
     if (!window.ethereum) {
-      setStatus('❌ No wallet found! Install MetaMask or Trust Wallet');
-      alert('No wallet detected!\n\nPlease install:\n- MetaMask\n- Trust Wallet\n- Coinbase Wallet\n\nThen refresh and try again.');
-      return;
+      setStatus('❌ No wallet detected. Try WalletConnect option below');
+      return false;
     }
     
     try {
       setStatus('🔐 Connecting to wallet...');
-      
-      // Request account access - THIS WILL OPEN THE POPUP
       const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts'
       });
       
       if (!accounts || accounts.length === 0) {
-        throw new Error('No accounts returned');
+        throw new Error('No accounts');
       }
       
       account = accounts[0];
       
-      // Switch to Polygon network
+      // Switch to Polygon
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x89' }] // 137 in hex
+          params: [{ chainId: '0x89' }]
         });
       } catch(switchError) {
-        // Polygon not added, add it
         if (switchError.code === 4902) {
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
@@ -335,69 +443,46 @@ footer {
               blockExplorerUrls: ['https://polygonscan.com']
             }]
           });
-        } else {
-          throw switchError;
         }
       }
       
-      // Setup ethers
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
       
-      // Initialize contracts
       tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-      
-      // Get decimals
       decimals = await tokenC.decimals();
       
-      // Load saved state
       load();
       await refreshBalances();
       setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
       render();
       
-      // Start regeneration timer
       if (regenTimer) clearInterval(regenTimer);
       regenTimer = setInterval(async () => {
         tick();
         await refreshBalances();
       }, 1000);
       
-      // Listen for account changes
-      window.ethereum.on('accountsChanged', async (newAccounts) => {
-        if (newAccounts.length === 0) {
-          disconnectWallet();
-        } else if (newAccounts[0] !== account) {
+      window.ethereum.on('accountsChanged', (newAccounts) => {
+        if (newAccounts.length === 0) disconnectWallet();
+        else if (newAccounts[0] !== account) {
           account = newAccounts[0];
-          signer = provider.getSigner();
-          tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
-          gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-          load();
-          await refreshBalances();
+          refreshBalances();
           render();
-          setStatus(`✅ Switched to: ${account.slice(0,6)}...${account.slice(-4)}`);
         }
       });
       
-      // Listen for chain changes
-      window.ethereum.on('chainChanged', () => {
-        window.location.reload();
-      });
+      return true;
       
     } catch(e) {
-      console.error('Connection error:', e);
-      let errorMsg = e.message || 'Connection failed';
-      if (errorMsg.includes('User rejected')) {
-        errorMsg = 'You rejected the connection request';
-      }
-      setStatus(`❌ ${errorMsg.slice(0, 60)}`);
-      account = null;
-      render();
+      console.error('Injected error:', e);
+      setStatus(`❌ ${e.message?.slice(0, 60)}`);
+      return false;
     }
   }
   
-  function disconnectWallet() {
+  async function disconnectWallet() {
     if (regenTimer) clearInterval(regenTimer);
     save();
     account = null;
@@ -418,7 +503,7 @@ footer {
       return;
     }
     if (energy <= 0) {
-      setStatus('❌ No energy! Wait for regeneration or buy more.');
+      setStatus('❌ No energy!');
       return;
     }
     if (tapLock) return;
@@ -451,18 +536,41 @@ footer {
     doTap(t.clientX, t.clientY);
   }, { passive: false });
   
-  // Connect button
+  // Show/hide wallet options
+  let showingOptions = false;
   connectBtnEl.onclick = () => {
     if (account) {
       disconnectWallet();
     } else {
-      connectWallet();
+      if (!showingOptions) {
+        walletOptionsDiv.style.display = 'flex';
+        showingOptions = true;
+        connectBtnEl.textContent = '🔙 BACK';
+      } else {
+        walletOptionsDiv.style.display = 'none';
+        showingOptions = false;
+        connectBtnEl.textContent = '💼 CONNECT WALLET';
+      }
     }
   };
   
-  disconnBtnEl.onclick = () => {
-    disconnectWallet();
-  };
+  // Wallet option handlers
+  document.querySelectorAll('.wallet-option-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const wallet = btn.dataset.wallet;
+      walletOptionsDiv.style.display = 'none';
+      showingOptions = false;
+      connectBtnEl.textContent = '💼 CONNECT WALLET';
+      
+      if (wallet === 'walletconnect') {
+        await connectWithWalletConnect();
+      } else {
+        await connectWithInjected();
+      }
+    };
+  });
+  
+  disconnBtnEl.onclick = () => disconnectWallet();
   
   // Buy Energy
   buyBtnEl.onclick = async () => {
@@ -537,7 +645,7 @@ footer {
     }
   };
   
-  // Initial setup
+  // Auto-detect and show options
   render();
   setInterval(tick, 1000);
   setStatus('🔒 Click CONNECT WALLET to start');
