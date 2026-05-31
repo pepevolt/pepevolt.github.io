@@ -160,22 +160,23 @@ footer {
   </footer>
 </div>
 
-<!-- WalletConnect / Reown AppKit -->
+<!-- FIXED: Using Web3Modal with proper provider handling -->
 <script type="module">
-  // ─── STEP 1: Put your free Project ID from https://cloud.reown.com ─────────
   const PROJECT_ID = '1731f99148b9cf6107dee70b6efb14b7';
-  // ───────────────────────────────────────────────────────────────────────────
+  
+  // Dynamic import for Web3Modal
+  import { createWeb3Modal, defaultConfig } from 'https://cdn.jsdelivr.net/npm/@web3modal/ethers@5/dist/index.min.js';
 
-  import { createAppKit } from 'https://cdn.jsdelivr.net/npm/@reown/appkit@1/dist/esm/index.js';
-  import { EthersAdapter } from 'https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-ethers@1/dist/esm/index.js';
-  import { defineChain } from 'https://cdn.jsdelivr.net/npm/@reown/appkit/networks';
+  // Polygon chain config
+  const polygon = {
+    chainId: 137,
+    name: 'Polygon',
+    currency: 'POL',
+    explorerUrl: 'https://polygonscan.com',
+    rpcUrl: 'https://polygon-rpc.com'
+  };
 
-  // ── Ethers is loaded separately so non-module code can use it ──
-  const ethersModule = await import('https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.min.js');
-  const ethers = ethersModule.ethers || ethersModule;
-  window._ethers = ethers;
-
-  // ── Contract config ──────────────────────────────────────────────────────
+  // Contract config
   const PVLT_TOKEN_ADDRESS   = '0x03741F950eaFD9CbAa217E2B0491a0F143492f0A';
   const GAME_CONTRACT_ADDRESS = '0xE522370EA3A22D9075bB446027c7E46b5D979806';
 
@@ -191,42 +192,28 @@ footer {
     'function decimals() view returns (uint8)'
   ];
 
-  // ── Polygon chain definition ─────────────────────────────────────────────
-  const polygon = defineChain({
-    id: 137,
-    caipNetworkId: 'eip155:137',
-    chainNamespace: 'eip155',
-    name: 'Polygon',
-    nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-    rpcUrls: { default: { http: ['https://polygon-rpc.com'] } },
-    blockExplorers: { default: { name: 'PolygonScan', url: 'https://polygonscan.com' } }
-  });
-
-  // ── Create AppKit modal ──────────────────────────────────────────────────
-  const modal = createAppKit({
-    adapters: [new EthersAdapter()],
-    networks: [polygon],
-    defaultNetwork: polygon,
+  // Web3Modal config
+  const web3Modal = createWeb3Modal({
+    ethersConfig: defaultConfig({
+      metadata: {
+        name: 'PepeVolt',
+        description: 'Tap to Earn PVLT on Polygon',
+        url: window.location.origin,
+        icons: ['https://pepevolt.github.io/images/logo.PNG']
+      },
+      defaultChainId: 137,
+      rpcUrl: 'https://polygon-rpc.com'
+    }),
+    chains: [polygon],
     projectId: PROJECT_ID,
-    metadata: {
-      name: 'PepeVolt',
-      description: 'Tap to Earn PVLT on Polygon',
-      url: 'https://pepevolt.github.io',
-      icons: ['https://pepevolt.github.io/images/logo.PNG']
-    },
-    features: {
-      analytics: false,
-      email: false,
-      socials: false
-    },
+    enableAnalytics: false,
     themeMode: 'dark',
     themeVariables: {
-      '--w3m-accent': '#00ffcc',
-      '--w3m-border-radius-master': '4px'
+      '--w3m-accent': '#00ffcc'
     }
   });
 
-  // ── DOM refs ─────────────────────────────────────────────────────────────
+  // DOM refs
   const $ = id => document.getElementById(id);
   const energyValEl   = $('energyVal');
   const energyBarEl   = $('energyBar');
@@ -246,9 +233,10 @@ footer {
   const claimBtnEl    = $('claimBtn');
   const claimSubEl    = $('claimSub');
 
-  // ── Game state ───────────────────────────────────────────────────────────
+  // Game state
   let account    = null;
   let signer     = null;
+  let provider   = null;
   let tokenC     = null;
   let gameC      = null;
   let decimals   = 18;
@@ -265,6 +253,7 @@ footer {
     if (!account) return;
     localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy }));
   }
+  
   function load() {
     if (!account) return;
     try {
@@ -323,8 +312,8 @@ footer {
         tokenC.balanceOf(account),
         gameC.getTreasuryBalance().catch(() => 0n)
       ]);
-      walletBal   = parseFloat(ethers.formatUnits(b, decimals));
-      treasuryBal = parseFloat(ethers.formatUnits(t, decimals));
+      walletBal   = parseFloat(ethers.utils.formatUnits(b, decimals));
+      treasuryBal = parseFloat(ethers.utils.formatUnits(t, decimals));
       render();
     } catch(e) { console.error('Balance error', e); }
   }
@@ -339,63 +328,125 @@ footer {
 
   function setStatus(msg) { statusTxtEl.textContent = msg; }
 
-  // ── After wallet connects via WalletConnect modal ────────────────────────
-  async function onWalletConnected() {
+  // FIXED: Proper wallet connection handling with Web3Modal
+  async function initWalletConnection() {
     try {
-      const walletProvider = modal.getWalletProvider();
-      if (!walletProvider) return;
-
-      const provider = new ethers.BrowserProvider(walletProvider);
-      signer = await provider.getSigner();
+      // Get provider from Web3Modal
+      const modalProvider = await web3Modal.getProvider();
+      provider = new ethers.providers.Web3Provider(modalProvider);
+      signer = provider.getSigner();
       account = await signer.getAddress();
-
-      tokenC   = new ethers.Contract(PVLT_TOKEN_ADDRESS,    PVLT_ABI, signer);
-      gameC    = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-      decimals = Number(await tokenC.decimals());
-
+      
+      // Initialize contracts
+      tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+      gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+      
+      // Get decimals
+      const decimalsCall = await tokenC.decimals();
+      decimals = decimalsCall;
+      
+      // Load saved game state
       load();
       await refreshBalances();
       setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
       render();
-
+      
+      // Start regeneration timer
       if (regenTimer) clearInterval(regenTimer);
       regenTimer = setInterval(async () => { tick(); await refreshBalances(); }, 1000);
+      
+      // Setup account change listener
+      modalProvider.on('accountsChanged', async (accounts) => {
+        if (accounts.length === 0) {
+          await disconnectWallet();
+        } else if (accounts[0] !== account) {
+          account = accounts[0];
+          signer = provider.getSigner();
+          tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
+          gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+          load();
+          await refreshBalances();
+          render();
+          setStatus(`✅ Switched to: ${account.slice(0,6)}...${account.slice(-4)}`);
+        }
+      });
+      
+      modalProvider.on('chainChanged', () => {
+        window.location.reload();
+      });
+      
     } catch(e) {
-      console.error('onWalletConnected error', e);
-      setStatus('❌ ' + (e.message?.slice(0,60) || 'Connection error'));
+      console.error('Connection error:', e);
+      setStatus('❌ ' + (e.message?.slice(0,60) || 'Connection failed'));
+      await disconnectWallet();
     }
   }
-
-  async function onWalletDisconnected() {
+  
+  async function disconnectWallet() {
     if (regenTimer) clearInterval(regenTimer);
+    if (provider && provider.provider && typeof provider.provider.disconnect === 'function') {
+      try { await provider.provider.disconnect(); } catch(e) {}
+    }
     save();
-    account = null; signer = null; tokenC = null; gameC = null;
-    walletBal = 0; treasuryBal = 0;
-    energy = 100; maxEnergy = 100; points = 0; gamePvlt = 0;
+    account = null;
+    signer = null;
+    tokenC = null;
+    gameC = null;
+    walletBal = 0;
+    treasuryBal = 0;
     setStatus('🔒 Disconnected');
     render();
+    await web3Modal.disconnect();
   }
 
-  // ── Subscribe to AppKit connection events ────────────────────────────────
-  modal.subscribeState(async (state) => {
-    if (state.open === false) {
-      const isConnected = modal.getIsConnectedState();
-      if (isConnected && !account) {
-        await onWalletConnected();
+  // Connect button handler
+  connectBtnEl.onclick = async () => {
+    if (account) {
+      await disconnectWallet();
+    } else {
+      try {
+        setStatus('🔐 Opening wallet...');
+        await web3Modal.open();
+        
+        // Wait for connection and setup
+        web3Modal.subscribeEvents((event) => {
+          if (event.data.event === 'MODAL_CLOSE') {
+            // Don't auto-connect on close
+          }
+        });
+        
+        // Check if already connected
+        if (web3Modal.getIsConnectedState()) {
+          await initWalletConnection();
+        } else {
+          // Set up one-time connection handler
+          const checkConnection = async () => {
+            if (web3Modal.getIsConnectedState()) {
+              await initWalletConnection();
+              web3Modal.unsubscribeEvents(checkConnection);
+            }
+          };
+          web3Modal.subscribeEvents(checkConnection);
+          
+          // Also handle after modal closes
+          setTimeout(async () => {
+            if (web3Modal.getIsConnectedState()) {
+              await initWalletConnection();
+            }
+          }, 500);
+        }
+      } catch(e) {
+        console.error('Modal error:', e);
+        setStatus('❌ Connection cancelled or failed');
       }
     }
-  });
+  };
+  
+  disconnBtnEl.onclick = async () => {
+    await disconnectWallet();
+  };
 
-  modal.subscribeEvents(async (event) => {
-    if (event.data?.event === 'CONNECT_SUCCESS') {
-      await onWalletConnected();
-    }
-    if (event.data?.event === 'DISCONNECT_SUCCESS') {
-      await onWalletDisconnected();
-    }
-  });
-
-  // ── Tap logic ────────────────────────────────────────────────────────────
+  // Tap logic
   let tapLock = false;
   function doTap(x, y) {
     if (!account || energy <= 0 || tapLock) return;
@@ -410,7 +461,7 @@ footer {
     save(); render();
   }
 
-  tapBtnEl.addEventListener('click', () => {
+  tapBtnEl.addEventListener('click', (e) => {
     const r = tapBtnEl.getBoundingClientRect();
     doTap(r.left + r.width / 2, r.top + r.height / 2);
   });
@@ -420,31 +471,16 @@ footer {
     doTap(t.clientX, t.clientY);
   }, { passive: false });
 
-  // ── Connect button → open WalletConnect modal ────────────────────────────
-  connectBtnEl.onclick = () => {
-    if (account) {
-      modal.disconnect();
-    } else {
-      if (PROJECT_ID === 'YOUR_PROJECT_ID_HERE') {
-        alert('⚠️ Add your WalletConnect Project ID!\n\nGet one free at:\nhttps://cloud.reown.com\n\nThen replace YOUR_PROJECT_ID_HERE in index.html');
-        return;
-      }
-      modal.open();
-    }
-  };
-
-  disconnBtnEl.onclick = () => modal.disconnect();
-
-  // ── Buy Energy ───────────────────────────────────────────────────────────
+  // Buy Energy
   buyBtnEl.onclick = async () => {
     if (!account) { setStatus('Connect wallet first'); return; }
     if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
     buyBtnEl.disabled = true;
     setStatus('⏳ Checking allowance...');
     try {
-      const amount = ethers.parseUnits('100', decimals);
+      const amount = ethers.utils.parseUnits('100', decimals);
       const allowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
-      if (allowance < amount) {
+      if (allowance.lt(amount)) {
         setStatus('⏳ Approving 100 PVLT...');
         const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amount);
         setStatus('⏳ Waiting for approval...');
@@ -453,8 +489,8 @@ footer {
         await new Promise(r => setTimeout(r, 2000));
       }
       setStatus('⏳ Buying 1000 Energy...');
-      const gasEstimate = await gameC.buyEnergy.estimateGas(amount);
-      const tx = await gameC.buyEnergy(amount, { gasLimit: gasEstimate * 12n / 10n });
+      const gasEstimate = await gameC.estimateGas.buyEnergy(amount);
+      const tx = await gameC.buyEnergy(amount, { gasLimit: gasEstimate.mul(12).div(10) });
       setStatus('⏳ Waiting for confirmation...');
       await tx.wait();
       maxEnergy += 1000; energy += 1000;
@@ -470,18 +506,18 @@ footer {
     } finally { buyBtnEl.disabled = walletBal < 100; }
   };
 
-  // ── Claim Rewards ────────────────────────────────────────────────────────
+  // Claim Rewards
   claimBtnEl.onclick = async () => {
     if (!account) { setStatus('Connect wallet first'); return; }
     if (gamePvlt < 1) { setStatus('❌ No GAME PVLT to claim!'); return; }
     if (treasuryBal < gamePvlt) { setStatus(`❌ Treasury low! Has ${treasuryBal.toFixed(0)} PVLT`); return; }
     const amount = Math.floor(gamePvlt);
-    const amountWei = ethers.parseUnits(amount.toString(), decimals);
+    const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
     claimBtnEl.disabled = true;
     setStatus(`⏳ Claiming ${amount} PVLT...`);
     try {
-      const gasEstimate = await gameC.claimRewards.estimateGas(amountWei);
-      const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate * 12n / 10n });
+      const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
+      const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
       setStatus('⏳ Waiting for confirmation...');
       await tx.wait();
       gamePvlt = 0; points = 0;
@@ -493,7 +529,7 @@ footer {
     } finally { claimBtnEl.disabled = gamePvlt < 1; }
   };
 
-  // ── Init ─────────────────────────────────────────────────────────────────
+  // Initial render and tick
   render();
   setInterval(tick, 1000);
   setStatus('🔒 Click CONNECT WALLET to start');
