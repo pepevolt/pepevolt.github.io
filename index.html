@@ -27,8 +27,8 @@
   --muted: #9ba3c2;
   --border: rgba(0,255,204,0.2);
   --radius: 16px;
-  --contract-bg: #1a1f2e;
-  --copy-success: #4caf50;
+  --accent-red: #ff3366;
+  --accent-red-glow: rgba(255,51,102,0.3);
 }
 
 html, body {
@@ -106,64 +106,69 @@ html, body {
 .wallet-card .lbl { font-size: 9px; color: var(--muted); }
 .wallet-card .val { font-family: monospace; font-size: 13px; }
 
-/* ========= RED HIGHLIGHTED CONTRACT AREA (USER CAN COPY) ========= */
+/* ========= MODERN HIGHLIGHTED CONTRACT AREA - MATCHES UI ========= */
 .contract-area {
-  background: linear-gradient(135deg, #ff3b3b22 0%, #ff000022 100%);
-  border: 2px solid #ff3b3b;
+  background: linear-gradient(135deg, rgba(255,51,102,0.08) 0%, rgba(255,51,102,0.02) 100%);
+  border: 1px solid rgba(255,51,102,0.35);
   border-radius: var(--radius);
   padding: 10px 12px;
   margin: 10px 0 8px 0;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
   position: relative;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 0 12px rgba(255, 59, 59, 0.3);
+}
+
+.contract-area:hover {
+  background: linear-gradient(135deg, rgba(255,51,102,0.12) 0%, rgba(255,51,102,0.04) 100%);
+  border-color: rgba(255,51,102,0.6);
 }
 
 .contract-area:active {
-  transform: scale(0.98);
-  background: linear-gradient(135deg, #ff3b3b33 0%, #ff000033 100%);
+  transform: scale(0.99);
 }
 
 .contract-label {
-  font-size: 9px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #ff8888;
+  color: #ff6680;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
+  font-weight: 600;
 }
 
 .contract-label span:first-child {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
-.copy-icon {
-  font-size: 11px;
-  background: rgba(255,255,255,0.15);
+.copy-hint {
+  font-size: 9px;
+  background: rgba(255,51,102,0.2);
   padding: 2px 8px;
   border-radius: 30px;
-  font-weight: normal;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: #ff8099;
 }
 
 .contract-address {
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   word-break: break-all;
-  color: #ffb3b3;
-  background: rgba(0,0,0,0.4);
-  padding: 6px 8px;
+  color: #ff99aa;
+  background: rgba(0,0,0,0.3);
+  padding: 8px 10px;
   border-radius: 12px;
-  letter-spacing: 0.3px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+  backdrop-filter: blur(2px);
 }
 
 .contract-address code {
@@ -172,40 +177,52 @@ html, body {
   flex: 1;
   overflow-x: auto;
   white-space: nowrap;
+  letter-spacing: 0.2px;
 }
 
-.contract-address .copy-badge {
-  background: #ff3b3b;
-  color: white;
-  font-size: 10px;
-  padding: 3px 10px;
+.copy-badge-modern {
+  background: rgba(255,51,102,0.25);
+  color: #ff99aa;
+  font-size: 9px;
+  padding: 4px 10px;
   border-radius: 40px;
-  font-weight: bold;
+  font-weight: 700;
   white-space: nowrap;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s;
+  border: 0.5px solid rgba(255,51,102,0.4);
+}
+
+.contract-area:active .copy-badge-modern {
+  background: rgba(255,51,102,0.5);
+  color: white;
 }
 
 .copy-tooltip {
   position: absolute;
-  top: -30px;
-  right: 10px;
-  background: var(--copy-success);
-  color: white;
+  top: -28px;
+  right: 12px;
+  background: #00ffcc;
+  color: #000;
   padding: 4px 12px;
   border-radius: 40px;
   font-size: 11px;
   font-weight: bold;
-  animation: fadeOut 1.5s forwards;
+  animation: fadeOutModern 1.2s forwards;
   pointer-events: none;
   z-index: 200;
+  font-family: monospace;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-@keyframes fadeOut {
+@keyframes fadeOutModern {
   0% { opacity: 1; transform: translateY(0); }
   70% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-10px); visibility: hidden; }
+  100% { opacity: 0; transform: translateY(-12px); visibility: hidden; }
 }
 
-main { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 200px; }
+/* main button area */
+main { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 180px; }
 .pepe-btn {
   width: 200px;
   height: 200px;
@@ -312,15 +329,15 @@ footer {
     <div class="wallet-card"><div class="lbl">🏦 Treasury</div><div class="val" id="treasuryVal">0</div></div>
   </div>
 
-  <!-- ========= RED HIGHLIGHTED CONTRACT ADDRESS AREA (USER CAN COPY) ========= -->
+  <!-- MODERN CONTRACT ADDRESS CARD - elegant red highlight that blends with UI -->
   <div class="contract-area" id="contractCopyArea">
     <div class="contract-label">
       <span>📜 TOKEN CONTRACT (PVLT)</span>
-      <span class="copy-icon">📋 tap to copy</span>
+      <span class="copy-hint">⧉ tap to copy</span>
     </div>
     <div class="contract-address">
       <code id="contractAddressCode">0x03741f950eafd9cbaa217e2b0491a0f143492f0a</code>
-      <span class="copy-badge">COPY</span>
+      <span class="copy-badge-modern">COPY</span>
     </div>
   </div>
 
@@ -419,15 +436,14 @@ footer {
   let lastRegen = Date.now();
   let regenTimer = null;
 
-  // --- Copy contract address functionality with visual feedback (red area works perfectly) ---
+  // --- Copy contract functionality with modern feedback ---
   function copyContractAddress() {
     const address = PVLT_TOKEN_ADDRESS;
     if (!address) return;
     
-    // Modern clipboard API
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(address).then(() => {
-        showCopyTooltip("✅ Copied!");
+        showCopyTooltip("✓ Copied!");
       }).catch(() => {
         fallbackCopy(address);
       });
@@ -445,15 +461,14 @@ footer {
     textarea.select();
     try {
       document.execCommand('copy');
-      showCopyTooltip("✅ Copied!");
+      showCopyTooltip("✓ Copied!");
     } catch (err) {
-      showCopyTooltip("❌ Copy failed");
+      showCopyTooltip("✗ Failed");
     }
     document.body.removeChild(textarea);
   }
   
   function showCopyTooltip(msg) {
-    // remove any existing tooltip
     const oldTip = document.querySelector('.copy-tooltip');
     if (oldTip) oldTip.remove();
     
@@ -465,16 +480,14 @@ footer {
     
     setTimeout(() => {
       if (tooltip && tooltip.remove) tooltip.remove();
-    }, 1500);
+    }, 1300);
   }
   
-  // Attach copy event to contract area
   contractCopyArea.addEventListener('click', (e) => {
     e.stopPropagation();
     copyContractAddress();
   });
   
-  // set contract text with correct format
   contractAddressCode.textContent = PVLT_TOKEN_ADDRESS;
 
   function save() {
@@ -655,7 +668,7 @@ footer {
     render();
   }
 
-  // ========== BUY ENERGY ==========
+  // BUY & CLAIM (full functional)
   async function buyEnergy() {
     if (!account) { setStatus("Connect wallet first"); return; }
     if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
