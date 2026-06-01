@@ -189,7 +189,7 @@ html, body {
   100% { opacity: 0; transform: translateY(-12px); visibility: hidden; }
 }
 
-/* LIVE TOKEN PRICE CARD - PVLT/WPOL */
+/* LIVE TOKEN PRICE CARD - PVLT/USD from pool */
 .price-card {
   background: linear-gradient(135deg, rgba(0,255,204,0.07) 0%, rgba(0,255,204,0.02) 100%);
   border: 1px solid rgba(0,255,204,0.3);
@@ -355,14 +355,14 @@ footer {
     </div>
   </div>
 
-  <!-- LIVE PVLT/WPOL PRICE DISPLAY -->
+  <!-- LIVE PVLT/USD PRICE DISPLAY from your specific pool -->
   <div class="price-card" id="priceCard">
     <div class="price-label">
       <span>💹</span>
-      <span>PVLT / WPOL</span>
+      <span>PVLT / USD</span>
     </div>
     <div class="price-value">
-      <span id="tokenPrice">0.0000 WPOL</span>
+      <span id="tokenPrice">$0.0000</span>
       <span id="priceChange" class="price-change">--</span>
     </div>
     <div class="price-update-time" id="priceUpdateTime">updating...</div>
@@ -406,6 +406,7 @@ footer {
 <script>
   // ============ CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
+  const PVLT_POOL_ADDRESS = "0xf0cdfaafa1622ebaa94bd2cf5055ba9a2d170296"; // Your PVLT/USD pool
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
   const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
 
@@ -428,46 +429,66 @@ footer {
   let currentPrice = 0, previousPrice = 0;
   let maxEnergy = 100, energy = 100, points = 0, gamePvlt = 0, walletBal = 0, treasuryBal = 0, lastRegen = Date.now(), regenTimer = null, priceTimer = null;
 
-  // ============ LIVE PVLT/WPOL PRICE from DexScreener ============
+  // ============ LIVE PVLT/USD PRICE from your specific pool using DexScreener ============
   async function fetchTokenPrice() {
     try {
-      const url = `https://api.dexscreener.com/latest/dex/tokens/${PVLT_TOKEN_ADDRESS}`;
-      const response = await fetch(url);
-      const data = await response.json();
+      // First try to get price directly from your pool address
+      const poolUrl = `https://api.dexscreener.com/latest/dex/pairs/polygon/${PVLT_POOL_ADDRESS}`;
+      const poolResponse = await fetch(poolUrl);
+      const poolData = await poolResponse.json();
       
-      if (data && data.pairs && data.pairs.length > 0) {
-        // Find PVLT/WPOL pair specifically
-        let wpolPair = null;
+      if (poolData && poolData.pair && poolData.pair.priceUsd) {
+        const newPrice = parseFloat(poolData.pair.priceUsd);
+        previousPrice = currentPrice;
+        currentPrice = newPrice;
+        
+        tokenPriceSpan.textContent = `$${currentPrice.toFixed(8)}`;
+        
+        if (previousPrice > 0 && previousPrice !== currentPrice) {
+          const percentChange = ((currentPrice - previousPrice) / previousPrice) * 100;
+          const changeFormatted = percentChange > 0 ? `+${percentChange.toFixed(2)}%` : `${percentChange.toFixed(2)}%`;
+          priceChangeSpan.textContent = changeFormatted;
+          priceChangeSpan.className = `price-change ${percentChange >= 0 ? 'positive' : 'negative'}`;
+        } else if (previousPrice > 0) {
+          priceChangeSpan.textContent = '0.00%';
+          priceChangeSpan.className = 'price-change';
+        } else {
+          priceChangeSpan.textContent = 'live';
+          priceChangeSpan.className = 'price-change positive';
+        }
+        
+        const now = new Date();
+        priceUpdateTimeSpan.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+        console.log(`Price updated: $${currentPrice.toFixed(8)} from pool`);
+        return;
+      }
+      
+      // Fallback: try token endpoint
+      const tokenUrl = `https://api.dexscreener.com/latest/dex/tokens/${PVLT_TOKEN_ADDRESS}`;
+      const tokenResponse = await fetch(tokenUrl);
+      const tokenData = await tokenResponse.json();
+      
+      if (tokenData && tokenData.pairs && tokenData.pairs.length > 0) {
+        // Find the best liquidity pair
+        let bestPair = null;
         let bestLiquidity = 0;
         
-        for (const pair of data.pairs) {
-          if (pair.chainId === 'polygon') {
-            // Check for MATIC/WMATIC/WPOL pair
-            const isWpolPair = pair.quoteToken?.symbol === 'MATIC' || 
-                               pair.quoteToken?.symbol === 'WMATIC' ||
-                               pair.quoteToken?.symbol === 'WPOL' ||
-                               pair.baseToken?.symbol === 'MATIC' ||
-                               pair.baseToken?.symbol === 'WMATIC' ||
-                               pair.baseToken?.symbol === 'WPOL';
-            
-            if (isWpolPair && pair.priceNative) {
-              const liquidity = parseFloat(pair.liquidity?.usd || 0);
-              if (liquidity > bestLiquidity) {
-                bestLiquidity = liquidity;
-                wpolPair = pair;
-              }
+        for (const pair of tokenData.pairs) {
+          if (pair.chainId === 'polygon' && pair.priceUsd) {
+            const liquidity = parseFloat(pair.liquidity?.usd || 0);
+            if (liquidity > bestLiquidity) {
+              bestLiquidity = liquidity;
+              bestPair = pair;
             }
           }
         }
         
-        // If found PVLT/WPOL pair
-        if (wpolPair && wpolPair.priceNative) {
-          const newPrice = parseFloat(wpolPair.priceNative);
+        if (bestPair && bestPair.priceUsd) {
+          const newPrice = parseFloat(bestPair.priceUsd);
           previousPrice = currentPrice;
           currentPrice = newPrice;
           
-          // Format: 1 PVLT = X WPOL
-          tokenPriceSpan.textContent = `${currentPrice.toFixed(8)} WPOL`;
+          tokenPriceSpan.textContent = `$${currentPrice.toFixed(8)}`;
           
           if (previousPrice > 0 && previousPrice !== currentPrice) {
             const percentChange = ((currentPrice - previousPrice) / previousPrice) * 100;
@@ -486,26 +507,16 @@ footer {
           priceUpdateTimeSpan.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
           return;
         }
-        
-        // Fallback: show USD if WPOL pair not found
-        for (const pair of data.pairs) {
-          if (pair.chainId === 'polygon' && pair.priceUsd) {
-            tokenPriceSpan.textContent = `$${parseFloat(pair.priceUsd).toFixed(8)} USD`;
-            priceChangeSpan.textContent = 'no WPOL';
-            priceChangeSpan.className = 'price-change';
-            return;
-          }
-        }
       }
       
       // No data available
-      tokenPriceSpan.textContent = `0.0000 WPOL`;
+      tokenPriceSpan.textContent = `$0.0000`;
       priceChangeSpan.textContent = 'no liquidity';
       priceChangeSpan.className = 'price-change';
       priceUpdateTimeSpan.textContent = 'checking...';
     } catch (error) {
       console.error("Price fetch error:", error);
-      tokenPriceSpan.textContent = `0.0000 WPOL`;
+      tokenPriceSpan.textContent = `$0.0000`;
       priceChangeSpan.textContent = 'error';
       priceChangeSpan.className = 'price-change';
     }
@@ -550,6 +561,9 @@ footer {
   
   contractCopyArea.addEventListener('click', (e) => { e.stopPropagation(); copyContractAddress(); });
   contractAddressCode.textContent = PVLT_TOKEN_ADDRESS;
+
+  // Start price fetching on page load
+  startPricePolling();
 
   // Game save/load
   function save() { if (account) localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy })); }
@@ -684,24 +698,4 @@ footer {
   
   async function buyEnergy() {
     if (!account) { setStatus("Connect wallet first"); return; }
-    if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
-    buyBtnEl.disabled = true;
-    try {
-      const amountInWei = ethers.utils.parseUnits("100", decimals);
-      setStatus("⏳ Checking allowance...");
-      const currentAllowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
-      if (currentAllowance.lt(amountInWei)) {
-        setStatus("⏳ Approving PVLT...");
-        const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amountInWei);
-        await approveTx.wait();
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-      setStatus("⏳ Buying 1000 Energy...");
-      const gasEstimate = await gameC.estimateGas.buyEnergy(amountInWei);
-      const tx = await gameC.buyEnergy(amountInWei, { gasLimit: gasEstimate.mul(12).div(10) });
-      await tx.wait();
-      maxEnergy += 1000; energy += 1000;
-      save();
-      await refreshBalances();
-      setStatus(`✅ +1000 Energy! Max: ${maxEnergy}`);
-      showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '
+    if (walletBal < 100) { setStatus(`
