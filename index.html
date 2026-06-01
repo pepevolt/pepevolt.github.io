@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>PepeVolt | Tap to Earn PVLT</title>
-<link rel="icon" href="images/logo.PNG">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle fill='%2300ffcc' cx='50' cy='50' r='50'/%3E%3Ctext x='50' y='67' text-anchor='middle' fill='%23000' font-size='50' font-family='Arial'%3E🐸%3C/text%3E%3C/svg%3E">
 <meta name="theme-color" content="#090912">
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -27,6 +27,8 @@
   --muted: #9ba3c2;
   --border: rgba(0,255,204,0.2);
   --radius: 16px;
+  --contract-bg: #1a1f2e;
+  --copy-success: #4caf50;
 }
 
 html, body {
@@ -45,7 +47,22 @@ html, body {
   max-width: 440px;
   margin: 0 auto;
   padding: 16px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+.app::-webkit-scrollbar {
+  width: 3px;
+}
+
+.app::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+}
+
+.app::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
 }
 
 .energy-row {
@@ -89,10 +106,109 @@ html, body {
 .wallet-card .lbl { font-size: 9px; color: var(--muted); }
 .wallet-card .val { font-family: monospace; font-size: 13px; }
 
-main { flex: 1; display: flex; align-items: center; justify-content: center; }
+/* ========= RED HIGHLIGHTED CONTRACT AREA (USER CAN COPY) ========= */
+.contract-area {
+  background: linear-gradient(135deg, #ff3b3b22 0%, #ff000022 100%);
+  border: 2px solid #ff3b3b;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin: 10px 0 8px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 0 12px rgba(255, 59, 59, 0.3);
+}
+
+.contract-area:active {
+  transform: scale(0.98);
+  background: linear-gradient(135deg, #ff3b3b33 0%, #ff000033 100%);
+}
+
+.contract-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #ff8888;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.contract-label span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.copy-icon {
+  font-size: 11px;
+  background: rgba(255,255,255,0.15);
+  padding: 2px 8px;
+  border-radius: 30px;
+  font-weight: normal;
+}
+
+.contract-address {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  word-break: break-all;
+  color: #ffb3b3;
+  background: rgba(0,0,0,0.4);
+  padding: 6px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.contract-address code {
+  font-family: inherit;
+  font-size: 11px;
+  flex: 1;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.contract-address .copy-badge {
+  background: #ff3b3b;
+  color: white;
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 40px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.copy-tooltip {
+  position: absolute;
+  top: -30px;
+  right: 10px;
+  background: var(--copy-success);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 40px;
+  font-size: 11px;
+  font-weight: bold;
+  animation: fadeOut 1.5s forwards;
+  pointer-events: none;
+  z-index: 200;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-10px); visibility: hidden; }
+}
+
+main { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 200px; }
 .pepe-btn {
-  width: 220px;
-  height: 220px;
+  width: 200px;
+  height: 200px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #00ebbc, #008f74);
   border: 4px solid rgba(0,255,204,0.5);
@@ -196,9 +312,21 @@ footer {
     <div class="wallet-card"><div class="lbl">🏦 Treasury</div><div class="val" id="treasuryVal">0</div></div>
   </div>
 
+  <!-- ========= RED HIGHLIGHTED CONTRACT ADDRESS AREA (USER CAN COPY) ========= -->
+  <div class="contract-area" id="contractCopyArea">
+    <div class="contract-label">
+      <span>📜 TOKEN CONTRACT (PVLT)</span>
+      <span class="copy-icon">📋 tap to copy</span>
+    </div>
+    <div class="contract-address">
+      <code id="contractAddressCode">0x03741f950eafd9cbaa217e2b0491a0f143492f0a</code>
+      <span class="copy-badge">COPY</span>
+    </div>
+  </div>
+
   <main>
     <button class="pepe-btn no-energy" id="tapBtn">
-      <img src="images/logo.PNG" alt="Pepe" onerror="this.innerHTML='🐸'">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle fill='%23ffffffcc' cx='50' cy='50' r='45'/%3E%3Ctext x='50' y='70' text-anchor='middle' fill='%23008866' font-size='50' font-family='Arial'%3E🐸%3C/text%3E%3C/svg%3E" alt="Pepe">
     </button>
   </main>
 
@@ -271,6 +399,8 @@ footer {
   const walletModal = $('walletModal');
   const closeModal = $('closeModal');
   const metaMaskOption = $('metaMaskOption');
+  const contractCopyArea = $('contractCopyArea');
+  const contractAddressCode = $('contractAddressCode');
 
   // State
   let account = null;
@@ -289,6 +419,64 @@ footer {
   let lastRegen = Date.now();
   let regenTimer = null;
 
+  // --- Copy contract address functionality with visual feedback (red area works perfectly) ---
+  function copyContractAddress() {
+    const address = PVLT_TOKEN_ADDRESS;
+    if (!address) return;
+    
+    // Modern clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(address).then(() => {
+        showCopyTooltip("✅ Copied!");
+      }).catch(() => {
+        fallbackCopy(address);
+      });
+    } else {
+      fallbackCopy(address);
+    }
+  }
+  
+  function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      showCopyTooltip("✅ Copied!");
+    } catch (err) {
+      showCopyTooltip("❌ Copy failed");
+    }
+    document.body.removeChild(textarea);
+  }
+  
+  function showCopyTooltip(msg) {
+    // remove any existing tooltip
+    const oldTip = document.querySelector('.copy-tooltip');
+    if (oldTip) oldTip.remove();
+    
+    const tooltip = document.createElement('div');
+    tooltip.className = 'copy-tooltip';
+    tooltip.textContent = msg;
+    contractCopyArea.style.position = 'relative';
+    contractCopyArea.appendChild(tooltip);
+    
+    setTimeout(() => {
+      if (tooltip && tooltip.remove) tooltip.remove();
+    }, 1500);
+  }
+  
+  // Attach copy event to contract area
+  contractCopyArea.addEventListener('click', (e) => {
+    e.stopPropagation();
+    copyContractAddress();
+  });
+  
+  // set contract text with correct format
+  contractAddressCode.textContent = PVLT_TOKEN_ADDRESS;
+
   function save() {
     if (!account) return;
     localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy }));
@@ -306,7 +494,8 @@ footer {
       const offRegen = Math.floor(offSecs / 15);
       energy = Math.min((d.energy ?? 100) + offRegen, maxEnergy);
       if (offRegen > 0) lastRegen = Date.now();
-    } catch(e) {}
+      if (energy < 0) energy = 0;
+    } catch(e) { console.warn(e); }
   }
 
   function render() {
@@ -325,8 +514,8 @@ footer {
       disconnBtnEl.style.display = 'block';
       actionGridEl.style.display = 'grid';
       disconnBtnEl.textContent = `🔴 ${account.slice(0,6)}...${account.slice(-4)}`;
-      buyBtnEl.disabled = walletBal < 100;
-      claimBtnEl.disabled = gamePvlt < 1;
+      if (buyBtnEl) buyBtnEl.disabled = walletBal < 100;
+      if (claimBtnEl) claimBtnEl.disabled = gamePvlt < 1;
     } else {
       tapBtnEl.classList.add('no-energy');
       stateDisc.style.display = 'block';
@@ -466,191 +655,62 @@ footer {
     render();
   }
 
-  // ========== BUY ENERGY - FIXED VERSION ==========
+  // ========== BUY ENERGY ==========
   async function buyEnergy() {
-    if (!account) { 
-      setStatus("Connect wallet first"); 
-      return; 
-    }
-    
-    if (walletBal < 100) { 
-      setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); 
-      return; 
-    }
-
+    if (!account) { setStatus("Connect wallet first"); return; }
+    if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
     buyBtnEl.disabled = true;
-    
     try {
-      // Calculate the amount with proper decimals
       const amountInWei = ethers.utils.parseUnits("100", decimals);
-      
-      setStatus("⏳ Step 1/3: Checking allowance...");
-      
-      // Check current allowance
+      setStatus("⏳ Checking allowance...");
       const currentAllowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
-      console.log(`Current allowance: ${currentAllowance.toString()}`);
-      console.log(`Need amount: ${amountInWei.toString()}`);
-      
-      // If allowance is insufficient, request approval
       if (currentAllowance.lt(amountInWei)) {
-        setStatus("⏳ Step 2/3: Approving PVLT spending...");
-        
-        // Try to estimate gas for approval first
-        const approveGasEstimate = await tokenC.estimateGas.approve(GAME_CONTRACT_ADDRESS, amountInWei);
-        const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amountInWei, {
-          gasLimit: approveGasEstimate.mul(12).div(10)
-        });
-        
-        setStatus("⏳ Waiting for approval confirmation...");
+        setStatus("⏳ Approving PVLT spending...");
+        const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amountInWei);
         await approveTx.wait();
-        console.log("Approval transaction confirmed:", approveTx.hash);
         setStatus("✅ Approval confirmed!");
-        
-        // Small delay to let the blockchain update
         await new Promise(resolve => setTimeout(resolve, 2000));
-      } else {
-        setStatus("✅ Allowance sufficient, proceeding to buy...");
       }
-      
-      // Now buy energy
-      setStatus("⏳ Step 3/3: Buying 1000 Energy...");
-      
-      // Verify balance again after approval
-      const freshBalance = await tokenC.balanceOf(account);
-      const freshBalanceNum = parseFloat(ethers.utils.formatUnits(freshBalance, decimals));
-      
-      if (freshBalanceNum < 100) {
-        throw new Error(`Insufficient balance after approval. Have ${freshBalanceNum.toFixed(2)} PVLT`);
-      }
-      
-      // Try to estimate gas for buyEnergy
-      let gasEstimate;
-      try {
-        gasEstimate = await gameC.estimateGas.buyEnergy(amountInWei);
-        console.log("Gas estimate:", gasEstimate.toString());
-      } catch (estimateError) {
-        console.error("Gas estimation error:", estimateError);
-        // Try to decode the error message
-        if (estimateError.message.includes("execution reverted")) {
-          throw new Error("Contract execution would fail. Check if you have enough PVLT and the contract is working.");
-        }
-        throw estimateError;
-      }
-      
-      // Execute the buy transaction with 20% extra gas for safety
-      const tx = await gameC.buyEnergy(amountInWei, { 
-        gasLimit: gasEstimate.mul(12).div(10)  // 20% extra gas
-      });
-      
-      setStatus("⏳ Transaction submitted! Waiting for confirmation...");
-      console.log("Buy transaction hash:", tx.hash);
-      
-      // Wait for confirmation
-      const receipt = await tx.wait();
-      console.log("Transaction confirmed in block:", receipt.blockNumber);
-      
-      // Update game state
+      setStatus("⏳ Buying 1000 Energy...");
+      const gasEstimate = await gameC.estimateGas.buyEnergy(amountInWei);
+      const tx = await gameC.buyEnergy(amountInWei, { gasLimit: gasEstimate.mul(12).div(10) });
+      setStatus("⏳ Transaction submitted...");
+      await tx.wait();
       maxEnergy += 1000;
       energy += 1000;
       save();
-      
-      // Refresh balances
       await refreshBalances();
-      
-      setStatus(`✅ SUCCESS! +1000 Energy! Max energy: ${maxEnergy}`);
+      setStatus(`✅ SUCCESS! +1000 Energy! Max: ${maxEnergy}`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '⚡ +1000 ENERGY!', '#ffd700');
-      
     } catch(error) {
-      console.error("Buy energy error details:", error);
-      
-      let userMessage = "";
-      
-      // Handle specific error cases
-      if (error.code === 4001) {
-        userMessage = "Transaction rejected in wallet";
-      } else if (error.message.includes("insufficient funds")) {
-        userMessage = "Insufficient MATIC for gas fees! Need MATIC for transaction";
-      } else if (error.message.includes("user rejected")) {
-        userMessage = "You rejected the transaction";
-      } else if (error.message.includes("execution reverted")) {
-        userMessage = "Contract execution failed. Check if contract is correct.";
-      } else if (error.message.includes("balance")) {
-        userMessage = "Insufficient PVLT balance";
-      } else {
-        userMessage = error.message?.slice(0, 100) || "Transaction failed";
-      }
-      
+      let userMessage = error.code === 4001 ? "Transaction rejected" : (error.message?.slice(0, 100) || "Buy failed");
       setStatus(`❌ ${userMessage}`);
-      
-      // Refresh balance to show current state
       await refreshBalances();
     } finally {
-      // Re-enable button only if still have enough balance
       buyBtnEl.disabled = walletBal < 100;
     }
   }
 
-  // ========== CLAIM REWARDS - FIXED VERSION ==========
   async function claimRewards() {
-    if (!account) { 
-      setStatus("Connect wallet first"); 
-      return; 
-    }
-    
-    if (gamePvlt < 1) { 
-      setStatus(`❌ No GAME PVLT to claim! You have ${gamePvlt}`); 
-      return; 
-    }
-    
-    if (treasuryBal < gamePvlt) { 
-      setStatus(`❌ Treasury insufficient! Treasury: ${treasuryBal.toFixed(0)} PVLT`); 
-      return; 
-    }
-
+    if (!account) { setStatus("Connect wallet first"); return; }
+    if (gamePvlt < 1) { setStatus(`❌ No GAME PVLT to claim!`); return; }
+    if (treasuryBal < gamePvlt) { setStatus(`❌ Treasury insufficient!`); return; }
     const amount = Math.floor(gamePvlt);
     const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
     claimBtnEl.disabled = true;
     setStatus(`⏳ Claiming ${amount} PVLT...`);
-
     try {
-      // Estimate gas first
       const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
-      console.log("Claim gas estimate:", gasEstimate.toString());
-      
-      // Execute claim
-      const tx = await gameC.claimRewards(amountWei, { 
-        gasLimit: gasEstimate.mul(12).div(10)
-      });
-      
-      setStatus("⏳ Waiting for confirmation...");
+      const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
       await tx.wait();
-      
-      // Update game state
       gamePvlt = 0;
       points = 0;
       save();
-      
-      // Refresh balances
       await refreshBalances();
-      
-      setStatus(`✅ SUCCESS! Claimed ${amount} REAL PVLT to your wallet!`);
+      setStatus(`✅ SUCCESS! Claimed ${amount} REAL PVLT!`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
-      
     } catch(error) {
-      console.error("Claim error details:", error);
-      
-      let userMessage = "";
-      if (error.code === 4001) {
-        userMessage = "Transaction rejected in wallet";
-      } else if (error.message.includes("insufficient funds")) {
-        userMessage = "Insufficient MATIC for gas fees!";
-      } else if (error.message.includes("execution reverted")) {
-        userMessage = "Claim failed. Make sure you have game PVLT to claim.";
-      } else {
-        userMessage = error.message?.slice(0, 100) || "Claim failed";
-      }
-      
-      setStatus(`❌ ${userMessage}`);
+      setStatus(`❌ ${error.message?.slice(0, 100) || "Claim failed"}`);
     } finally {
       claimBtnEl.disabled = gamePvlt < 1;
     }
@@ -658,20 +718,15 @@ footer {
 
   function setStatus(msg) { 
     statusTxtEl.textContent = msg;
-    console.log("Status update:", msg);
+    console.log("Status:", msg);
   }
 
-  // Modal handlers
   function openModal() { walletModal.classList.add('open'); }
   function closeModalFn() { walletModal.classList.remove('open'); }
 
-  connectBtnEl.onclick = () => {
-    if (account) disconnect();
-    else openModal();
-  };
+  connectBtnEl.onclick = () => { if (account) disconnect(); else openModal(); };
   closeModal.onclick = closeModalFn;
   walletModal.onclick = (e) => { if (e.target === walletModal) closeModalFn(); };
-  
   metaMaskOption.onclick = async () => {
     closeModalFn();
     connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
@@ -684,10 +739,9 @@ footer {
       connectBtnEl.innerHTML = '💼 CONNECT WALLET';
     }
   };
-  
   disconnBtnEl.onclick = () => disconnect();
-  buyBtnEl.onclick = buyEnergy;
-  claimBtnEl.onclick = claimRewards;
+  if(buyBtnEl) buyBtnEl.onclick = buyEnergy;
+  if(claimBtnEl) claimBtnEl.onclick = claimRewards;
   
   render();
   setInterval(tick, 1000);
