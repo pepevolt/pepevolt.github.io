@@ -103,7 +103,7 @@ html, body {
 .wallet-card .lbl { font-size: 9px; color: var(--muted); }
 .wallet-card .val { font-family: monospace; font-size: 13px; }
 
-/* Contract Address Area */
+/* Contract Address Area - Red Highlight */
 .contract-area {
   background: linear-gradient(135deg, rgba(255,51,102,0.08) 0%, rgba(255,51,102,0.02) 100%);
   border: 1px solid rgba(255,51,102,0.35);
@@ -189,7 +189,7 @@ html, body {
   100% { opacity: 0; transform: translateY(-12px); visibility: hidden; }
 }
 
-/* LIVE TOKEN PRICE CARD */
+/* LIVE TOKEN PRICE CARD - PVLT/WPOL */
 .price-card {
   background: linear-gradient(135deg, rgba(0,255,204,0.07) 0%, rgba(0,255,204,0.02) 100%);
   border: 1px solid rgba(0,255,204,0.3);
@@ -343,7 +343,7 @@ footer {
     <div class="wallet-card"><div class="lbl">🏦 Treasury</div><div class="val" id="treasuryVal">0</div></div>
   </div>
 
-  <!-- Contract Address -->
+  <!-- RED HIGHLIGHTED CONTRACT ADDRESS AREA -->
   <div class="contract-area" id="contractCopyArea">
     <div class="contract-label">
       <span>📜 TOKEN CONTRACT (PVLT)</span>
@@ -355,14 +355,14 @@ footer {
     </div>
   </div>
 
-  <!-- LIVE TOKEN PRICE DISPLAY -->
+  <!-- LIVE PVLT/WPOL PRICE DISPLAY -->
   <div class="price-card" id="priceCard">
     <div class="price-label">
       <span>💹</span>
-      <span>PVLT / USD</span>
+      <span>PVLT / WPOL</span>
     </div>
     <div class="price-value">
-      <span id="tokenPrice">$0.0000</span>
+      <span id="tokenPrice">0.0000 WPOL</span>
       <span id="priceChange" class="price-change">--</span>
     </div>
     <div class="price-update-time" id="priceUpdateTime">updating...</div>
@@ -426,9 +426,9 @@ footer {
   // State
   let account = null, provider = null, signer = null, tokenC = null, gameC = null, decimals = 18;
   let currentPrice = 0, previousPrice = 0;
-  let maxEnergy = 100, energy = 100, points = 0, gamePvlt = 0, walletBal = 0, treasuryBal = 0, lastRegen = Date.now(), regenTimer = null;
+  let maxEnergy = 100, energy = 100, points = 0, gamePvlt = 0, walletBal = 0, treasuryBal = 0, lastRegen = Date.now(), regenTimer = null, priceTimer = null;
 
-  // ============ LIVE TOKEN PRICE from DexScreener (works for any Polygon token) ============
+  // ============ LIVE PVLT/WPOL PRICE from DexScreener ============
   async function fetchTokenPrice() {
     try {
       const url = `https://api.dexscreener.com/latest/dex/tokens/${PVLT_TOKEN_ADDRESS}`;
@@ -436,49 +436,96 @@ footer {
       const data = await response.json();
       
       if (data && data.pairs && data.pairs.length > 0) {
-        let bestPair = null;
+        // Find PVLT/WPOL pair specifically
+        let wpolPair = null;
         let bestLiquidity = 0;
+        
         for (const pair of data.pairs) {
-          if (pair.chainId === 'polygon' && pair.priceUsd) {
-            const liquidity = parseFloat(pair.liquidity?.usd || 0);
-            if (liquidity > bestLiquidity) { bestLiquidity = liquidity; bestPair = pair; }
+          if (pair.chainId === 'polygon') {
+            // Check for MATIC/WMATIC/WPOL pair
+            const isWpolPair = pair.quoteToken?.symbol === 'MATIC' || 
+                               pair.quoteToken?.symbol === 'WMATIC' ||
+                               pair.quoteToken?.symbol === 'WPOL' ||
+                               pair.baseToken?.symbol === 'MATIC' ||
+                               pair.baseToken?.symbol === 'WMATIC' ||
+                               pair.baseToken?.symbol === 'WPOL';
+            
+            if (isWpolPair && pair.priceNative) {
+              const liquidity = parseFloat(pair.liquidity?.usd || 0);
+              if (liquidity > bestLiquidity) {
+                bestLiquidity = liquidity;
+                wpolPair = pair;
+              }
+            }
           }
         }
-        if (bestPair && bestPair.priceUsd) {
-          const newPrice = parseFloat(bestPair.priceUsd);
+        
+        // If found PVLT/WPOL pair
+        if (wpolPair && wpolPair.priceNative) {
+          const newPrice = parseFloat(wpolPair.priceNative);
           previousPrice = currentPrice;
           currentPrice = newPrice;
-          tokenPriceSpan.textContent = `$${currentPrice.toFixed(8)}`;
-          if (previousPrice > 0) {
+          
+          // Format: 1 PVLT = X WPOL
+          tokenPriceSpan.textContent = `${currentPrice.toFixed(8)} WPOL`;
+          
+          if (previousPrice > 0 && previousPrice !== currentPrice) {
             const percentChange = ((currentPrice - previousPrice) / previousPrice) * 100;
             const changeFormatted = percentChange > 0 ? `+${percentChange.toFixed(2)}%` : `${percentChange.toFixed(2)}%`;
             priceChangeSpan.textContent = changeFormatted;
             priceChangeSpan.className = `price-change ${percentChange >= 0 ? 'positive' : 'negative'}`;
-          } else { priceChangeSpan.textContent = 'new'; priceChangeSpan.className = 'price-change positive'; }
+          } else if (previousPrice > 0) {
+            priceChangeSpan.textContent = '0.00%';
+            priceChangeSpan.className = 'price-change';
+          } else {
+            priceChangeSpan.textContent = 'live';
+            priceChangeSpan.className = 'price-change positive';
+          }
+          
           const now = new Date();
           priceUpdateTimeSpan.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
           return;
         }
+        
+        // Fallback: show USD if WPOL pair not found
+        for (const pair of data.pairs) {
+          if (pair.chainId === 'polygon' && pair.priceUsd) {
+            tokenPriceSpan.textContent = `$${parseFloat(pair.priceUsd).toFixed(8)} USD`;
+            priceChangeSpan.textContent = 'no WPOL';
+            priceChangeSpan.className = 'price-change';
+            return;
+          }
+        }
       }
-      // Fallback: show that token isn't yet listed on DEX
-      tokenPriceSpan.textContent = `$0.0000`;
-      priceChangeSpan.textContent = 'unlisted';
+      
+      // No data available
+      tokenPriceSpan.textContent = `0.0000 WPOL`;
+      priceChangeSpan.textContent = 'no liquidity';
       priceChangeSpan.className = 'price-change';
       priceUpdateTimeSpan.textContent = 'checking...';
     } catch (error) {
       console.error("Price fetch error:", error);
-      tokenPriceSpan.textContent = `$0.0000`;
+      tokenPriceSpan.textContent = `0.0000 WPOL`;
       priceChangeSpan.textContent = 'error';
+      priceChangeSpan.className = 'price-change';
     }
   }
 
-  // Copy contract
+  // Start price polling (every 30 seconds)
+  function startPricePolling() {
+    fetchTokenPrice();
+    if (priceTimer) clearInterval(priceTimer);
+    priceTimer = setInterval(fetchTokenPrice, 30000);
+  }
+
+  // Copy contract address
   function copyContractAddress() {
     const address = PVLT_TOKEN_ADDRESS;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(address).then(() => showCopyTooltip("✓ Copied!"));
     } else { fallbackCopy(address); }
   }
+  
   function fallbackCopy(text) {
     const textarea = document.createElement('textarea');
     textarea.value = text;
@@ -489,6 +536,7 @@ footer {
     showCopyTooltip("✓ Copied!");
     document.body.removeChild(textarea);
   }
+  
   function showCopyTooltip(msg) {
     const oldTip = document.querySelector('.copy-tooltip');
     if (oldTip) oldTip.remove();
@@ -499,9 +547,11 @@ footer {
     contractCopyArea.appendChild(tooltip);
     setTimeout(() => tooltip.remove(), 1300);
   }
+  
   contractCopyArea.addEventListener('click', (e) => { e.stopPropagation(); copyContractAddress(); });
   contractAddressCode.textContent = PVLT_TOKEN_ADDRESS;
 
+  // Game save/load
   function save() { if (account) localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy })); }
   function load() {
     if (!account) return;
@@ -515,6 +565,7 @@ footer {
       if (energy < 0) energy = 0;
     } catch(e) {}
   }
+  
   function render() {
     energyValEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
     energyBarEl.style.width = Math.min((energy / maxEnergy) * 100, 100) + '%';
@@ -538,6 +589,7 @@ footer {
       stateConn.style.display = 'none';
     }
   }
+  
   function tick() {
     if (account && energy < maxEnergy) {
       const secs = Math.floor((Date.now() - lastRegen) / 1000);
@@ -548,6 +600,7 @@ footer {
     } else { regenLblEl.textContent = ''; }
     render();
   }
+  
   async function refreshBalances() {
     if (!account || !tokenC) return;
     try {
@@ -557,6 +610,7 @@ footer {
       render();
     } catch(e) {}
   }
+  
   function showFloat(x, y, text, color) {
     const el = document.createElement('div');
     el.className = 'float-text';
@@ -565,6 +619,7 @@ footer {
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1000);
   }
+  
   const style = document.createElement('style');
   style.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
   document.head.appendChild(style);
@@ -582,9 +637,11 @@ footer {
     showFloat(x, y, '+1 ⚡', '#00ffcc');
     save(); render();
   }
+  
   tapBtnEl.addEventListener('click', (e) => { const rect = tapBtnEl.getBoundingClientRect(); doTap(rect.left + rect.width/2, rect.top + rect.height/2); });
   tapBtnEl.addEventListener('touchstart', (e) => { e.preventDefault(); const touch = e.touches[0]; doTap(touch.clientX, touch.clientY); }, { passive: false });
 
+  // MetaMask Connection
   async function connectMetaMask() {
     if (!window.ethereum) { alert("Please install MetaMask!"); return false; }
     try {
@@ -614,6 +671,7 @@ footer {
       return true;
     } catch(e) { setStatus('❌ ' + (e.message?.slice(0,50) || 'Connection failed')); return false; }
   }
+  
   async function disconnect() {
     if (regenTimer) clearInterval(regenTimer);
     save();
@@ -623,6 +681,7 @@ footer {
     setStatus('🔒 Disconnected');
     render();
   }
+  
   async function buyEnergy() {
     if (!account) { setStatus("Connect wallet first"); return; }
     if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
@@ -645,27 +704,4 @@ footer {
       save();
       await refreshBalances();
       setStatus(`✅ +1000 Energy! Max: ${maxEnergy}`);
-      showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '⚡ +1000 ENERGY!', '#ffd700');
-    } catch(error) { setStatus(`❌ ${error.message?.slice(0, 80) || "Buy failed"}`); await refreshBalances(); }
-    finally { buyBtnEl.disabled = walletBal < 100; }
-  }
-  async function claimRewards() {
-    if (!account) { setStatus("Connect wallet first"); return; }
-    if (gamePvlt < 1) { setStatus(`❌ No GAME PVLT to claim!`); return; }
-    const amount = Math.floor(gamePvlt);
-    const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
-    claimBtnEl.disabled = true;
-    setStatus(`⏳ Claiming ${amount} PVLT...`);
-    try {
-      const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
-      const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
-      await tx.wait();
-      gamePvlt = 0; points = 0;
-      save();
-      await refreshBalances();
-      setStatus(`✅ Claimed ${amount} REAL PVLT!`);
-      showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
-    } catch(error) { setStatus(`❌ ${error.message?.slice(0, 80) || "Claim failed"}`); }
-    finally { claimBtnEl.disabled = gamePvlt < 1; }
-  }
-  function setStatus(msg) {
+      showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '
