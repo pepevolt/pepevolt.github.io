@@ -28,7 +28,6 @@
   --border: rgba(0,255,204,0.2);
   --radius: 16px;
   --accent-red: #ff3366;
-  --accent-red-glow: rgba(255,51,102,0.3);
 }
 
 html, body {
@@ -55,11 +54,9 @@ html, body {
 .app::-webkit-scrollbar {
   width: 3px;
 }
-
 .app::-webkit-scrollbar-track {
   background: rgba(255,255,255,0.05);
 }
-
 .app::-webkit-scrollbar-thumb {
   background: var(--primary);
   border-radius: 10px;
@@ -106,7 +103,7 @@ html, body {
 .wallet-card .lbl { font-size: 9px; color: var(--muted); }
 .wallet-card .val { font-family: monospace; font-size: 13px; }
 
-/* ========= MODERN HIGHLIGHTED CONTRACT AREA - MATCHES UI ========= */
+/* Contract Address Area */
 .contract-area {
   background: linear-gradient(135deg, rgba(255,51,102,0.08) 0%, rgba(255,51,102,0.02) 100%);
   border: 1px solid rgba(255,51,102,0.35);
@@ -117,16 +114,11 @@ html, body {
   transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
   position: relative;
 }
-
 .contract-area:hover {
   background: linear-gradient(135deg, rgba(255,51,102,0.12) 0%, rgba(255,51,102,0.04) 100%);
   border-color: rgba(255,51,102,0.6);
 }
-
-.contract-area:active {
-  transform: scale(0.99);
-}
-
+.contract-area:active { transform: scale(0.99); }
 .contract-label {
   font-size: 10px;
   text-transform: uppercase;
@@ -138,23 +130,14 @@ html, body {
   margin-bottom: 6px;
   font-weight: 600;
 }
-
-.contract-label span:first-child {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .copy-hint {
   font-size: 9px;
   background: rgba(255,51,102,0.2);
   padding: 2px 8px;
   border-radius: 30px;
   font-weight: 500;
-  letter-spacing: 0.5px;
   color: #ff8099;
 }
-
 .contract-address {
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 12px;
@@ -168,18 +151,14 @@ html, body {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  backdrop-filter: blur(2px);
 }
-
 .contract-address code {
   font-family: inherit;
   font-size: 11px;
   flex: 1;
   overflow-x: auto;
   white-space: nowrap;
-  letter-spacing: 0.2px;
 }
-
 .copy-badge-modern {
   background: rgba(255,51,102,0.25);
   color: #ff99aa;
@@ -188,16 +167,8 @@ html, body {
   border-radius: 40px;
   font-weight: 700;
   white-space: nowrap;
-  backdrop-filter: blur(4px);
-  transition: all 0.2s;
   border: 0.5px solid rgba(255,51,102,0.4);
 }
-
-.contract-area:active .copy-badge-modern {
-  background: rgba(255,51,102,0.5);
-  color: white;
-}
-
 .copy-tooltip {
   position: absolute;
   top: -28px;
@@ -211,29 +182,26 @@ html, body {
   animation: fadeOutModern 1.2s forwards;
   pointer-events: none;
   z-index: 200;
-  font-family: monospace;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-
 @keyframes fadeOutModern {
   0% { opacity: 1; transform: translateY(0); }
   70% { opacity: 1; }
   100% { opacity: 0; transform: translateY(-12px); visibility: hidden; }
 }
 
-/* LIVE TOKEN PRICE CARD - elegant design */
+/* LIVE TOKEN PRICE CARD */
 .price-card {
-  background: linear-gradient(135deg, rgba(0,255,204,0.06) 0%, rgba(0,255,204,0.01) 100%);
-  border: 1px solid rgba(0,255,204,0.25);
+  background: linear-gradient(135deg, rgba(0,255,204,0.07) 0%, rgba(0,255,204,0.02) 100%);
+  border: 1px solid rgba(0,255,204,0.3);
   border-radius: var(--radius);
   padding: 10px 14px;
   margin: 8px 0 8px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  backdrop-filter: blur(2px);
+  flex-wrap: wrap;
+  gap: 8px;
 }
-
 .price-label {
   display: flex;
   align-items: center;
@@ -241,47 +209,33 @@ html, body {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
-  letter-spacing: 0.3px;
 }
-
-.price-label span:first-child {
-  font-size: 16px;
-}
-
+.price-label span:first-child { font-size: 16px; }
 .price-value {
   font-family: 'Monaco', monospace;
   font-weight: 800;
   font-size: 18px;
   color: var(--primary);
-  text-shadow: 0 0 5px rgba(0,255,204,0.3);
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-
 .price-change {
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 20px;
   background: rgba(0,0,0,0.4);
 }
-
-.price-change.positive {
-  color: #00ffaa;
-}
-
-.price-change.negative {
-  color: #ff4466;
-}
-
+.price-change.positive { color: #00ffaa; }
+.price-change.negative { color: #ff4466; }
 .price-update-time {
   font-size: 8px;
   color: var(--muted);
-  margin-left: 6px;
+  margin-left: auto;
 }
 
-/* main button area */
 main { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 170px; }
 .pepe-btn {
   width: 190px;
@@ -389,7 +343,7 @@ footer {
     <div class="wallet-card"><div class="lbl">🏦 Treasury</div><div class="val" id="treasuryVal">0</div></div>
   </div>
 
-  <!-- MODERN CONTRACT ADDRESS CARD - elegant red highlight that blends with UI -->
+  <!-- Contract Address -->
   <div class="contract-area" id="contractCopyArea">
     <div class="contract-label">
       <span>📜 TOKEN CONTRACT (PVLT)</span>
@@ -401,7 +355,7 @@ footer {
     </div>
   </div>
 
-  <!-- LIVE TOKEN PRICE DISPLAY - above the connect button area -->
+  <!-- LIVE TOKEN PRICE DISPLAY -->
   <div class="price-card" id="priceCard">
     <div class="price-label">
       <span>💹</span>
@@ -455,221 +409,112 @@ footer {
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
   const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
 
-  const GAME_ABI = [
-    "function buyEnergy(uint256 pvltAmount) external",
-    "function claimRewards(uint256 pvltAmount) external",
-    "function getTreasuryBalance() view returns (uint256)"
-  ];
-  const PVLT_ABI = [
-    "function balanceOf(address) view returns (uint256)",
-    "function approve(address,uint256) returns (bool)",
-    "function allowance(address,address) view returns (uint256)",
-    "function decimals() view returns (uint8)"
-  ];
+  const GAME_ABI = ["function buyEnergy(uint256 pvltAmount) external", "function claimRewards(uint256 pvltAmount) external", "function getTreasuryBalance() view returns (uint256)"];
+  const PVLT_ABI = ["function balanceOf(address) view returns (uint256)", "function approve(address,uint256) returns (bool)", "function allowance(address,address) view returns (uint256)", "function decimals() view returns (uint8)"];
 
   // DOM Elements
   const $ = id => document.getElementById(id);
-  const energyValEl = $('energyVal');
-  const energyBarEl = $('energyBar');
-  const regenLblEl = $('regenLbl');
-  const pointsValEl = $('pointsVal');
-  const gamePvltValEl = $('gamePvltVal');
-  const walletValEl = $('walletVal');
-  const treasuryValEl = $('treasuryVal');
-  const tapBtnEl = $('tapBtn');
-  const statusTxtEl = $('statusTxt');
-  const connectBtnEl = $('connectBtn');
-  const stateDisc = $('stateDisconnected');
-  const stateConn = $('stateConnected');
-  const disconnBtnEl = $('disconnectBtn');
-  const actionGridEl = $('actionGrid');
-  const buyBtnEl = $('buyBtn');
-  const claimBtnEl = $('claimBtn');
-  const claimSubEl = $('claimSub');
-  const walletModal = $('walletModal');
-  const closeModal = $('closeModal');
-  const metaMaskOption = $('metaMaskOption');
-  const contractCopyArea = $('contractCopyArea');
-  const contractAddressCode = $('contractAddressCode');
-  const tokenPriceSpan = $('tokenPrice');
-  const priceChangeSpan = $('priceChange');
-  const priceUpdateTimeSpan = $('priceUpdateTime');
+  const energyValEl = $('energyVal'), energyBarEl = $('energyBar'), regenLblEl = $('regenLbl');
+  const pointsValEl = $('pointsVal'), gamePvltValEl = $('gamePvltVal'), walletValEl = $('walletVal'), treasuryValEl = $('treasuryVal');
+  const tapBtnEl = $('tapBtn'), statusTxtEl = $('statusTxt'), connectBtnEl = $('connectBtn');
+  const stateDisc = $('stateDisconnected'), stateConn = $('stateConnected'), disconnBtnEl = $('disconnectBtn');
+  const actionGridEl = $('actionGrid'), buyBtnEl = $('buyBtn'), claimBtnEl = $('claimBtn'), claimSubEl = $('claimSub');
+  const walletModal = $('walletModal'), closeModal = $('closeModal'), metaMaskOption = $('metaMaskOption');
+  const contractCopyArea = $('contractCopyArea'), contractAddressCode = $('contractAddressCode');
+  const tokenPriceSpan = $('tokenPrice'), priceChangeSpan = $('priceChange'), priceUpdateTimeSpan = $('priceUpdateTime');
 
   // State
-  let account = null;
-  let provider = null;
-  let signer = null;
-  let tokenC = null;
-  let gameC = null;
-  let decimals = 18;
-  let currentPrice = 0;
-  let previousPrice = 0;
+  let account = null, provider = null, signer = null, tokenC = null, gameC = null, decimals = 18;
+  let currentPrice = 0, previousPrice = 0;
+  let maxEnergy = 100, energy = 100, points = 0, gamePvlt = 0, walletBal = 0, treasuryBal = 0, lastRegen = Date.now(), regenTimer = null;
 
-  let maxEnergy = 100;
-  let energy = 100;
-  let points = 0;
-  let gamePvlt = 0;
-  let walletBal = 0;
-  let treasuryBal = 0;
-  let lastRegen = Date.now();
-  let regenTimer = null;
-
-  // ============ LIVE TOKEN PRICE FETCH (DexScreener API) ============
+  // ============ LIVE TOKEN PRICE from DexScreener (works for any Polygon token) ============
   async function fetchTokenPrice() {
     try {
-      // Using DexScreener API to get PVLT price on Polygon
-      // Format: chainId:contractAddress
       const url = `https://api.dexscreener.com/latest/dex/tokens/${PVLT_TOKEN_ADDRESS}`;
       const response = await fetch(url);
       const data = await response.json();
       
       if (data && data.pairs && data.pairs.length > 0) {
-        // Find the most liquid pair (usually USDC or WMATIC pair on Polygon)
         let bestPair = null;
         let bestLiquidity = 0;
-        
         for (const pair of data.pairs) {
           if (pair.chainId === 'polygon' && pair.priceUsd) {
             const liquidity = parseFloat(pair.liquidity?.usd || 0);
-            if (liquidity > bestLiquidity) {
-              bestLiquidity = liquidity;
-              bestPair = pair;
-            }
+            if (liquidity > bestLiquidity) { bestLiquidity = liquidity; bestPair = pair; }
           }
         }
-        
         if (bestPair && bestPair.priceUsd) {
           const newPrice = parseFloat(bestPair.priceUsd);
           previousPrice = currentPrice;
           currentPrice = newPrice;
-          
-          // Update UI
           tokenPriceSpan.textContent = `$${currentPrice.toFixed(8)}`;
-          
-          // Calculate price change
           if (previousPrice > 0) {
             const percentChange = ((currentPrice - previousPrice) / previousPrice) * 100;
             const changeFormatted = percentChange > 0 ? `+${percentChange.toFixed(2)}%` : `${percentChange.toFixed(2)}%`;
             priceChangeSpan.textContent = changeFormatted;
             priceChangeSpan.className = `price-change ${percentChange >= 0 ? 'positive' : 'negative'}`;
-          } else {
-            priceChangeSpan.textContent = 'new';
-            priceChangeSpan.className = 'price-change positive';
-          }
-          
-          // Update timestamp
+          } else { priceChangeSpan.textContent = 'new'; priceChangeSpan.className = 'price-change positive'; }
           const now = new Date();
           priceUpdateTimeSpan.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-          
-          console.log(`Price updated: $${currentPrice.toFixed(8)}`);
-        } else {
-          setMockPrice();
+          return;
         }
-      } else {
-        setMockPrice();
       }
+      // Fallback: show that token isn't yet listed on DEX
+      tokenPriceSpan.textContent = `$0.0000`;
+      priceChangeSpan.textContent = 'unlisted';
+      priceChangeSpan.className = 'price-change';
+      priceUpdateTimeSpan.textContent = 'checking...';
     } catch (error) {
       console.error("Price fetch error:", error);
-      setMockPrice();
+      tokenPriceSpan.textContent = `$0.0000`;
+      priceChangeSpan.textContent = 'error';
     }
-  }
-  
-  function setMockPrice() {
-    // Fallback: simulate reasonable price movement for demo
-    const mockBase = 0.00001234;
-    const variation = (Math.sin(Date.now() / 60000) * 0.000002) + 0.0000005;
-    const mockPrice = mockBase + variation;
-    previousPrice = currentPrice;
-    currentPrice = mockPrice;
-    tokenPriceSpan.textContent = `$${currentPrice.toFixed(8)}`;
-    
-    if (previousPrice > 0) {
-      const percentChange = ((currentPrice - previousPrice) / previousPrice) * 100;
-      const changeFormatted = percentChange > 0 ? `+${percentChange.toFixed(2)}%` : `${percentChange.toFixed(2)}%`;
-      priceChangeSpan.textContent = changeFormatted;
-      priceChangeSpan.className = `price-change ${percentChange >= 0 ? 'positive' : 'negative'}`;
-    } else {
-      priceChangeSpan.textContent = '--';
-    }
-    const now = new Date();
-    priceUpdateTimeSpan.textContent = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
   }
 
-  // --- Copy contract functionality with modern feedback ---
+  // Copy contract
   function copyContractAddress() {
     const address = PVLT_TOKEN_ADDRESS;
-    if (!address) return;
-    
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(address).then(() => {
-        showCopyTooltip("✓ Copied!");
-      }).catch(() => {
-        fallbackCopy(address);
-      });
-    } else {
-      fallbackCopy(address);
-    }
+      navigator.clipboard.writeText(address).then(() => showCopyTooltip("✓ Copied!"));
+    } else { fallbackCopy(address); }
   }
-  
   function fallbackCopy(text) {
     const textarea = document.createElement('textarea');
     textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
+    textarea.style.position = 'fixed'; textarea.style.opacity = '0';
     document.body.appendChild(textarea);
     textarea.select();
-    try {
-      document.execCommand('copy');
-      showCopyTooltip("✓ Copied!");
-    } catch (err) {
-      showCopyTooltip("✗ Failed");
-    }
+    document.execCommand('copy');
+    showCopyTooltip("✓ Copied!");
     document.body.removeChild(textarea);
   }
-  
   function showCopyTooltip(msg) {
     const oldTip = document.querySelector('.copy-tooltip');
     if (oldTip) oldTip.remove();
-    
     const tooltip = document.createElement('div');
     tooltip.className = 'copy-tooltip';
     tooltip.textContent = msg;
     contractCopyArea.style.position = 'relative';
     contractCopyArea.appendChild(tooltip);
-    
-    setTimeout(() => {
-      if (tooltip && tooltip.remove) tooltip.remove();
-    }, 1300);
+    setTimeout(() => tooltip.remove(), 1300);
   }
-  
-  contractCopyArea.addEventListener('click', (e) => {
-    e.stopPropagation();
-    copyContractAddress();
-  });
-  
+  contractCopyArea.addEventListener('click', (e) => { e.stopPropagation(); copyContractAddress(); });
   contractAddressCode.textContent = PVLT_TOKEN_ADDRESS;
 
-  function save() {
-    if (!account) return;
-    localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy }));
-  }
-  
+  function save() { if (account) localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy })); }
   function load() {
     if (!account) return;
     try {
       const d = JSON.parse(localStorage.getItem('pv_' + account) || '{}');
-      maxEnergy = d.maxEnergy ?? 100;
-      points = d.points ?? 0;
-      gamePvlt = d.gamePvlt ?? 0;
-      lastRegen = d.lastRegen ?? Date.now();
+      maxEnergy = d.maxEnergy ?? 100; points = d.points ?? 0; gamePvlt = d.gamePvlt ?? 0; lastRegen = d.lastRegen ?? Date.now();
       const offSecs = Math.floor((Date.now() - lastRegen) / 1000);
       const offRegen = Math.floor(offSecs / 15);
       energy = Math.min((d.energy ?? 100) + offRegen, maxEnergy);
       if (offRegen > 0) lastRegen = Date.now();
       if (energy < 0) energy = 0;
-    } catch(e) { console.warn(e); }
+    } catch(e) {}
   }
-
   function render() {
     energyValEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
     energyBarEl.style.width = Math.min((energy / maxEnergy) * 100, 100) + '%';
@@ -678,7 +523,6 @@ footer {
     walletValEl.textContent = walletBal.toFixed(2);
     treasuryValEl.textContent = treasuryBal.toFixed(0);
     claimSubEl.textContent = gamePvlt >= 1 ? `${Math.floor(gamePvlt)} PVLT` : 'TO WALLET';
-
     if (account) {
       tapBtnEl.classList.remove('no-energy');
       stateDisc.style.display = 'none';
@@ -694,38 +538,26 @@ footer {
       stateConn.style.display = 'none';
     }
   }
-
   function tick() {
     if (account && energy < maxEnergy) {
       const secs = Math.floor((Date.now() - lastRegen) / 1000);
       const gained = Math.floor(secs / 15);
-      if (gained > 0) {
-        energy = Math.min(energy + gained, maxEnergy);
-        lastRegen = Date.now();
-        save();
-      }
+      if (gained > 0) { energy = Math.min(energy + gained, maxEnergy); lastRegen = Date.now(); save(); }
       const rem = 15 - (Math.floor((Date.now() - lastRegen) / 1000) % 15);
       regenLblEl.textContent = `⚡ +1 in ${rem}s`;
-    } else {
-      regenLblEl.textContent = '';
-    }
+    } else { regenLblEl.textContent = ''; }
     render();
   }
-
   async function refreshBalances() {
     if (!account || !tokenC) return;
     try {
-      const [b, t] = await Promise.all([
-        tokenC.balanceOf(account),
-        gameC.getTreasuryBalance().catch(() => ethers.BigNumber.from(0))
-      ]);
+      const [b, t] = await Promise.all([tokenC.balanceOf(account), gameC.getTreasuryBalance().catch(() => ethers.BigNumber.from(0))]);
       walletBal = parseFloat(ethers.utils.formatUnits(b, decimals));
       treasuryBal = parseFloat(ethers.utils.formatUnits(t, decimals));
       render();
-    } catch(e) { console.error('Balance error', e); }
+    } catch(e) {}
   }
-
-  function showFloat(x, y, text, color = '#fff') {
+  function showFloat(x, y, text, color) {
     const el = document.createElement('div');
     el.className = 'float-text';
     el.textContent = text;
@@ -733,11 +565,10 @@ footer {
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1000);
   }
-
   const style = document.createElement('style');
   style.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
   document.head.appendChild(style);
-
+  
   let tapLock = false;
   function doTap(x, y) {
     if (!account || energy <= 0 || tapLock) return;
@@ -751,75 +582,90 @@ footer {
     showFloat(x, y, '+1 ⚡', '#00ffcc');
     save(); render();
   }
+  tapBtnEl.addEventListener('click', (e) => { const rect = tapBtnEl.getBoundingClientRect(); doTap(rect.left + rect.width/2, rect.top + rect.height/2); });
+  tapBtnEl.addEventListener('touchstart', (e) => { e.preventDefault(); const touch = e.touches[0]; doTap(touch.clientX, touch.clientY); }, { passive: false });
 
-  tapBtnEl.addEventListener('click', (e) => {
-    const rect = tapBtnEl.getBoundingClientRect();
-    doTap(rect.left + rect.width/2, rect.top + rect.height/2);
-  });
-  tapBtnEl.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    doTap(touch.clientX, touch.clientY);
-  }, { passive: false });
-
-  // ========== META MASK CONNECTION ==========
   async function connectMetaMask() {
-    if (!window.ethereum) {
-      alert("Please install MetaMask extension!");
-      return false;
-    }
+    if (!window.ethereum) { alert("Please install MetaMask!"); return false; }
     try {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       account = accounts[0];
       provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
-
       const network = await provider.getNetwork();
       if (network.chainId !== 137) {
         setStatus('⚠️ Switching to Polygon...');
-        try {
-          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-        } catch(e) {
-          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
-            chainId: '0x89', chainName: 'Polygon Mainnet',
-            nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-            rpcUrls: ['https://polygon-rpc.com/']
-          }]});
+        try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] }); } catch(e) {
+          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x89', chainName: 'Polygon Mainnet', nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 }, rpcUrls: ['https://polygon-rpc.com/'] }] });
         }
         provider = new ethers.providers.Web3Provider(window.ethereum);
         signer = provider.getSigner();
       }
-
       tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
       decimals = await tokenC.decimals();
-
       load();
       await refreshBalances();
       setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
       render();
-
       if (regenTimer) clearInterval(regenTimer);
       regenTimer = setInterval(async () => { tick(); await refreshBalances(); }, 1000);
-
-      window.ethereum.on('accountsChanged', (accs) => {
-        if (!accs.length) disconnect();
-        else if (accs[0] !== account) location.reload();
-      });
+      window.ethereum.on('accountsChanged', (accs) => { if (!accs.length) disconnect(); else if (accs[0] !== account) location.reload(); });
       return true;
-    } catch(e) {
-      console.error(e);
-      setStatus('❌ ' + (e.message?.slice(0,50) || 'Connection failed'));
-      return false;
-    }
+    } catch(e) { setStatus('❌ ' + (e.message?.slice(0,50) || 'Connection failed')); return false; }
   }
-
   async function disconnect() {
     if (regenTimer) clearInterval(regenTimer);
     save();
-    account = null;
-    walletBal = 0;
-    treasuryBal = 0;
-    energy = 100; maxEnergy = 100; points = 0; gamePvlt = 0;
+    account = null; walletBal = 0; treasuryBal = 0; energy = 100; maxEnergy = 100; points = 0; gamePvlt = 0;
     connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-    connect
+    connectBtnEl.disabled = false;
+    setStatus('🔒 Disconnected');
+    render();
+  }
+  async function buyEnergy() {
+    if (!account) { setStatus("Connect wallet first"); return; }
+    if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
+    buyBtnEl.disabled = true;
+    try {
+      const amountInWei = ethers.utils.parseUnits("100", decimals);
+      setStatus("⏳ Checking allowance...");
+      const currentAllowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
+      if (currentAllowance.lt(amountInWei)) {
+        setStatus("⏳ Approving PVLT...");
+        const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amountInWei);
+        await approveTx.wait();
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      setStatus("⏳ Buying 1000 Energy...");
+      const gasEstimate = await gameC.estimateGas.buyEnergy(amountInWei);
+      const tx = await gameC.buyEnergy(amountInWei, { gasLimit: gasEstimate.mul(12).div(10) });
+      await tx.wait();
+      maxEnergy += 1000; energy += 1000;
+      save();
+      await refreshBalances();
+      setStatus(`✅ +1000 Energy! Max: ${maxEnergy}`);
+      showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '⚡ +1000 ENERGY!', '#ffd700');
+    } catch(error) { setStatus(`❌ ${error.message?.slice(0, 80) || "Buy failed"}`); await refreshBalances(); }
+    finally { buyBtnEl.disabled = walletBal < 100; }
+  }
+  async function claimRewards() {
+    if (!account) { setStatus("Connect wallet first"); return; }
+    if (gamePvlt < 1) { setStatus(`❌ No GAME PVLT to claim!`); return; }
+    const amount = Math.floor(gamePvlt);
+    const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
+    claimBtnEl.disabled = true;
+    setStatus(`⏳ Claiming ${amount} PVLT...`);
+    try {
+      const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
+      const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
+      await tx.wait();
+      gamePvlt = 0; points = 0;
+      save();
+      await refreshBalances();
+      setStatus(`✅ Claimed ${amount} REAL PVLT!`);
+      showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
+    } catch(error) { setStatus(`❌ ${error.message?.slice(0, 80) || "Claim failed"}`); }
+    finally { claimBtnEl.disabled = gamePvlt < 1; }
+  }
+  function setStatus(msg) {
