@@ -92,7 +92,6 @@ html, body {
 .stat-card .val { font-family: monospace; font-weight: 800; font-size: 22px; }
 .stat-card.secondary-card .val { color: var(--secondary); }
 
-/* Contract Address Card */
 .contract-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -105,20 +104,15 @@ html, body {
   flex-wrap: wrap;
   gap: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 .contract-card .lbl {
   font-size: 10px;
   color: var(--primary);
   text-transform: uppercase;
   font-weight: 700;
-  letter-spacing: 0.5px;
   background: rgba(0,255,204,0.12);
   padding: 4px 10px;
   border-radius: 40px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 .contract-card .addr {
   font-family: monospace;
@@ -128,9 +122,7 @@ html, body {
   background: rgba(0,0,0,0.4);
   padding: 6px 12px;
   border-radius: 32px;
-  letter-spacing: 0.3px;
   word-break: break-all;
-  text-align: right;
   flex: 1;
 }
 .contract-card .copy-icon {
@@ -139,16 +131,11 @@ html, body {
   border-radius: 32px;
   font-size: 13px;
   cursor: pointer;
-  transition: 0.1s;
   color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 30px;
+  text-align: center;
 }
-.contract-card .copy-icon:active { transform: scale(0.92); background: rgba(0,255,204,0.3); }
 
-/* Token Price Card - Live refresh with GeckoTerminal */
 .price-card {
   background: var(--card);
   border: 1px solid rgba(255,215,0,0.3);
@@ -158,8 +145,6 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: all 0.2s;
-  backdrop-filter: blur(2px);
 }
 .price-left {
   display: flex;
@@ -179,7 +164,6 @@ html, body {
 .price-info .price-label {
   font-size: 9px;
   color: var(--muted);
-  letter-spacing: 0.5px;
   text-transform: uppercase;
 }
 .price-info .price-value {
@@ -187,7 +171,6 @@ html, body {
   font-weight: 800;
   font-size: 20px;
   color: var(--secondary);
-  letter-spacing: 0.5px;
 }
 .price-change {
   font-family: monospace;
@@ -197,15 +180,14 @@ html, body {
   border-radius: 40px;
   background: rgba(0,0,0,0.4);
 }
-.price-change.up { color: var(--price-up); }
-.price-change.down { color: var(--price-down); }
+.price-change.up { color: #00ffaa; }
+.price-change.down { color: #ff6666; }
 .price-update-badge {
   font-size: 8px;
   color: var(--muted);
   background: rgba(255,255,255,0.05);
   padding: 2px 8px;
   border-radius: 30px;
-  margin-left: 6px;
 }
 
 .wallet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
@@ -341,14 +323,12 @@ footer {
     </div>
   </div>
 
-  <!-- Contract address block -->
   <div class="contract-card" id="contractCard">
     <div class="lbl">📜 CONTRACT</div>
     <div class="addr" id="contractAddrDisplay">0x03741f950eafd9cbaa217e2b0491a0f143492f0a</div>
     <div class="copy-icon" id="copyContractBtn">📋</div>
   </div>
 
-  <!-- LIVE TOKEN PRICE CARD - Now using your actual SushiSwap pool on GeckoTerminal -->
   <div class="price-card" id="priceCard">
     <div class="price-left">
       <div class="price-icon">🐸💰</div>
@@ -380,8 +360,8 @@ footer {
     <div id="stateConnected" style="display:none">
       <button class="btn btn-outline" id="disconnectBtn" style="display:none"></button>
       <div class="action-grid" id="actionGrid" style="display:none">
-        <button class="btn btn-secondary btn-small" id="buyBtn">⚡ BUY ENERGY<span>(100 PVLT)</span></button>
-        <button class="btn btn-primary btn-small" id="claimBtn">💎 CLAIM<span id="claimSub">TO WALLET</span></button>
+        <button class="btn btn-secondary btn-small" id="buyBtn">⚡ BUY ENERGY (100 PVLT)</button>
+        <button class="btn btn-primary btn-small" id="claimBtn">💎 CLAIM <span id="claimSub">TO WALLET</span></button>
       </div>
     </div>
   </footer>
@@ -405,9 +385,6 @@ footer {
   // ============ CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
-  const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
-  
-  // YOUR ACTIVE SUSHISWAP V3 POOL ON POLYGON (from GeckoTerminal)
   const POOL_ADDRESS = "0xf0cdfaafa1622ebaa94bd2cf5055ba9a2d170296";
 
   const GAME_ABI = [
@@ -444,10 +421,7 @@ footer {
   const walletModal = $('walletModal');
   const closeModal = $('closeModal');
   const metaMaskOption = $('metaMaskOption');
-  const contractAddrSpan = $('contractAddrDisplay');
   const copyContractBtn = $('copyContractBtn');
-  
-  // Price Elements
   const pvltPriceEl = $('pvltPrice');
   const priceChangeEl = $('priceChange');
   const priceUpdateBadge = $('priceUpdateBadge');
@@ -459,7 +433,6 @@ footer {
   let tokenC = null;
   let gameC = null;
   let decimals = 18;
-
   let maxEnergy = 100;
   let energy = 100;
   let points = 0;
@@ -468,118 +441,71 @@ footer {
   let treasuryBal = 0;
   let lastRegen = Date.now();
   let regenTimer = null;
-  
-  // Price tracking
-  let currentPrice = 0;
-  let previousPrice = 0;
+  let priceInterval = null;
 
-  // Helper: show toast
   function showToast(message, isError = false) {
     const toast = document.createElement('div');
     toast.className = 'toast-msg';
     toast.textContent = message;
-    if (isError) toast.style.color = '#ff8888';
-    else toast.style.color = '#00ffcc';
+    toast.style.color = isError ? '#ff8888' : '#00ffcc';
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2000);
   }
 
-  // copy contract address
   function copyContractAddress() {
-    const addr = PVLT_TOKEN_ADDRESS;
-    navigator.clipboard.writeText(addr).then(() => {
-      showToast('✅ Contract address copied!', false);
-    }).catch(() => {
-      showToast('⚠️ Could not copy', true);
-    });
+    navigator.clipboard.writeText(PVLT_TOKEN_ADDRESS).then(() => {
+      showToast('✅ Contract address copied!');
+    }).catch(() => showToast('⚠️ Could not copy', true));
   }
-  copyContractBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    copyContractAddress();
-  });
-  $('contractCard').addEventListener('click', (e) => {
-    if (e.target === copyContractBtn || copyContractBtn.contains(e.target)) return;
-    copyContractAddress();
-  });
+  copyContractBtn.onclick = (e) => { e.stopPropagation(); copyContractAddress(); };
+  $('contractCard').onclick = (e) => { if (e.target !== copyContractBtn) copyContractAddress(); };
 
-  // ========== FIXED: LIVE PRICE FETCH USING YOUR ACTUAL POOL (GeckoTerminal API) ==========
+  // ========== PRICE FETCH FROM YOUR ACTUAL POOL ==========
   async function fetchTokenPrice() {
     try {
-      // Direct API call to GeckoTerminal using your exact pool address
       const url = `https://api.geckoterminal.com/api/v2/networks/polygon_pos/pools/${POOL_ADDRESS}`;
       const response = await fetch(url);
       const data = await response.json();
       
-      if (data && data.data && data.data.attributes) {
-        const priceUsd = data.data.attributes.price_usd;
-        const priceChange24h = data.data.attributes.price_change_percentage_24h;
+      if (data?.data?.attributes) {
+        const priceUsd = parseFloat(data.data.attributes.price_usd);
+        const change24h = data.data.attributes.price_change_percentage_24h;
         
-        if (priceUsd && !isNaN(parseFloat(priceUsd))) {
-          const newPrice = parseFloat(priceUsd);
-          previousPrice = currentPrice;
-          currentPrice = newPrice;
-          
-          // Format price display
+        if (!isNaN(priceUsd) && priceUsd > 0) {
           let formattedPrice;
-          if (currentPrice < 0.0001) {
-            formattedPrice = `$${currentPrice.toExponential(4)}`;
-          } else if (currentPrice < 0.01) {
-            formattedPrice = `$${currentPrice.toFixed(6)}`;
-          } else if (currentPrice < 1) {
-            formattedPrice = `$${currentPrice.toFixed(4)}`;
-          } else {
-            formattedPrice = `$${currentPrice.toFixed(2)}`;
-          }
+          if (priceUsd < 0.0001) formattedPrice = `$${priceUsd.toExponential(4)}`;
+          else if (priceUsd < 0.01) formattedPrice = `$${priceUsd.toFixed(6)}`;
+          else if (priceUsd < 1) formattedPrice = `$${priceUsd.toFixed(4)}`;
+          else formattedPrice = `$${priceUsd.toFixed(2)}`;
+          
           pvltPriceEl.textContent = formattedPrice;
           
-          // Update 24h change display
-          if (priceChange24h !== undefined && priceChange24h !== null) {
-            const changeValue = parseFloat(priceChange24h);
-            const changeSymbol = changeValue >= 0 ? '▲' : '▼';
-            const changeClass = changeValue >= 0 ? 'up' : 'down';
-            priceChangeEl.className = `price-change ${changeClass}`;
-            priceChangeEl.textContent = `${changeSymbol} ${Math.abs(changeValue).toFixed(2)}%`;
-          } else {
-            priceChangeEl.className = 'price-change';
-            priceChangeEl.textContent = '━ 0.00%';
+          if (change24h !== undefined && !isNaN(change24h)) {
+            const symbol = change24h >= 0 ? '▲' : '▼';
+            priceChangeEl.className = `price-change ${change24h >= 0 ? 'up' : 'down'}`;
+            priceChangeEl.textContent = `${symbol} ${Math.abs(change24h).toFixed(2)}%`;
           }
-          
           priceUpdateBadge.textContent = '● LIVE';
           priceUpdateBadge.style.color = '#00ffcc';
           return;
         }
       }
-      
-      // If pool exists but API format changed, show waiting state
       pvltPriceEl.textContent = '⟳ LOADING';
-      priceChangeEl.textContent = '...';
-      priceUpdateBadge.textContent = '⏳ FETCH';
-      priceUpdateBadge.style.color = '#ffaa44';
-      
+      priceUpdateBadge.textContent = '⏳';
     } catch (error) {
       console.warn("Price fetch error:", error);
       pvltPriceEl.textContent = '🔄 RETRY';
-      priceChangeEl.textContent = '--';
-      priceUpdateBadge.textContent = '⚠️ API';
-      priceUpdateBadge.style.color = '#ff8844';
-    }
-  }
-  
-  // Start price polling every 30 seconds (respectful to API rate limits)
-  let priceInterval = null;
-  function startPricePolling() {
-    if (priceInterval) clearInterval(priceInterval);
-    fetchTokenPrice(); // immediate first fetch
-    priceInterval = setInterval(fetchTokenPrice, 30000); // refresh every 30 seconds
-  }
-  
-  function stopPricePolling() {
-    if (priceInterval) {
-      clearInterval(priceInterval);
-      priceInterval = null;
+      priceUpdateBadge.textContent = '⚠️';
     }
   }
 
+  function startPricePolling() {
+    if (priceInterval) clearInterval(priceInterval);
+    fetchTokenPrice();
+    priceInterval = setInterval(fetchTokenPrice, 30000);
+  }
+
+  // ========== GAME LOGIC ==========
   function save() {
     if (!account) return;
     localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy }));
@@ -652,21 +578,20 @@ footer {
       walletBal = parseFloat(ethers.utils.formatUnits(b, decimals));
       treasuryBal = parseFloat(ethers.utils.formatUnits(t, decimals));
       render();
-    } catch(e) { console.error('Balance error', e); }
+    } catch(e) { console.error(e); }
   }
 
-  function showFloat(x, y, text, color = '#fff') {
+  function showFloat(x, y, text, color) {
     const el = document.createElement('div');
-    el.className = 'float-text';
     el.textContent = text;
     el.style.cssText = `position:fixed;left:${x-20}px;top:${y-20}px;color:${color};font-family:monospace;font-weight:800;font-size:22px;pointer-events:none;z-index:999;animation:floatUp 1s forwards;`;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1000);
   }
-
-  const style = document.createElement('style');
-  style.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
-  document.head.appendChild(style);
+  
+  const floatStyle = document.createElement('style');
+  floatStyle.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
+  document.head.appendChild(floatStyle);
 
   let tapLock = false;
   function doTap(x, y) {
@@ -682,28 +607,25 @@ footer {
     save(); render();
   }
 
-  tapBtnEl.addEventListener('click', (e) => {
+  tapBtnEl.onclick = (e) => {
     const rect = tapBtnEl.getBoundingClientRect();
     doTap(rect.left + rect.width/2, rect.top + rect.height/2);
-  });
-  tapBtnEl.addEventListener('touchstart', (e) => {
+  };
+  tapBtnEl.ontouchstart = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
     doTap(touch.clientX, touch.clientY);
-  }, { passive: false });
+  };
 
-  // ========== META MASK CONNECTION ==========
+  // ========== WALLET CONNECTION ==========
   async function connectMetaMask() {
-    if (!window.ethereum) {
-      alert("Please install MetaMask extension!");
-      return false;
-    }
+    if (!window.ethereum) { alert("Please install MetaMask!"); return false; }
     try {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       account = accounts[0];
       provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
-
+      
       const network = await provider.getNetwork();
       if (network.chainId !== 137) {
         setStatus('⚠️ Switching to Polygon...');
@@ -719,26 +641,25 @@ footer {
         provider = new ethers.providers.Web3Provider(window.ethereum);
         signer = provider.getSigner();
       }
-
+      
       tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
       decimals = await tokenC.decimals();
-
+      
       load();
       await refreshBalances();
       setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
       render();
-
+      
       if (regenTimer) clearInterval(regenTimer);
       regenTimer = setInterval(async () => { tick(); await refreshBalances(); }, 1000);
-
+      
       window.ethereum.on('accountsChanged', (accs) => {
         if (!accs.length) disconnect();
         else if (accs[0] !== account) location.reload();
       });
       return true;
     } catch(e) {
-      console.error(e);
       setStatus('❌ ' + (e.message?.slice(0,50) || 'Connection failed'));
       return false;
     }
@@ -751,44 +672,41 @@ footer {
     walletBal = 0;
     treasuryBal = 0;
     energy = 100; maxEnergy = 100; points = 0; gamePvlt = 0;
-    connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-    connectBtnEl.disabled = false;
     setStatus('🔒 Disconnected');
     render();
   }
 
-  // ========== BUY ENERGY ==========
   async function buyEnergy() {
     if (!account) { setStatus("Connect wallet first"); return; }
-    if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
+    if (walletBal < 100) { setStatus(`❌ Need 100 PVLT`); return; }
     buyBtnEl.disabled = true;
     try {
-      const amountInWei = ethers.utils.parseUnits("100", decimals);
-      const currentAllowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
-      if (currentAllowance.lt(amountInWei)) {
-        setStatus("⏳ Approving PVLT...");
-        const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amountInWei);
+      const amountWei = ethers.utils.parseUnits("100", decimals);
+      const allowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
+      if (allowance.lt(amountWei)) {
+        setStatus("⏳ Approving...");
+        const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amountWei);
         await approveTx.wait();
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(r => setTimeout(r, 2000));
       }
-      const gasEstimate = await gameC.estimateGas.buyEnergy(amountInWei);
-      const tx = await gameC.buyEnergy(amountInWei, { gasLimit: gasEstimate.mul(12).div(10) });
-      setStatus("⏳ Transaction sent...");
+      const gasEstimate = await gameC.estimateGas.buyEnergy(amountWei);
+      const tx = await gameC.buyEnergy(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
+      setStatus("⏳ Sending...");
       await tx.wait();
       maxEnergy += 1000;
       energy += 1000;
       save();
       await refreshBalances();
-      setStatus(`✅ +1000 Energy!`);
+      setStatus(`✅ +1000 Energy! Max: ${maxEnergy}`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '⚡ +1000 ENERGY!', '#ffd700');
-    } catch(error) { setStatus(`❌ ${error.message?.slice(0,80) || "Tx failed"}`); }
+    } catch(error) { setStatus(`❌ ${error.message?.slice(0,60)}`); }
     finally { buyBtnEl.disabled = walletBal < 100; }
   }
 
   async function claimRewards() {
     if (!account) { setStatus("Connect wallet first"); return; }
-    if (gamePvlt < 1) { setStatus(`❌ No GAME PVLT to claim!`); return; }
-    if (treasuryBal < gamePvlt) { setStatus(`❌ Treasury insufficient!`); return; }
+    if (gamePvlt < 1) { setStatus(`❌ No GAME PVLT to claim`); return; }
+    if (treasuryBal < gamePvlt) { setStatus(`❌ Treasury insufficient`); return; }
     
     const amount = Math.floor(gamePvlt);
     const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
@@ -802,11 +720,37 @@ footer {
       points = 0;
       save();
       await refreshBalances();
-      setStatus(`✅ Claimed ${amount} REAL PVLT!`);
+      setStatus(`✅ Claimed ${amount} PVLT!`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
-    } catch(error) { setStatus(`❌ ${error.message?.slice(0,80)}`); }
+    } catch(error) { setStatus(`❌ ${error.message?.slice(0,60)}`); }
     finally { claimBtnEl.disabled = gamePvlt < 1; }
   }
 
-  function setStatus(msg) { 
-    statusTxtEl.textContent =
+  function setStatus(msg) { statusTxtEl.textContent = msg; }
+
+  // Modal handlers
+  function openModal() { walletModal.classList.add('open'); }
+  function closeModalFn() { walletModal.classList.remove('open'); }
+  connectBtnEl.onclick = () => { if (account) disconnect(); else openModal(); };
+  closeModal.onclick = closeModalFn;
+  walletModal.onclick = (e) => { if (e.target === walletModal) closeModalFn(); };
+  metaMaskOption.onclick = async () => {
+    closeModalFn();
+    connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
+    connectBtnEl.disabled = true;
+    const success = await connectMetaMask();
+    connectBtnEl.innerHTML = '💼 CONNECT WALLET';
+    connectBtnEl.disabled = false;
+  };
+  disconnBtnEl.onclick = () => disconnect();
+  buyBtnEl.onclick = buyEnergy;
+  claimBtnEl.onclick = claimRewards;
+
+  // Initialize
+  startPricePolling();
+  render();
+  setInterval(tick, 1000);
+  setStatus('🔒 Click CONNECT WALLET to start');
+</script>
+</body>
+</html>
