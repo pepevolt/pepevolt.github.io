@@ -385,7 +385,7 @@ footer {
   // ============ CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
-  const POOL_ADDRESS = "0xf0cdfaafa1622ebaa94bd2cf5055ba9a2d170296";
+  const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
 
   const GAME_ABI = [
     "function buyEnergy(uint256 pvltAmount) external",
@@ -460,49 +460,69 @@ footer {
   copyContractBtn.onclick = (e) => { e.stopPropagation(); copyContractAddress(); };
   $('contractCard').onclick = (e) => { if (e.target !== copyContractBtn) copyContractAddress(); };
 
-  // ========== PRICE FETCH FROM YOUR ACTUAL POOL ==========
+  // ========== FIXED: PRICE FETCH USING DexScreener (works with CORS) ==========
   async function fetchTokenPrice() {
     try {
-      const url = `https://api.geckoterminal.com/api/v2/networks/polygon_pos/pools/${POOL_ADDRESS}`;
+      const tokenId = PVLT_TOKEN_ADDRESS.toLowerCase();
+      // DexScreener API - works with CORS and has your token data
+      const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenId}`;
       const response = await fetch(url);
       const data = await response.json();
       
-      if (data?.data?.attributes) {
-        const priceUsd = parseFloat(data.data.attributes.price_usd);
-        const change24h = data.data.attributes.price_change_percentage_24h;
+      if (data && data.pairs && data.pairs.length > 0) {
+        // Find the SushiSwap pair on Polygon
+        const sushiPair = data.pairs.find(pair => 
+          pair.chainId === "polygon" && pair.dexId === "sushi"
+        );
+        const pair = sushiPair || data.pairs[0];
         
-        if (!isNaN(priceUsd) && priceUsd > 0) {
-          let formattedPrice;
-          if (priceUsd < 0.0001) formattedPrice = `$${priceUsd.toExponential(4)}`;
-          else if (priceUsd < 0.01) formattedPrice = `$${priceUsd.toFixed(6)}`;
-          else if (priceUsd < 1) formattedPrice = `$${priceUsd.toFixed(4)}`;
-          else formattedPrice = `$${priceUsd.toFixed(2)}`;
-          
-          pvltPriceEl.textContent = formattedPrice;
-          
-          if (change24h !== undefined && !isNaN(change24h)) {
-            const symbol = change24h >= 0 ? '▲' : '▼';
-            priceChangeEl.className = `price-change ${change24h >= 0 ? 'up' : 'down'}`;
-            priceChangeEl.textContent = `${symbol} ${Math.abs(change24h).toFixed(2)}%`;
+        if (pair && pair.priceUsd) {
+          const priceUsd = parseFloat(pair.priceUsd);
+          if (!isNaN(priceUsd) && priceUsd > 0) {
+            let formattedPrice;
+            if (priceUsd < 0.0001) formattedPrice = `$${priceUsd.toExponential(4)}`;
+            else if (priceUsd < 0.01) formattedPrice = `$${priceUsd.toFixed(6)}`;
+            else if (priceUsd < 1) formattedPrice = `$${priceUsd.toFixed(4)}`;
+            else formattedPrice = `$${priceUsd.toFixed(2)}`;
+            
+            pvltPriceEl.textContent = formattedPrice;
+            
+            // Show price change if available
+            const change24h = pair.priceChange?.h24;
+            if (change24h !== undefined && !isNaN(change24h)) {
+              const symbol = change24h >= 0 ? '▲' : '▼';
+              priceChangeEl.className = `price-change ${change24h >= 0 ? 'up' : 'down'}`;
+              priceChangeEl.textContent = `${symbol} ${Math.abs(change24h).toFixed(2)}%`;
+            } else {
+              priceChangeEl.textContent = '━ 0.00%';
+            }
+            
+            priceUpdateBadge.textContent = '● LIVE';
+            priceUpdateBadge.style.color = '#00ffcc';
+            console.log(`Price updated: $${priceUsd}`);
+            return;
           }
-          priceUpdateBadge.textContent = '● LIVE';
-          priceUpdateBadge.style.color = '#00ffcc';
-          return;
         }
       }
-      pvltPriceEl.textContent = '⟳ LOADING';
-      priceUpdateBadge.textContent = '⏳';
+      
+      // If no price found, show that pool exists but no price yet
+      pvltPriceEl.textContent = '⛓️ POOL LIVE';
+      priceChangeEl.textContent = '--';
+      priceUpdateBadge.textContent = 'DEX OK';
+      priceUpdateBadge.style.color = '#ffaa44';
+      
     } catch (error) {
       console.warn("Price fetch error:", error);
-      pvltPriceEl.textContent = '🔄 RETRY';
-      priceUpdateBadge.textContent = '⚠️';
+      pvltPriceEl.textContent = '⟳ RETRY';
+      priceChangeEl.textContent = '--';
+      priceUpdateBadge.textContent = '⏳';
     }
   }
 
   function startPricePolling() {
     if (priceInterval) clearInterval(priceInterval);
-    fetchTokenPrice();
-    priceInterval = setInterval(fetchTokenPrice, 30000);
+    fetchTokenPrice(); // Fetch immediately
+    priceInterval = setInterval(fetchTokenPrice, 25000); // Every 25 seconds
   }
 
   // ========== GAME LOGIC ==========
@@ -746,7 +766,7 @@ footer {
   buyBtnEl.onclick = buyEnergy;
   claimBtnEl.onclick = claimRewards;
 
-  // Initialize
+  // Initialize everything
   startPricePolling();
   render();
   setInterval(tick, 1000);
