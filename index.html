@@ -27,8 +27,6 @@
   --muted: #9ba3c2;
   --border: rgba(0,255,204,0.2);
   --radius: 16px;
-  --price-up: #00ffaa;
-  --price-down: #ff6666;
 }
 
 html, body {
@@ -47,20 +45,7 @@ html, body {
   max-width: 440px;
   margin: 0 auto;
   padding: 16px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-}
-
-.app::-webkit-scrollbar {
-  width: 3px;
-}
-.app::-webkit-scrollbar-track {
-  background: transparent;
-}
-.app::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 10px;
+  overflow: hidden;
 }
 
 .energy-row {
@@ -92,6 +77,7 @@ html, body {
 .stat-card .val { font-family: monospace; font-weight: 800; font-size: 22px; }
 .stat-card.secondary-card .val { color: var(--secondary); }
 
+/* NEW: Contract Address Card - matches "100/100" style highlight */
 .contract-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -103,6 +89,7 @@ html, body {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 .contract-card .lbl {
@@ -110,9 +97,13 @@ html, body {
   color: var(--primary);
   text-transform: uppercase;
   font-weight: 700;
+  letter-spacing: 0.5px;
   background: rgba(0,255,204,0.12);
   padding: 4px 10px;
   border-radius: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .contract-card .addr {
   font-family: monospace;
@@ -122,7 +113,9 @@ html, body {
   background: rgba(0,0,0,0.4);
   padding: 6px 12px;
   border-radius: 32px;
+  letter-spacing: 0.3px;
   word-break: break-all;
+  text-align: right;
   flex: 1;
 }
 .contract-card .copy-icon {
@@ -131,86 +124,14 @@ html, body {
   border-radius: 32px;
   font-size: 13px;
   cursor: pointer;
+  transition: 0.1s;
   color: var(--primary);
-  width: 30px;
-  text-align: center;
-}
-
-.price-card {
-  background: linear-gradient(135deg, var(--card) 0%, #0a0a14 100%);
-  border: 1px solid rgba(0,255,204,0.25);
-  border-radius: var(--radius);
-  padding: 12px 14px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.price-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.price-icon {
-  font-size: 24px;
-  background: rgba(0,255,204,0.1);
-  width: 42px;
-  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 30px;
+  width: 30px;
 }
-.price-info .price-label {
-  font-size: 9px;
-  color: var(--primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-}
-.price-info .price-value {
-  font-family: monospace;
-  font-weight: 800;
-  font-size: 18px;
-  color: #fff;
-  letter-spacing: 0.5px;
-}
-.price-info .price-value span {
-  color: var(--secondary);
-  font-size: 16px;
-}
-.price-change {
-  font-family: monospace;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 40px;
-  background: rgba(0,0,0,0.5);
-  text-align: center;
-}
-.price-change.up { color: #00ffaa; }
-.price-change.down { color: #ff6666; }
-.price-update-badge {
-  font-size: 8px;
-  color: var(--muted);
-  background: rgba(255,255,255,0.05);
-  padding: 2px 8px;
-  border-radius: 30px;
-}
-.swap-link {
-  font-size: 10px;
-  color: var(--primary);
-  text-decoration: none;
-  background: rgba(0,255,204,0.1);
-  padding: 4px 8px;
-  border-radius: 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-.swap-link:hover { background: rgba(0,255,204,0.2); }
+.contract-card .copy-icon:active { transform: scale(0.92); background: rgba(0,255,204,0.3); }
 
 .wallet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 .wallet-card {
@@ -224,10 +145,10 @@ html, body {
 .wallet-card .lbl { font-size: 9px; color: var(--muted); }
 .wallet-card .val { font-family: monospace; font-size: 13px; }
 
-main { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 200px; }
+main { flex: 1; display: flex; align-items: center; justify-content: center; }
 .pepe-btn {
-  width: 200px;
-  height: 200px;
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #00ebbc, #008f74);
   border: 4px solid rgba(0,255,204,0.5);
@@ -247,13 +168,13 @@ footer {
   padding-top: 12px;
   margin-top: 8px;
 }
-.status-txt { text-align: center; font-size: 10px; font-family: monospace; color: var(--muted); margin-bottom: 8px; }
+.status-txt { text-align: center; font-size: 11px; font-family: monospace; color: var(--muted); margin-bottom: 10px; }
 .btn {
   width: 100%;
   border: none;
   border-radius: 44px;
-  padding: 12px;
-  font-size: 14px;
+  padding: 14px;
+  font-size: 15px;
   font-weight: 800;
   cursor: pointer;
   transition: transform .1s;
@@ -264,7 +185,7 @@ footer {
 .btn-secondary { background: var(--secondary); color: #000; }
 .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,.2); color: #fff; }
 .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-.btn-small { padding: 10px; font-size: 12px; }
+.btn-small { padding: 10px; font-size: 13px; }
 .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(0,0,0,.3); border-radius: 50%; border-top-color: #000; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -303,6 +224,7 @@ footer {
 .wallet-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; background: rgba(255,255,255,.1); }
 .modal-close { float: right; cursor: pointer; font-size: 20px; color: var(--muted); }
 
+/* toast simple */
 .toast-msg {
   position: fixed;
   bottom: 30px;
@@ -345,29 +267,11 @@ footer {
     </div>
   </div>
 
+  <!-- NEW: Contract address block - red highlighted area with UI theme matching "100/100" style border & primary glow -->
   <div class="contract-card" id="contractCard">
     <div class="lbl">📜 CONTRACT</div>
     <div class="addr" id="contractAddrDisplay">0x03741f950eafd9cbaa217e2b0491a0f143492f0a</div>
     <div class="copy-icon" id="copyContractBtn">📋</div>
-  </div>
-
-  <!-- PRICE CARD - Shows 1 PVLT = ? WPOL -->
-  <div class="price-card" id="priceCard">
-    <div class="price-left">
-      <div class="price-icon">🔄</div>
-      <div class="price-info">
-        <div class="price-label">1 PVLT =</div>
-        <div class="price-value" id="pvltPrice"><span>⟳</span> WPOL</div>
-      </div>
-    </div>
-    <div style="text-align: right;">
-      <div class="price-change" id="priceChange">--</div>
-      <div class="price-update-badge" id="priceUpdateBadge">LIVE</div>
-    </div>
-  </div>
-
-  <div style="display: flex; justify-content: flex-end; margin-top: -6px; margin-bottom: 10px;">
-    <a id="swapLink" class="swap-link" target="_blank">🔄 Trade on SushiSwap →</a>
   </div>
 
   <div class="wallet-row">
@@ -389,8 +293,8 @@ footer {
     <div id="stateConnected" style="display:none">
       <button class="btn btn-outline" id="disconnectBtn" style="display:none"></button>
       <div class="action-grid" id="actionGrid" style="display:none">
-        <button class="btn btn-secondary btn-small" id="buyBtn">⚡ BUY ENERGY (100 PVLT)</button>
-        <button class="btn btn-primary btn-small" id="claimBtn">💎 CLAIM <span id="claimSub">TO WALLET</span></button>
+        <button class="btn btn-secondary btn-small" id="buyBtn">⚡ BUY ENERGY<span>(100 PVLT)</span></button>
+        <button class="btn btn-primary btn-small" id="claimBtn">💎 CLAIM<span id="claimSub">TO WALLET</span></button>
       </div>
     </div>
   </footer>
@@ -414,7 +318,7 @@ footer {
   // ============ CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
-  const POOL_ADDRESS = "0xf0cdfaafa1622ebaa94bd2cf5055ba9a2d170296";
+  const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
 
   const GAME_ABI = [
     "function buyEnergy(uint256 pvltAmount) external",
@@ -450,13 +354,8 @@ footer {
   const walletModal = $('walletModal');
   const closeModal = $('closeModal');
   const metaMaskOption = $('metaMaskOption');
+  const contractAddrSpan = $('contractAddrDisplay');
   const copyContractBtn = $('copyContractBtn');
-  const pvltPriceEl = $('pvltPrice');
-  const priceChangeEl = $('priceChange');
-  const priceUpdateBadge = $('priceUpdateBadge');
-  const swapLink = $('swapLink');
-
-  swapLink.href = `https://app.sushi.com/swap?inputCurrency=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE&outputCurrency=${PVLT_TOKEN_ADDRESS}&chainId=137`;
 
   // State
   let account = null;
@@ -465,6 +364,7 @@ footer {
   let tokenC = null;
   let gameC = null;
   let decimals = 18;
+
   let maxEnergy = 100;
   let energy = 100;
   let points = 0;
@@ -473,105 +373,37 @@ footer {
   let treasuryBal = 0;
   let lastRegen = Date.now();
   let regenTimer = null;
-  let priceInterval = null;
 
+  // Helper: show toast
   function showToast(message, isError = false) {
     const toast = document.createElement('div');
     toast.className = 'toast-msg';
     toast.textContent = message;
-    toast.style.color = isError ? '#ff8888' : '#00ffcc';
+    if (isError) toast.style.color = '#ff8888';
+    else toast.style.color = '#00ffcc';
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 2000);
   }
 
+  // copy contract address
   function copyContractAddress() {
-    navigator.clipboard.writeText(PVLT_TOKEN_ADDRESS).then(() => {
-      showToast('✅ Contract address copied!');
-    }).catch(() => showToast('⚠️ Could not copy', true));
+    const addr = PVLT_TOKEN_ADDRESS;
+    navigator.clipboard.writeText(addr).then(() => {
+      showToast('✅ Contract address copied!', false);
+    }).catch(() => {
+      showToast('⚠️ Could not copy', true);
+    });
   }
-  copyContractBtn.onclick = (e) => { e.stopPropagation(); copyContractAddress(); };
-  $('contractCard').onclick = (e) => { if (e.target !== copyContractBtn) copyContractAddress(); };
+  copyContractBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    copyContractAddress();
+  });
+  // optional click whole card to copy
+  $('contractCard').addEventListener('click', (e) => {
+    if (e.target === copyContractBtn || copyContractBtn.contains(e.target)) return;
+    copyContractAddress();
+  });
 
-  // ========== FIXED: PRICE FETCH using GeckoTerminal API directly ==========
-  async function fetchTokenPrice() {
-    try {
-      // Use GeckoTerminal API with your exact pool address
-      const url = `https://api.geckoterminal.com/api/v2/networks/polygon_pos/pools/${POOL_ADDRESS}`;
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      console.log("API Response:", data); // For debugging
-      
-      if (data && data.data && data.data.attributes) {
-        const attributes = data.data.attributes;
-        
-        // Get price in WPOL (native token price)
-        const priceInWpol = attributes.price_native;
-        // Also get USD price if needed
-        const priceInUsd = attributes.price_usd;
-        // Get 24h change
-        const priceChange24h = attributes.price_change_percentage_24h;
-        
-        if (priceInWpol && !isNaN(parseFloat(priceInWpol))) {
-          const priceValue = parseFloat(priceInWpol);
-          
-          // Format the WPOL amount nicely
-          let formattedPrice;
-          if (priceValue < 0.000001) {
-            formattedPrice = priceValue.toExponential(4);
-          } else if (priceValue < 0.0001) {
-            formattedPrice = priceValue.toFixed(8);
-          } else if (priceValue < 0.01) {
-            formattedPrice = priceValue.toFixed(6);
-          } else if (priceValue < 1) {
-            formattedPrice = priceValue.toFixed(5);
-          } else {
-            formattedPrice = priceValue.toFixed(4);
-          }
-          
-          // Update the display
-          pvltPriceEl.innerHTML = `<span>${formattedPrice}</span> WPOL`;
-          
-          // Update 24h change
-          if (priceChange24h !== undefined && !isNaN(priceChange24h)) {
-            const changeValue = parseFloat(priceChange24h);
-            const symbol = changeValue >= 0 ? '▲' : '▼';
-            const changeClass = changeValue >= 0 ? 'up' : 'down';
-            priceChangeEl.className = `price-change ${changeClass}`;
-            priceChangeEl.textContent = `${symbol} ${Math.abs(changeValue).toFixed(2)}%`;
-          } else {
-            priceChangeEl.textContent = '━ 0.00%';
-          }
-          
-          priceUpdateBadge.textContent = '● LIVE';
-          priceUpdateBadge.style.color = '#00ffcc';
-          console.log(`1 PVLT = ${priceValue} WPOL ($${priceInUsd})`);
-          return;
-        }
-      }
-      
-      // If we get here, the API response didn't have the expected data
-      pvltPriceEl.innerHTML = '<span>⟳</span> WPOL';
-      priceChangeEl.textContent = '--';
-      priceUpdateBadge.textContent = 'LOADING';
-      priceUpdateBadge.style.color = '#ffaa44';
-      
-    } catch (error) {
-      console.error("Price fetch error:", error);
-      pvltPriceEl.innerHTML = '<span>⚠️</span> WPOL';
-      priceChangeEl.textContent = 'ERR';
-      priceUpdateBadge.textContent = 'RETRY';
-      priceUpdateBadge.style.color = '#ff6666';
-    }
-  }
-
-  function startPricePolling() {
-    if (priceInterval) clearInterval(priceInterval);
-    fetchTokenPrice(); // Fetch immediately
-    priceInterval = setInterval(fetchTokenPrice, 30000); // Every 30 seconds
-  }
-
-  // ========== GAME LOGIC ==========
   function save() {
     if (!account) return;
     localStorage.setItem('pv_' + account, JSON.stringify({ energy, points, gamePvlt, lastRegen, maxEnergy }));
@@ -644,20 +476,21 @@ footer {
       walletBal = parseFloat(ethers.utils.formatUnits(b, decimals));
       treasuryBal = parseFloat(ethers.utils.formatUnits(t, decimals));
       render();
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error('Balance error', e); }
   }
 
-  function showFloat(x, y, text, color) {
+  function showFloat(x, y, text, color = '#fff') {
     const el = document.createElement('div');
+    el.className = 'float-text';
     el.textContent = text;
     el.style.cssText = `position:fixed;left:${x-20}px;top:${y-20}px;color:${color};font-family:monospace;font-weight:800;font-size:22px;pointer-events:none;z-index:999;animation:floatUp 1s forwards;`;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1000);
   }
-  
-  const floatStyle = document.createElement('style');
-  floatStyle.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
-  document.head.appendChild(floatStyle);
+
+  const style = document.createElement('style');
+  style.textContent = `@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}`;
+  document.head.appendChild(style);
 
   let tapLock = false;
   function doTap(x, y) {
@@ -673,25 +506,28 @@ footer {
     save(); render();
   }
 
-  tapBtnEl.onclick = (e) => {
+  tapBtnEl.addEventListener('click', (e) => {
     const rect = tapBtnEl.getBoundingClientRect();
     doTap(rect.left + rect.width/2, rect.top + rect.height/2);
-  };
-  tapBtnEl.ontouchstart = (e) => {
+  });
+  tapBtnEl.addEventListener('touchstart', (e) => {
     e.preventDefault();
     const touch = e.touches[0];
     doTap(touch.clientX, touch.clientY);
-  };
+  }, { passive: false });
 
-  // ========== WALLET CONNECTION ==========
+  // ========== META MASK CONNECTION ==========
   async function connectMetaMask() {
-    if (!window.ethereum) { alert("Please install MetaMask!"); return false; }
+    if (!window.ethereum) {
+      alert("Please install MetaMask extension!");
+      return false;
+    }
     try {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       account = accounts[0];
       provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
-      
+
       const network = await provider.getNetwork();
       if (network.chainId !== 137) {
         setStatus('⚠️ Switching to Polygon...');
@@ -707,25 +543,26 @@ footer {
         provider = new ethers.providers.Web3Provider(window.ethereum);
         signer = provider.getSigner();
       }
-      
+
       tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
       gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
       decimals = await tokenC.decimals();
-      
+
       load();
       await refreshBalances();
       setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
       render();
-      
+
       if (regenTimer) clearInterval(regenTimer);
       regenTimer = setInterval(async () => { tick(); await refreshBalances(); }, 1000);
-      
+
       window.ethereum.on('accountsChanged', (accs) => {
         if (!accs.length) disconnect();
         else if (accs[0] !== account) location.reload();
       });
       return true;
     } catch(e) {
+      console.error(e);
       setStatus('❌ ' + (e.message?.slice(0,50) || 'Connection failed'));
       return false;
     }
@@ -738,58 +575,190 @@ footer {
     walletBal = 0;
     treasuryBal = 0;
     energy = 100; maxEnergy = 100; points = 0; gamePvlt = 0;
+    connectBtnEl.innerHTML = '💼 CONNECT WALLET';
+    connectBtnEl.disabled = false;
     setStatus('🔒 Disconnected');
     render();
   }
 
+  // ========== BUY ENERGY - FIXED VERSION ==========
   async function buyEnergy() {
-    if (!account) { setStatus("Connect wallet first"); return; }
-    if (walletBal < 100) { setStatus(`❌ Need 100 PVLT`); return; }
+    if (!account) { 
+      setStatus("Connect wallet first"); 
+      return; 
+    }
+    
+    if (walletBal < 100) { 
+      setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); 
+      return; 
+    }
+
     buyBtnEl.disabled = true;
+    
     try {
-      const amountWei = ethers.utils.parseUnits("100", decimals);
-      const allowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
-      if (allowance.lt(amountWei)) {
-        setStatus("⏳ Approving...");
-        const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amountWei);
+      const amountInWei = ethers.utils.parseUnits("100", decimals);
+      setStatus("⏳ Step 1/3: Checking allowance...");
+      const currentAllowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
+      
+      if (currentAllowance.lt(amountInWei)) {
+        setStatus("⏳ Step 2/3: Approving PVLT spending...");
+        const approveGasEstimate = await tokenC.estimateGas.approve(GAME_CONTRACT_ADDRESS, amountInWei);
+        const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amountInWei, {
+          gasLimit: approveGasEstimate.mul(12).div(10)
+        });
+        setStatus("⏳ Waiting for approval confirmation...");
         await approveTx.wait();
-        await new Promise(r => setTimeout(r, 2000));
+        setStatus("✅ Approval confirmed!");
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        setStatus("✅ Allowance sufficient, proceeding to buy...");
       }
-      const gasEstimate = await gameC.estimateGas.buyEnergy(amountWei);
-      const tx = await gameC.buyEnergy(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
-      setStatus("⏳ Sending...");
+      
+      setStatus("⏳ Step 3/3: Buying 1000 Energy...");
+      const freshBalance = await tokenC.balanceOf(account);
+      const freshBalanceNum = parseFloat(ethers.utils.formatUnits(freshBalance, decimals));
+      if (freshBalanceNum < 100) {
+        throw new Error(`Insufficient balance after approval. Have ${freshBalanceNum.toFixed(2)} PVLT`);
+      }
+      
+      let gasEstimate;
+      try {
+        gasEstimate = await gameC.estimateGas.buyEnergy(amountInWei);
+      } catch (estimateError) {
+        if (estimateError.message.includes("execution reverted")) {
+          throw new Error("Contract execution would fail. Check if you have enough PVLT and the contract is working.");
+        }
+        throw estimateError;
+      }
+      
+      const tx = await gameC.buyEnergy(amountInWei, { 
+        gasLimit: gasEstimate.mul(12).div(10)
+      });
+      
+      setStatus("⏳ Transaction submitted! Waiting for confirmation...");
       await tx.wait();
+      
       maxEnergy += 1000;
       energy += 1000;
       save();
       await refreshBalances();
-      setStatus(`✅ +1000 Energy! Max: ${maxEnergy}`);
+      setStatus(`✅ SUCCESS! +1000 Energy! Max energy: ${maxEnergy}`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '⚡ +1000 ENERGY!', '#ffd700');
-    } catch(error) { setStatus(`❌ ${error.message?.slice(0,60)}`); }
-    finally { buyBtnEl.disabled = walletBal < 100; }
+      
+    } catch(error) {
+      console.error("Buy energy error details:", error);
+      let userMessage = "";
+      if (error.code === 4001) {
+        userMessage = "Transaction rejected in wallet";
+      } else if (error.message.includes("insufficient funds")) {
+        userMessage = "Insufficient MATIC for gas fees! Need MATIC for transaction";
+      } else if (error.message.includes("user rejected")) {
+        userMessage = "You rejected the transaction";
+      } else if (error.message.includes("execution reverted")) {
+        userMessage = "Contract execution failed. Check if contract is correct.";
+      } else if (error.message.includes("balance")) {
+        userMessage = "Insufficient PVLT balance";
+      } else {
+        userMessage = error.message?.slice(0, 100) || "Transaction failed";
+      }
+      setStatus(`❌ ${userMessage}`);
+      await refreshBalances();
+    } finally {
+      buyBtnEl.disabled = walletBal < 100;
+    }
   }
 
+  // ========== CLAIM REWARDS ==========
   async function claimRewards() {
-    if (!account) { setStatus("Connect wallet first"); return; }
-    if (gamePvlt < 1) { setStatus(`❌ No GAME PVLT to claim`); return; }
-    if (treasuryBal < gamePvlt) { setStatus(`❌ Treasury insufficient`); return; }
+    if (!account) { 
+      setStatus("Connect wallet first"); 
+      return; 
+    }
     
+    if (gamePvlt < 1) { 
+      setStatus(`❌ No GAME PVLT to claim! You have ${gamePvlt}`); 
+      return; 
+    }
+    
+    if (treasuryBal < gamePvlt) { 
+      setStatus(`❌ Treasury insufficient! Treasury: ${treasuryBal.toFixed(0)} PVLT`); 
+      return; 
+    }
+
     const amount = Math.floor(gamePvlt);
     const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
     claimBtnEl.disabled = true;
     setStatus(`⏳ Claiming ${amount} PVLT...`);
+
     try {
       const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
-      const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
+      const tx = await gameC.claimRewards(amountWei, { 
+        gasLimit: gasEstimate.mul(12).div(10)
+      });
+      setStatus("⏳ Waiting for confirmation...");
       await tx.wait();
+      
       gamePvlt = 0;
       points = 0;
       save();
       await refreshBalances();
-      setStatus(`✅ Claimed ${amount} PVLT!`);
+      setStatus(`✅ SUCCESS! Claimed ${amount} REAL PVLT to your wallet!`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
-    } catch(error) { setStatus(`❌ ${error.message?.slice(0,60)}`); }
-    finally { claimBtnEl.disabled = gamePvlt < 1; }
+      
+    } catch(error) {
+      console.error("Claim error details:", error);
+      let userMessage = "";
+      if (error.code === 4001) {
+        userMessage = "Transaction rejected in wallet";
+      } else if (error.message.includes("insufficient funds")) {
+        userMessage = "Insufficient MATIC for gas fees!";
+      } else if (error.message.includes("execution reverted")) {
+        userMessage = "Claim failed. Make sure you have game PVLT to claim.";
+      } else {
+        userMessage = error.message?.slice(0, 100) || "Claim failed";
+      }
+      setStatus(`❌ ${userMessage}`);
+    } finally {
+      claimBtnEl.disabled = gamePvlt < 1;
+    }
   }
 
-  function setStatus(msg)
+  function setStatus(msg) { 
+    statusTxtEl.textContent = msg;
+    console.log("Status update:", msg);
+  }
+
+  // Modal handlers
+  function openModal() { walletModal.classList.add('open'); }
+  function closeModalFn() { walletModal.classList.remove('open'); }
+
+  connectBtnEl.onclick = () => {
+    if (account) disconnect();
+    else openModal();
+  };
+  closeModal.onclick = closeModalFn;
+  walletModal.onclick = (e) => { if (e.target === walletModal) closeModalFn(); };
+  
+  metaMaskOption.onclick = async () => {
+    closeModalFn();
+    connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
+    connectBtnEl.disabled = true;
+    const success = await connectMetaMask();
+    if (!success) {
+      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
+      connectBtnEl.disabled = false;
+    } else {
+      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
+    }
+  };
+  
+  disconnBtnEl.onclick = () => disconnect();
+  buyBtnEl.onclick = buyEnergy;
+  claimBtnEl.onclick = claimRewards;
+  
+  render();
+  setInterval(tick, 1000);
+  setStatus('🔒 Click CONNECT WALLET to start');
+</script>
+</body>
+</html>
