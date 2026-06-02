@@ -77,6 +77,62 @@ html, body {
 .stat-card .val { font-family: monospace; font-weight: 800; font-size: 22px; }
 .stat-card.secondary-card .val { color: var(--secondary); }
 
+/* NEW: Contract Address Card - matches "100/100" style highlight */
+.contract-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.contract-card .lbl {
+  font-size: 10px;
+  color: var(--primary);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: rgba(0,255,204,0.12);
+  padding: 4px 10px;
+  border-radius: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.contract-card .addr {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(0,0,0,0.4);
+  padding: 6px 12px;
+  border-radius: 32px;
+  letter-spacing: 0.3px;
+  word-break: break-all;
+  text-align: right;
+  flex: 1;
+}
+.contract-card .copy-icon {
+  background: rgba(0,255,204,0.15);
+  padding: 6px;
+  border-radius: 32px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.1s;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+}
+.contract-card .copy-icon:active { transform: scale(0.92); background: rgba(0,255,204,0.3); }
+
 .wallet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 .wallet-card {
   background: var(--card);
@@ -167,6 +223,26 @@ footer {
 .wallet-option:hover { background: rgba(0,255,204,.1); }
 .wallet-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; background: rgba(255,255,255,.1); }
 .modal-close { float: right; cursor: pointer; font-size: 20px; color: var(--muted); }
+
+/* toast simple */
+.toast-msg {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e1f2c;
+  backdrop-filter: blur(12px);
+  color: var(--primary);
+  padding: 8px 18px;
+  border-radius: 40px;
+  font-size: 13px;
+  font-family: monospace;
+  z-index: 200;
+  border: 1px solid var(--border);
+  pointer-events: none;
+  animation: fadeOut 2s forwards;
+}
+@keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 </style>
 </head>
 <body>
@@ -189,6 +265,13 @@ footer {
       <div class="lbl">💎 Game PVLT</div>
       <div class="val" id="gamePvltVal">0</div>
     </div>
+  </div>
+
+  <!-- NEW: Contract address block - red highlighted area with UI theme matching "100/100" style border & primary glow -->
+  <div class="contract-card" id="contractCard">
+    <div class="lbl">📜 CONTRACT</div>
+    <div class="addr" id="contractAddrDisplay">0x03741f950eafd9cbaa217e2b0491a0f143492f0a</div>
+    <div class="copy-icon" id="copyContractBtn">📋</div>
   </div>
 
   <div class="wallet-row">
@@ -271,6 +354,8 @@ footer {
   const walletModal = $('walletModal');
   const closeModal = $('closeModal');
   const metaMaskOption = $('metaMaskOption');
+  const contractAddrSpan = $('contractAddrDisplay');
+  const copyContractBtn = $('copyContractBtn');
 
   // State
   let account = null;
@@ -288,6 +373,36 @@ footer {
   let treasuryBal = 0;
   let lastRegen = Date.now();
   let regenTimer = null;
+
+  // Helper: show toast
+  function showToast(message, isError = false) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-msg';
+    toast.textContent = message;
+    if (isError) toast.style.color = '#ff8888';
+    else toast.style.color = '#00ffcc';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  }
+
+  // copy contract address
+  function copyContractAddress() {
+    const addr = PVLT_TOKEN_ADDRESS;
+    navigator.clipboard.writeText(addr).then(() => {
+      showToast('✅ Contract address copied!', false);
+    }).catch(() => {
+      showToast('⚠️ Could not copy', true);
+    });
+  }
+  copyContractBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    copyContractAddress();
+  });
+  // optional click whole card to copy
+  $('contractCard').addEventListener('click', (e) => {
+    if (e.target === copyContractBtn || copyContractBtn.contains(e.target)) return;
+    copyContractAddress();
+  });
 
   function save() {
     if (!account) return;
@@ -481,91 +596,58 @@ footer {
     buyBtnEl.disabled = true;
     
     try {
-      // Calculate the amount with proper decimals
       const amountInWei = ethers.utils.parseUnits("100", decimals);
-      
       setStatus("⏳ Step 1/3: Checking allowance...");
-      
-      // Check current allowance
       const currentAllowance = await tokenC.allowance(account, GAME_CONTRACT_ADDRESS);
-      console.log(`Current allowance: ${currentAllowance.toString()}`);
-      console.log(`Need amount: ${amountInWei.toString()}`);
       
-      // If allowance is insufficient, request approval
       if (currentAllowance.lt(amountInWei)) {
         setStatus("⏳ Step 2/3: Approving PVLT spending...");
-        
-        // Try to estimate gas for approval first
         const approveGasEstimate = await tokenC.estimateGas.approve(GAME_CONTRACT_ADDRESS, amountInWei);
         const approveTx = await tokenC.approve(GAME_CONTRACT_ADDRESS, amountInWei, {
           gasLimit: approveGasEstimate.mul(12).div(10)
         });
-        
         setStatus("⏳ Waiting for approval confirmation...");
         await approveTx.wait();
-        console.log("Approval transaction confirmed:", approveTx.hash);
         setStatus("✅ Approval confirmed!");
-        
-        // Small delay to let the blockchain update
         await new Promise(resolve => setTimeout(resolve, 2000));
       } else {
         setStatus("✅ Allowance sufficient, proceeding to buy...");
       }
       
-      // Now buy energy
       setStatus("⏳ Step 3/3: Buying 1000 Energy...");
-      
-      // Verify balance again after approval
       const freshBalance = await tokenC.balanceOf(account);
       const freshBalanceNum = parseFloat(ethers.utils.formatUnits(freshBalance, decimals));
-      
       if (freshBalanceNum < 100) {
         throw new Error(`Insufficient balance after approval. Have ${freshBalanceNum.toFixed(2)} PVLT`);
       }
       
-      // Try to estimate gas for buyEnergy
       let gasEstimate;
       try {
         gasEstimate = await gameC.estimateGas.buyEnergy(amountInWei);
-        console.log("Gas estimate:", gasEstimate.toString());
       } catch (estimateError) {
-        console.error("Gas estimation error:", estimateError);
-        // Try to decode the error message
         if (estimateError.message.includes("execution reverted")) {
           throw new Error("Contract execution would fail. Check if you have enough PVLT and the contract is working.");
         }
         throw estimateError;
       }
       
-      // Execute the buy transaction with 20% extra gas for safety
       const tx = await gameC.buyEnergy(amountInWei, { 
-        gasLimit: gasEstimate.mul(12).div(10)  // 20% extra gas
+        gasLimit: gasEstimate.mul(12).div(10)
       });
       
       setStatus("⏳ Transaction submitted! Waiting for confirmation...");
-      console.log("Buy transaction hash:", tx.hash);
+      await tx.wait();
       
-      // Wait for confirmation
-      const receipt = await tx.wait();
-      console.log("Transaction confirmed in block:", receipt.blockNumber);
-      
-      // Update game state
       maxEnergy += 1000;
       energy += 1000;
       save();
-      
-      // Refresh balances
       await refreshBalances();
-      
       setStatus(`✅ SUCCESS! +1000 Energy! Max energy: ${maxEnergy}`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, '⚡ +1000 ENERGY!', '#ffd700');
       
     } catch(error) {
       console.error("Buy energy error details:", error);
-      
       let userMessage = "";
-      
-      // Handle specific error cases
       if (error.code === 4001) {
         userMessage = "Transaction rejected in wallet";
       } else if (error.message.includes("insufficient funds")) {
@@ -579,18 +661,14 @@ footer {
       } else {
         userMessage = error.message?.slice(0, 100) || "Transaction failed";
       }
-      
       setStatus(`❌ ${userMessage}`);
-      
-      // Refresh balance to show current state
       await refreshBalances();
     } finally {
-      // Re-enable button only if still have enough balance
       buyBtnEl.disabled = walletBal < 100;
     }
   }
 
-  // ========== CLAIM REWARDS - FIXED VERSION ==========
+  // ========== CLAIM REWARDS ==========
   async function claimRewards() {
     if (!account) { 
       setStatus("Connect wallet first"); 
@@ -613,32 +691,22 @@ footer {
     setStatus(`⏳ Claiming ${amount} PVLT...`);
 
     try {
-      // Estimate gas first
       const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
-      console.log("Claim gas estimate:", gasEstimate.toString());
-      
-      // Execute claim
       const tx = await gameC.claimRewards(amountWei, { 
         gasLimit: gasEstimate.mul(12).div(10)
       });
-      
       setStatus("⏳ Waiting for confirmation...");
       await tx.wait();
       
-      // Update game state
       gamePvlt = 0;
       points = 0;
       save();
-      
-      // Refresh balances
       await refreshBalances();
-      
       setStatus(`✅ SUCCESS! Claimed ${amount} REAL PVLT to your wallet!`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
       
     } catch(error) {
       console.error("Claim error details:", error);
-      
       let userMessage = "";
       if (error.code === 4001) {
         userMessage = "Transaction rejected in wallet";
@@ -649,7 +717,6 @@ footer {
       } else {
         userMessage = error.message?.slice(0, 100) || "Claim failed";
       }
-      
       setStatus(`❌ ${userMessage}`);
     } finally {
       claimBtnEl.disabled = gamePvlt < 1;
