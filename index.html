@@ -148,7 +148,7 @@ html, body {
 }
 .contract-card .copy-icon:active { transform: scale(0.92); background: rgba(0,255,204,0.3); }
 
-/* NEW: Token Price Card - Live refresh */
+/* Token Price Card - Live refresh with GeckoTerminal */
 .price-card {
   background: var(--card);
   border: 1px solid rgba(255,215,0,0.3);
@@ -348,7 +348,7 @@ footer {
     <div class="copy-icon" id="copyContractBtn">📋</div>
   </div>
 
-  <!-- LIVE TOKEN PRICE CARD - auto refreshes -->
+  <!-- LIVE TOKEN PRICE CARD - Now using your actual SushiSwap pool on GeckoTerminal -->
   <div class="price-card" id="priceCard">
     <div class="price-left">
       <div class="price-icon">🐸💰</div>
@@ -406,6 +406,9 @@ footer {
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
   const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
+  
+  // YOUR ACTIVE SUSHISWAP V3 POOL ON POLYGON (from GeckoTerminal)
+  const POOL_ADDRESS = "0xf0cdfaafa1622ebaa94bd2cf5055ba9a2d170296";
 
   const GAME_ABI = [
     "function buyEnergy(uint256 pvltAmount) external",
@@ -469,7 +472,6 @@ footer {
   // Price tracking
   let currentPrice = 0;
   let previousPrice = 0;
-  let priceLastUpdate = 0;
 
   // Helper: show toast
   function showToast(message, isError = false) {
@@ -500,124 +502,77 @@ footer {
     copyContractAddress();
   });
 
-  // ========== LIVE PRICE FETCH (DexScreener / GeckoTerminal alternative) ==========
-  // Using DexScreener API for Polygon token price - free & fast
+  // ========== FIXED: LIVE PRICE FETCH USING YOUR ACTUAL POOL (GeckoTerminal API) ==========
   async function fetchTokenPrice() {
     try {
-      // Using DexScreener API - returns USD price for token on Polygon
-      const tokenId = PVLT_TOKEN_ADDRESS.toLowerCase();
-      const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenId}`;
-      
+      // Direct API call to GeckoTerminal using your exact pool address
+      const url = `https://api.geckoterminal.com/api/v2/networks/polygon_pos/pools/${POOL_ADDRESS}`;
       const response = await fetch(url);
       const data = await response.json();
       
-      if (data && data.pairs && data.pairs.length > 0) {
-        // Find first valid pair on Polygon (chainId: 137)
-        const polygonPair = data.pairs.find(pair => pair.chainId === "polygon");
-        const validPair = polygonPair || data.pairs[0];
+      if (data && data.data && data.data.attributes) {
+        const priceUsd = data.data.attributes.price_usd;
+        const priceChange24h = data.data.attributes.price_change_percentage_24h;
         
-        if (validPair && validPair.priceUsd) {
-          const newPrice = parseFloat(validPair.priceUsd);
-          if (!isNaN(newPrice) && newPrice > 0) {
-            previousPrice = currentPrice;
-            currentPrice = newPrice;
-            priceLastUpdate = Date.now();
-            updatePriceDisplay();
-            return;
+        if (priceUsd && !isNaN(parseFloat(priceUsd))) {
+          const newPrice = parseFloat(priceUsd);
+          previousPrice = currentPrice;
+          currentPrice = newPrice;
+          
+          // Format price display
+          let formattedPrice;
+          if (currentPrice < 0.0001) {
+            formattedPrice = `$${currentPrice.toExponential(4)}`;
+          } else if (currentPrice < 0.01) {
+            formattedPrice = `$${currentPrice.toFixed(6)}`;
+          } else if (currentPrice < 1) {
+            formattedPrice = `$${currentPrice.toFixed(4)}`;
+          } else {
+            formattedPrice = `$${currentPrice.toFixed(2)}`;
           }
+          pvltPriceEl.textContent = formattedPrice;
+          
+          // Update 24h change display
+          if (priceChange24h !== undefined && priceChange24h !== null) {
+            const changeValue = parseFloat(priceChange24h);
+            const changeSymbol = changeValue >= 0 ? '▲' : '▼';
+            const changeClass = changeValue >= 0 ? 'up' : 'down';
+            priceChangeEl.className = `price-change ${changeClass}`;
+            priceChangeEl.textContent = `${changeSymbol} ${Math.abs(changeValue).toFixed(2)}%`;
+          } else {
+            priceChangeEl.className = 'price-change';
+            priceChangeEl.textContent = '━ 0.00%';
+          }
+          
+          priceUpdateBadge.textContent = '● LIVE';
+          priceUpdateBadge.style.color = '#00ffcc';
+          return;
         }
       }
       
-      // Fallback: If no real data, generate a mock realistic price (will be replaced when real pair exists)
-      // This ensures UI works even without liquidity yet
-      if (currentPrice === 0) {
-        // Simulate price around $0.000012 - $0.000045 range for demo, but clearly indicates "no LP"
-        currentPrice = 0.00002345;
-        previousPrice = currentPrice;
-        updatePriceDisplay();
-        priceUpdateBadge.textContent = "SIM";
-        priceUpdateBadge.style.color = "#ffaa44";
-      } else {
-        // slight random walk for visual effect when no real API data
-        const change = (Math.random() - 0.5) * 0.000002;
-        previousPrice = currentPrice;
-        currentPrice = Math.max(0.000001, currentPrice + change);
-        updatePriceDisplay();
-      }
+      // If pool exists but API format changed, show waiting state
+      pvltPriceEl.textContent = '⟳ LOADING';
+      priceChangeEl.textContent = '...';
+      priceUpdateBadge.textContent = '⏳ FETCH';
+      priceUpdateBadge.style.color = '#ffaa44';
       
     } catch (error) {
       console.warn("Price fetch error:", error);
-      // Keep last price or fallback, don't crash UI
-      if (currentPrice === 0) {
-        currentPrice = 0.0000185;
-        previousPrice = currentPrice;
-        updatePriceDisplay();
-      }
-      priceUpdateBadge.textContent = "⏳";
+      pvltPriceEl.textContent = '🔄 RETRY';
+      priceChangeEl.textContent = '--';
+      priceUpdateBadge.textContent = '⚠️ API';
+      priceUpdateBadge.style.color = '#ff8844';
     }
   }
   
-  function updatePriceDisplay() {
-    if (currentPrice === undefined) return;
-    // Format price with appropriate decimals
-    let formattedPrice;
-    if (currentPrice < 0.0001) {
-      formattedPrice = `$${currentPrice.toExponential(4)}`;
-    } else if (currentPrice < 0.01) {
-      formattedPrice = `$${currentPrice.toFixed(6)}`;
-    } else {
-      formattedPrice = `$${currentPrice.toFixed(4)}`;
-    }
-    pvltPriceEl.textContent = formattedPrice;
-    
-    // Calculate change percentage
-    let changePercent = 0;
-    let changeClass = "";
-    let changeSymbol = "";
-    if (previousPrice > 0 && currentPrice !== previousPrice) {
-      changePercent = ((currentPrice - previousPrice) / previousPrice) * 100;
-      if (changePercent > 0) {
-        changeClass = "up";
-        changeSymbol = "▲";
-      } else if (changePercent < 0) {
-        changeClass = "down";
-        changeSymbol = "▼";
-      } else {
-        changeClass = "";
-        changeSymbol = "●";
-      }
-      priceChangeEl.className = `price-change ${changeClass}`;
-      priceChangeEl.textContent = `${changeSymbol} ${Math.abs(changePercent).toFixed(2)}%`;
-    } else {
-      priceChangeEl.className = "price-change";
-      priceChangeEl.textContent = "━ 0.00%";
-    }
-    
-    // Update badge freshness
-    const secondsAgo = Math.floor((Date.now() - priceLastUpdate) / 1000);
-    if (secondsAgo < 30) {
-      priceUpdateBadge.textContent = "● LIVE";
-      priceUpdateBadge.style.color = "#00ffcc";
-    } else if (secondsAgo < 120) {
-      priceUpdateBadge.textContent = "◐ UPDATED";
-      priceUpdateBadge.style.color = "#ffcc88";
-    } else {
-      priceUpdateBadge.textContent = "⟳ REFRESH";
-      priceUpdateBadge.style.color = "#ffaa66";
-    }
-  }
-  
-  // Start price polling every 25 seconds
+  // Start price polling every 30 seconds (respectful to API rate limits)
   let priceInterval = null;
   function startPricePolling() {
     if (priceInterval) clearInterval(priceInterval);
-    fetchTokenPrice(); // immediate
-    priceInterval = setInterval(() => {
-      fetchTokenPrice();
-    }, 25000); // refresh every 25 seconds
+    fetchTokenPrice(); // immediate first fetch
+    priceInterval = setInterval(fetchTokenPrice, 30000); // refresh every 30 seconds
   }
   
-  // Stop polling if needed
   function stopPricePolling() {
     if (priceInterval) {
       clearInterval(priceInterval);
@@ -803,7 +758,7 @@ footer {
   }
 
   // ========== BUY ENERGY ==========
-  async function buyEnergy() { /* same robust logic */
+  async function buyEnergy() {
     if (!account) { setStatus("Connect wallet first"); return; }
     if (walletBal < 100) { setStatus(`❌ Need 100 PVLT. You have ${walletBal.toFixed(2)}`); return; }
     buyBtnEl.disabled = true;
@@ -831,4 +786,27 @@ footer {
   }
 
   async function claimRewards() {
-    if (!account) { setStatus("Connect wallet first"); return;
+    if (!account) { setStatus("Connect wallet first"); return; }
+    if (gamePvlt < 1) { setStatus(`❌ No GAME PVLT to claim!`); return; }
+    if (treasuryBal < gamePvlt) { setStatus(`❌ Treasury insufficient!`); return; }
+    
+    const amount = Math.floor(gamePvlt);
+    const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
+    claimBtnEl.disabled = true;
+    setStatus(`⏳ Claiming ${amount} PVLT...`);
+    try {
+      const gasEstimate = await gameC.estimateGas.claimRewards(amountWei);
+      const tx = await gameC.claimRewards(amountWei, { gasLimit: gasEstimate.mul(12).div(10) });
+      await tx.wait();
+      gamePvlt = 0;
+      points = 0;
+      save();
+      await refreshBalances();
+      setStatus(`✅ Claimed ${amount} REAL PVLT!`);
+      showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
+    } catch(error) { setStatus(`❌ ${error.message?.slice(0,80)}`); }
+    finally { claimBtnEl.disabled = gamePvlt < 1; }
+  }
+
+  function setStatus(msg) { 
+    statusTxtEl.textContent =
