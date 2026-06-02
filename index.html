@@ -136,11 +136,12 @@ html, body {
   text-align: center;
 }
 
+/* Updated Price Card - Now shows PVLT/WPOL */
 .price-card {
-  background: var(--card);
-  border: 1px solid rgba(255,215,0,0.3);
+  background: linear-gradient(135deg, var(--card) 0%, #0a0a14 100%);
+  border: 1px solid rgba(0,255,204,0.25);
   border-radius: var(--radius);
-  padding: 10px 14px;
+  padding: 12px 14px;
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -149,13 +150,13 @@ html, body {
 .price-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 .price-icon {
-  font-size: 20px;
-  background: rgba(255,215,0,0.15);
-  width: 34px;
-  height: 34px;
+  font-size: 24px;
+  background: rgba(0,255,204,0.1);
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,22 +164,30 @@ html, body {
 }
 .price-info .price-label {
   font-size: 9px;
-  color: var(--muted);
+  color: var(--primary);
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
 }
 .price-info .price-value {
   font-family: monospace;
   font-weight: 800;
-  font-size: 20px;
+  font-size: 18px;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+.price-value span {
   color: var(--secondary);
+  font-size: 14px;
 }
 .price-change {
   font-family: monospace;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 40px;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.5);
+  text-align: center;
 }
 .price-change.up { color: #00ffaa; }
 .price-change.down { color: #ff6666; }
@@ -189,6 +198,20 @@ html, body {
   padding: 2px 8px;
   border-radius: 30px;
 }
+.swap-link {
+  font-size: 10px;
+  color: var(--primary);
+  text-decoration: none;
+  background: rgba(0,255,204,0.1);
+  padding: 4px 8px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.swap-link:hover { background: rgba(0,255,204,0.2); }
 
 .wallet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
 .wallet-card {
@@ -329,16 +352,24 @@ footer {
     <div class="copy-icon" id="copyContractBtn">📋</div>
   </div>
 
+  <!-- PRICE CARD - Now shows 1 PVLT = ? WPOL -->
   <div class="price-card" id="priceCard">
     <div class="price-left">
-      <div class="price-icon">🐸💰</div>
+      <div class="price-icon">🔄</div>
       <div class="price-info">
-        <div class="price-label">PVLT PRICE (USD)</div>
-        <div class="price-value" id="pvltPrice">$0.0000</div>
+        <div class="price-label">1 PVLT =</div>
+        <div class="price-value" id="pvltPrice"><span>⟳</span> WPOL</div>
       </div>
     </div>
-    <div class="price-change" id="priceChange">--</div>
-    <div class="price-update-badge" id="priceUpdateBadge">LIVE</div>
+    <div style="text-align: right;">
+      <div class="price-change" id="priceChange">--</div>
+      <div class="price-update-badge" id="priceUpdateBadge">LIVE</div>
+    </div>
+  </div>
+
+  <!-- Quick Swap Link -->
+  <div style="display: flex; justify-content: flex-end; margin-top: -6px; margin-bottom: 10px;">
+    <a id="swapLink" class="swap-link" target="_blank">🔄 Trade on SushiSwap →</a>
   </div>
 
   <div class="wallet-row">
@@ -386,6 +417,7 @@ footer {
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
   const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
+  const POOL_ADDRESS = "0xf0cdfaafa1622ebaa94bd2cf5055ba9a2d170296";
 
   const GAME_ABI = [
     "function buyEnergy(uint256 pvltAmount) external",
@@ -425,6 +457,10 @@ footer {
   const pvltPriceEl = $('pvltPrice');
   const priceChangeEl = $('priceChange');
   const priceUpdateBadge = $('priceUpdateBadge');
+  const swapLink = $('swapLink');
+
+  // Set SushiSwap link
+  swapLink.href = `https://app.sushi.com/swap?inputCurrency=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE&outputCurrency=${PVLT_TOKEN_ADDRESS}&chainId=137`;
 
   // State
   let account = null;
@@ -460,34 +496,43 @@ footer {
   copyContractBtn.onclick = (e) => { e.stopPropagation(); copyContractAddress(); };
   $('contractCard').onclick = (e) => { if (e.target !== copyContractBtn) copyContractAddress(); };
 
-  // ========== FIXED: PRICE FETCH USING DexScreener (works with CORS) ==========
+  // ========== PRICE FETCH - Shows 1 PVLT = ? WPOL ==========
   async function fetchTokenPrice() {
     try {
+      // Use DexScreener API to get the PVLT/WPOL pair price
       const tokenId = PVLT_TOKEN_ADDRESS.toLowerCase();
-      // DexScreener API - works with CORS and has your token data
       const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenId}`;
       const response = await fetch(url);
       const data = await response.json();
       
       if (data && data.pairs && data.pairs.length > 0) {
-        // Find the SushiSwap pair on Polygon
-        const sushiPair = data.pairs.find(pair => 
-          pair.chainId === "polygon" && pair.dexId === "sushi"
+        // Find the PVLT/WPOL pair (SushiSwap on Polygon)
+        const wpolPair = data.pairs.find(pair => 
+          pair.chainId === "polygon" && 
+          pair.quoteToken?.symbol === "WPOL"
         );
-        const pair = sushiPair || data.pairs[0];
+        const pair = wpolPair || data.pairs.find(p => p.dexId === "sushi") || data.pairs[0];
         
-        if (pair && pair.priceUsd) {
-          const priceUsd = parseFloat(pair.priceUsd);
-          if (!isNaN(priceUsd) && priceUsd > 0) {
+        if (pair && pair.priceUsd && pair.priceNative) {
+          // priceNative is the price in native token (WPOL)
+          const priceInWpol = parseFloat(pair.priceNative);
+          
+          if (!isNaN(priceInWpol) && priceInWpol > 0) {
+            // Format WPOL amount (usually very small)
             let formattedPrice;
-            if (priceUsd < 0.0001) formattedPrice = `$${priceUsd.toExponential(4)}`;
-            else if (priceUsd < 0.01) formattedPrice = `$${priceUsd.toFixed(6)}`;
-            else if (priceUsd < 1) formattedPrice = `$${priceUsd.toFixed(4)}`;
-            else formattedPrice = `$${priceUsd.toFixed(2)}`;
+            if (priceInWpol < 0.000001) {
+              formattedPrice = priceInWpol.toExponential(4);
+            } else if (priceInWpol < 0.001) {
+              formattedPrice = priceInWpol.toFixed(8);
+            } else if (priceInWpol < 1) {
+              formattedPrice = priceInWpol.toFixed(6);
+            } else {
+              formattedPrice = priceInWpol.toFixed(4);
+            }
             
-            pvltPriceEl.textContent = formattedPrice;
+            pvltPriceEl.innerHTML = `<span>${formattedPrice}</span> WPOL`;
             
-            // Show price change if available
+            // Show 24h change if available
             const change24h = pair.priceChange?.h24;
             if (change24h !== undefined && !isNaN(change24h)) {
               const symbol = change24h >= 0 ? '▲' : '▼';
@@ -499,30 +544,31 @@ footer {
             
             priceUpdateBadge.textContent = '● LIVE';
             priceUpdateBadge.style.color = '#00ffcc';
-            console.log(`Price updated: $${priceUsd}`);
+            console.log(`1 PVLT = ${priceInWpol} WPOL`);
             return;
           }
         }
       }
       
-      // If no price found, show that pool exists but no price yet
-      pvltPriceEl.textContent = '⛓️ POOL LIVE';
+      // If no price found yet
+      pvltPriceEl.innerHTML = '<span>⟳</span> WPOL';
       priceChangeEl.textContent = '--';
-      priceUpdateBadge.textContent = 'DEX OK';
+      priceUpdateBadge.textContent = 'LOADING';
       priceUpdateBadge.style.color = '#ffaa44';
       
     } catch (error) {
       console.warn("Price fetch error:", error);
-      pvltPriceEl.textContent = '⟳ RETRY';
+      pvltPriceEl.innerHTML = '<span>⟳</span> WPOL';
       priceChangeEl.textContent = '--';
-      priceUpdateBadge.textContent = '⏳';
+      priceUpdateBadge.textContent = 'RETRY';
+      priceUpdateBadge.style.color = '#ff6666';
     }
   }
 
   function startPricePolling() {
     if (priceInterval) clearInterval(priceInterval);
-    fetchTokenPrice(); // Fetch immediately
-    priceInterval = setInterval(fetchTokenPrice, 25000); // Every 25 seconds
+    fetchTokenPrice();
+    priceInterval = setInterval(fetchTokenPrice, 25000);
   }
 
   // ========== GAME LOGIC ==========
@@ -743,34 +789,4 @@ footer {
       setStatus(`✅ Claimed ${amount} PVLT!`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
     } catch(error) { setStatus(`❌ ${error.message?.slice(0,60)}`); }
-    finally { claimBtnEl.disabled = gamePvlt < 1; }
-  }
-
-  function setStatus(msg) { statusTxtEl.textContent = msg; }
-
-  // Modal handlers
-  function openModal() { walletModal.classList.add('open'); }
-  function closeModalFn() { walletModal.classList.remove('open'); }
-  connectBtnEl.onclick = () => { if (account) disconnect(); else openModal(); };
-  closeModal.onclick = closeModalFn;
-  walletModal.onclick = (e) => { if (e.target === walletModal) closeModalFn(); };
-  metaMaskOption.onclick = async () => {
-    closeModalFn();
-    connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
-    connectBtnEl.disabled = true;
-    const success = await connectMetaMask();
-    connectBtnEl.innerHTML = '💼 CONNECT WALLET';
-    connectBtnEl.disabled = false;
-  };
-  disconnBtnEl.onclick = () => disconnect();
-  buyBtnEl.onclick = buyEnergy;
-  claimBtnEl.onclick = claimRewards;
-
-  // Initialize everything
-  startPricePolling();
-  render();
-  setInterval(tick, 1000);
-  setStatus('🔒 Click CONNECT WALLET to start');
-</script>
-</body>
-</html>
+    finally { claimBtnEl
