@@ -136,7 +136,6 @@ html, body {
   text-align: center;
 }
 
-/* Updated Price Card - Now shows PVLT/WPOL */
 .price-card {
   background: linear-gradient(135deg, var(--card) 0%, #0a0a14 100%);
   border: 1px solid rgba(0,255,204,0.25);
@@ -176,9 +175,9 @@ html, body {
   color: #fff;
   letter-spacing: 0.5px;
 }
-.price-value span {
+.price-info .price-value span {
   color: var(--secondary);
-  font-size: 14px;
+  font-size: 16px;
 }
 .price-change {
   font-family: monospace;
@@ -352,7 +351,7 @@ footer {
     <div class="copy-icon" id="copyContractBtn">📋</div>
   </div>
 
-  <!-- PRICE CARD - Now shows 1 PVLT = ? WPOL -->
+  <!-- PRICE CARD - Shows 1 PVLT = ? WPOL -->
   <div class="price-card" id="priceCard">
     <div class="price-left">
       <div class="price-icon">🔄</div>
@@ -367,7 +366,6 @@ footer {
     </div>
   </div>
 
-  <!-- Quick Swap Link -->
   <div style="display: flex; justify-content: flex-end; margin-top: -6px; margin-bottom: 10px;">
     <a id="swapLink" class="swap-link" target="_blank">🔄 Trade on SushiSwap →</a>
   </div>
@@ -416,7 +414,6 @@ footer {
   // ============ CONTRACT ADDRESSES ============
   const PVLT_TOKEN_ADDRESS = "0x03741F950eaFD9CbAa217E2B0491a0F143492f0A";
   const GAME_CONTRACT_ADDRESS = "0xE522370EA3A22D9075bB446027c7E46b5D979806";
-  const TREASURY_ADDRESS = "0x2f5d721F771f53F55845AA927b95E40d5Ad30EF4";
   const POOL_ADDRESS = "0xf0cdfaafa1622ebaa94bd2cf5055ba9a2d170296";
 
   const GAME_ABI = [
@@ -459,7 +456,6 @@ footer {
   const priceUpdateBadge = $('priceUpdateBadge');
   const swapLink = $('swapLink');
 
-  // Set SushiSwap link
   swapLink.href = `https://app.sushi.com/swap?inputCurrency=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE&outputCurrency=${PVLT_TOKEN_ADDRESS}&chainId=137`;
 
   // State
@@ -496,70 +492,74 @@ footer {
   copyContractBtn.onclick = (e) => { e.stopPropagation(); copyContractAddress(); };
   $('contractCard').onclick = (e) => { if (e.target !== copyContractBtn) copyContractAddress(); };
 
-  // ========== PRICE FETCH - Shows 1 PVLT = ? WPOL ==========
+  // ========== FIXED: PRICE FETCH using GeckoTerminal API directly ==========
   async function fetchTokenPrice() {
     try {
-      // Use DexScreener API to get the PVLT/WPOL pair price
-      const tokenId = PVLT_TOKEN_ADDRESS.toLowerCase();
-      const url = `https://api.dexscreener.com/latest/dex/tokens/${tokenId}`;
+      // Use GeckoTerminal API with your exact pool address
+      const url = `https://api.geckoterminal.com/api/v2/networks/polygon_pos/pools/${POOL_ADDRESS}`;
       const response = await fetch(url);
       const data = await response.json();
       
-      if (data && data.pairs && data.pairs.length > 0) {
-        // Find the PVLT/WPOL pair (SushiSwap on Polygon)
-        const wpolPair = data.pairs.find(pair => 
-          pair.chainId === "polygon" && 
-          pair.quoteToken?.symbol === "WPOL"
-        );
-        const pair = wpolPair || data.pairs.find(p => p.dexId === "sushi") || data.pairs[0];
+      console.log("API Response:", data); // For debugging
+      
+      if (data && data.data && data.data.attributes) {
+        const attributes = data.data.attributes;
         
-        if (pair && pair.priceUsd && pair.priceNative) {
-          // priceNative is the price in native token (WPOL)
-          const priceInWpol = parseFloat(pair.priceNative);
+        // Get price in WPOL (native token price)
+        const priceInWpol = attributes.price_native;
+        // Also get USD price if needed
+        const priceInUsd = attributes.price_usd;
+        // Get 24h change
+        const priceChange24h = attributes.price_change_percentage_24h;
+        
+        if (priceInWpol && !isNaN(parseFloat(priceInWpol))) {
+          const priceValue = parseFloat(priceInWpol);
           
-          if (!isNaN(priceInWpol) && priceInWpol > 0) {
-            // Format WPOL amount (usually very small)
-            let formattedPrice;
-            if (priceInWpol < 0.000001) {
-              formattedPrice = priceInWpol.toExponential(4);
-            } else if (priceInWpol < 0.001) {
-              formattedPrice = priceInWpol.toFixed(8);
-            } else if (priceInWpol < 1) {
-              formattedPrice = priceInWpol.toFixed(6);
-            } else {
-              formattedPrice = priceInWpol.toFixed(4);
-            }
-            
-            pvltPriceEl.innerHTML = `<span>${formattedPrice}</span> WPOL`;
-            
-            // Show 24h change if available
-            const change24h = pair.priceChange?.h24;
-            if (change24h !== undefined && !isNaN(change24h)) {
-              const symbol = change24h >= 0 ? '▲' : '▼';
-              priceChangeEl.className = `price-change ${change24h >= 0 ? 'up' : 'down'}`;
-              priceChangeEl.textContent = `${symbol} ${Math.abs(change24h).toFixed(2)}%`;
-            } else {
-              priceChangeEl.textContent = '━ 0.00%';
-            }
-            
-            priceUpdateBadge.textContent = '● LIVE';
-            priceUpdateBadge.style.color = '#00ffcc';
-            console.log(`1 PVLT = ${priceInWpol} WPOL`);
-            return;
+          // Format the WPOL amount nicely
+          let formattedPrice;
+          if (priceValue < 0.000001) {
+            formattedPrice = priceValue.toExponential(4);
+          } else if (priceValue < 0.0001) {
+            formattedPrice = priceValue.toFixed(8);
+          } else if (priceValue < 0.01) {
+            formattedPrice = priceValue.toFixed(6);
+          } else if (priceValue < 1) {
+            formattedPrice = priceValue.toFixed(5);
+          } else {
+            formattedPrice = priceValue.toFixed(4);
           }
+          
+          // Update the display
+          pvltPriceEl.innerHTML = `<span>${formattedPrice}</span> WPOL`;
+          
+          // Update 24h change
+          if (priceChange24h !== undefined && !isNaN(priceChange24h)) {
+            const changeValue = parseFloat(priceChange24h);
+            const symbol = changeValue >= 0 ? '▲' : '▼';
+            const changeClass = changeValue >= 0 ? 'up' : 'down';
+            priceChangeEl.className = `price-change ${changeClass}`;
+            priceChangeEl.textContent = `${symbol} ${Math.abs(changeValue).toFixed(2)}%`;
+          } else {
+            priceChangeEl.textContent = '━ 0.00%';
+          }
+          
+          priceUpdateBadge.textContent = '● LIVE';
+          priceUpdateBadge.style.color = '#00ffcc';
+          console.log(`1 PVLT = ${priceValue} WPOL ($${priceInUsd})`);
+          return;
         }
       }
       
-      // If no price found yet
+      // If we get here, the API response didn't have the expected data
       pvltPriceEl.innerHTML = '<span>⟳</span> WPOL';
       priceChangeEl.textContent = '--';
       priceUpdateBadge.textContent = 'LOADING';
       priceUpdateBadge.style.color = '#ffaa44';
       
     } catch (error) {
-      console.warn("Price fetch error:", error);
-      pvltPriceEl.innerHTML = '<span>⟳</span> WPOL';
-      priceChangeEl.textContent = '--';
+      console.error("Price fetch error:", error);
+      pvltPriceEl.innerHTML = '<span>⚠️</span> WPOL';
+      priceChangeEl.textContent = 'ERR';
       priceUpdateBadge.textContent = 'RETRY';
       priceUpdateBadge.style.color = '#ff6666';
     }
@@ -567,8 +567,8 @@ footer {
 
   function startPricePolling() {
     if (priceInterval) clearInterval(priceInterval);
-    fetchTokenPrice();
-    priceInterval = setInterval(fetchTokenPrice, 25000);
+    fetchTokenPrice(); // Fetch immediately
+    priceInterval = setInterval(fetchTokenPrice, 30000); // Every 30 seconds
   }
 
   // ========== GAME LOGIC ==========
@@ -789,4 +789,7 @@ footer {
       setStatus(`✅ Claimed ${amount} PVLT!`);
       showFloat(window.innerWidth/2, window.innerHeight/2 - 80, `💎 +${amount} PVLT!`, '#00ffcc');
     } catch(error) { setStatus(`❌ ${error.message?.slice(0,60)}`); }
-    finally { claimBtnEl
+    finally { claimBtnEl.disabled = gamePvlt < 1; }
+  }
+
+  function setStatus(msg)
