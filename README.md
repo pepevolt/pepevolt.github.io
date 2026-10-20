@@ -9,7 +9,7 @@
 <br>
 
 <img src="https://img.shields.io/badge/NETWORK-POLYGON-8247E5?style=for-the-badge" alt="Polygon Network">
-<img src="ico-image/logo.icostyle=for-the-badge&labelColor=090912" alt="PVLT Token">
+<img src="https://github.com/pepevolt/pepevolt.github.io/blob/main/ico-image/logo.ico" alt="PVLT Token">
 
 <br><br>
 
