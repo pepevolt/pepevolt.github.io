@@ -1,1133 +1,289 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#090912">
-<title>PepeVolt | Tap to Earn PVLT</title>
-<link rel="icon" href="images/logo.PNG">
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-
-<style>
-:root {
-  --bg:#090912;
-  --card:#0e0f1a;
-  --primary:#00ffcc;
-  --secondary:#ffd700;
-  --muted:#9ba3c2;
-  --border:rgba(0,255,204,.2);
-  --radius:16px;
-}
-
-* {
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-}
-
-html,body {
-  margin:0;
-  width:100%;
-  min-height:100%;
-  background:var(--bg);
-  color:#fff;
-  font-family:system-ui,-apple-system,sans-serif;
-}
-
-body { overflow-x:hidden; }
-
-button { font:inherit; }
-
-.app {
-  display:flex;
-  flex-direction:column;
-  min-height:100vh;
-  min-height:100dvh;
-  width:100%;
-  max-width:440px;
-  margin:auto;
-  padding:14px;
-  padding-bottom:max(14px,env(safe-area-inset-bottom));
-}
-
-.energy-row,.stat-card,.contract-card,.wallet-card {
-  background:var(--card);
-  border-radius:var(--radius);
-}
-
-.energy-row {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  padding:12px;
-  border:1px solid var(--border);
-  margin-bottom:10px;
-}
-
-.energy-left .val {
-  color:var(--primary);
-  font:800 20px monospace;
-  white-space:nowrap;
-}
-
-.energy-right { width:52%; }
-
-.prog-bar {
-  height:8px;
-  overflow:hidden;
-  border-radius:99px;
-  background:#ffffff1a;
-}
-
-.prog-bar-fill {
-  height:100%;
-  background:var(--primary);
-  transition:width .2s;
-}
-
-.regen-lbl {
-  text-align:right;
-  color:var(--muted);
-  font-size:10px;
-  margin-top:3px;
-}
-
-.stats-grid,.wallet-row,.action-grid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin-bottom:10px;
-}
-
-.stat-card {
-  padding:12px 8px;
-  text-align:center;
-  border:1px solid #ffffff12;
-}
-
-.primary-card { border-color:var(--border); }
-.secondary-card { border-color:#ffd70033; }
-
-.lbl {
-  color:var(--muted);
-  font-size:10px;
-  text-transform:uppercase;
-}
-
-.stat-card .val {
-  font:800 22px monospace;
-  overflow-wrap:anywhere;
-}
-
-.secondary-card .val { color:var(--secondary); }
-
-.contract-card {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:10px;
-  margin-bottom:10px;
-  border:1px solid var(--border);
-  cursor:pointer;
-}
-
-.contract-card .lbl {
-  color:var(--primary);
-  font-weight:800;
-  white-space:nowrap;
-}
-
-.contract-card .addr {
-  flex:1;
-  min-width:0;
-  overflow-wrap:anywhere;
-  font:11px monospace;
-  text-align:right;
-}
-
-.copy-icon { color:var(--primary); }
-
-.wallet-card {
-  border:1px solid #ffffff1a;
-  padding:10px;
-  min-width:0;
-}
-
-.wallet-card .val {
-  margin-top:5px;
-  font:13px monospace;
-  overflow-wrap:anywhere;
-}
-
-main {
-  flex:1;
-  min-height:200px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.pepe-btn {
-  width:min(220px,60vw);
-  height:min(220px,60vw);
-  flex-shrink:0;
-  border-radius:50%;
-  border:4px solid #00ffcc80;
-  background:radial-gradient(circle at 35% 35%,#00ebbc,#008f74);
-  box-shadow:0 0 30px #00ffcc40;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  touch-action:manipulation;
-  transition:transform .08s;
-}
-
-.pepe-btn:active { transform:scale(.95); }
-
-.pepe-btn:disabled {
-  opacity:.5;
-  cursor:not-allowed;
-}
-
-.pepe-btn img {
-  width:70%;
-  height:70%;
-  object-fit:contain;
-}
-
-footer {
-  border-top:1px solid #ffffff14;
-  padding-top:12px;
-  margin-top:8px;
-}
-
-.status-txt {
-  min-height:28px;
-  text-align:center;
-  font:11px monospace;
-  color:var(--muted);
-  overflow-wrap:anywhere;
-  margin-bottom:10px;
-}
-
-.btn {
-  width:100%;
-  padding:13px 10px;
-  border:0;
-  border-radius:44px;
-  font-size:14px;
-  font-weight:800;
-  cursor:pointer;
-  touch-action:manipulation;
-}
-
-.btn:disabled {
-  opacity:.45;
-  cursor:not-allowed;
-}
-
-.btn-primary { background:var(--primary);color:#000; }
-.btn-secondary { background:var(--secondary);color:#000; }
-.btn-outline {
-  background:transparent;
-  color:#fff;
-  border:1px solid #ffffff30;
-}
-
-.btn-small { padding:12px 5px;font-size:12px; }
-.action-grid { margin:8px 0 0; }
-
-.modal-overlay {
-  display:none;
-  position:fixed;
-  inset:0;
-  padding:20px;
-  background:#000d;
-  align-items:center;
-  justify-content:center;
-  z-index:100;
-}
-
-.modal-overlay.open { display:flex; }
-
-.modal-sheet {
-  width:100%;
-  max-width:340px;
-  padding:20px;
-  border:1px solid var(--border);
-  border-radius:24px;
-  background:var(--card);
-}
-
-.modal-title {
-  text-align:center;
-  font-weight:800;
-  color:var(--primary);
-  font-size:19px;
-  margin:8px 0 18px;
-}
-
-.modal-close {
-  float:right;
-  cursor:pointer;
-  padding:4px 8px;
-  color:var(--muted);
-}
-
-.wallet-option {
-  display:flex;
-  align-items:center;
-  gap:14px;
-  width:100%;
-  padding:14px;
-  border:1px solid #ffffff20;
-  border-radius:16px;
-  background:#ffffff08;
-  color:#fff;
-  cursor:pointer;
-}
-
-.wallet-icon { font-size:26px; }
-
-.toast-msg {
-  position:fixed;
-  z-index:200;
-  bottom:30px;
-  left:50%;
-  transform:translateX(-50%);
-  max-width:90%;
-  background:#1e1f2c;
-  border:1px solid var(--border);
-  border-radius:30px;
-  padding:10px 16px;
-  color:var(--primary);
-  text-align:center;
-  font-size:12px;
-  overflow-wrap:anywhere;
-}
-
-.float-text {
-  position:fixed;
-  pointer-events:none;
-  z-index:99;
-  font:800 22px monospace;
-  animation:floatUp 1s forwards;
-}
-
-@keyframes floatUp {
-  to { opacity:0;transform:translateY(-70px); }
-}
-
-.spinner {
-  display:inline-block;
-  width:13px;
-  height:13px;
-  border:2px solid #0004;
-  border-top-color:#000;
-  border-radius:50%;
-  animation:spin .7s linear infinite;
-}
-
-@keyframes spin { to { transform:rotate(360deg); } }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#10121b" />
+  <title>PepeVolt</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg:#10121b; --card:#1a1d2b; --green:#9cff57; --muted:#aab0c5; --line:#30354a; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at top,#252a3d 0,#10121b 55%); color:#fff; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { width:min(100% - 28px,520px); margin:0 auto; padding:24px 0 36px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; }
+    h1 { margin:0; font-size:26px; letter-spacing:.4px; } h1 span { color:var(--green); }
+    .pill { border:1px solid var(--line); color:var(--muted); border-radius:999px; padding:7px 10px; font-size:12px; }
+    .card { background:rgba(26,29,43,.94); border:1px solid var(--line); border-radius:20px; padding:18px; margin:14px 0; box-shadow:0 12px 35px #0002; }
+    .hero { text-align:center; padding:24px 18px; }
+    .mascot { font-size:74px; line-height:1.2; margin:8px 0 12px; }
+    .sub { color:var(--muted); font-size:14px; }
+    .stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .stat { background:#111420; border:1px solid var(--line); border-radius:14px; padding:13px; }
+    .stat small { display:block; color:var(--muted); margin-bottom:6px; }
+    .stat strong { font-size:23px; }
+    button { width:100%; border:0; border-radius:13px; padding:14px 16px; font-weight:750; font-size:15px; cursor:pointer; color:#10121b; background:var(--green); margin-top:10px; }
+    button.secondary { color:#fff; background:#30354a; border:1px solid #454b65; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .tap { width:180px; height:180px; border-radius:50%; display:block; margin:12px auto 4px; background:linear-gradient(145deg,#c4ff88,#69d72b); box-shadow:0 0 0 10px #9cff5712,0 12px 32px #0005; font-size:62px; transition:transform .08s; }
+    .tap:active { transform:scale(.96); }
+    .bar { height:10px; background:#0d0f17; border-radius:999px; overflow:hidden; margin:9px 0 3px; border:1px solid var(--line); }
+    .bar > div { height:100%; width:100%; background:var(--green); transition:width .2s; }
+    .row { display:flex; justify-content:space-between; gap:10px; align-items:center; }
+    .row span { color:var(--muted); font-size:13px; }
+    #status { overflow-wrap:anywhere; white-space:pre-wrap; font-size:13px; line-height:1.5; }
+    .notice { color:var(--muted); font-size:12px; line-height:1.5; }
+    .address { font-family:ui-monospace,SFMono-Regular,monospace; font-size:12px; overflow-wrap:anywhere; color:#d7dbea; }
+    a { color:var(--green); }
+  </style>
 </head>
-
 <body>
-<div class="app">
+<main>
+  <header>
+    <h1>⚡ Pepe<span>Volt</span></h1>
+    <div class="pill" id="networkBadge">Polygon</div>
+  </header>
 
-  <div class="energy-row">
-    <div class="energy-left">
-      <div class="val" id="energyVal">100 / 100</div>
+  <section class="card hero">
+    <div class="sub">TAP • EARN • REPEAT</div>
+    <div class="mascot">🐸⚡</div>
+    <div class="stats">
+      <div class="stat"><small>Your points</small><strong id="points">0</strong></div>
+      <div class="stat"><small>Energy</small><strong id="energy">100 / 100</strong></div>
     </div>
-    <div class="energy-right">
-      <div class="prog-bar">
-        <div class="prog-bar-fill" id="energyBar" style="width:100%"></div>
-      </div>
-      <div class="regen-lbl" id="regenLbl"></div>
-    </div>
-  </div>
+    <div class="bar"><div id="energyBar"></div></div>
+    <button class="tap" id="tapButton" aria-label="Tap to earn points">⚡</button>
+    <div class="sub">Tap the energy button to collect points.</div>
+  </section>
 
-  <div class="stats-grid">
-    <div class="stat-card primary-card">
-      <div class="lbl">Points</div>
-      <div class="val">
-        <span id="pointsVal">0</span><span style="font-size:13px">/100</span>
-      </div>
-    </div>
-    <div class="stat-card secondary-card">
-      <div class="lbl">💎 Game PVLT</div>
-      <div class="val" id="gamePvltVal">0</div>
-    </div>
-  </div>
+  <section class="card">
+    <div class="row"><strong>Wallet</strong><span id="walletState">Not connected</span></div>
+    <button id="connectButton">Connect Wallet</button>
+    <button id="buyButton" class="secondary" disabled>Buy Energy</button>
+    <button id="claimButton" disabled>Claim Rewards</button>
+    <p class="notice">Transactions require a wallet that supports Polygon. Only confirm transactions you understand.</p>
+  </section>
 
-  <div class="contract-card" id="contractCard">
-    <div class="lbl">📜 PVLT</div>
-    <div class="addr" id="contractAddrDisplay">
-      0x03741F950eaFD9CbAa217E2B0491a0F143492f0A
-    </div>
-    <div class="copy-icon">📋</div>
-  </div>
+  <section class="card">
+    <strong>Token information</strong>
+    <p class="notice">PVLT token address</p>
+    <div class="address" id="tokenAddress"></div>
+    <p class="notice">Your on-device points are saved in this browser and are not blockchain tokens. Claiming rewards works only if the deployed game contract exposes the expected method.</p>
+  </section>
 
-  <div class="wallet-row">
-    <div class="wallet-card">
-      <div class="lbl">💼 Wallet PVLT</div>
-      <div class="val" id="walletVal">0.00</div>
-    </div>
-    <div class="wallet-card">
-      <div class="lbl">🏦 Treasury PVLT</div>
-      <div class="val" id="treasuryVal">0</div>
-    </div>
-  </div>
-
-  <main>
-    <button class="pepe-btn" id="tapBtn" disabled
-            aria-label="Tap to earn points">
-      <img src="images/logo.PNG" alt="Pepe"
-           onerror="this.style.display='none';this.parentElement.textContent='🐸'">
-    </button>
-  </main>
-
-  <footer>
-    <div class="status-txt" id="statusTxt">
-      🔒 Connect wallet to start
-    </div>
-
-    <div id="stateDisconnected">
-      <button class="btn btn-primary" id="connectBtn">
-        💼 CONNECT WALLET
-      </button>
-    </div>
-
-    <div id="stateConnected" style="display:none">
-      <button class="btn btn-outline" id="disconnectBtn"></button>
-      <div class="action-grid">
-        <button class="btn btn-secondary btn-small" id="buyBtn">
-          ⚡ BUY ENERGY (100 PVLT)
-        </button>
-        <button class="btn btn-primary btn-small" id="claimBtn">
-          💎 CLAIM REWARDS
-        </button>
-      </div>
-    </div>
-  </footer>
-</div>
-
-<div id="walletModal" class="modal-overlay">
-  <div class="modal-sheet">
-    <div style="text-align:right">
-      <button class="modal-close" id="closeModal">✕</button>
-    </div>
-    <div class="modal-title">Connect Wallet</div>
-
-    <button class="wallet-option" id="metaMaskOption">
-      <span class="wallet-icon">🦊</span>
-      <span>Injected Web3 Wallet</span>
-    </button>
-
-    <p style="font-size:11px;color:var(--muted);text-align:center;line-height:1.6">
-      Open this website in your wallet's DApp browser if no wallet is detected.
-      Polygon Mainnet is required.
-    </p>
-  </div>
-</div>
+  <section class="card">
+    <strong>Status</strong>
+    <p id="status">Ready. Connect your wallet to enable blockchain actions.</p>
+  </section>
+</main>
 
 <script>
-"use strict";
+(() => {
+  "use strict";
 
-/* ================= CONTRACT CONFIGURATION ================= */
+  // Use lowercase address strings to avoid ethers.js mixed-case checksum errors.
+  const PVLT_TOKEN_ADDRESS = "0x03741f950eafd9cbaa217e2b0491a0f143492f0a";
+  const GAME_CONTRACT_ADDRESS = "0xe522370ea3a22d9075bb446027c7e46b5d979806";
+  const TREASURY_ADDRESS = "0x2f5d721f771f53f55845aa927b95e40d5ad30ef4";
 
-const PVLT_TOKEN_ADDRESS =
-  ethers.utils.getAddress("0x03741F950eaFD9CbAa217E2B0491a0F143492f0a");
-  
-const GAME_CONTRACT_ADDRESS =
-  "0xE522370EA3A22D9075bB446027c7E46b5D979806";
+  const POLYGON_CHAIN_ID = 137;
+  const POLYGON_HEX_CHAIN_ID = "0x89";
+  const MAX_ENERGY = 100;
+  const ENERGY_REGEN_PER_MINUTE = 1;
+  const POINTS_PER_TAP = 1;
 
-const GAME_ABI = [
-  "function buyEnergy(uint256 pvltAmount) external",
-  "function claimRewards(uint256 pvltAmount) external",
-  "function getTreasuryBalance() view returns (uint256)"
-];
+  // These function signatures must match the ABI of your deployed game contract.
+  // If your contract uses different signatures, replace these entries with its real ABI.
+  const TOKEN_ABI = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function decimals() view returns (uint8)",
+    "function symbol() view returns (string)"
+  ];
+  const GAME_ABI = [
+    "function buyEnergy()",
+    "function claimRewards()"
+  ];
 
-const PVLT_ABI = [
-  "function balanceOf(address) view returns (uint256)",
-  "function approve(address,uint256) returns (bool)",
-  "function allowance(address,address) view returns (uint256)",
-  "function decimals() view returns (uint8)"
-];
+  const $ = id => document.getElementById(id);
+  let provider = null;
+  let signer = null;
+  let walletAddress = null;
+  let gameContract = null;
+  let tokenContract = null;
+  let points = Number(localStorage.getItem("pepevolt_points") || 0);
+  let energy = Number(localStorage.getItem("pepevolt_energy") || MAX_ENERGY);
+  let lastEnergyAt = Number(localStorage.getItem("pepevolt_energy_time") || Date.now());
 
-const $ = id => document.getElementById(id);
+  $("tokenAddress").textContent = PVLT_TOKEN_ADDRESS;
 
-let account = null;
-let provider = null;
-let signer = null;
-let ethereumProvider = null;
-let tokenC = null;
-let gameC = null;
-let decimals = 18;
-
-const MAX_ENERGY_DEFAULT = 100;
-const REGEN_SECONDS = 15;
-const ENERGY_PURCHASE_COST = "100";
-
-let energy = MAX_ENERGY_DEFAULT;
-let maxEnergy = MAX_ENERGY_DEFAULT;
-let points = 0;
-let gamePvlt = 0;
-let walletBal = 0;
-let treasuryBal = 0;
-let lastRegen = Date.now();
-let regenTimer = null;
-let tapLock = false;
-let transactionPending = false;
-
-let toastTimer = null;
-
-function setStatus(message) {
-  $("statusTxt").textContent = message;
-}
-
-function showToast(message, isError = false) {
-  document.querySelector(".toast-msg")?.remove();
-  clearTimeout(toastTimer);
-
-  const toast = document.createElement("div");
-  toast.className = "toast-msg";
-  toast.textContent = message;
-
-  if (isError) toast.style.color = "#ff8888";
-
-  document.body.appendChild(toast);
-  toastTimer = setTimeout(() => toast.remove(), 3000);
-}
-
-function showFloat(x, y, text, color = "#fff") {
-  const el = document.createElement("div");
-  el.className = "float-text";
-  el.textContent = text;
-  el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
-  el.style.color = color;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1100);
-}
-
-async function copyContractAddress() {
-  try {
-    const address = PVLT_TOKEN_ADDRESS;
-
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(address);
-    } else {
-      const input = document.createElement("textarea");
-      input.value = address;
-      input.style.position = "fixed";
-      input.style.opacity = "0";
-      document.body.appendChild(input);
-      input.select();
-
-      const copied = document.execCommand("copy");
-      input.remove();
-
-      if (!copied) throw new Error("Copy unavailable");
-    }
-
-    showToast("PVLT contract address copied");
-  } catch (error) {
-    showToast("Copy failed. Please copy the address manually.", true);
+  function setStatus(message) { $("status").textContent = message; }
+  function saveGame() {
+    localStorage.setItem("pepevolt_points", String(points));
+    localStorage.setItem("pepevolt_energy", String(energy));
+    localStorage.setItem("pepevolt_energy_time", String(lastEnergyAt));
   }
-}
-
-$("contractCard").addEventListener("click", copyContractAddress);
-
-function save() {
-  if (!account) return;
-
-  try {
-    localStorage.setItem("pv_" + account.toLowerCase(), JSON.stringify({
-      energy,
-      points,
-      gamePvlt,
-      lastRegen,
-      maxEnergy
-    }));
-  } catch (error) {
-    console.warn("Could not save game progress", error);
-  }
-}
-
-function load() {
-  if (!account) return;
-
-  try {
-    const raw = localStorage.getItem("pv_" + account.toLowerCase());
-    const data = raw ? JSON.parse(raw) : {};
-
-    maxEnergy = Math.max(
-      MAX_ENERGY_DEFAULT,
-      Number(data.maxEnergy) || MAX_ENERGY_DEFAULT
-    );
-
-    points = Math.max(0, Math.min(99, Number(data.points) || 0));
-    gamePvlt = Math.max(0, Number(data.gamePvlt) || 0);
-
-    const savedEnergy = Math.max(
-      0,
-      Math.min(maxEnergy, Number(data.energy) || 0)
-    );
-
-    lastRegen = Number(data.lastRegen) || Date.now();
-
-    const elapsed = Math.max(0, Math.floor((Date.now() - lastRegen) / 1000));
-    const gained = Math.floor(elapsed / REGEN_SECONDS);
-
-    energy = Math.min(maxEnergy, savedEnergy + gained);
-
-    lastRegen = gained > 0 ? Date.now() : lastRegen;
-  } catch (error) {
-    console.warn("Game progress could not be loaded", error);
-    energy = MAX_ENERGY_DEFAULT;
-    maxEnergy = MAX_ENERGY_DEFAULT;
-    points = 0;
-    gamePvlt = 0;
-    lastRegen = Date.now();
-  }
-}
-
-function render() {
-  $("energyVal").textContent =
-    `${Math.floor(energy)} / ${maxEnergy}`;
-
-  $("energyBar").style.width =
-    `${Math.max(0, Math.min(100, energy / maxEnergy * 100))}%`;
-
-  $("pointsVal").textContent = points;
-  $("gamePvltVal").textContent = gamePvlt.toLocaleString(
-    undefined, { maximumFractionDigits: 2 }
-  );
-
-  $("walletVal").textContent = walletBal.toLocaleString(
-    undefined, { maximumFractionDigits: 4 }
-  );
-
-  $("treasuryVal").textContent = treasuryBal.toLocaleString(
-    undefined, { maximumFractionDigits: 4 }
-  );
-
-  $("tapBtn").disabled = !account || energy <= 0 || transactionPending;
-
-  $("stateDisconnected").style.display = account ? "none" : "block";
-  $("stateConnected").style.display = account ? "block" : "none";
-
-  if (account) {
-    $("disconnectBtn").textContent =
-      `🔴 ${account.slice(0,6)}...${account.slice(-4)}`;
-
-    $("buyBtn").disabled =
-      transactionPending || walletBal < Number(ENERGY_PURCHASE_COST);
-
-    $("claimBtn").disabled =
-      transactionPending || gamePvlt < 1;
-  }
-
-  if (account && energy < maxEnergy) {
-    const elapsed = Math.floor((Date.now() - lastRegen) / 1000);
-    const remaining = REGEN_SECONDS - (elapsed % REGEN_SECONDS);
-    $("regenLbl").textContent = `⚡ +1 in ${remaining}s`;
-  } else {
-    $("regenLbl").textContent = energy >= maxEnergy ? "ENERGY FULL" : "";
-  }
-}
-
-function tick() {
-  if (account && energy < maxEnergy) {
-    const elapsed = Math.max(0, Math.floor((Date.now() - lastRegen) / 1000));
-    const gained = Math.floor(elapsed / REGEN_SECONDS);
-
-    if (gained > 0) {
-      energy = Math.min(maxEnergy, energy + gained);
-      lastRegen += gained * REGEN_SECONDS * 1000;
-      save();
+  function regenerateEnergy() {
+    const now = Date.now();
+    const elapsedMinutes = Math.floor((now - lastEnergyAt) / 60000);
+    if (elapsedMinutes > 0) {
+      energy = Math.min(MAX_ENERGY, energy + elapsedMinutes * ENERGY_REGEN_PER_MINUTE);
+      lastEnergyAt += elapsedMinutes * 60000;
+      if (energy >= MAX_ENERGY) lastEnergyAt = now;
+      saveGame();
     }
   }
-
-  render();
-}
-
-function doTap(x, y) {
-  if (!account || energy <= 0 || tapLock || transactionPending) return;
-
-  tapLock = true;
-  setTimeout(() => tapLock = false, 100);
-
-  energy -= 1;
-  points += 1;
-
-  if (points >= 100) {
-    points -= 100;
-    gamePvlt += 1;
-    showFloat(x, y - 40, "+1 GAME PVLT!", "#ffd700");
+  function render() {
+    regenerateEnergy();
+    $("points").textContent = Math.floor(points).toLocaleString();
+    $("energy").textContent = `${Math.floor(energy)} / ${MAX_ENERGY}`;
+    $("energyBar").style.width = `${Math.max(0, Math.min(100, energy / MAX_ENERGY * 100))}%`;
+    $("tapButton").disabled = energy < 1;
+    const connected = Boolean(walletAddress);
+    $("buyButton").disabled = !connected;
+    $("claimButton").disabled = !connected;
+    $("walletState").textContent = connected
+      ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}`
+      : "Not connected";
+  }
+  function assertValidAddresses() {
+    // Validate all addresses once. Lowercase addresses are accepted by ethers v5.
+    ethers.utils.getAddress(PVLT_TOKEN_ADDRESS);
+    ethers.utils.getAddress(GAME_CONTRACT_ADDRESS);
+    ethers.utils.getAddress(TREASURY_ADDRESS);
   }
 
-  showFloat(x, y, "+1", "#00ffcc");
-
-  if (energy === 0) {
-    lastRegen = Date.now();
-  }
-
-  save();
-  render();
-}
-
-$("tapBtn").addEventListener("click", event => {
-  const rect = $("tapBtn").getBoundingClientRect();
-  doTap(
-    event.clientX || rect.left + rect.width / 2,
-    event.clientY || rect.top + rect.height / 2
-  );
-});
-
-/* ================= WALLET CONNECTION ================= */
-
-function getWalletProvider() {
-  if (window.ethereum) return window.ethereum;
-
-  // Do not assume cross-origin parent access is permitted.
-  return null;
-}
-
-async function connectWallet() {
-  if (!window.ethers) {
-    setStatus("Ethers.js failed to load. Check your internet connection.");
-    showToast("Web3 library unavailable", true);
-    return false;
-  }
-
-  const wallet = getWalletProvider();
-
-  if (!wallet || typeof wallet.request !== "function") {
-    setStatus("Wallet not detected. Open this page in your wallet's DApp browser.");
-    showToast("No compatible wallet detected", true);
-    return false;
-  }
-
-  try {
-    $("connectBtn").disabled = true;
-    $("connectBtn").innerHTML = '<span class="spinner"></span> CONNECTING...';
-    setStatus("Requesting wallet connection...");
-
-    const accounts = await wallet.request({
-      method: "eth_requestAccounts"
-    });
-
-    if (!accounts || !accounts.length) {
-      throw new Error("No account returned by wallet.");
-    }
-
-    let chainId = await wallet.request({ method: "eth_chainId" });
-
-    if (Number(chainId) !== 137) {
-      setStatus("Requesting Polygon Mainnet...");
-
-      try {
-        await wallet.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: "0x89" }]
-        });
-      } catch (switchError) {
-        if (switchError.code !== 4902) throw switchError;
-
-        await wallet.request({
+  async function ensurePolygon() {
+    if (!window.ethereum) throw new Error("No wallet provider found. Open this page inside your wallet's DApp browser.");
+    const net = await provider.getNetwork();
+    if (net.chainId === POLYGON_CHAIN_ID) return;
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: POLYGON_HEX_CHAIN_ID }]
+      });
+    } catch (error) {
+      if (error && error.code === 4902) {
+        await window.ethereum.request({
           method: "wallet_addEthereumChain",
           params: [{
-            chainId: "0x89",
-            chainName: "Polygon Mainnet",
-            nativeCurrency: {
-              name: "POL",
-              symbol: "POL",
-              decimals: 18
-            },
+            chainId: POLYGON_HEX_CHAIN_ID,
+            chainName: "Polygon",
+            nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
             rpcUrls: ["https://polygon-rpc.com/"],
             blockExplorerUrls: ["https://polygonscan.com/"]
           }]
         });
+      } else {
+        throw error;
       }
     }
-
-    chainId = await wallet.request({ method: "eth_chainId" });
-
-    if (Number(chainId) !== 137) {
-      throw new Error("Switch to Polygon Mainnet before continuing.");
-    }
-
-    ethereumProvider = wallet;
-    provider = new ethers.providers.Web3Provider(wallet, "any");
+    provider = new ethers.providers.Web3Provider(window.ethereum, "any");
     signer = provider.getSigner();
-    account = await signer.getAddress();
+    walletAddress = await signer.getAddress();
+    gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+    tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, TOKEN_ABI, provider);
+  }
 
-    tokenC = new ethers.Contract(PVLT_TOKEN_ADDRESS, PVLT_ABI, signer);
-    gameC = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
-
-    setStatus("Checking token contract...");
-
-    decimals = await tokenC.decimals();
-
-    if (!Number.isInteger(Number(decimals)) ||
-        Number(decimals) < 0 ||
-        Number(decimals) > 255) {
-      throw new Error("Invalid token decimals.");
-    }
-
-    load();
-    render();
-
-    setStatus("Refreshing balances...");
-    await refreshBalances();
-
-    setStatus(`✅ Connected: ${account.slice(0,6)}...${account.slice(-4)}`);
-
-    if (regenTimer) clearInterval(regenTimer);
-    regenTimer = setInterval(async () => {
-      tick();
-      if (account && !transactionPending) {
-        await refreshBalances();
+  async function connectWallet() {
+    try {
+      if (!window.ethereum) {
+        throw new Error("Open index.html in a wallet DApp browser, or install a wallet that supports injected Ethereum providers.");
       }
-    }, 15000);
+      setStatus("Connecting wallet…");
+      provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      walletAddress = await signer.getAddress();
+      await ensurePolygon();
+      render();
+      let tokenLine = "PVLT token connected.";
+      try {
+        const symbol = await tokenContract.symbol();
+        const rawBalance = await tokenContract.balanceOf(walletAddress);
+        let decimals = 18;
+        try { decimals = await tokenContract.decimals(); } catch (_) {}
+        tokenLine = `${symbol} balance: ${ethers.utils.formatUnits(rawBalance, decimals)}`;
+      } catch (_) {
+        tokenLine = "Wallet connected; token balance could not be read from this token contract.";
+      }
+      setStatus(`Wallet connected on Polygon.\n${tokenLine}`);
+    } catch (error) {
+      setStatus(`Connection error: ${error.message || error}`);
+    }
+  }
 
-    registerWalletListeners(wallet);
-
-    return true;
-
-  } catch (error) {
-    console.error("Wallet connection failed:", error);
-
-    account = null;
-    provider = null;
-    signer = null;
-    tokenC = null;
-    gameC = null;
-    ethereumProvider = null;
-
-    const message = error.code === 4001
-      ? "Connection rejected in wallet."
-      : error.message || "Unable to connect wallet.";
-
-    setStatus("❌ " + message.slice(0, 130));
+  $("tapButton").addEventListener("click", () => {
+    regenerateEnergy();
+    if (energy < 1) {
+      setStatus("You are out of energy. Wait for it to regenerate.");
+      render();
+      return;
+    }
+    energy -= 1;
+    points += POINTS_PER_TAP;
+    saveGame();
     render();
-    return false;
-
-  } finally {
-    $("connectBtn").disabled = false;
-    $("connectBtn").innerHTML = "💼 CONNECT WALLET";
-  }
-}
-
-function registerWalletListeners(wallet) {
-  if (!wallet.on) return;
-
-  if (window.pvltAccountsChanged && window.pvltWallet) {
-    window.pvltWallet.removeListener?.(
-      "accountsChanged",
-      window.pvltAccountsChanged
-    );
-    window.pvltWallet.removeListener?.(
-      "chainChanged",
-      window.pvltChainChanged
-    );
-  }
-
-  window.pvltWallet = wallet;
-
-  window.pvltAccountsChanged = accounts => {
-    if (!accounts || accounts.length === 0) {
-      disconnectWallet();
-    } else {
-      location.reload();
-    }
-  };
-
-  window.pvltChainChanged = () => location.reload();
-
-  wallet.on("accountsChanged", window.pvltAccountsChanged);
-  wallet.on("chainChanged", window.pvltChainChanged);
-}
-
-async function disconnectWallet() {
-  if (regenTimer) {
-    clearInterval(regenTimer);
-    regenTimer = null;
-  }
-
-  save();
-
-  account = null;
-  provider = null;
-  signer = null;
-  tokenC = null;
-  gameC = null;
-  ethereumProvider = null;
-
-  walletBal = 0;
-  treasuryBal = 0;
-
-  energy = MAX_ENERGY_DEFAULT;
-  maxEnergy = MAX_ENERGY_DEFAULT;
-  points = 0;
-  gamePvlt = 0;
-  lastRegen = Date.now();
-
-  $("regenLbl").textContent = "";
-  setStatus("🔒 Wallet disconnected");
-  render();
-}
-
-/* ================= ON-CHAIN BALANCES ================= */
-
-async function refreshBalances() {
-  if (!account || !provider || !tokenC || !gameC) return;
-
-  try {
-    const [balance, treasury] = await Promise.all([
-      tokenC.balanceOf(account),
-      gameC.getTreasuryBalance()
-    ]);
-
-    walletBal = Number(
-      ethers.utils.formatUnits(balance, decimals)
-    );
-
-    treasuryBal = Number(
-      ethers.utils.formatUnits(treasury, decimals)
-    );
-
-    render();
-
-  } catch (error) {
-    console.error("Balance refresh failed:", error);
-
-    setStatus(
-      "Unable to read balances. Verify contract addresses and network."
-    );
-  }
-}
-
-/* ================= TRANSACTION HELPERS ================= */
-
-function explainError(error) {
-  if (error?.code === 4001 ||
-      error?.code === "ACTION_REJECTED") {
-    return "Transaction rejected in wallet.";
-  }
-
-  const message = String(
-    error?.error?.message ||
-    error?.reason ||
-    error?.data?.message ||
-    error?.message ||
-    "Unknown error"
-  );
-
-  if (/insufficient funds/i.test(message)) {
-    return "Insufficient POL for transaction gas.";
-  }
-
-  if (/user rejected|rejected the request/i.test(message)) {
-    return "Transaction rejected in wallet.";
-  }
-
-  if (/execution reverted/i.test(message)) {
-    return "Contract rejected the transaction. Check its rules and balances.";
-  }
-
-  return message.slice(0, 150);
-}
-
-async function runTransaction(label, operation) {
-  if (!account || !provider || transactionPending) return;
-
-  transactionPending = true;
-  render();
-
-  try {
-    const result = await operation();
-
-    if (result && typeof result.wait === "function") {
-      setStatus("⏳ Waiting for blockchain confirmation...");
-      await result.wait();
-    }
-
-    await refreshBalances();
-
-    return true;
-
-  } catch (error) {
-    console.error(label + " failed:", error);
-    setStatus("❌ " + explainError(error));
-    return false;
-
-  } finally {
-    transactionPending = false;
-    render();
-  }
-}
-
-/* ================= BUY ENERGY ================= */
-
-async function buyEnergy() {
-  if (!account || !tokenC || !gameC) {
-    setStatus("Connect your wallet first.");
-    return;
-  }
-
-  const amount = ethers.utils.parseUnits(
-    ENERGY_PURCHASE_COST,
-    decimals
-  );
-
-  if (walletBal < Number(ENERGY_PURCHASE_COST)) {
-    setStatus("Insufficient PVLT balance to buy energy.");
-    return;
-  }
-
-  await runTransaction("Buy energy", async () => {
-    setStatus("Checking PVLT spending allowance...");
-
-    const allowance = await tokenC.allowance(
-      account,
-      GAME_CONTRACT_ADDRESS
-    );
-
-    if (allowance.lt(amount)) {
-      setStatus("Approve PVLT spending in your wallet...");
-
-      const approveTx = await tokenC.approve(
-        GAME_CONTRACT_ADDRESS,
-        amount
-      );
-
-      setStatus("Waiting for approval confirmation...");
-      await approveTx.wait();
-    }
-
-    setStatus("Simulating energy purchase...");
-
-    // Check whether the contract call is likely to succeed.
-    await gameC.callStatic.buyEnergy(amount);
-
-    setStatus("Confirm the energy purchase in your wallet...");
-
-    return await gameC.buyEnergy(amount);
-  }).then(success => {
-    if (success) {
-      /*
-       * Do not invent extra energy here.
-       * A successful on-chain purchase does not prove
-       * how much energy the contract intended to grant.
-       * Refresh authoritative game state once a view
-       * function for energy is available in the contract.
-       */
-      setStatus("✅ Purchase transaction confirmed. Refresh game state.");
-      showToast("Purchase confirmed");
-    }
-  });
-}
-
-/* ================= CLAIM REWARDS ================= */
-
-/*
- * SECURITY NOTE:
- * gamePvlt is local browser data, not authoritative
- * on-chain reward accounting.
- *
- * This function preserves the original ABI, but the
- * transaction can only succeed if the deployed game
- * contract actually permits the requested claim.
- */
-
-async function claimRewards() {
-  if (!account || !gameC) {
-    setStatus("Connect your wallet first.");
-    return;
-  }
-
-  if (gamePvlt < 1) {
-    setStatus("No GAME PVLT available to claim.");
-    return;
-  }
-
-  const amount = Math.floor(gamePvlt);
-
-  if (amount < 1) return;
-
-  const amountWei = ethers.utils.parseUnits(
-    String(amount),
-    decimals
-  );
-
-  const success = await runTransaction("Claim rewards", async () => {
-    setStatus("Checking claim transaction...");
-
-    await gameC.callStatic.claimRewards(amountWei);
-
-    setStatus("Confirm claim in your wallet...");
-
-    return await gameC.claimRewards(amountWei);
   });
 
-  if (success) {
-    /*
-     * Only clear local rewards after confirmed success.
-     * This still does not make local rewards secure.
-     * Production rewards must be verified on-chain.
-     */
-    gamePvlt = 0;
-    points = 0;
-    save();
-    render();
+  $("connectButton").addEventListener("click", connectWallet);
 
-    setStatus("✅ Claim transaction confirmed.");
-    showToast("Claim confirmed");
+  $("buyButton").addEventListener("click", async () => {
+    try {
+      if (!gameContract) await connectWallet();
+      if (!gameContract) return;
+      await ensurePolygon();
+      setStatus("Please confirm the Buy Energy transaction in your wallet…");
+      const tx = await gameContract.buyEnergy();
+      setStatus(`Buy Energy transaction submitted:\n${tx.hash}\nWaiting for confirmation…`);
+      await tx.wait();
+      energy = MAX_ENERGY;
+      lastEnergyAt = Date.now();
+      saveGame();
+      render();
+      setStatus(`Energy purchase confirmed.\n${tx.hash}`);
+    } catch (error) {
+      setStatus(`Buy Energy failed: ${error.reason || error.message || error}`);
+    }
+  });
+
+  $("claimButton").addEventListener("click", async () => {
+    try {
+      if (!gameContract) await connectWallet();
+      if (!gameContract) return;
+      await ensurePolygon();
+      setStatus("Please confirm the Claim Rewards transaction in your wallet…");
+      const tx = await gameContract.claimRewards();
+      setStatus(`Claim transaction submitted:\n${tx.hash}\nWaiting for confirmation…`);
+      await tx.wait();
+      setStatus(`Rewards claim confirmed.\n${tx.hash}`);
+    } catch (error) {
+      setStatus(`Claim Rewards failed: ${error.reason || error.message || error}`);
+    }
+  });
+
+  if (window.ethereum) {
+    window.ethereum.on?.("accountsChanged", async accounts => {
+      walletAddress = accounts && accounts.length ? accounts[0] : null;
+      if (!walletAddress) { signer = null; gameContract = null; tokenContract = null; }
+      else {
+        provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+        signer = provider.getSigner();
+        gameContract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_ABI, signer);
+        tokenContract = new ethers.Contract(PVLT_TOKEN_ADDRESS, TOKEN_ABI, provider);
+      }
+      render();
+    });
+    window.ethereum.on?.("chainChanged", () => window.location.reload());
   }
-}
 
-/* ================= UI EVENTS ================= */
-
-function openModal() {
-  $("walletModal").classList.add("open");
-}
-
-function closeModal() {
-  $("walletModal").classList.remove("open");
-}
-
-$("connectBtn").addEventListener("click", openModal);
-$("closeModal").addEventListener("click", closeModal);
-
-$("walletModal").addEventListener("click", event => {
-  if (event.target === $("walletModal")) closeModal();
-});
-
-$("metaMaskOption").addEventListener("click", async () => {
-  closeModal();
-  await connectWallet();
-});
-
-$("disconnectBtn").addEventListener("click", disconnectWallet);
-$("buyBtn").addEventListener("click", buyEnergy);
-$("claimBtn").addEventListener("click", claimRewards);
-
-/* ================= INITIALIZATION ================= */
-
-render();
-
-if (!window.ethers) {
-  setStatus("Web3 library failed to load. Check your internet connection.");
-} else {
-  setStatus("🔒 Connect your wallet to start.");
-}
-
-setInterval(tick, 1000);
+  try {
+    assertValidAddresses();
+    render();
+    setInterval(render, 5000);
+  } catch (error) {
+    setStatus(`Configuration error: ${error.message || error}`);
+  }
+})();
 </script>
 </body>
 </html>
