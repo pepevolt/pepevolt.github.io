@@ -8,7 +8,7 @@
 
 <br>
 
-<img src="https://img.shields.io/badge/NETWORK-POLYGON-8247E5?style=for-the-badge" alt="Polygon Network">
+<img src="https://github.com/pepevolt/pepevolt.github.io/blob/main/ico-image/polygon.ico" alt="Polygon Network">
 <img src="https://github.com/pepevolt/pepevolt.github.io/blob/main/ico-image/logo.ico" alt="PVLT Token">
 
 <br><br>
