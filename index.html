@@ -519,7 +519,7 @@ footer {
   // ========== META MASK CONNECTION ==========
   async function connectMetaMask() {
     if (!window.ethereum) {
-      alert("Please install MetaMask extension!");
+      alert("No wallet provider found. On mobile, open this site in your wallet app's browser, or add WalletConnect support for an in-app connection flow.");
       return false;
     }
     try {
@@ -732,9 +732,20 @@ footer {
   function openModal() { walletModal.classList.add('open'); }
   function closeModalFn() { walletModal.classList.remove('open'); }
 
-  connectBtnEl.onclick = () => {
-    if (account) disconnect();
-    else openModal();
+  connectBtnEl.onclick = async () => {
+    if (account) {
+      await disconnect();
+      return;
+    }
+
+    // Request the wallet while this click is still a direct user gesture.
+    connectBtnEl.innerHTML = '<span class="spinner"></span> CONNECTING...';
+    connectBtnEl.disabled = true;
+    const success = await connectMetaMask();
+    if (!success) {
+      connectBtnEl.innerHTML = '💼 CONNECT WALLET';
+      connectBtnEl.disabled = false;
+    }
   };
   closeModal.onclick = closeModalFn;
   walletModal.onclick = (e) => { if (e.target === walletModal) closeModalFn(); };
