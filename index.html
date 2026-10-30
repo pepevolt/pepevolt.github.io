@@ -8,465 +8,326 @@
 <link rel="icon" href="images/logo.svg">
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <style>
-:root{color-scheme:dark;--bg:#10121b;--card:#1a1d2b;--green:#9cff57;--muted:#aab0c5;--line:#30354a;--gold:#ffd700;--red:#ff8888}
+:root{color-scheme:dark;--bg:#10121b;--card:#1a1d2b;--green:#9cff57;--muted:#aab0c5;--line:#30354a;--gold:#ffd700}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;min-height:100%;background:radial-gradient(circle at top,#252a3d 0,#10121b 58%);color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-body{padding:16px 0}
-.app{width:min(100% - 28px,520px);margin:auto;padding-bottom:24px}
-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-h1{font-size:26px;margin:0}h1 span{color:var(--green)}
+body{padding:16px 0}.app{width:min(100% - 28px,520px);margin:auto;padding-bottom:20px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}h1{font-size:26px;margin:0}h1 span{color:var(--green)}
 .pill{border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:7px 10px;font-size:12px}
 .card{background:rgba(26,29,43,.95);border:1px solid var(--line);border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 12px 35px #0002}
-.energy-row{display:flex;justify-content:space-between;align-items:center;gap:14px}
-.energy-val{font-family:ui-monospace,monospace;font-size:22px;font-weight:800;color:var(--green);white-space:nowrap}
-.energy-right{flex:1}
-.prog-bar{height:9px;border-radius:99px;background:#0d0f17;overflow:hidden;border:1px solid var(--line)}
-.prog-bar-fill{height:100%;width:0;background:var(--green);transition:width .25s}
-.sub{font-size:11px;color:var(--muted);text-align:right;margin-top:4px;min-height:14px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
-.stat{background:#111420;border:1px solid var(--line);border-radius:14px;padding:13px;text-align:center}
-.stat small{display:block;color:var(--muted);font-size:11px;margin-bottom:5px;text-transform:uppercase}
-.stat strong{font-size:22px;font-family:ui-monospace,monospace}
-.stat em{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:3px;min-height:14px}
-.gold{color:var(--gold)}
-.tap-area{text-align:center;padding:18px 0 14px}
-.tap{width:190px;height:190px;border-radius:50%;border:4px solid #9cff5770;background:radial-gradient(circle at 35% 30%,#c4ff88,#69d72b 70%,#398c1c);box-shadow:0 0 0 10px #9cff5712,0 0 35px #9cff5740;display:flex;align-items:center;justify-content:center;margin:auto;cursor:pointer;transition:transform .08s;overflow:hidden;padding:0;user-select:none;-webkit-user-select:none;touch-action:manipulation;font-size:64px}
-.tap:active{transform:scale(.96)}
-.tap img{width:70%;height:70%;object-fit:contain;pointer-events:none}
-.tap.no-energy{opacity:.45}
-.hint{font-size:12px;color:var(--muted);margin-top:12px}
-.unsaved{font-size:13px;color:var(--gold);margin-top:6px;min-height:18px;font-family:ui-monospace,monospace}
-button{font-family:inherit}
-.btn{width:100%;border:0;border-radius:13px;padding:14px 12px;font-weight:800;font-size:14px;cursor:pointer;margin-top:9px;color:#10121b}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.primary{background:var(--green)}.gold-btn{background:var(--gold)}
-.secondary{background:#30354a;color:#fff;border:1px solid #454b65}
-.btn small{display:block;font-weight:600;margin-top:2px}
-.pulse{animation:pulse 1.2s infinite}
-@keyframes pulse{50%{box-shadow:0 0 0 6px #9cff5740}}
-.block{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
-.block h3{margin:0 0 8px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.input-row{display:flex;gap:8px;align-items:center}
-.input-row input{flex:1;min-width:0;background:#0d0f17;border:1px solid var(--line);color:#fff;border-radius:12px;padding:12px;font:16px ui-monospace,monospace}
-.input-row span{color:var(--muted);font-size:13px;white-space:nowrap}
-.preview{font-size:12px;color:var(--muted);margin-top:6px;min-height:16px}
-.status{color:var(--muted);font:12px/1.5 ui-monospace,monospace;text-align:center;overflow-wrap:anywhere;white-space:pre-wrap;min-height:18px}
-.status.err{color:var(--red)}.status.ok{color:var(--green)}
-.notice{font-size:11px;line-height:1.55;color:var(--muted);margin:12px 0 0}
-.addr-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;margin-top:8px}
-.addr-row b{font-size:11px;color:var(--green)}
-.addr-row code{display:block;overflow-x:auto;white-space:nowrap;font:11px ui-monospace,monospace;background:#0d0f17;padding:8px 10px;border-radius:20px;scrollbar-width:none}
-.addr-row code::-webkit-scrollbar{display:none}
-.copy{border:0;border-radius:20px;padding:6px 9px;background:#9cff5718;color:var(--green);cursor:pointer;font-size:12px}
-.warn{background:#3a2a10;border:1px solid #6b4a14;color:#ffd48a;border-radius:14px;padding:12px;font-size:12px;line-height:1.5;margin:12px 0}
-.modal{display:none;position:fixed;inset:0;background:#000c;align-items:center;justify-content:center;z-index:100;padding:18px}
-.modal.open{display:flex}
-.sheet{width:min(100%,340px);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px}
-.sheet h2{font-size:19px;text-align:center;color:var(--green);margin:5px 0 18px}
-.wallet-option{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);border-radius:14px;padding:14px;background:#111420;color:#fff;font-weight:700;cursor:pointer}
-.close{float:right;background:transparent;color:var(--muted);border:0;font-size:20px;cursor:pointer}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:200;background:#1e1f2c;border:1px solid var(--line);color:var(--green);padding:9px 16px;border-radius:40px;font:12px ui-monospace,monospace;max-width:90%;text-align:center}
-.toast.err{color:var(--red)}
-.float-text{position:fixed;pointer-events:none;z-index:99;font:800 21px ui-monospace,monospace;animation:floatUp 1s forwards}
-@keyframes floatUp{to{opacity:0;transform:translateY(-70px)}}
+.energy-row{display:flex;justify-content:space-between;align-items:center;gap:14px}.energy-val{font:800 22px monospace;color:var(--green);white-space:nowrap}.energy-right{flex:1}
+.prog-bar{height:9px;border-radius:99px;background:#0d0f17;overflow:hidden;border:1px solid var(--line)}.prog-bar-fill{height:100%;width:100%;background:var(--green);transition:width .25s}
+.regen-lbl{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#111420;border:1px solid var(--line);border-radius:14px;padding:13px;text-align:center}
+.stat small{display:block;color:var(--muted);font-size:11px;margin-bottom:5px;text-transform:uppercase}.stat strong{font-size:23px;font-family:monospace}.gold{color:var(--gold)}
+.contract{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;cursor:pointer}.contract-label{grid-column:1/-1;justify-self:start;color:var(--green);background:#9cff5715;border-radius:30px;padding:6px 10px;font-size:11px;font-weight:800}
+.contract-address{display:block;min-width:0;max-width:100%;white-space:nowrap;overflow-x:auto;overflow-y:hidden;text-align:left;font:12px ui-monospace,monospace;background:#0d0f17;padding:10px 12px;border-radius:30px;scrollbar-width:none}.contract-address::-webkit-scrollbar{display:none}
+.copy{border:0;border-radius:30px;padding:8px;background:#9cff5718;color:var(--green);cursor:pointer}
+.wallet-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wallet-item{background:#111420;border:1px solid var(--line);border-radius:14px;padding:12px}
+.wallet-item small{display:block;color:var(--muted);font-size:11px}.wallet-item strong{display:block;font:14px ui-monospace,monospace;margin-top:5px;overflow-wrap:anywhere}
+.wallet-item .sub-balance{font:11px ui-monospace,monospace;color:var(--muted);margin-top:7px}
+.tap-area{text-align:center;padding:18px 0}.tap{width:190px;height:190px;border-radius:50%;border:4px solid #9cff5770;background:radial-gradient(circle at 35% 30%,#c4ff88,#69d72b 70%,#398c1c);box-shadow:0 0 0 10px #9cff5712,0 0 35px #9cff5740;display:flex;align-items:center;justify-content:center;margin:auto;cursor:pointer;transition:transform .08s;overflow:hidden}
+.tap:active{transform:scale(.96)}.tap img{width:70%;height:70%;object-fit:contain}.tap.no-energy{opacity:.45}.hint{font-size:12px;color:var(--muted);margin-top:12px}
+button{font-family:inherit}.btn{width:100%;border:0;border-radius:13px;padding:14px 12px;font-weight:800;font-size:14px;cursor:pointer;margin-top:9px}
+.btn:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--green);color:#10121b}.secondary{background:#30354a;color:#fff;border:1px solid #454b65}.gold-btn{background:var(--gold);color:#10121b}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.status{color:var(--muted);font:12px/1.5 ui-monospace,monospace;text-align:center;overflow-wrap:anywhere;white-space:pre-wrap;min-height:18px}
+.notice{font-size:11px;line-height:1.5;color:var(--muted)}.modal{display:none;position:fixed;inset:0;background:#000c;align-items:center;justify-content:center;z-index:100;padding:18px}
+.modal.open{display:flex}.sheet{width:min(100%,340px);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px}
+.sheet h2{font-size:19px;text-align:center;color:var(--green);margin:5px 0 18px}.wallet-option{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);border-radius:14px;padding:14px;background:#111420;color:#fff;font-weight:700;cursor:pointer}
+.close{float:right;background:transparent;color:var(--muted);border:0;font-size:20px;cursor:pointer}.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:200;background:#1e1f2c;border:1px solid var(--line);color:var(--green);padding:9px 16px;border-radius:40px;font:12px ui-monospace,monospace;max-width:90%;text-align:center}
+.float-text{position:fixed;pointer-events:none;z-index:99;font:800 21px ui-monospace,monospace;animation:floatUp 1s forwards}@keyframes floatUp{to{opacity:0;transform:translateY(-70px)}}
 </style>
 </head>
 <body>
 <div class="app">
   <header><h1>⚡ Pepe<span>Volt</span></h1><div class="pill">Polygon</div></header>
-
-  <div class="warn" id="cfgWarn" style="display:none">⚠️ Contracts are not set up yet. Open <b>index.html</b>, find <b>CONFIG</b> near the top of the script and paste your deployed <b>PVLT</b> and <b>GAME</b> contract addresses.</div>
-
-  <!-- ENERGY (on-chain) -->
-  <section class="card energy-row">
-    <div class="energy-val" id="energyVal">0 / 100</div>
-    <div class="energy-right">
-      <div class="prog-bar"><div class="prog-bar-fill" id="energyBar"></div></div>
-      <div class="sub" id="energySub">Free 100 + Bought 0</div>
-      <div class="sub" id="regenLbl"></div>
-    </div>
+  <section class="card energy-row"><div class="energy-val" id="energyVal">100 / 100</div><div class="energy-right"><div class="prog-bar"><div class="prog-bar-fill" id="energyBar"></div></div><div class="regen-lbl" id="regenLbl"></div></div></section>
+  <section class="stats"><div class="stat"><small>Points</small><strong><span id="pointsVal">0</span><span style="font-size:13px;color:var(--muted)"> / 100</span></strong></div><div class="stat"><small>💎 Game PVLT</small><strong class="gold" id="gamePvltVal">0</strong></div></section>
+  <section class="card contract" id="contractCard"><div class="contract-label">📜 PVLT TOKEN CONTRACT</div><div class="contract-address" id="contractAddrDisplay"></div><button class="copy" id="copyContractBtn" aria-label="Copy PVLT token address">📋</button></section>
+  <section class="wallet-row">
+    <div class="wallet-item"><small>💼 Wallet PVLT</small><strong id="walletVal">0.00</strong><div class="sub-balance">Wallet AMRI: <span id="amriWalletVal">0.00</span></div></div>
+    <div class="wallet-item"><small>🏦 PVLT Reward Pool</small><strong id="treasuryVal">0</strong></div>
   </section>
-
-  <!-- STATS -->
-  <section class="grid2">
-    <div class="stat"><small>Points</small><strong><span id="pointsVal">0</span><span style="font-size:13px;color:var(--muted)"> / 100</span></strong><em id="pointsSub"></em></div>
-    <div class="stat"><small>💎 PVLT (wallet)</small><strong class="gold" id="pvltVal">0</strong><em id="pvltSub"></em></div>
-    <div class="stat"><small>🔷 AMRI (wallet)</small><strong id="amriVal">0</strong><em id="amriSub"></em></div>
-    <div class="stat"><small>🏦 AMRI reserve</small><strong id="reserveVal">0</strong><em id="reserveSub"></em></div>
-  </section>
-
-  <!-- TAP -->
-  <section class="card tap-area">
-    <button class="tap no-energy" id="tapBtn" aria-label="Tap to earn"><img src="images/logo.PNG" alt="Pepe" onerror="this.style.display='none';this.parentElement.textContent='🐸⚡'"></button>
-    <div class="hint">Tap = 1 energy + 1 point • 100 points = 1 PVLT</div>
-    <div class="unsaved" id="unsavedTxt"></div>
-  </section>
-
-  <!-- ACTIONS -->
+  <section class="card tap-area"><button class="tap no-energy" id="tapBtn" aria-label="Tap to earn"><img src="images/logo.PNG" alt="Pepe" onerror="this.style.display='none';this.parentElement.textContent='🐸⚡'"></button><div class="hint">Tap to earn points • Every 100 points = 1 Game PVLT</div></section>
   <section class="card">
     <div class="status" id="statusTxt">🔒 Connect wallet to start</div>
-
     <div id="stateDisconnected"><button class="btn primary" id="connectBtn">💼 CONNECT WALLET</button></div>
-
     <div id="stateConnected" style="display:none">
       <div class="status" id="accountTxt"></div>
-
-      <button class="btn primary" id="saveBtn">💾 SAVE TAPS TO CHAIN<small id="saveSub">nothing to save</small></button>
-
-      <div class="block">
-        <h3>⚡ Buy energy with AMRI</h3>
-        <div class="input-row"><input id="buyInput" type="text" inputmode="decimal" value="1" autocomplete="off"><span>AMRI</span></div>
-        <div class="preview" id="buyPreview"></div>
-        <button class="btn gold-btn" id="buyBtn">BUY ENERGY</button>
-      </div>
-
-      <div class="block">
-        <h3>🔁 Swap PVLT → AMRI (100 : 1)</h3>
-        <div class="input-row"><input id="swapInput" type="text" inputmode="numeric" value="100" autocomplete="off"><span>PVLT</span></div>
-        <div class="preview" id="swapPreview"></div>
-        <button class="btn gold-btn" id="swapBtn">SWAP TO AMRI</button>
-      </div>
-
+      <div class="actions"><button class="btn gold-btn" id="buyBtn">⚡ BUY ENERGY<br><small>(1 AMRI → +8000)</small></button><button class="btn primary" id="claimBtn">💎 CLAIM<br><small id="claimSub">TO WALLET</small></button></div>
+      <button class="btn gold-btn" id="swapBtn">🍣 SWAP PVLT → AMRI</button>
       <button class="btn secondary" id="disconnectBtn">Disconnect wallet</button>
     </div>
-
-    <p class="notice">
-      Everything is stored on the Polygon blockchain under your wallet: free energy, bought energy, points and PVLT.
-      Tapping is counted on your device first. <b>Press Save</b> to write your taps to the chain — the contract only accepts taps up to the energy you really have.
-      Energy starts refilling (+1 every 15s) from the moment your taps are saved, so save often.
-      Every transaction needs a little POL for gas. Approvals are for the exact amount you spend.
-    </p>
-    <p class="notice" id="poolTxt"></p>
-  </section>
-
-  <!-- CONTRACTS -->
-  <section class="card">
-    <div class="notice" style="margin:0 0 4px"><b>Contracts (verify before you trust)</b></div>
-    <div class="addr-row"><b>GAME</b><code id="addrGame"></code><button class="copy" data-copy="GAME">📋</button></div>
-    <div class="addr-row"><b>PVLT</b><code id="addrPvlt"></code><button class="copy" data-copy="PVLT">📋</button></div>
-    <div class="addr-row"><b>AMRI</b><code id="addrAmri"></code><button class="copy" data-copy="AMRI">📋</button></div>
+    <p class="notice">Energy purchases use 1 AMRI and require AMRI approval plus POL for Polygon gas. Local game points are stored on this device. PVLT claims require a trusted game-server signature; do not enable claims from client-only points. Swaps open SushiSwap for your review and confirmation.</p>
   </section>
 </div>
-
-<div id="walletModal" class="modal"><div class="sheet">
-  <button class="close" id="closeModal">✕</button><h2>Connect Wallet</h2>
-  <button class="wallet-option" id="metaMaskOption"><span style="font-size:26px">🦊</span><span>MetaMask / Wallet DApp Browser</span></button>
-  <p class="notice" style="text-align:center;margin-top:14px">Make sure your wallet is on Polygon Mainnet.</p>
-</div></div>
-
+<div id="walletModal" class="modal"><div class="sheet"><button class="close" id="closeModal">✕</button><h2>Connect Wallet</h2><button class="wallet-option" id="metaMaskOption"><span style="font-size:26px">🦊</span><span>MetaMask / Wallet DApp Browser</span></button><p class="notice" style="text-align:center;margin-top:14px">Make sure your wallet is on Polygon Mainnet.</p></div></div>
 <script>
 'use strict';
 
-/* ============================== CONFIG ====================================
-   1) Deploy PepeVoltToken (PVLT)  -> paste its address into PVLT
-   2) Deploy PepeVoltGame          -> paste its address into GAME
-   Keep addresses lowercase (avoids ethers checksum errors).               */
-const CONFIG = {
-  CHAIN_ID: 137,
-  AMRI: '0xae4fd9cac68617c56e6689ed1119b218b5a72d6a',
-  PVLT: '0x03741f950eafd9cbaa217e2b0491a0f143492f0a',
-  GAME: '0x2f5d721f771f53f55845aa927b95e40d5ad30ef4',
-  // These must match the contract constants:
-  FREE_MAX: 100, REGEN_SECONDS: 15, TAPS_PER_PVLT: 100, ENERGY_PER_AMRI: 8000, PVLT_PER_AMRI: 100
-};
+// Existing deployed tokens from the supplied index.html.
+const PVLT_TOKEN_ADDRESS = '0x03741f950eafd9cbaa217e2b0491a0f143492f0a';
+const AMRI_TOKEN_ADDRESS = '0xae4fd9cac68617c56e6689ed1119b218b5a72d6a';
+
+// Deploy PepeVoltGame.sol, then replace this zero address with the new contract.
+const GAME_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000';
+
+// Must be an API that verifies server-side earned rewards and returns an EIP-712 voucher.
+// A static page alone cannot safely authorize PVLT claims from browser-stored points.
+const CLAIM_API_URL = '/api/claim';
 
 const GAME_ABI = [
-  'function getPlayer(address a) view returns (tuple(uint256 energy,uint256 maxEnergy,uint256 boughtEnergy,uint256 nextRegenIn,uint256 points,uint256 totalTaps,uint256 totalPvltEarned,uint256 totalAmriSpent,uint256 totalAmriRedeemed))',
-  'function tapSync(uint256 taps)',
-  'function buyEnergy(uint256 amriAmount)',
-  'function redeem(uint256 pvltAmount)',
-  'function dailyCapAmri() view returns (uint256)',
-  'function redeemedTodayOf(address) view returns (uint256)',
-  'function redeemDayOf(address) view returns (uint256)',
-  'function paused() view returns (bool)'
+  'function buyEnergy(uint256 amriAmount) external returns (uint256 energyGranted)',
+  'function claimNonces(address) view returns (uint256)',
+  'function claimRewards(uint256 amount,uint256 deadline,bytes signature) external',
+  'function getTreasuryBalance() view returns (uint256)',
+  'function amriUnit() view returns (uint256)'
 ];
-const ERC20_ABI = [
+const TOKEN_ABI = [
   'function balanceOf(address) view returns (uint256)',
   'function approve(address,uint256) returns (bool)',
   'function allowance(address,address) view returns (uint256)',
   'function decimals() view returns (uint8)'
 ];
-const PVLT_ABI = ERC20_ABI.concat(['function cap() view returns (uint256)', 'function minted() view returns (uint256)']);
-
 const $ = id => document.getElementById(id);
-const isAddr = a => /^0x[0-9a-fA-F]{40}$/.test(a) && !/^0x0{40}$/.test(a);
-const CONFIGURED = isAddr(CONFIG.PVLT) && isAddr(CONFIG.GAME);
+$('contractAddrDisplay').textContent = PVLT_TOKEN_ADDRESS;
 
-let account = null, provider = null, signer = null, game = null, pvlt = null, amri = null;
-let decP = 18, decA = 18, busy = false, pollTimer = null;
-const S = { energy: 0, max: CONFIG.FREE_MAX, bought: 0, nextIn: 0, points: 0, fetchedAt: 0, fetched: false,
-            pending: 0, pvlt: 0, amri: 0, reserve: 0, dailyCap: 0, dailyLeft: Infinity, paused: false, poolLeft: null };
+let account=null, provider=null, signer=null, pvltC=null, amriC=null, gameC=null;
+let pvltDecimals=18, amriDecimals=18, maxEnergy=100, energy=100, points=0, gamePvlt=0;
+let walletBal=0, amriBal=0, treasuryBal=0, lastRegen=Date.now(), regenTimer=null, tapLock=false;
 
-/* ------------------------------ helpers ---------------------------------- */
-const fmt = (n, d = 2) => Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
-const toNum = (bn, dec) => parseFloat(ethers.utils.formatUnits(bn, dec));
-function setStatus(msg, kind) { const el = $('statusTxt'); el.textContent = msg; el.className = 'status' + (kind ? ' ' + kind : ''); }
-function toast(msg, isErr) { const el = document.createElement('div'); el.className = 'toast' + (isErr ? ' err' : ''); el.textContent = msg; document.body.appendChild(el); setTimeout(() => el.remove(), 2400); }
-function floatText(x, y, text, color) { const el = document.createElement('div'); el.className = 'float-text'; el.textContent = text; el.style.cssText = `left:${x - 20}px;top:${y - 20}px;color:${color}`; document.body.appendChild(el); setTimeout(() => el.remove(), 1000); }
-function errMsg(e) {
-  const raw = String((e && (e.reason || (e.error && e.error.message) || (e.data && e.data.message) || e.message)) || e);
-  const m = raw.toLowerCase();
-  if ((e && (e.code === 4001 || e.code === 'ACTION_REJECTED')) || m.includes('user rejected') || m.includes('user denied')) return 'Transaction rejected in wallet.';
-  if (m.includes('insufficient funds')) return 'Not enough POL for gas fees.';
-  const known = { 'not enough energy': 'Not enough energy on chain yet. Wait for a refill or buy energy.', 'daily limit': 'Daily swap limit reached for this wallet. Try again tomorrow (UTC).',
-    'reserve low': 'The AMRI reserve is too low right now.', 'min 100 pvlt': 'Minimum swap is 100 PVLT.', 'whole pvlt only': 'Use whole PVLT amounts.',
-    'reward pool exhausted': 'The PVLT reward pool is empty.', 'paused': 'The game is paused.', 'amount too small': 'Amount too small.' };
-  for (const k in known) if (m.includes(k)) return known[k];
-  return raw.slice(0, 160);
+function setStatus(msg){$('statusTxt').textContent=msg;console.log('Status:',msg)}
+function errorText(e){return e?.reason||e?.data?.message||e?.message||'Unknown error'}
+function showToast(message,isError=false){
+  const el=document.createElement('div');el.className='toast';el.textContent=message;
+  if(isError)el.style.color='#ff8888';document.body.appendChild(el);setTimeout(()=>el.remove(),2600);
 }
-const pendingKey = () => `pv2_pending_${CONFIG.GAME}_${account}`;
-function savePending() { try { if (account) localStorage.setItem(pendingKey(), String(S.pending)); } catch (e) {} }
-function loadPending() { try { S.pending = Math.max(0, parseInt(localStorage.getItem(pendingKey()) || '0', 10) || 0); } catch (e) { S.pending = 0; } }
-
-/* ----------------------- energy math (mirrors contract) ------------------- */
-function chainEnergyNow() {
-  if (!S.fetched) return 0;
-  const el = (Date.now() - S.fetchedAt) / 1000;
-  let e = S.energy;
-  if (e < S.max && el >= S.nextIn) e += 1 + Math.floor((el - S.nextIn) / CONFIG.REGEN_SECONDS);
-  return Math.min(S.max, e);
+function showFloat(x,y,text,color='#fff'){
+  const el=document.createElement('div');el.className='float-text';el.textContent=text;
+  el.style.cssText=`left:${x-20}px;top:${y-20}px;color:${color}`;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1000);
 }
-const availEnergy = () => Math.max(0, Math.floor(chainEnergyNow()) - S.pending);
-
-/* ------------------------------- render ---------------------------------- */
-function render() {
-  const avail = availEnergy();
-  $('energyVal').textContent = `${fmt(avail, 0)} / ${fmt(S.max, 0)}`;
-  $('energyBar').style.width = (S.max ? Math.min(100, avail / S.max * 100) : 0) + '%';
-  $('energySub').textContent = `Free ${CONFIG.FREE_MAX} + Bought ${fmt(S.bought, 0)}`;
-
-  let regen = '';
-  if (account && S.fetched) {
-    if (chainEnergyNow() < S.max) {
-      const el = (Date.now() - S.fetchedAt) / 1000;
-      const rem = el < S.nextIn ? S.nextIn - el : CONFIG.REGEN_SECONDS - ((el - S.nextIn) % CONFIG.REGEN_SECONDS);
-      regen = `⚡ +1 in ${Math.ceil(rem)}s`;
-    } else if (S.pending > 0) regen = 'Save taps to start refilling';
-  }
-  $('regenLbl').textContent = regen;
-
-  const totalPts = S.points + S.pending;
-  $('pointsVal').textContent = totalPts % CONFIG.TAPS_PER_PVLT;
-  const wholeNew = Math.floor(totalPts / CONFIG.TAPS_PER_PVLT);
-  $('pointsSub').textContent = S.pending > 0 ? `${fmt(S.pending, 0)} unsaved` : (account ? 'saved on chain' : '');
-  $('pvltVal').textContent = fmt(S.pvlt, 2);
-  $('pvltSub').textContent = wholeNew > 0 ? `+${fmt(wholeNew, 0)} after save` : '';
-  $('amriVal').textContent = fmt(S.amri, 4);
-  $('amriSub').textContent = '';
-  $('reserveVal').textContent = fmt(S.reserve, 2);
-  $('reserveSub').textContent = account && S.dailyCap > 0 ? `your daily left: ${fmt(S.dailyLeft, 2)}` : '';
-
-  $('unsavedTxt').textContent = S.pending > 0 ? `Unsaved taps: ${fmt(S.pending, 0)}${wholeNew > 0 ? ` (+${wholeNew} PVLT)` : ''}` : '';
-  $('tapBtn').classList.toggle('no-energy', !account || avail <= 0);
-  $('stateDisconnected').style.display = account ? 'none' : 'block';
-  $('stateConnected').style.display = account ? 'block' : 'none';
-  $('accountTxt').textContent = account ? `Connected: ${account.slice(0, 6)}…${account.slice(-4)}` : '';
-
-  $('saveSub').textContent = S.pending > 0 ? `${fmt(S.pending, 0)} taps${wholeNew > 0 ? ` → +${wholeNew} PVLT` : ''}` : 'nothing to save';
-  $('saveBtn').disabled = busy || S.pending < 1 || S.paused;
-  $('saveBtn').classList.toggle('pulse', S.pending >= 100 || (S.pending > 0 && avail <= 0));
-  $('buyBtn').disabled = busy || S.paused;
-  $('swapBtn').disabled = busy || S.paused;
-
-  const buyAmt = parseFloat($('buyInput').value);
-  $('buyPreview').textContent = buyAmt > 0 ? `≈ +${fmt(Math.floor(buyAmt * CONFIG.ENERGY_PER_AMRI), 0)} energy (max and current energy go up together)` : '';
-  const swapAmt = parseInt($('swapInput').value, 10);
-  $('swapPreview').textContent = swapAmt >= 100 ? `→ ${fmt(swapAmt / CONFIG.PVLT_PER_AMRI, 4)} AMRI` : 'Minimum 100 PVLT';
-  if (S.poolLeft !== null) $('poolTxt').textContent = `Reward pool left: ${fmt(S.poolLeft, 0)} PVLT`;
+function save(){
+  if(!account)return;
+  try{localStorage.setItem('pv_'+account.toLowerCase(),JSON.stringify({energy,points,gamePvlt,lastRegen,maxEnergy}))}
+  catch(e){console.warn('Could not save local game state',e)}
 }
-
-/* ------------------------------ chain reads ------------------------------- */
-async function refresh() {
-  if (!account || !game) return;
-  try {
-    const [p, wP, wA, reserve, cap, rToday, rDay, paused, pCap, pMinted] = await Promise.all([
-      game.getPlayer(account), pvlt.balanceOf(account), amri.balanceOf(account), amri.balanceOf(CONFIG.GAME),
-      game.dailyCapAmri(), game.redeemedTodayOf(account), game.redeemDayOf(account), game.paused(), pvlt.cap(), pvlt.minted()
-    ]);
-    S.energy = p.energy.toNumber(); S.max = p.maxEnergy.toNumber(); S.bought = p.boughtEnergy.toNumber();
-    S.nextIn = p.nextRegenIn.toNumber(); S.points = p.points.toNumber();
-    S.fetchedAt = Date.now(); S.fetched = true;
-    S.pvlt = toNum(wP, decP); S.amri = toNum(wA, decA); S.reserve = toNum(reserve, decA);
-    S.dailyCap = toNum(cap, decA);
-    const today = Math.floor(Date.now() / 86400000);
-    const used = rDay.toNumber() === today ? toNum(rToday, decA) : 0;
-    S.dailyLeft = S.dailyCap > 0 ? Math.max(0, S.dailyCap - used) : Infinity;
-    S.paused = !!paused;
-    S.poolLeft = toNum(pCap, decP) - toNum(pMinted, decP);
-    if (S.paused) setStatus('⏸ The game is paused by the owner.', 'err');
-    render();
-  } catch (e) {
-    console.error('refresh failed', e);
-    setStatus('⚠️ Could not read the blockchain: ' + errMsg(e), 'err');
-  }
+function load(){
+  if(!account)return;
+  try{
+    const d=JSON.parse(localStorage.getItem('pv_'+account.toLowerCase())||'{}');
+    const savedMax=Number(d.maxEnergy),savedEnergy=Number(d.energy);
+    maxEnergy=Math.max(100,Number.isFinite(savedMax)?savedMax:100);
+    points=Math.max(0,Math.floor(Number(d.points)||0))%100;
+    gamePvlt=Math.max(0,Math.floor(Number(d.gamePvlt)||0));
+    lastRegen=Number(d.lastRegen)||Date.now();
+    const elapsed=Math.max(0,Math.floor((Date.now()-lastRegen)/1000));
+    const regen=Math.floor(elapsed/15);
+    energy=Math.min(Math.max(0,Number.isFinite(savedEnergy)?savedEnergy:100)+regen,maxEnergy);
+    if(regen>0)lastRegen=Date.now();
+  }catch(e){console.error('Save load failed',e)}
 }
-
-/* ------------------------------- wallet ----------------------------------- */
-async function ensurePolygon() {
-  const net = await provider.getNetwork();
-  if (net.chainId === CONFIG.CHAIN_ID) return;
-  setStatus('⚠️ Switching to Polygon…');
-  try {
-    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x89' }] });
-  } catch (e) {
-    if (e.code === 4902) {
-      await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x89', chainName: 'Polygon Mainnet',
-        nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 }, rpcUrls: ['https://polygon-rpc.com/'], blockExplorerUrls: ['https://polygonscan.com/'] }] });
-    } else throw e;
-  }
-  provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-  signer = provider.getSigner();
+function render(){
+  $('energyVal').textContent=`${Math.floor(energy)} / ${maxEnergy}`;
+  $('energyBar').style.width=Math.min(100,Math.max(0,energy/maxEnergy*100))+'%';
+  $('pointsVal').textContent=Math.floor(points);
+  $('gamePvltVal').textContent=gamePvlt.toFixed(0);
+  $('walletVal').textContent=walletBal.toFixed(2);
+  $('amriWalletVal').textContent=amriBal.toFixed(4);
+  $('treasuryVal').textContent=treasuryBal.toFixed(2);
+  $('claimSub').textContent=gamePvlt>=1?`${Math.floor(gamePvlt)} PVLT`:'TO WALLET';
+  $('tapBtn').classList.toggle('no-energy',!account||energy<=0);
+  $('tapBtn').disabled=!account||energy<=0;
+  $('stateDisconnected').style.display=account?'none':'block';
+  $('stateConnected').style.display=account?'block':'none';
+  $('accountTxt').textContent=account?`✅ Connected: ${account.slice(0,6)}…${account.slice(-4)}`:'';
+  $('buyBtn').disabled=!account||amriBal<1;
+  $('claimBtn').disabled=!account||gamePvlt<1;
+  $('swapBtn').disabled=!account;
 }
-async function connect() {
-  if (!CONFIGURED) { setStatus('❌ Contracts are not configured in index.html yet.', 'err'); return false; }
-  if (!window.ethereum) { setStatus('❌ Open this page inside a wallet DApp browser or install a wallet like MetaMask.', 'err'); toast('No wallet found', true); return false; }
-  try {
-    setStatus('Connecting wallet…');
-    provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
-    await provider.send('eth_requestAccounts', []);
-    signer = provider.getSigner();
-    await ensurePolygon();
-    account = (await signer.getAddress());
-    game = new ethers.Contract(CONFIG.GAME, GAME_ABI, signer);
-    pvlt = new ethers.Contract(CONFIG.PVLT, PVLT_ABI, signer);
-    amri = new ethers.Contract(CONFIG.AMRI, ERC20_ABI, signer);
-    [decP, decA] = await Promise.all([pvlt.decimals(), amri.decimals()]);
-    loadPending();
-    await refresh();
-    setStatus('✅ Connected. Your progress is loaded from the blockchain.', 'ok');
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(() => { if (!busy && !document.hidden) refresh(); }, 20000);
-    window.ethereum.removeListener?.('accountsChanged', onAccountsChanged);
-    window.ethereum.on?.('accountsChanged', onAccountsChanged);
-    window.ethereum.on?.('chainChanged', () => location.reload());
-    render();
-    return true;
-  } catch (e) {
-    console.error(e); account = null; setStatus('❌ ' + errMsg(e), 'err'); render(); return false;
-  }
-}
-function onAccountsChanged(a) { if (!a || !a.length) disconnect(); else location.reload(); }
-function disconnect() {
-  if (pollTimer) clearInterval(pollTimer);
-  savePending();
-  account = null; provider = signer = game = pvlt = amri = null;
-  Object.assign(S, { energy: 0, max: CONFIG.FREE_MAX, bought: 0, nextIn: 0, points: 0, fetched: false, pending: 0, pvlt: 0, amri: 0, reserve: 0 });
-  setStatus('🔒 Disconnected'); render();
-}
-
-/* -------------------------------- tapping --------------------------------- */
-function doTap(x, y) {
-  if (!account) { toast('Connect your wallet first', true); return; }
-  if (S.paused) { toast('Game is paused', true); return; }
-  if (availEnergy() < 1) { toast('No energy. Save taps, wait for refill, or buy energy.', true); return; }
-  S.pending++;
-  savePending();
-  floatText(x, y, '+1 ⚡', '#9cff57');
-  if ((S.points + S.pending) % CONFIG.TAPS_PER_PVLT === 0) floatText(x, y - 40, '+1 PVLT ready 🎉', '#ffd700');
+function tick(){
+  if(account&&energy<maxEnergy){
+    const elapsed=Math.floor((Date.now()-lastRegen)/1000),gained=Math.floor(elapsed/15);
+    if(gained>0){energy=Math.min(energy+gained,maxEnergy);lastRegen+=gained*15000;save()}
+    const remaining=15-(Math.floor((Date.now()-lastRegen)/1000)%15);
+    $('regenLbl').textContent=`⚡ +1 in ${remaining}s`;
+  }else $('regenLbl').textContent='';
   render();
 }
-const tap = $('tapBtn');
-tap.addEventListener('pointerdown', e => { e.preventDefault(); doTap(e.clientX, e.clientY); });
-tap.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const r = tap.getBoundingClientRect(); doTap(r.left + r.width / 2, r.top + r.height / 2); } });
-
-/* ------------------------------ transactions ------------------------------ */
-async function withBusy(fn) {
-  if (busy) return; busy = true; render();
-  try { await fn(); } catch (e) { console.error(e); setStatus('❌ ' + errMsg(e), 'err'); toast(errMsg(e), true); }
-  finally { busy = false; render(); }
+async function refreshBalances(){
+  if(!account||!pvltC||!amriC||!gameC)return;
+  try{
+    const [pvlt,amri,pool]=await Promise.all([
+      pvltC.balanceOf(account),amriC.balanceOf(account),gameC.getTreasuryBalance()
+    ]);
+    walletBal=Number(ethers.utils.formatUnits(pvlt,pvltDecimals));
+    amriBal=Number(ethers.utils.formatUnits(amri,amriDecimals));
+    treasuryBal=Number(ethers.utils.formatUnits(pool,pvltDecimals));
+    render();
+  }catch(e){console.error('Balance refresh failed',e);setStatus('⚠️ Balance refresh failed: '+errorText(e))}
 }
-async function ensureAllowance(token, spender, amount, label) {
-  const al = await token.allowance(account, spender);
-  if (al.lt(amount)) {
-    setStatus(`⏳ Approve ${label} in your wallet…`);
-    const tx = await token.approve(spender, amount);
-    setStatus(`⏳ Waiting for ${label} approval…`);
-    await tx.wait();
+async function ensurePolygon(){
+  const net=await provider.getNetwork();
+  if(net.chainId===137)return;
+  setStatus('⚠️ Switching to Polygon…');
+  try{
+    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x89'}]});
+  }catch(e){
+    if(e.code!==4902)throw e;
+    await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
+      chainId:'0x89',chainName:'Polygon Mainnet',
+      nativeCurrency:{name:'POL',symbol:'POL',decimals:18},
+      rpcUrls:['https://polygon-rpc.com/'],blockExplorerUrls:['https://polygonscan.com/']
+    }]});
+  }
+  provider=new ethers.providers.Web3Provider(window.ethereum,'any');
+  signer=provider.getSigner();account=await signer.getAddress();
+}
+function validGameAddress(){
+  return ethers.utils.isAddress(GAME_CONTRACT_ADDRESS)&&
+    GAME_CONTRACT_ADDRESS.toLowerCase()!=='0x0000000000000000000000000000000000000000';
+}
+async function connectMetaMask(){
+  if(!window.ethereum){setStatus('❌ Open this page in a wallet browser or install a compatible wallet.');showToast('No wallet provider found',true);return false}
+  if(!validGameAddress()){setStatus('❌ Replace GAME_CONTRACT_ADDRESS with your newly deployed PepeVoltGame address.');return false}
+  try{
+    setStatus('Connecting wallet…');
+    provider=new ethers.providers.Web3Provider(window.ethereum,'any');
+    await provider.send('eth_requestAccounts',[]);
+    signer=provider.getSigner();account=await signer.getAddress();
+    await ensurePolygon();
+    pvltC=new ethers.Contract(PVLT_TOKEN_ADDRESS,TOKEN_ABI,signer);
+    amriC=new ethers.Contract(AMRI_TOKEN_ADDRESS,TOKEN_ABI,signer);
+    gameC=new ethers.Contract(GAME_CONTRACT_ADDRESS,GAME_ABI,signer);
+    [pvltDecimals,amriDecimals]=await Promise.all([pvltC.decimals(),amriC.decimals()]);
+    load();await refreshBalances();render();
+    setStatus(`✅ Connected: ${account.slice(0,6)}…${account.slice(-4)}`);
+    if(regenTimer)clearInterval(regenTimer);
+    regenTimer=setInterval(()=>{tick();refreshBalances()},15000);
+    window.ethereum.removeListener?.('accountsChanged',onAccountsChanged);
+    window.ethereum.on?.('accountsChanged',onAccountsChanged);
+    window.ethereum.on?.('chainChanged',()=>location.reload());
+    return true;
+  }catch(e){console.error(e);setStatus('❌ '+errorText(e));return false}
+}
+function onAccountsChanged(accounts){
+  if(!accounts||!accounts.length)disconnect();
+  else if(accounts[0].toLowerCase()!==String(account).toLowerCase())location.reload();
+}
+function disconnect(){
+  if(regenTimer)clearInterval(regenTimer);save();
+  account=null;provider=null;signer=null;pvltC=null;amriC=null;gameC=null;
+  walletBal=0;amriBal=0;treasuryBal=0;energy=100;maxEnergy=100;points=0;gamePvlt=0;
+  $('connectBtn').disabled=false;$('connectBtn').textContent='💼 CONNECT WALLET';
+  setStatus('🔒 Disconnected');render();
+}
+function doTap(x,y){
+  if(!account||energy<=0||tapLock)return;
+  tapLock=true;setTimeout(()=>tapLock=false,80);energy--;points++;
+  if(points>=100){const earned=Math.floor(points/100);gamePvlt+=earned;points%=100;showFloat(x,y-40,`+${earned} PVLT! 🎉`,'#ffd700')}
+  showFloat(x,y,'+1 ⚡','#9cff57');save();render();
+}
+$('tapBtn').addEventListener('click',()=>{
+  const r=$('tapBtn').getBoundingClientRect();doTap(r.left+r.width/2,r.top+r.height/2);
+});
+$('tapBtn').addEventListener('touchstart',e=>{
+  e.preventDefault();const t=e.touches[0];doTap(t.clientX,t.clientY);
+},{passive:false});
+
+async function buyEnergy(){
+  if(!account)return setStatus('Connect wallet first.');
+  if(amriBal<1)return setStatus(`❌ Need 1 AMRI. Your displayed balance is ${amriBal.toFixed(4)} AMRI.`);
+  const btn=$('buyBtn');btn.disabled=true;
+  try{
+    const amount=await gameC.amriUnit();
+    const allowance=await amriC.allowance(account,GAME_CONTRACT_ADDRESS);
+    if(allowance.lt(amount)){
+      setStatus('⏳ Approve 1 AMRI in your wallet…');
+      const approval=await amriC.approve(GAME_CONTRACT_ADDRESS,amount);
+      setStatus('⏳ Waiting for AMRI approval…');await approval.wait();
+    }
+    const freshBalance=await amriC.balanceOf(account);
+    if(freshBalance.lt(amount))throw new Error('Insufficient AMRI balance.');
+    setStatus('⏳ Buying +8000 energy with 1 AMRI…');
+    const tx=await gameC.buyEnergy(amount);
+    setStatus('⏳ Purchase submitted. Waiting for confirmation…');await tx.wait();
+    maxEnergy+=8000;energy+=8000;save();await refreshBalances();
+    setStatus(`✅ Purchased +8000 energy. Max energy: ${maxEnergy}`);
+    showFloat(innerWidth/2,innerHeight/2-80,'⚡ +8000 ENERGY!','#ffd700');
+  }catch(e){
+    console.error('AMRI energy purchase failed',e);
+    setStatus(e.code===4001?'❌ Transaction rejected in wallet.':'❌ '+errorText(e));
+    await refreshBalances();
+  }finally{btn.disabled=!account||amriBal<1}
+}
+async function claimRewards(){
+  if(!account)return setStatus('Connect wallet first.');
+  if(gamePvlt<1)return setStatus('❌ No whole Game PVLT available to claim.');
+  if(!CLAIM_API_URL||CLAIM_API_URL.includes('YOUR_'))return setStatus('❌ Configure a trusted claim-signing API first.');
+  const amount=ethers.utils.parseUnits(String(Math.floor(gamePvlt)),pvltDecimals);
+  const btn=$('claimBtn');btn.disabled=true;
+  try{
+    const nonce=await gameC.claimNonces(account);
+    setStatus('⏳ Requesting verified claim authorization…');
+    const response=await fetch(CLAIM_API_URL,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({account,amount:amount.toString(),nonce:nonce.toString()})
+    });
+    if(!response.ok)throw new Error(`Claim service returned HTTP ${response.status}.`);
+    const voucher=await response.json();
+    if(!voucher.signature||voucher.deadline===undefined)throw new Error('Claim service returned an incomplete voucher.');
+    const claimedAmount=Number(ethers.utils.formatUnits(amount,pvltDecimals));
+    setStatus(`⏳ Claiming ${claimedAmount} PVLT…`);
+    const tx=await gameC.claimRewards(amount,voucher.deadline,voucher.signature);
+    setStatus('⏳ Claim submitted. Waiting for confirmation…');await tx.wait();
+    gamePvlt=0;points=0;save();await refreshBalances();
+    setStatus(`✅ Claim confirmed: ${ethers.utils.formatUnits(amount,pvltDecimals)} PVLT.`);
+    showFloat(innerWidth/2,innerHeight/2-80,`💎 +${claimedAmount} PVLT!`,'#9cff57');
+  }catch(e){
+    console.error('PVLT claim failed',e);
+    setStatus(e.code===4001?'❌ Transaction rejected in wallet.':'❌ '+errorText(e));
+  }finally{btn.disabled=!account||gamePvlt<1}
+}
+async function openSushiSwap(){
+  if(!account||!provider){setStatus('🔒 Connect wallet first.');return}
+  const btn=$('swapBtn');btn.disabled=true;
+  try{
+    await ensurePolygon();
+    if((await provider.getNetwork()).chainId!==137)throw new Error('Please switch your wallet to Polygon Mainnet.');
+    const url='https://www.sushi.com/polygon/swap?token0='+encodeURIComponent(PVLT_TOKEN_ADDRESS)+'&token1='+encodeURIComponent(AMRI_TOKEN_ADDRESS);
+    window.open(url,'_blank','noopener,noreferrer');
+    setStatus('🍣 SushiSwap opened. Review the PVLT → AMRI swap and confirm it there.');
+  }catch(e){setStatus('⚠️ '+errorText(e));showToast('Could not open SushiSwap',true)}
+  finally{btn.disabled=!account}
+}
+async function copyAddress(){
+  try{await navigator.clipboard.writeText(PVLT_TOKEN_ADDRESS);showToast('✅ PVLT address copied')}
+  catch(e){
+    const ta=document.createElement('textarea');ta.value=PVLT_TOKEN_ADDRESS;document.body.appendChild(ta);
+    ta.select();const ok=document.execCommand('copy');ta.remove();
+    showToast(ok?'✅ PVLT address copied':'⚠️ Could not copy address',!ok);
   }
 }
-function saveTaps() {
-  return withBusy(async () => {
-    setStatus('⏳ Checking your energy on chain…');
-    const fresh = await game.getPlayer(account);
-    const taps = Math.min(S.pending, fresh.energy.toNumber());
-    if (taps < 1) throw new Error('No energy available on chain to save these taps yet.');
-    setStatus(`⏳ Saving ${taps} taps… confirm in your wallet`);
-    const tx = await game.tapSync(taps);
-    setStatus('⏳ Waiting for confirmation…');
-    await tx.wait();
-    S.pending -= taps; savePending();
-    await refresh();
-    const whole = Math.floor((S.points + taps) / CONFIG.TAPS_PER_PVLT);
-    setStatus(`✅ Saved ${taps} taps on chain.${S.pending > 0 ? ` ${S.pending} taps still unsaved.` : ''}`, 'ok');
-    floatText(innerWidth / 2, innerHeight / 2 - 80, '💾 SAVED', '#9cff57');
-  });
-}
-function buyEnergy() {
-  return withBusy(async () => {
-    const txt = $('buyInput').value.trim();
-    if (!/^\d*\.?\d+$/.test(txt) || (txt.split('.')[1] || '').length > decA) throw new Error('Enter a valid AMRI amount.');
-    const amount = ethers.utils.parseUnits(txt, decA);
-    if (parseFloat(txt) <= 0) throw new Error('Enter an amount above zero.');
-    if (S.amri < parseFloat(txt)) throw new Error(`Not enough AMRI. You have ${fmt(S.amri, 4)}.`);
-    await ensureAllowance(amri, CONFIG.GAME, amount, 'AMRI');
-    setStatus('⏳ Buying energy… confirm in your wallet');
-    const tx = await game.buyEnergy(amount);
-    setStatus('⏳ Waiting for confirmation…');
-    await tx.wait();
-    await refresh();
-    setStatus(`✅ Energy bought! Max energy is now ${fmt(S.max, 0)}.`, 'ok');
-    floatText(innerWidth / 2, innerHeight / 2 - 80, '⚡ ENERGY FULL!', '#ffd700');
-  });
-}
-function swapPvlt() {
-  return withBusy(async () => {
-    const txt = $('swapInput').value.trim();
-    if (!/^\d+$/.test(txt)) throw new Error('Enter a whole number of PVLT.');
-    const n = parseInt(txt, 10);
-    if (n < CONFIG.PVLT_PER_AMRI) throw new Error('Minimum swap is 100 PVLT.');
-    if (S.pvlt < n) throw new Error(`Not enough PVLT. You have ${fmt(S.pvlt, 2)}.`);
-    const out = n / CONFIG.PVLT_PER_AMRI;
-    if (S.reserve < out) throw new Error(`Reserve has only ${fmt(S.reserve, 2)} AMRI right now.`);
-    if (out > S.dailyLeft) throw new Error(`Daily limit: you can swap up to ${fmt(S.dailyLeft * CONFIG.PVLT_PER_AMRI, 0)} PVLT more today.`);
-    const amount = ethers.utils.parseUnits(txt, decP);
-    await ensureAllowance(pvlt, CONFIG.GAME, amount, 'PVLT');
-    setStatus('⏳ Swapping… confirm in your wallet');
-    const tx = await game.redeem(amount);
-    setStatus('⏳ Waiting for confirmation…');
-    await tx.wait();
-    await refresh();
-    setStatus(`✅ Swapped ${n} PVLT for ${fmt(out, 4)} AMRI.`, 'ok');
-    floatText(innerWidth / 2, innerHeight / 2 - 80, `🔷 +${fmt(out, 2)} AMRI`, '#9cff57');
-  });
-}
-
-/* ------------------------------- wiring ------------------------------------ */
-$('addrGame').textContent = CONFIG.GAME; $('addrPvlt').textContent = CONFIG.PVLT; $('addrAmri').textContent = CONFIG.AMRI;
-document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', async () => {
-  const v = CONFIG[b.dataset.copy];
-  try { await navigator.clipboard.writeText(v); toast('✅ Address copied'); }
-  catch (e) { const t = document.createElement('textarea'); t.value = v; document.body.appendChild(t); t.select(); const ok = document.execCommand('copy'); t.remove(); toast(ok ? '✅ Address copied' : 'Could not copy', !ok); }
-}));
-const modal = $('walletModal');
-$('connectBtn').onclick = () => modal.classList.add('open');
-$('closeModal').onclick = () => modal.classList.remove('open');
-modal.onclick = e => { if (e.target === modal) modal.classList.remove('open'); };
-$('metaMaskOption').onclick = async () => {
-  modal.classList.remove('open');
-  $('connectBtn').disabled = true; $('connectBtn').textContent = 'CONNECTING…';
-  const ok = await connect();
-  $('connectBtn').disabled = false; $('connectBtn').textContent = '💼 CONNECT WALLET';
-  if (!ok) toast('Wallet connection failed', true);
+$('copyContractBtn').addEventListener('click',e=>{e.stopPropagation();copyAddress()});
+$('contractCard').addEventListener('click',e=>{if(e.target.id!=='copyContractBtn')copyAddress()});
+const modal=$('walletModal');
+$('connectBtn').onclick=()=>modal.classList.add('open');
+$('closeModal').onclick=()=>modal.classList.remove('open');
+modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
+$('metaMaskOption').onclick=async()=>{
+  modal.classList.remove('open');$('connectBtn').disabled=true;$('connectBtn').textContent='CONNECTING…';
+  const ok=await connectMetaMask();$('connectBtn').disabled=false;$('connectBtn').textContent='💼 CONNECT WALLET';
+  if(!ok)showToast('Wallet connection failed',true);
 };
-$('disconnectBtn').onclick = disconnect;
-$('saveBtn').onclick = saveTaps; $('buyBtn').onclick = buyEnergy; $('swapBtn').onclick = swapPvlt;
-$('buyInput').addEventListener('input', render); $('swapInput').addEventListener('input', render);
-window.addEventListener('pagehide', savePending);
-
-if (!CONFIGURED) { $('cfgWarn').style.display = 'block'; }
-try { [CONFIG.AMRI, CONFIG.PVLT, CONFIG.GAME].forEach(a => ethers.utils.getAddress(a)); } catch (e) { setStatus('❌ Address configuration error: ' + e.message, 'err'); }
-render();
-setInterval(render, 1000);
+$('disconnectBtn').onclick=disconnect;
+$('buyBtn').onclick=buyEnergy;
+$('claimBtn').onclick=claimRewards;
+$('swapBtn').onclick=openSushiSwap;
+try{
+  ethers.utils.getAddress(PVLT_TOKEN_ADDRESS);
+  ethers.utils.getAddress(AMRI_TOKEN_ADDRESS);
+}catch(e){setStatus('❌ Token address configuration error: '+e.message)}
+render();setInterval(tick,1000);
 </script>
 </body>
 </html>
