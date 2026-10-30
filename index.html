@@ -42,11 +42,11 @@ button{font-family:inherit}.btn{width:100%;border:0;border-radius:13px;padding:1
 <div class="app">
   <header><h1>⚡ Pepe<span>Volt</span></h1><div class="pill">Polygon</div></header>
   <section class="card energy-row"><div class="energy-val" id="energyVal">100 / 100</div><div class="energy-right"><div class="prog-bar"><div class="prog-bar-fill" id="energyBar"></div></div><div class="regen-lbl" id="regenLbl"></div></div></section>
-  <section class="stats"><div class="stat"><small>Points</small><strong><span id="pointsVal">0</span><span style="font-size:13px;color:var(--muted)"> / 100</span></strong></div><div class="stat"><small>💎PVLT Earned</small><strong class="gold" id="gamePvltVal">0</strong></div></section>
+  <section class="stats"><div class="stat"><small>Points</small><strong><span id="pointsVal">0</span><span style="font-size:13px;color:var(--muted)"> / 100</span></strong></div><div class="stat"><small>💎 Game PVLT</small><strong class="gold" id="gamePvltVal">0</strong></div></section>
   <section class="card contract" id="contractCard"><div class="contract-label">📜 PVLT TOKEN CONTRACT</div><div class="contract-address" id="contractAddrDisplay"></div><button class="copy" id="copyContractBtn" aria-label="Copy PVLT token address">📋</button></section>
   <section class="wallet-row">
-    <div class="wallet-item"><small>PVLT</small><strong id="walletVal">0.00</strong><div class="sub-balance">AMRI: <span id="amriWalletVal">0.00</span></div></div>
-    <div class="wallet-item"><small>Reward Pool</small><strong id="treasuryVal">0</strong></div>
+    <div class="wallet-item"><small>💼 Wallet PVLT</small><strong id="walletVal">0.00</strong><div class="sub-balance">Wallet AMRI: <span id="amriWalletVal">0.00</span></div></div>
+    <div class="wallet-item"><small>🏦 Treasury PVLT</small><strong id="treasuryVal">0</strong></div>
   </section>
   <section class="card tap-area"><button class="tap no-energy" id="tapBtn" aria-label="Tap to earn"><img src="images/logo.PNG" alt="Pepe" onerror="this.style.display='none';this.parentElement.textContent='🐸⚡'"></button><div class="hint">Tap to earn points • Every 100 points = 1 Game PVLT</div></section>
   <section class="card">
@@ -58,7 +58,7 @@ button{font-family:inherit}.btn{width:100%;border:0;border-radius:13px;padding:1
       <button class="btn gold-btn" id="swapBtn">🍣 SWAP PVLT → AMRI</button>
       <button class="btn secondary" id="disconnectBtn">Disconnect wallet</button>
     </div>
-    <p class="notice">Energy purchases use 1 AMRI and require AMRI approval plus POL for Polygon gas. Local game points are stored on this device. PVLT claims require a trusted game-server signature; do not enable claims from client-only points. Swaps open SushiSwap for your review and confirmation.</p>
+    <p class="notice">Energy purchases use 1 AMRI and require AMRI approval plus POL for Polygon gas. AMRI and PVLT are held by the treasury wallet. That wallet must approve the game contract to transfer PVLT claims. Local game points are stored on this device; claims require a trusted game-server signature. Swaps open SushiSwap for your review and confirmation.</p>
   </section>
 </div>
 <div id="walletModal" class="modal"><div class="sheet"><button class="close" id="closeModal">✕</button><h2>Connect Wallet</h2><button class="wallet-option" id="metaMaskOption"><span style="font-size:26px">🦊</span><span>MetaMask / Wallet DApp Browser</span></button><p class="notice" style="text-align:center;margin-top:14px">Make sure your wallet is on Polygon Mainnet.</p></div></div>
@@ -70,7 +70,7 @@ const PVLT_TOKEN_ADDRESS = '0x03741f950eafd9cbaa217e2b0491a0f143492f0a';
 const AMRI_TOKEN_ADDRESS = '0xae4fd9cac68617c56e6689ed1119b218b5a72d6a';
 
 // Deploy PepeVoltGame.sol, then replace this zero address with the new contract.
-const GAME_CONTRACT_ADDRESS = '0xe522370ea3a22d9075bb446027c7e46b5d979806';
+const GAME_CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 // Must be an API that verifies server-side earned rewards and returns an EIP-712 voucher.
 // A static page alone cannot safely authorize PVLT claims from browser-stored points.
@@ -81,6 +81,7 @@ const GAME_ABI = [
   'function claimNonces(address) view returns (uint256)',
   'function claimRewards(uint256 amount,uint256 deadline,bytes signature) external',
   'function getTreasuryBalance() view returns (uint256)',
+  'function getTreasuryAllowance() view returns (uint256)',
   'function amriUnit() view returns (uint256)'
 ];
 const TOKEN_ABI = [
@@ -267,6 +268,8 @@ async function claimRewards(){
   const amount=ethers.utils.parseUnits(String(Math.floor(gamePvlt)),pvltDecimals);
   const btn=$('claimBtn');btn.disabled=true;
   try{
+    const treasuryAllowance=await gameC.getTreasuryAllowance();
+    if(treasuryAllowance.lt(amount))throw new Error('Treasury must approve enough PVLT for claims first.');
     const nonce=await gameC.claimNonces(account);
     setStatus('⏳ Requesting verified claim authorization…');
     const response=await fetch(CLAIM_API_URL,{
